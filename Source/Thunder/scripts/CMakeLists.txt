@@ -19,6 +19,8 @@ option(SYSTEMD_SERVICE "Install the systemd service" OFF)
 option(INITV_SCRIPT "Install the initv script" ON)
 option(UDEV_VIDEO_RULE "Install the a thunder tailored udev rule to access the video device" OFF)
 
+option(ENABLE_THUNDER_ENVIRONMENT "support loading thunder system environment fragments (*.env, *.sysconf)" OFF)
+
 if (SYSTEMD_SERVICE)
     set(SYSTEMD_EXTRA_DEPENDS "" CACHE STRING "Adds extra dependecies to the systemd service")
     
@@ -38,8 +40,12 @@ if (INITV_SCRIPT)
     set(SYSTEM_ROOT_PATH "/root" CACHE STRING "System root directory location")
     set(ROOT_PATH "${SYSTEM_ROOT_PATH}/${NAMESPACE}" CACHE STRING "Thunders root path")
 
-    configure_file("${CMAKE_CURRENT_SOURCE_DIR}/thunder.in" "${CMAKE_CURRENT_BINARY_DIR}/generated/thunder" @ONLY)
-
+    if(ENABLE_THUNDER_ENVIRONMENT)
+        configure_file("${CMAKE_CURRENT_SOURCE_DIR}/thunder.env.in" "${CMAKE_CURRENT_BINARY_DIR}/generated/thunder" @ONLY)
+    else()
+        configure_file("${CMAKE_CURRENT_SOURCE_DIR}/thunder.in" "${CMAKE_CURRENT_BINARY_DIR}/generated/thunder" @ONLY)
+    endif()
+    
     install(
             FILES ${CMAKE_CURRENT_BINARY_DIR}/generated/thunder
             PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
@@ -73,4 +79,8 @@ if (UDEV_VIDEO_RULE)
     else()
         message(SEND_ERROR "Udev video device rule is enabled, but there is missing information.")
     endif()
+endif()
+
+if(ENABLE_THUNDER_ENVIRONMENT)
+add_subdirectory(environment)
 endif()

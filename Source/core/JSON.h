@@ -537,6 +537,9 @@ namespace Core {
                 if (RHS.IsSet() == true) {
                     operator=(RHS.Value());
                 }
+                else {
+                    Clear();
+                }
 
                 return (*this);
             }
@@ -1093,6 +1096,9 @@ namespace Core {
                 if (RHS.IsSet() == true) {
                     operator=(RHS.Value());
                 }
+                else {
+                    Clear();
+                }
 
                 return (*this);
             }
@@ -1395,6 +1401,9 @@ namespace Core {
                 if (RHS.IsSet() == true) {
                     operator=(RHS.Value());
                 }
+                else {
+                    Clear();
+                }
 
                 return (*this);
             }
@@ -1639,6 +1648,9 @@ namespace Core {
                 if (RHS.IsSet() == true) {
                     operator=(RHS.Value());
                 }
+                else {
+                    Clear();
+                }
 
                 return (*this);
             }
@@ -1821,7 +1833,11 @@ namespace Core {
                         const uint16_t current = static_cast<uint16_t>((_value[offset - 1]) & 0xFF);
 
                         // See if this is a printable character
-                        if ((isQuoted == false) || ((::isprint(static_cast<uint8_t>(current))) && (current != '\"') && (current != '\\') && (current != '/')) ) {
+                        if ((isQuoted == false) || ((::isprint(static_cast<uint8_t>(current))) && (current != '\"') && (current != '\\')
+                    #ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+                            && (current != '/')
+                    #endif
+                        )) {
                             stream[result++] = static_cast<TCHAR>(current);
                             length--;
                             offset++;
@@ -1840,7 +1856,9 @@ namespace Core {
                             case 0x0c: stream[result++] = 'f'; break;
                             case 0x0d: stream[result++] = 'r'; break;
                             case '\\': stream[result++] = '\\'; break;
+                        #ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
                             case '/': stream[result++] = '/'; break;
+                        #endif
                             case '"': stream[result++] = '"'; break;
                             default: {
                                 uint16_t lowPart, highPart;
@@ -1849,7 +1867,11 @@ namespace Core {
                                 if (codeSize < 0) {
                                     // Oops it is a bad code thingy, Skip it..
                                     // TODO: report an error
-                                    codeSize = -codeSize;
+                                    if((static_cast<uint32_t>(-codeSize)) <= length) {
+                                        codeSize = -codeSize;
+                                    } else {
+                                        codeSize = length;
+                                    }
                                 }
 
                                 ASSERT(codeSize <= 7);
@@ -1998,7 +2020,7 @@ namespace Core {
                             // We are assumed to be opaque, but all quoted string stuff is enclosed between quotes
                             // and should be considered for scope counting.
                             // Check if we are entering or leaving a quoted area in the opaque object
-                            if ((current == '\"') && ((_value.empty() == true) || IsEscaped(_value))) {
+                            if ((current == '\"') && (IsEscaped(_value) == false)) {
                                 // This is not an "escaped" quote, so it should be considered a real quote. It means
                                 // we are now entering or leaving a quoted area within the opaque struct...
                                 _flagsAndCounters ^= QuotedAreaBit;
@@ -2197,17 +2219,28 @@ namespace Core {
 
         private:
             bool IsEscaped(const string& value) const {
-                // This code determines if a lot of back slashes to esscape the backslash
-                // Is odd or even, so does it escape the last character..
-                // e.g. 'Test \\\\\\\\\\"' is not the escaping of the quote (")
-                //      'Test \\\\\\\\\" continued"'  is the escaping of th quote..
-                //      'Test \" and \" and than \\\"' are all escaped quotes 
-                uint32_t index = static_cast<uint32_t>(value.length() - 1);
-                uint32_t start = index;
-                while ( (index != static_cast<uint32_t>(~0)) && (value[index] == '\\') ) {
-                    index--;
+                bool escaped(false);
+
+                if (_value.empty() == false) {
+                    // This code determines if a lot of back slashes to esscape the backslash
+                    // Is odd or even, so does it escape the last character..
+                    // e.g. 'Test \\\\\\\\\\"' is not the escaping of the quote (")
+                    //      'Test \\\\\\\\\" continued"'  is the escaping of th quote..
+                    //      'Test \" and \" and than \\\"' are all escaped quotes
+                    // Subtracting 2 here, because the length is always counted by 
+                    // starting @1, so to a zero based buffer, i need to substract 1 
+                    // however that will give us the last character. This is the character
+                    // for which we would like to know if is is escaped, so I need to go 
+                    // even one position before that one, hence -2
+                    uint32_t index = static_cast<uint32_t>(value.length() - 2);
+                    uint32_t count = 0;
+                    while ((index != static_cast<uint32_t>(~0)) && (value[index] == '\\')) {
+                        index--;
+                        count++;
+                    }
+                    escaped =  ((count % 2) != 0);
                 }
-                return (((start - index) % 2) == 0);
+                return (escaped);
             }
             bool InScope(const ScopeBracket mode) {
                 bool added = false;
@@ -2709,6 +2742,9 @@ namespace Core {
                 if (RHS.IsSet() == true) {
                     operator=(RHS.Value());
                 }
+                else {
+                    Clear();
+                }
 
                 return (*this);
             }
@@ -3180,6 +3216,26 @@ namespace Core {
                 return (*this);
             }
 
+            bool operator==(const ArrayType<ELEMENT>& RHS) const
+            {
+                const uint16_t aLength = this->Length();
+                if (aLength != RHS.Length()) {
+                    return false;
+                }
+
+                for (uint16_t i = 0; i < aLength; ++i) {
+                    if (!((*this)[i] == RHS[i])) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+
+            bool operator!=(const ArrayType<ELEMENT>& RHS) const
+            {
+                return !(*this == RHS);
+            }
+
         public:
             // IElement and IMessagePack iface:
             bool IsSet() const override
@@ -3340,6 +3396,9 @@ namespace Core {
             {
                 if (RHS.IsSet() == true) {
                     operator=(RHS.Value());
+                }
+                else {
+                    Clear();
                 }
 
                 return (*this);
@@ -3597,7 +3656,8 @@ namespace Core {
             enum modus : uint8_t {
                 ERROR = 0x80,
                 UNDEFINED = 0x40,
-                COMPLETE = 0x20
+                COMPLETE = 0x20,
+                SET = 0x10
             };
 
             static constexpr uint16_t FIND_MARKER = 0;
@@ -3714,13 +3774,19 @@ namespace Core {
             // IElement and IMessagePack iface:
             bool IsSet() const override
             {
-                JSONElementList::const_iterator index = _data.begin();
-                // As long as we did not find a set element, continue..
-                while ((index != _data.end()) && (index->second->IsSet() == false)) {
-                    index++;
+                bool set = ((_state & SET) != 0);
+
+                if (set == false) {
+                    JSONElementList::const_iterator index = _data.begin();
+                    // As long as we did not find a set element, continue..
+                    while ((index != _data.end()) && (index->second->IsSet() == false)) {
+                        index++;
+                    }
+
+                    set = (index != _data.end());
                 }
 
-                return (index != _data.end());
+                return (set);
             }
 
             void Null(const bool enabled)
@@ -3736,6 +3802,16 @@ namespace Core {
             bool IsNull() const override
             {
                 return ((_state & UNDEFINED) != 0);
+            }
+
+            void Set(const bool enabled)
+            {
+                if (enabled == true) {
+                    _state |= SET;
+                }
+                else {
+                    _state &= ~SET;
+                }
             }
 
             void Clear() override
@@ -3759,7 +3835,10 @@ namespace Core {
             {
                 JSONElementList::iterator index(_data.begin());
 
-                while ((index != _data.end()) && (index->first != label)) {
+                size_t label_length = strlen(label);
+
+                while (index != _data.end() && (strlen(index->first) != label_length || (strncmp(index->first, label, label_length)) != 0))
+                {
                     index++;
                 }
 
@@ -4479,6 +4558,9 @@ namespace Core {
                 return (*this);
             }
 
+            bool operator==(const Variant& other) const;
+            bool operator!=(const Variant& other) const;
+
             inline void ToString(string& result) const;
 
             // IElement and IMessagePack iface:
@@ -4655,7 +4737,6 @@ namespace Core {
                 , _elements(std::move(move._elements))
             {
                 Elements::iterator index(_elements.begin());
-
                 while (index != _elements.end()) {
                     ASSERT (HasLabel(index->first.c_str()));
                     Container::Add(index->first.c_str(), &(index->second));
@@ -4747,6 +4828,33 @@ namespace Core {
                 return (*this);
             }
 
+            bool operator==(const VariantContainer& RHS) const
+            {
+                if (this->Size() != RHS.Size()) {
+                    return false;
+                }
+
+                auto it = this->Variants();
+                while (it.Next()) {
+                    const TCHAR* key = it.Label();
+                    const JSON::Variant* valRHS = RHS.FindValue(key);
+
+                    if (valRHS == nullptr) {
+                        return false;
+                    }
+
+                    if (!(it.Current() == *valRHS)) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+
+            bool operator!=(const VariantContainer& RHS) const
+            {
+                return !(*this == RHS);
+            }
+
             void Set(const TCHAR fieldName[], const JSON::Variant& value)
             {
                 Elements::iterator index(Find(fieldName));
@@ -4805,7 +4913,15 @@ namespace Core {
 
             bool HasLabel(const TCHAR labelName[]) const
             {
-                return (Find(labelName) != _elements.end());
+                return (   Find(labelName) != _elements.end()
+                        && Container::HasLabel(labelName) != false
+                       );
+            }
+
+            const JSON::Variant* FindValue(const TCHAR key[]) const
+            {
+                Elements::const_iterator index(Find(key));
+                return (index == _elements.end() ? nullptr : &index->second);
             }
 
             Iterator Variants() const
@@ -4819,6 +4935,17 @@ namespace Core {
                 _elements.clear();
             }
             string GetDebugString(int indent = 0) const;
+
+
+            void Remove(const TCHAR label[])
+            {
+                Elements::iterator index = Find(label);
+                if (index != _elements.end()) {
+                    _elements.erase(index);
+                }
+
+                Container::Remove(label);
+            }
 
         private:
             Elements::iterator Find(const TCHAR fieldName[])
@@ -4871,6 +4998,40 @@ namespace Core {
             VariantContainer result;
             result.FromString(Value());
             return (result);
+        }
+
+        inline bool Variant::operator==(const Variant& other) const
+        {
+            if (_type != other._type) {
+                return false;
+            }
+
+            switch (_type) {
+                case type::EMPTY:
+                    return true;
+                case type::BOOLEAN:
+                    return Boolean() == other.Boolean();
+                case type::STRING:
+                    return String() == other.String();
+                case type::NUMBER:
+                    return Number() == other.Number();
+                case type::FLOAT:
+                    return Float() == other.Float();
+                case type::DOUBLE:
+                    return Double() == other.Double();
+                case type::ARRAY:
+                    return Array() == other.Array();
+                case type::OBJECT:
+                    return Object() == other.Object();
+                default:
+                    ASSERT(false);
+            }
+            return false;
+        }
+
+        inline bool Variant::operator!=(const Variant& other) const
+        {
+            return !(*this == other);
         }
 
         inline bool Variant::IsValid() const {

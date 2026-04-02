@@ -25,7 +25,8 @@ add_library(${TARGET}
         Logging.cpp
         DirectOutput.cpp
         ConsoleStreamRedirect.cpp
-        OperationalCategories.cpp)
+        OperationalCategories.cpp
+        AssertionUnit.cpp)
 
 set(PUBLIC_HEADERS
         Module.h
@@ -41,10 +42,9 @@ set(PUBLIC_HEADERS
         DirectOutput.h
         Module.h
         TraceFactory.h
-        TextMessage.h
-        BaseCategory.h
         ConsoleStreamRedirect.h
-        OperationalCategories.h)
+        OperationalCategories.h
+        AssertionUnit.h)
 
 target_compile_definitions(${TARGET} PRIVATE MESSAGING_EXPORTS)
 
@@ -55,7 +55,7 @@ target_link_libraries(${TARGET}
         )
 
 set_target_properties(${TARGET} PROPERTIES
-        CXX_STANDARD 11
+        CXX_STANDARD ${CXX_STD}
         CXX_STANDARD_REQUIRED YES
         FRAMEWORK FALSE
         PUBLIC_HEADER "${PUBLIC_HEADERS}" # specify the public headers

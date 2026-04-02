@@ -1,9 +1,10 @@
 option(DOWNLOAD_BLUEZ_UTIL_HEADERS "Download bluez5 headers" OFF)
+option(BLUEZ_REMOVE_UINT24T "Removes the uint24_t form the bluez5 headers" ON)
+
 set(DOWNLOAD_BLUEZ_UTIL_HEADERS_VERSION "5.78" CACHE STRING "version of the bluez5 headers to download...")
 set(DOWNLOAD_BLUEZ_UTIL_HEADERS_REPO "https://github.com/bluez/bluez.git" CACHE STRING "Repo where to get the bluez5 headers...")
 
 set(BLUEZ_LOCAL_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR}/core/bluez5")
-
 include(CreateLink)
 
 if(DOWNLOAD_BLUEZ_UTIL_HEADERS)
@@ -11,12 +12,46 @@ if(DOWNLOAD_BLUEZ_UTIL_HEADERS)
 
     include(GetExternalCode)
 
+    set(BLUEZ_SRC "${CMAKE_BINARY_DIR}/bluez5-${DOWNLOAD_BLUEZ_UTIL_HEADERS_VERSION}")
 
     GetExternalCode(
       GIT_REPOSITORY "${DOWNLOAD_BLUEZ_UTIL_HEADERS_REPO}"
       GIT_VERSION "${DOWNLOAD_BLUEZ_UTIL_HEADERS_VERSION}"
-      SOURCE_DIR "${CMAKE_BINARY_DIR}/bluez5-${DOWNLOAD_BLUEZ_UTIL_HEADERS_VERSION}"
+      SOURCE_DIR "${BLUEZ_SRC}"
     )
+
+    if(BLUEZ_REMOVE_UINT24T)
+        include(ApplyPatch)
+
+        set(BLUEZ_REMOVE_UINT24T_PATCH_CONTENT "
+diff --git a/lib/bluetooth.h b/lib/bluetooth.h
+index 1286aa7..d403b53 100644
+--- a/lib/bluetooth.h
++++ b/lib/bluetooth.h
+@@ -443,10 +443,6 @@ void bt_free(void *ptr);
+ int bt_error(uint16_t code);
+ const char *bt_compidtostr(int id);
+ 
+-typedef struct {
+-	uint8_t data[3];
+-} uint24_t;
+-
+ typedef struct {
+ 	uint8_t data[16];
+ } uint128_t;
+--
+2.43.0")
+
+        set(BLUEZ_REMOVE_UINT24T_PATCH_FILE "${CMAKE_BINARY_DIR}/0001-remove-int24.patch")
+
+        file(WRITE "${BLUEZ_REMOVE_UINT24T_PATCH_FILE}" "${BLUEZ_REMOVE_UINT24T_PATCH_CONTENT}")
+        
+        if(NOT EXISTS "${BLUEZ_REMOVE_UINT24T_PATCH_FILE}")
+            message(FATAL_ERROR "Failed to create patch file: ${BLUEZ_REMOVE_UINT24T_PATCH_FILE}")
+        endif()
+
+        ApplyPatch("${BLUEZ_SRC}" "${BLUEZ_REMOVE_UINT24T_PATCH_FILE}")
+    endif()
 
     CreateLink(
       LINK "${BLUEZ_LOCAL_INCLUDE_DIR}"

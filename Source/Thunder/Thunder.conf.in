@@ -9,11 +9,15 @@ persistentpath = '@PERSISTENT_PATH@'
 volatilepath = '@VOLATILE_PATH@'
 datapath = '@DATA_PATH@'
 systempath = '@SYSTEM_PATH@'
+extensionpath = '@EXTENSION_PATH@'
 proxystubpath = '@PROXYSTUB_PATH@'
 postmortempath = '@POSTMORTEM_PATH@'
-redirect = '/Service/Controller/UI'
+redirect = '/Service/Controller/UI/index.html'
 ethernetcard = '@ETHERNETCARD_NAME@'
 communicator = '@COMMUNICATOR@'
+if boolean('@DISABLEPLUGINAUTOACTIVATION@'):
+  disablepluginautoactivation = '@DISABLEPLUGINAUTOACTIVATION@'
+authorizedextensions = '@AUTHORIZEDEXTENSIONS@'
 
 hibernate = JSON()
 hibernate.add("locator", '@LOCATOR@')
@@ -99,6 +103,11 @@ if boolean('@MESSAGING@'):
        "enabled" : False
       }
 
+  __assertion = {
+       "category" : "AnyCategory",
+       "enabled" : False
+      }
+
   __logging_settings = []
   __logging_settings.append(__notification)
   
@@ -137,3 +146,11 @@ if boolean('@MESSAGING@'):
   __reporting.add("settings", __reporting_settings)
 
   messaging.add("reporting", __reporting)
+
+  __assertion_settings = []
+  __assertion_settings.append(__assertion)
+
+  __assertion = JSON()
+  __assertion.add("settings", __assertion_settings)
+
+  messaging.add("assertion", __assertion)

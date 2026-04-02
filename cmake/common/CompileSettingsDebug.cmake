@@ -27,14 +27,19 @@ include(CMakePackageConfigHelpers)
 
 #
 # Build type specific options
+# The RegEx matches AppleClang, Clang and GNU compiler id's...
 #
 if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
-    if(CMAKE_CXX_COMPILER_ID MATCHES "^(Apple)?Clang$")
-        target_compile_options(CompileSettingsDebug INTERFACE -O0 -g)
+    if(CMAKE_CXX_COMPILER_ID MATCHES "^(Apple)?(Clang)|(GNU)$")
+        if((DEFINED FORTIFY_SOURCES AND FORTIFY_SOURCES) OR CMAKE_C_FLAGS MATCHES "_FORTIFY_SOURCE" OR CMAKE_CXX_FLAGS MATCHES "_FORTIFY_SOURCE")
+            target_compile_options(CompileSettingsDebug INTERFACE -g -Og)
+        else()
+            target_compile_options(CompileSettingsDebug INTERFACE -g -O0)
+        endif()
     endif()
 
 elseif("${CMAKE_BUILD_TYPE}" STREQUAL "DebugOptimized")
-    if(CMAKE_CXX_COMPILER_ID MATCHES "^(Apple)?Clang$" OR ${CMAKE_COMPILER_IS_GNUCXX})
+    if(CMAKE_CXX_COMPILER_ID MATCHES "^(Apple)?(Clang)|(GNU)$")
         target_compile_options(CompileSettingsDebug INTERFACE -O2 -g)
     endif()
 

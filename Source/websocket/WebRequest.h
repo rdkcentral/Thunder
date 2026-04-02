@@ -698,7 +698,7 @@ POP_WARNING()
             string strValue = Core::EnumerateType<SCANVALUE>(value).Data();
             do {
                 end = buffer.find_first_of(DELIMETERS, start);
-                if (end - start > 0) {
+                if (end > start) {
                     string word = string(buffer, start, end - start);
                     std::transform(word.begin(), word.end(), word.begin(), [](TCHAR c){ return std::toupper(c); } );
                     if (word == strValue) {

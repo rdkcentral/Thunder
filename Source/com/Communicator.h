@@ -35,9 +35,8 @@
 #include <processcontainers/processcontainers.h>
 #endif
 
-
 #if defined(WARNING_REPORTING_ENABLED)
-#include "../warningreporting/WarningReportingUnit.h"
+#include <warningreporting/WarningReportingUnit.h>
 #endif
 
 #include "IteratorType.h"
@@ -396,6 +395,7 @@ namespace RPC {
             const string& hostApplication,
             const string& persistentPath,
             const string& systemPath,
+            const string& extensionPath,
             const string& dataPath,
             const string& volatilePath,
             const string& applicationPath,
@@ -406,6 +406,7 @@ namespace RPC {
             , _hostApplication(hostApplication)
             , _persistent(persistentPath)
             , _system(systemPath)
+            , _extension(extensionPath)
             , _data(dataPath)
             , _volatile(volatilePath)
             , _application(applicationPath)
@@ -419,6 +420,7 @@ namespace RPC {
             , _hostApplication(copy._hostApplication)
             , _persistent(copy._persistent)
             , _system(copy._system)
+            , _extension(copy._extension)
             , _data(copy._data)
             , _volatile(copy._volatile)
             , _application(copy._application)
@@ -432,6 +434,7 @@ namespace RPC {
             , _hostApplication(std::move(move._hostApplication))
             , _persistent(std::move(move._persistent))
             , _system(std::move(move._system))
+            , _extension(std::move(move._extension))
             , _data(std::move(move._data))
             , _volatile(std::move(move._volatile))
             , _application(std::move(move._application))
@@ -460,6 +463,10 @@ namespace RPC {
         inline const string& SystemPath() const
         {
             return (_system);
+        }
+        inline const string& ExtensionPath() const
+        {
+            return (_extension);
         }
         inline const string& DataPath() const
         {
@@ -491,6 +498,7 @@ namespace RPC {
         string _hostApplication;
         string _persistent;
         string _system;
+        string _extension;
         string _data;
         string _volatile;
         string _application;
@@ -623,6 +631,9 @@ namespace RPC {
                 if (config.SystemPath().empty() == false) {
                     _options.Add(_T("-s")).Add('"' + config.SystemPath() + '"');
                 }
+                if (config.ExtensionPath().empty() == false) {
+                    _options.Add(_T("-X")).Add('"' + config.ExtensionPath() + '"');
+                }
                 if (config.DataPath().empty() == false) {
                     _options.Add(_T("-d")).Add('"' + config.DataPath() + '"');
                 }
@@ -696,7 +707,7 @@ namespace RPC {
 
                 return (result);
             }
-            Core::process_t Id() const {
+            pid_t Id() const {
                 return(_id);
             }
 
@@ -730,7 +741,7 @@ namespace RPC {
             Core::Process::Options _options;
             int8_t _priority;
             string _systemRootPath;
-            Core::process_t _id;
+            pid_t _id;
             static Core::CriticalSection _ldLibLock;
         };
         class EXTERNAL RemoteConnection : public IRemoteConnection {
@@ -1330,14 +1341,14 @@ namespace RPC {
                         observer++;
                     }
 
-                    // Don't forget to close on our side as well, if it is not already closed....
-                    index->second->Terminate();
 
                     // Release this entry, do not wait till it get's overwritten.
                     index->second->Release();
                     _connections.erase(index);
                     _adminLock.Unlock();
 
+                    // Don't forget to close on our side as well, if it is not already closed....
+                    connection->Terminate();
                     connection->Release();
                 }
             }
@@ -1652,6 +1663,8 @@ POP_WARNING()
         void LoadProxyStubs(const string& pathName);
 
     public:
+        using Danglings = Administrator::Danglings;
+
         Communicator() = delete;
         Communicator(Communicator&&) = delete;
         Communicator(const Communicator&) = delete;
@@ -1668,6 +1681,7 @@ POP_WARNING()
             const Core::ProxyType<Core::IIPCServer>& handler,
             const TCHAR* sourceName = nullptr);
             virtual ~Communicator();
+
 
     public:
         // void action(const Client& client)
@@ -1741,18 +1755,13 @@ POP_WARNING()
     private:
         void Closed(const Core::ProxyType<Core::IPCChannel>& channel)
         {
-            Administrator::Proxies deadProxies;
+            Danglings deadProxies;
 
             RPC::Administrator::Instance().DeleteChannel(channel, deadProxies);
-                
-            std::vector<ProxyStub::UnknownProxy*>::const_iterator loop(deadProxies.begin());
-            while (loop != deadProxies.end()) {
-                Dangling((*loop)->Parent(), (*loop)->InterfaceId());
 
-                // To avoid race conditions, the creation of the deadProxies took a reference
-                // on the interfaces, we presented here. Do not forget to release this reference.
-                (*loop)->Parent()->Release();
-                loop++;
+            if(!deadProxies.empty())
+            {
+                Dangling(std::move(deadProxies));
             }
         }
         virtual void* Acquire(const string& /* className */, const uint32_t /* interfaceId */, const uint32_t /* version */)
@@ -1763,7 +1772,15 @@ POP_WARNING()
         }
         virtual void Revoke(const Core::IUnknown* /* remote */, const uint32_t /* interfaceId */) {
         }
-        virtual void Dangling(const Core::IUnknown* /* remote */, const uint32_t /* interfaceId */) {
+        virtual void Dangling(Danglings&& proxies){
+            TRACE_L1("Implement this to gracefully handle the dangling proxies acquired through this channel!!!");
+            Danglings::const_iterator loop(proxies.begin());
+            while (loop != proxies.end()) {
+                // To avoid race conditions, the creation of the deadProxies took a reference
+                // on the interfaces, we presented here. Do not forget to release this reference.
+                (*loop).second->Release();
+                loop++;
+            }
         }
 
     private:
@@ -1992,18 +2009,12 @@ POP_WARNING()
 
         uint32_t Close(const uint32_t waitTime);
 
-        virtual void* Acquire(const string& className, const uint32_t interfaceId, const uint32_t versionId)
+        virtual void* Acquire(const string&, const uint32_t, const uint32_t)
         {
-            Core::Library emptyLibrary;
-            // Allright, respond with the interface.
-            void* result = Core::ServiceAdministrator::Instance().Instantiate(emptyLibrary, className.c_str(), versionId, interfaceId);
-
-            if (result != nullptr) {
-                Core::ProxyType<Core::IPCChannel> baseChannel(*this);
-                Administrator::Instance().RegisterInterface(baseChannel, result, interfaceId);
-            }
-
-            return (result);
+            // This would be a Server, asking a client for a service (interface)... Interesting. I guess the 
+	    // derived version of this interface should implement this :-)
+	    ASSERT(false);
+	    return (nullptr);
         }
 
     private:

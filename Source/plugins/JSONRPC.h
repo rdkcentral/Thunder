@@ -29,6 +29,8 @@ namespace Thunder {
 
 namespace PluginHost {
 
+    static const std::array<const TCHAR*,4> builtIns = { _T("versions"), _T("exists"), _T("register"), _T("unregister") };
+
     namespace {
 
         template<typename JSONRPCERRORASSESSORTYPE>
@@ -53,6 +55,7 @@ namespace PluginHost {
     class EXTERNAL JSONRPC : public IDispatcher {
     public:
         using SendIfMethod = std::function<bool(const string&)>;
+        using SendIfMethodIndexed = std::function<bool(const string&, const string&)>;
 
     private:
         class Notification : public IShell::IConnectionServer::INotification {
@@ -92,15 +95,36 @@ namespace PluginHost {
             class Destination {
             public:
                 Destination() = delete;
-                Destination(uint32_t channelId, const string& designator)
+                Destination(uint32_t channelId, const string& designator, const bool oneShot = false)
                     : _callback(nullptr)
                     , _channelId(channelId)
-                    , _designator(designator) {
+                    , _designator(designator)
+                    , _index()
+                    , _oneShot(oneShot) {
+                }
+                Destination(uint32_t channelId, const string& designator, const string& index, const bool oneShot = false)
+                    : _callback(nullptr)
+                    , _channelId(channelId)
+                    , _designator(designator)
+                    , _index(index)
+                    , _oneShot(oneShot) {
                 }
                 Destination(IDispatcher::ICallback* callback, const string& designator)
                     : _callback(callback)
                     , _channelId(~0)
-                    , _designator(designator) {
+                    , _designator(designator)
+                    , _index()
+                    , _oneShot(false) {
+                    if (_callback != nullptr) {
+                        _callback->AddRef();
+                    }
+                }
+                Destination(IDispatcher::ICallback* callback, const string& designator, const string& index)
+                    : _callback(callback)
+                    , _channelId(~0)
+                    , _designator(designator)
+                    , _index(index)
+                    , _oneShot(false) {
                     if (_callback != nullptr) {
                         _callback->AddRef();
                     }
@@ -108,13 +132,18 @@ namespace PluginHost {
                 Destination(Destination&& move) noexcept
                     : _callback(move._callback)
                     , _channelId(move._channelId)
-                    , _designator(move._designator) {
+                    , _designator(std::move(move._designator))
+                    , _index(std::move(move._index))
+                    , _oneShot(move._oneShot) {
                     move._callback = nullptr;
+                    move._channelId = ~0;
                 }
                 Destination(const Destination& copy)
                     : _callback(copy._callback)
                     , _channelId(copy._channelId)
-                    , _designator(copy._designator) {
+                    , _designator(copy._designator)
+                    , _index(copy._index)
+                    , _oneShot(copy._oneShot) {
                     if (_callback != nullptr) {
                         _callback->AddRef();
                     }
@@ -132,8 +161,10 @@ namespace PluginHost {
                     }
                     _callback = move._callback;
                     _channelId = move._channelId;
-                    _designator = move._designator;
+                    _designator = std::move(move._designator);
+                    _index = std::move(move._index);
                     move._callback = nullptr;
+                    move._channelId = ~0;
                     return (*this);
                 }
                 Destination& operator=(const Destination& copy)
@@ -144,6 +175,8 @@ namespace PluginHost {
                     _callback = copy._callback;
                     _channelId = copy._channelId;
                     _designator = copy._designator;
+                    _index = copy._index;
+                    _oneShot = copy._oneShot;
                     if (_callback != nullptr) {
                         _callback->AddRef();
                     }
@@ -160,11 +193,19 @@ namespace PluginHost {
                 inline const string& Designator() const {
                     return (_designator);
                 }
+                inline const string& Index() const {
+                    return (_index);
+                }
+                inline bool IsOneShot() const {
+                    return (_oneShot);
+                }
 
             private:
                 IDispatcher::ICallback* _callback;
                 uint32_t _channelId;
                 string _designator;
+                string _index;
+                bool _oneShot;
             };
             using Destinations = std::vector<Destination>;
 
@@ -176,7 +217,7 @@ namespace PluginHost {
                 : _designators() {
             }
             Observer(Observer&& move) noexcept
-                : _designators(move._designators) {
+                : _designators(std::move(move._designators)) {
             }
             Observer(const Observer& copy)
                 : _designators(copy._designators) {
@@ -187,16 +228,16 @@ namespace PluginHost {
             bool IsEmpty() const {
                 return ( _designators.empty() );
             }
-            uint32_t Subscribe(const uint32_t id, const string& designator) {
+            uint32_t Subscribe(const uint32_t id, const string& designator, const string& index, const bool oneShot) {
                 uint32_t result = Core::ERROR_NONE;
 
-                Destinations::iterator index(_designators.begin());
-                while ((index != _designators.end()) && ((index->ChannelId() != id) || (index->Designator() != designator))) {
-                    index++;
+                Destinations::iterator it(_designators.begin());
+                while ((it != _designators.end()) && ((it->ChannelId() != id) || (it->Designator() != designator) || (it->Index() != index))) {
+                    it++;
                 }
 
-                if (index == _designators.end()) {
-                    _designators.emplace_back(id, designator);
+                if (it == _designators.end()) {
+                    _designators.emplace_back(id, designator, index, oneShot);
                 }
                 else {
                     result = Core::ERROR_DUPLICATE_KEY;
@@ -204,16 +245,16 @@ namespace PluginHost {
 
                 return (result);
             }
-            uint32_t Unsubscribe(const uint32_t id, const string& designator) {
+            uint32_t Unsubscribe(const uint32_t id, const string& designator, const string& index) {
                 uint32_t result = Core::ERROR_NONE;
 
-                Destinations::iterator index(_designators.begin());
-                while ((index != _designators.end()) && ((index->ChannelId() != id) || (index->Designator() != designator))) {
-                    index++;
+                Destinations::iterator it(_designators.begin());
+                while ((it != _designators.end()) && ((it->ChannelId() != id) || (it->Designator() != designator) || (it->Index() != index))) {
+                    it++;
                 }
 
-                if (index != _designators.end()) {
-                    _designators.erase(index);
+                if (it != _designators.end()) {
+                    _designators.erase(it);
                 }
                 else {
                     result = Core::ERROR_BAD_REQUEST;
@@ -221,16 +262,16 @@ namespace PluginHost {
 
                 return (result);
             }
-            uint32_t Subscribe(IDispatcher::ICallback* callback, const string& designator) {
+            uint32_t Subscribe(IDispatcher::ICallback* callback, const string& designator, const string& index) {
                 uint32_t result = Core::ERROR_NONE;
 
-                Destinations::iterator index(_designators.begin());
-                while ((index != _designators.end()) && ((index->Designator() != designator) || (index->Callback() == callback))) {
-                    index++;
+                Destinations::iterator it(_designators.begin());
+                while ((it != _designators.end()) && ((it->Designator() != designator) || (it->Index() != index) || (it->Callback() == callback))) {
+                    it++;
                 }
 
-                if (index == _designators.end()) {
-                    _designators.emplace_back(callback, designator);
+                if (it == _designators.end()) {
+                    _designators.emplace_back(callback, designator, index);
                 }
                 else {
                     result = Core::ERROR_DUPLICATE_KEY;
@@ -238,16 +279,16 @@ namespace PluginHost {
 
                 return (result);
             }
-            uint32_t Unsubscribe(IDispatcher::ICallback* callback, const string& designator) {
+            uint32_t Unsubscribe(IDispatcher::ICallback* callback, const string& designator, const string& index) {
                 uint32_t result = Core::ERROR_NONE;
 
-                Destinations::iterator index(_designators.begin());
-                while ((index != _designators.end()) && ((index->Designator() != designator) || (index->Callback() == callback))) {
-                    index++;
+                Destinations::iterator it(_designators.begin());
+                while ((it != _designators.end()) && ((it->Designator() != designator) || (it->Index() != index) || (it->Callback() == callback))) {
+                    it++;
                 }
 
-                if (index != _designators.end()) {
-                    _designators.erase(index);
+                if (it != _designators.end()) {
+                    _designators.erase(it);
                 }
                 else {
                     result = Core::ERROR_BAD_REQUEST;
@@ -266,10 +307,12 @@ namespace PluginHost {
                     }
                 }
             }
-            void Dropped(const uint32_t channelId) {
+            template<typename METHOD>
+            void Dropped(const uint32_t channelId, METHOD unregistered) {
                 Destinations::iterator index = _designators.begin();
                 while (index != _designators.end()) {
                     if ( (index->ChannelId() == channelId) && (index->Callback() == nullptr) ) {
+                        unregistered(index->Designator(), index->Index());
                         index = _designators.erase(index);
                     }
                     else {
@@ -278,14 +321,52 @@ namespace PluginHost {
                 }
             }
             void Event(JSONRPC& parent, const string event, const string& parameter, const SendIfMethod& sendifmethod) {
-                for (Destination& entry : _designators) {
+                Destinations::iterator index(_designators.begin());
+
+                while (index != _designators.end()) {
+                    Destination& entry = (*index);
+
                     if (!sendifmethod || sendifmethod(entry.Designator())) {
                         if (entry.Callback() == nullptr) {
-                            parent.Notify(entry.ChannelId(), entry.Designator() + '.' + event, parameter);
+                            parent.Notify(entry.ChannelId(), (entry.Designator() + '.' + event), parameter);
                         }
                         else {
-                            entry.Callback()->Event(event, entry.Designator(), parameter);
+                            entry.Callback()->Event(event, entry.Designator(), _T(""), parameter);
                         }
+                    }
+
+                    if (entry.IsOneShot() == true) {
+                        index = _designators.erase(index);
+                    }
+                    else {
+                        ++index;
+                    }
+                }
+            }
+            void Event(JSONRPC& parent, const string event, const string& parameter, const SendIfMethodIndexed& sendifmethod) {
+                Destinations::iterator index(_designators.begin());
+
+                while (index != _designators.end()) {
+                    Destination& entry = (*index);
+
+                    if (!sendifmethod || sendifmethod(entry.Designator(), entry.Index())) {
+                        if (entry.Callback() == nullptr) {
+                            string joined = (entry.Designator() + '.' + event);
+                            if (entry.Index().empty() == false) {
+                                joined += "@" + entry.Index();
+                            }
+                            parent.Notify(entry.ChannelId(), joined, parameter);
+                        }
+                        else {
+                            entry.Callback()->Event(event, entry.Designator(), entry.Index(), parameter);
+                        }
+                    }
+
+                    if (entry.IsOneShot() == true) {
+                        index = _designators.erase(index);
+                    }
+                    else {
+                        ++index;
                     }
                 }
             }
@@ -300,12 +381,62 @@ namespace PluginHost {
 
         class VersionInfo : public Core::JSON::Container {
         public:
+#ifndef _THUNDER_PRODUCTION
+            class StatsInfo : public Core::JSON::Container {
+            public:
+                StatsInfo()
+                    : Core::JSON::Container()
+                    , Total()
+                {
+                    Init();
+                }
+                StatsInfo(const StatsInfo& copy)
+                    : Core::JSON::Container()
+                    , Total(copy.Total)
+                {
+                    Init();
+                }
+                StatsInfo(StatsInfo&& move) noexcept
+                    : Core::JSON::Container()
+                    , Total(std::move(move.Total))
+                {
+                    Init();
+                }
+                StatsInfo& operator=(const StatsInfo& rhs)
+                {
+                    Total = rhs.Total;
+                    return (*this);
+                }
+                StatsInfo& operator=(StatsInfo&& move) noexcept
+                {
+                    if (this != &move) {
+                        Total = std::move(move.Total);
+                    }
+                    return (*this);
+                }
+                ~StatsInfo() = default;
+
+            private:
+                void Init()
+                {
+                    Add(_T("total"), &Total);
+                }
+
+            public:
+                Core::JSON::ArrayType<Core::JSON::DecUInt8> Total;
+            };
+#endif // _THUNDER_PRODUCTION
+
+        public:
             VersionInfo()
                 : Core::JSON::Container()
                 , Name()
                 , Major()
                 , Minor()
                 , Patch()
+#ifndef _THUNDER_PRODUCTION
+                , Stats()
+#endif
             {
                 Init();
             }
@@ -315,7 +446,10 @@ namespace PluginHost {
                 , Major(copy.Major)
                 , Minor(copy.Minor)
                 , Patch(copy.Patch)
-            {
+#ifndef _THUNDER_PRODUCTION
+                , Stats(copy.Stats)
+#endif
+                {
                 Init();
             }
             VersionInfo(VersionInfo&& move) noexcept
@@ -324,6 +458,9 @@ namespace PluginHost {
                 , Major(std::move(move.Major))
                 , Minor(std::move(move.Minor))
                 , Patch(std::move(move.Patch))
+#ifndef _THUNDER_PRODUCTION
+                , Stats(std::move(move.Stats))
+#endif
             {
                 Init();
             }
@@ -341,6 +478,9 @@ namespace PluginHost {
                 Major = rhs.Major;
                 Minor = rhs.Minor;
                 Patch = rhs.Patch;
+#ifndef _THUNDER_PRODUCTION
+                Stats = rhs.Stats;
+#endif
                 return (*this);
             }
             VersionInfo& operator=(VersionInfo&& move) noexcept
@@ -350,7 +490,10 @@ namespace PluginHost {
                     Major = std::move(move.Major);
                     Minor = std::move(move.Minor);
                     Patch = std::move(move.Patch);
-		}
+#ifndef _THUNDER_PRODUCTION
+                    Stats = std::move(move.Stats);
+#endif
+                }
                 return (*this);
             }
             ~VersionInfo() = default;
@@ -362,6 +505,9 @@ namespace PluginHost {
                 Add(_T("major"), &Major);
                 Add(_T("minor"), &Minor);
                 Add(_T("patch"), &Patch);
+#ifndef _THUNDER_PRODUCTION
+                Add(_T("stats"), &Stats);
+#endif
             }
 
         public:
@@ -369,6 +515,9 @@ namespace PluginHost {
             Core::JSON::DecUInt8 Major;
             Core::JSON::DecUInt8 Minor;
             Core::JSON::DecUInt8 Patch;
+#ifndef _THUNDER_PRODUCTION
+            StatsInfo Stats;
+#endif
         };
 
         using VersionList = Core::JSON::ArrayType<VersionInfo>;
@@ -381,16 +530,35 @@ namespace PluginHost {
             Registration()
                 : Core::JSON::Container()
                 , Event()
-                , Callsign()
+                , Id()
             {
                 Add(_T("event"), &Event);
-                Add(_T("id"), &Callsign);
+                Add(_T("id"), &Id);
             }
             ~Registration() override = default;
 
         public:
             Core::JSON::String Event;
-            Core::JSON::String Callsign;
+            Core::JSON::String Id;
+        };
+
+        class ExistsParams : public Core::JSON::Container {
+        public:
+            ExistsParams(const ExistsParams&) = delete;
+            ExistsParams& operator=(const ExistsParams&) = delete;
+            ExistsParams(ExistsParams&&) = delete;
+            ExistsParams& operator=(ExistsParams&&) = delete;
+
+            ExistsParams()
+                : Core::JSON::Container()
+                , Method()
+            {
+                Add(_T("method"), &Method);
+            }
+            ~ExistsParams() override = default;
+
+        public:
+            Core::JSON::String Method;
         };
 
         enum state {
@@ -529,13 +697,29 @@ namespace PluginHost {
         //
         // Register/Unregister methods for interface versioning..
         // ------------------------------------------------------------------------------------------------------------------------------
-        void RegisterVersion(const string& name, const uint8_t major, const uint8_t minor, const uint8_t patch)
+
+        void RegisterVersion(const string& name, const uint8_t major, const uint8_t minor, const uint8_t patch,
+                const uint8_t methods = -1, const uint8_t properties = -1, const uint8_t events = -1)
         {
             VersionInfo& version = _versions.Add();
             version.Name = name;
             version.Major = major;
             version.Minor = minor;
             version.Patch = patch;
+
+#ifndef _THUNDER_PRODUCTION
+            Core::JSON::DecUInt8 count;
+            count = methods;
+            version.Stats.Total.Add(count);
+            count = properties;
+            version.Stats.Total.Add(count);
+            count = events;
+            version.Stats.Total.Add(count);
+#else
+            DEBUG_VARIABLE(methods);
+            DEBUG_VARIABLE(properties);
+            DEBUG_VARIABLE(events);
+#endif
         }
 
         //
@@ -587,14 +771,14 @@ namespace PluginHost {
         {
             return (InternalNotify(event, _T("")));
         }
-        template <typename JSONOBJECT, typename std::enable_if<!std::is_convertible<JSONOBJECT, SendIfMethod>::value, int>::type = 0>
+        template <typename JSONOBJECT, typename std::enable_if<!std::is_convertible<JSONOBJECT, SendIfMethod>::value && !std::is_convertible<JSONOBJECT, SendIfMethodIndexed>::value, int>::type = 0>
         uint32_t Notify(const string& event, const JSONOBJECT& parameters) const
         {
             string subject;
             parameters.ToString(subject);
             return (InternalNotify(event, subject));
         }
-        template <typename SENDIFMETHOD, typename std::enable_if<std::is_convertible<SENDIFMETHOD, SendIfMethod>::value, int>::type = 0>
+        template <typename SENDIFMETHOD, typename std::enable_if<std::is_convertible<SENDIFMETHOD, SendIfMethod>::value || std::is_convertible<SENDIFMETHOD, SendIfMethodIndexed>::value, int>::type = 0>
         uint32_t Notify(const string& event, SENDIFMETHOD method) const
         {
             return InternalNotify(event, _T(""), std::move(method));
@@ -626,11 +810,20 @@ namespace PluginHost {
 
             if (method.empty() == false) {
 
-                ASSERT(Core::JSONRPC::Message::Callsign(method).empty() || (Core::JSONRPC::Message::Callsign(method) == _callsign));
+                string callsign;
+                string prefix;
+                string instanceId;
+                string methodName;
+                string index;
 
-                string realMethod(Core::JSONRPC::Message::Method(method));
+                Core::JSONRPC::Message::Split(method, &callsign, nullptr, &prefix, &instanceId, &methodName, &index);
+
+                const string realMethod = Core::JSONRPC::Message::Join(prefix, methodName);
+
+                ASSERT((callsign.empty() == true) || (callsign == _callsign));
 
                 result = Core::ERROR_NONE;
+                Core::JSONRPC::Handler* handler(nullptr);
 
                 if (_validate != nullptr) {
                     classification validation = _validate(token, realMethod, parameters);
@@ -643,53 +836,73 @@ namespace PluginHost {
                 }
 
                 if (result == Core::ERROR_NONE) {
+                    handler = Handler(method);
+                    if (handler == nullptr) {
+                        result = Core::ERROR_INVALID_SIGNATURE;
+                    }
+                }
+
+                if (result == Core::ERROR_NONE) {
 
                     // Seems we are on the right handler..
                     // now see if someone supports this version
 
-                    if (realMethod == _T("versions")) {
+                    if (realMethod == builtIns[0]) {
                         _versions.ToString(response);
-                        result = Core::ERROR_NONE;
                     }
-                    else if (realMethod == _T("exists")) {
-                        if (Handler(parameters) == nullptr) {
-                            response = _T("0");
+                    else if (realMethod == builtIns[1]) {
+
+                        ExistsParams info; info.FromString(parameters);
+                        if (info.IsComplete() == true) {
+                            if (info.Method.IsSet() == true) {
+                                Core::JSON::Boolean output;
+                                output = ((handler->Exists(info.Method.Value()) == Core::ERROR_NONE)
+                                            || std::any_of(builtIns.cbegin(), builtIns.cend(), [&info](const char* const v) { return (info.Method.Value() == v); }));
+                                output.ToString(response);
+                            }
+                            else {
+                                result = Core::ERROR_INVALID_PARAMETER;
+                            }
                         }
                         else {
-                            response = _T("1");
+                            // DEPRECATED signature
+                            Core::JSON::String info; info.FromString(parameters);
+                            Core::JSON::DecUInt32 output;
+                            bool found = ((handler->Exists(info.Value()) == Core::ERROR_NONE)
+                                            || std::any_of(builtIns.cbegin(), builtIns.cend(), [&info](const char* const v) { return (info.Value() == v); }));
+                            output = (found? Core::ERROR_NONE : Core::ERROR_UNKNOWN_KEY);
+                            output.ToString(response);
                         }
                     }
-                    else if (realMethod == _T("register")) {
+                    else if (methodName == builtIns[2]) {
                         Registration info;  info.FromString(parameters);
 
-                        result = Subscribe(channelId, info.Event.Value(), info.Callsign.Value());
-                        if (result == Core::ERROR_NONE) {
-                            response = _T("0");
+                        if ((info.Event.IsSet() == false) || (info.Id.IsSet() == false))  {
+                            result = Core::ERROR_INVALID_PARAMETER;
                         }
                         else {
-                            result = Core::ERROR_FAILED_REGISTERED;
+                            result = Subscribe(channelId, Core::JSONRPC::Message::Join(prefix, instanceId, info.Event.Value()), info.Id.Value(), index);
+                            if (result != Core::ERROR_NONE) {
+                                result = Core::ERROR_FAILED_REGISTERED;
+                            }
                         }
                     }
-                    else if (realMethod == _T("unregister")) {
+                    else if (methodName == builtIns[3]) {
                         Registration info;  info.FromString(parameters);
 
-                        result = Unsubscribe(channelId, info.Event.Value(), info.Callsign.Value());
-                        if (result == Core::ERROR_NONE) {
-                            response = _T("0");
+                        if ((info.Event.IsSet() == false) || (info.Id.IsSet() == false))  {
+                            result = Core::ERROR_INVALID_PARAMETER;
                         }
                         else {
-                            result = Core::ERROR_FAILED_UNREGISTERED;
+                            result = Unsubscribe(channelId, Core::JSONRPC::Message::Join(prefix, instanceId, info.Event.Value()), info.Id.Value(), index);
+                            if (result != Core::ERROR_NONE) {
+                                result = Core::ERROR_FAILED_REGISTERED;
+                            }
                         }
                     }
                     else {
-                        Core::JSONRPC::Handler* handler(Handler(realMethod));
-
-                        if (handler != nullptr) {
-                            Core::JSONRPC::Context context(channelId, id, token);
-                            result = InvokeOnHandler<JSONRPCERRORASSESSORTYPE>(context, Core::JSONRPC::Message::FullMethod(method), parameters, response, *handler, errorhandler);
-                        } else {
-                            result = Core::ERROR_INCORRECT_URL;
-                        }
+                        Core::JSONRPC::Context context(channelId, id, token);
+                        result = InvokeOnHandler<JSONRPCERRORASSESSORTYPE>(context, Core::JSONRPC::Message::FullMethod(method), parameters, response, *handler, errorhandler);
                     }
                 }
             }
@@ -697,39 +910,43 @@ namespace PluginHost {
             return (result);
         }
 
-        Core::hresult Subscribe(ICallback* callback, const string& eventId, const string& designator) override
+        Core::hresult Subscribe(ICallback* callback, const string& eventId, const string& designator, const string& index) override
         {
             uint32_t result;
 
             _adminLock.Lock();
 
-            ObserverMap::iterator index = _observers.find(eventId);
+            ObserverMap::iterator it = _observers.find(eventId);
 
-            if (index == _observers.end()) {
-                index = _observers.emplace(std::piecewise_construct,
+            if (it == _observers.end()) {
+                it = _observers.emplace(std::piecewise_construct,
                     std::forward_as_tuple(eventId),
                     std::forward_as_tuple()).first;
             }
 
-            result = index->second.Subscribe(callback, designator);
+            result = it->second.Subscribe(callback, designator, index);
+
+            if ((result != Core::ERROR_NONE) && (it->second.IsEmpty() == true)) {
+                _observers.erase(it);
+            }
 
             _adminLock.Unlock();
 
             return (result);
         }
-        Core::hresult Unsubscribe(ICallback* callback, const string& eventId, const string& designator) override
+        Core::hresult Unsubscribe(ICallback* callback, const string& eventId, const string& designator, const string& index) override
         {
             uint32_t result = Core::ERROR_UNKNOWN_KEY;
 
             _adminLock.Lock();
 
-            ObserverMap::iterator index = _observers.find(eventId);
+            ObserverMap::iterator it = _observers.find(eventId);
 
-            if (index != _observers.end()) {
-                result = index->second.Unsubscribe(callback, designator);
+            if (it != _observers.end()) {
+                result = it->second.Unsubscribe(callback, designator, index);
 
-                if ((result == Core::ERROR_NONE) && (index->second.IsEmpty() == true)) {
-                    _observers.erase(index);
+                if ((result == Core::ERROR_NONE) && (it->second.IsEmpty() == true)) {
+                    _observers.erase(it);
                 }
             }
             _adminLock.Unlock();
@@ -826,39 +1043,32 @@ namespace PluginHost {
             return (index == _handlers.end() ? nullptr : &(*index));
         }
 
-        virtual uint32_t Subscribe(const uint32_t channelId, const string& eventId, const string& designator)
+    public:
+        uint32_t Subscribe(const uint32_t channelId, const string& eventId, const string& designator, const string& index, const bool oneShot = false)
         {
-            uint32_t result;
-
-            _adminLock.Lock();
-
-            ObserverMap::iterator index = _observers.find(eventId);
-
-            if (index == _observers.end()) {
-                index = _observers.emplace(std::piecewise_construct,
-                    std::forward_as_tuple(eventId),
-                    std::forward_as_tuple()).first;
-            }
-
-            result = index->second.Subscribe(channelId, designator);
-
-            _adminLock.Unlock();
+            uint32_t result = ProcessSubscribe(channelId, eventId, designator, index, oneShot);
 
             return (result);
         }
-        virtual uint32_t Unsubscribe(const uint32_t channelId, const string& eventId, const string& designator)
+
+        uint32_t Unsubscribe(const uint32_t channelId, const string& eventId, const string& designator, const string& index)
         {
             uint32_t result = Core::ERROR_UNKNOWN_KEY;
 
             _adminLock.Lock();
 
-            ObserverMap::iterator index = _observers.find(eventId);
+            ObserverMap::iterator it = _observers.find(eventId);
 
-            if (index != _observers.end()) {
-                result = index->second.Unsubscribe(channelId, designator);
+            if (it != _observers.end()) {
+                result = it->second.Unsubscribe(channelId, designator, index);
 
-                if ((result == Core::ERROR_NONE) && (index->second.IsEmpty() == true)) {
-                    _observers.erase(index);
+                if (result == Core::ERROR_NONE) {
+
+                    ProcessUnsubscribed(channelId, eventId, designator, index);
+
+                    if (it->second.IsEmpty() == true) {
+                        _observers.erase(it);
+                    }
                 }
             }
 
@@ -867,7 +1077,41 @@ namespace PluginHost {
             return (result);
         }
 
+    protected:
+        uint32_t DoSubscribe(const uint32_t channelId, const string& eventId, const string& designator, const string& index, const bool oneShot)
+        {
+            _adminLock.Lock();
+
+            ObserverMap::iterator it = _observers.find(eventId);
+
+            if (it == _observers.end()) {
+                it = _observers.emplace(std::piecewise_construct,
+                                      std::forward_as_tuple(eventId),
+                                      std::forward_as_tuple())
+                            .first;
+            }
+
+            uint32_t result = it->second.Subscribe(channelId, designator, index, oneShot);
+
+            if ((result != Core::ERROR_NONE) && (it->second.IsEmpty() == true)) {
+                _observers.erase(it);
+            }
+
+            _adminLock.Unlock();
+
+            return (result);
+        }
+
     private:
+        virtual uint32_t ProcessSubscribe(const uint32_t channelId, const string& eventId, const string& designator, const string& index, const bool oneShot)
+        {
+            return DoSubscribe(channelId, eventId, designator, index, oneShot);
+        }
+
+        virtual void ProcessUnsubscribed(const uint32_t channelId VARIABLE_IS_NOT_USED, const string& eventId VARIABLE_IS_NOT_USED, const string& designator VARIABLE_IS_NOT_USED, const string& index VARIABLE_IS_NOT_USED) 
+        {
+        }
+
         void ChannelClosed(const uint32_t channelId)
         {
             _adminLock.Lock();
@@ -875,8 +1119,8 @@ namespace PluginHost {
             ObserverMap::iterator index = _observers.begin();
 
             while (index != _observers.end()) {
-
-                index->second.Dropped(channelId);
+                const string& eventId = index->first;
+                index->second.Dropped(channelId, [this, channelId, &eventId](const string& designator, const string& index) { ProcessUnsubscribed(channelId, eventId, designator, index); });
 
                 if (index->second.IsEmpty() == true) {
                     index = _observers.erase(index);
@@ -890,16 +1134,22 @@ namespace PluginHost {
         }
 
     private:
-        uint32_t InternalNotify(const string& event, const string& parameters, const SendIfMethod& sendifmethod = nullptr) const
+        template<typename SENDIFMETHOD = SendIfMethod>
+        uint32_t InternalNotify(const string& event, const string& parameters, SENDIFMETHOD sendifmethod = nullptr) const
         {
             uint32_t result = Core::ERROR_UNKNOWN_KEY;
 
             _adminLock.Lock();
 
-            ObserverMap::const_iterator index = _observers.find(event);
+            ObserverMap::iterator index = _observers.find(event);
 
             if (index != _observers.end()) {
-                const_cast<Observer&>(index->second).Event(const_cast<JSONRPC&>(*this), event, parameters, sendifmethod);
+                index->second.Event(const_cast<JSONRPC&>(*this), event, parameters, sendifmethod);
+
+                if (index->second.IsEmpty() == true) {
+                    // A one-shot observer might've removed itself, so remove the event from being observed
+                    _observers.erase(index);
+                }
             }
 
             // See if this is perhaps a registered alias for an event...
@@ -909,10 +1159,10 @@ namespace PluginHost {
             if (iter != _eventAliases.end()) {
 
                 for (const string& alias : iter->second) {
-                    ObserverMap::const_iterator index = _observers.find(alias);
+                    ObserverMap::iterator index = _observers.find(alias);
 
                     if (index != _observers.end()) {
-                        const_cast<Observer&>(index->second).Event(const_cast<JSONRPC&>(*this), alias, parameters, sendifmethod);
+                        index->second.Event(const_cast<JSONRPC&>(*this), alias, parameters, sendifmethod);
                     }
                 }
             }
@@ -948,21 +1198,46 @@ namespace PluginHost {
         string _callsign;
         TokenCheckFunction _validate;
         VersionList _versions;
-        ObserverMap _observers;
+        mutable ObserverMap _observers;
         EventAliasesMap _eventAliases;
         Core::SinkType<Notification> _notification;
     };
 
-    class EXTERNAL JSONRPCSupportsEventStatus : public PluginHost::JSONRPC {
+    class EXTERNAL JSONRPCSupportsEventStatus : virtual public PluginHost::JSONRPC {
     public:
         JSONRPCSupportsEventStatus(const JSONRPCSupportsEventStatus&) = delete;
         JSONRPCSupportsEventStatus& operator=(const JSONRPCSupportsEventStatus&) = delete;
+        JSONRPCSupportsEventStatus(JSONRPCSupportsEventStatus&&) = delete;
+        JSONRPCSupportsEventStatus& operator=(JSONRPCSupportsEventStatus&&) = delete;
 
-        JSONRPCSupportsEventStatus() = default;
-        JSONRPCSupportsEventStatus(const PluginHost::JSONRPC::TokenCheckFunction& validation) : JSONRPC(validation) {}
-        JSONRPCSupportsEventStatus(const std::vector<uint8_t>& versions) : JSONRPC(versions) {}
-        JSONRPCSupportsEventStatus(const std::vector<uint8_t>& versions, const TokenCheckFunction& validation) : JSONRPC(versions, validation) {}
-        virtual ~JSONRPCSupportsEventStatus() = default;
+        JSONRPCSupportsEventStatus()
+            : _adminLock()
+            , _observers()
+            , _subscribeAssessor()
+        {
+        }
+        JSONRPCSupportsEventStatus(const PluginHost::JSONRPC::TokenCheckFunction& validation)
+            : JSONRPC(validation)
+            , _adminLock()
+            , _observers()
+            , _subscribeAssessor()
+        {
+        }
+        JSONRPCSupportsEventStatus(const std::vector<uint8_t>& versions)
+            : JSONRPC(versions)
+            , _adminLock()
+            , _observers()
+            , _subscribeAssessor()
+        {
+        }
+        JSONRPCSupportsEventStatus(const std::vector<uint8_t>& versions, const TokenCheckFunction& validation)
+            : JSONRPC(versions, validation)
+            , _adminLock()
+            , _observers()
+            , _subscribeAssessor()
+        {
+        }
+        ~JSONRPCSupportsEventStatus() override = default;
 
         enum class Status {
             registered,
@@ -970,13 +1245,14 @@ namespace PluginHost {
         };
 
     public:
-        template <typename METHOD>
+        template<typename METHOD>
         void RegisterEventStatusListener(const string& event, METHOD method)
         {
             _adminLock.Lock();
 
             ASSERT(_observers.find(event) == _observers.end());
 
+            // Expect event (or prefix+event) without instance id.
             _observers[event] = method;
 
             _adminLock.Unlock();
@@ -993,66 +1269,660 @@ namespace PluginHost {
             _adminLock.Unlock();
         }
 
-    public:
-        uint32_t Subscribe(const uint32_t channel, const string& eventId, const string& designator) override
-        {
-            const Core::hresult result = JSONRPC::Subscribe(channel, eventId, designator);
-
-            if (result == Core::ERROR_NONE) {
-                NotifyObservers(eventId, designator, Status::registered);
-            }
-
-            return (result);
-        }
-        uint32_t Unsubscribe(const uint32_t channel, const string& eventId, const string& designator) override
-        {
-            const Core::hresult result = JSONRPC::Unsubscribe(channel, eventId, designator);
-
-            if (result == Core::ERROR_NONE) {
-                NotifyObservers(eventId, designator, Status::unregistered);
-            }
-
-            return (result);
-        }
-
-    protected:
-        void NotifyObservers(const string& event, const string& client, const Status status) const
+        template<typename METHOD>
+        void SetSubscribeAssessor(METHOD method)
         {
             _adminLock.Lock();
 
-            StatusCallbackMap::const_iterator it = _observers.find(event);
-            if (it != _observers.cend()) {
-                it->second(client, status);
-            }
+            _subscribeAssessor = method;
 
             _adminLock.Unlock();
         }
 
     private:
-        using EventStatusCallback = std::function<void(const string&, Status status)>;
+        uint32_t ProcessSubscribe(const uint32_t channel, const string& designator, const string& clientId, const string& index, const bool oneShot) override
+        {
+            Core::hresult result = Core::ERROR_PRIVILIGED_REQUEST;
+
+            string prefix;
+            string instanceId;
+            string event;
+
+            Core::JSONRPC::Message::Split(designator, nullptr, nullptr, &prefix, &instanceId, &event, nullptr);
+
+            _adminLock.Lock();
+
+            if ((_subscribeAssessor == nullptr) || (_subscribeAssessor(channel, prefix, instanceId, event, clientId) == true)) {
+
+                result = JSONRPC::DoSubscribe(channel, designator, clientId, index, oneShot);
+
+                if (result == Core::ERROR_NONE) {
+                    NotifyObservers(channel, Core::JSONRPC::Message::Join(prefix, event), instanceId, clientId, index, Status::registered);
+                }
+            }
+
+            _adminLock.Unlock();
+
+            return (result);
+        }
+        void ProcessUnsubscribed(const uint32_t channel, const string& designator, const string& clientId, const string& index) override
+        {
+            string prefix;
+            string instanceId;
+            string event;
+
+            Core::JSONRPC::Message::Split(designator, nullptr, nullptr, &prefix, &instanceId, &event, nullptr);
+
+            _adminLock.Lock();
+
+            NotifyObservers(channel, Core::JSONRPC::Message::Join(prefix, event), instanceId, clientId, index, Status::unregistered);
+
+            _adminLock.Unlock();
+        }
+
+    private:
+        void NotifyObservers(const uint32_t channel, const string event, const string& instanceId, const string& client, const string& index, const Status status) const
+        {
+            StatusCallbackMap::const_iterator it = _observers.find(event);
+            if (it != _observers.cend()) {
+                it->second(channel, instanceId, client, index, status);
+            }
+        }
+
+    private:
+        using EventStatusCallback = std::function<void(const uint32_t, const string&, const string&, const string&, Status status)>;
+        using SubscribeCallback = std::function<bool(const uint32_t, const string&, const string&, const string&, const string&)>;
         using StatusCallbackMap = std::map<string, EventStatusCallback>;
 
         mutable Core::CriticalSection _adminLock;
         StatusCallbackMap _observers;
+        SubscribeCallback _subscribeAssessor;
+    };
+
+    class EXTERNAL JSONRPCSupportsObjectLookup : virtual public PluginHost::JSONRPC {
+    private:
+        using ToIDCallback = std::function<string(const Core::JSONRPC::Context&, const Core::IUnknown*)>;
+        using FromIDCallback = std::function<Core::IUnknown* (const Core::JSONRPC::Context&, const string&)>;
+        using Handlers = std::pair<ToIDCallback, FromIDCallback>;
+
+    public:
+        JSONRPCSupportsObjectLookup(const JSONRPCSupportsObjectLookup&) = delete;
+        JSONRPCSupportsObjectLookup& operator=(const JSONRPCSupportsObjectLookup&) = delete;
+        JSONRPCSupportsObjectLookup(JSONRPCSupportsObjectLookup&&) = delete;
+        JSONRPCSupportsObjectLookup& operator=(JSONRPCSupportsObjectLookup&&) = delete;
+
+        JSONRPCSupportsObjectLookup()
+            : JSONRPC()
+            , _adminLock()
+            , _handlers()
+        {
+        }
+        JSONRPCSupportsObjectLookup(const PluginHost::JSONRPC::TokenCheckFunction& validation)
+            : JSONRPC(validation)
+            , _adminLock()
+            , _handlers()
+        {
+        }
+        JSONRPCSupportsObjectLookup(const std::vector<uint8_t>& versions)
+            : JSONRPC(versions)
+            , _adminLock()
+            , _handlers()
+        {
+        }
+        JSONRPCSupportsObjectLookup(const std::vector<uint8_t>& versions, const TokenCheckFunction& validation)
+            : JSONRPC(versions, validation)
+            , _adminLock()
+            , _handlers()
+        {
+        }
+        ~JSONRPCSupportsObjectLookup() override
+        {
+            ASSERT(_handlers.empty() == true);
+        }
+
+    public:
+        template<typename T, typename METHOD1, typename METHOD2>
+        void Add(METHOD1 toIdCb, METHOD2 fromIdCb)
+        {
+            using FI1 = typename Core::TypeTraits::lambda_traits<METHOD1>;
+            using FI1_ARG0 = typename std::remove_cv<typename std::remove_reference<typename FI1::template argument<0>::type>::type>::type;
+            using FI2 = typename Core::TypeTraits::lambda_traits<METHOD2>;
+            using FI2_ARG0 = typename std::remove_cv<typename std::remove_reference<typename FI2::template argument<0>::type>::type>::type;
+
+
+            ToIDCallback toIdCallback([this, toIdCb](const Core::JSONRPC::Context& context, const Core::IUnknown* obj) -> string {
+
+                string returnValue;
+                const T* realInterface(obj->QueryInterface<T>());
+                if (realInterface != nullptr) {
+                    returnValue = Execute<T, METHOD1>(
+                        context,
+                        realInterface,
+                        toIdCb,
+                        TemplateIntToType<std::is_same<FI1_ARG0, Core::JSONRPC::Context>::value>());
+
+                    realInterface->Release();
+                }
+                return (returnValue);
+            });
+
+            FromIDCallback fromIdCallback([this, fromIdCb](const Core::JSONRPC::Context& context, const string& id) -> Core::IUnknown* {
+
+                return (Execute<METHOD2>(
+                    context,
+                    id,
+                    fromIdCb,
+                    TemplateIntToType<std::is_same<FI2_ARG0, Core::JSONRPC::Context>::value>()));
+            });
+
+            _adminLock.Lock();
+
+            ASSERT(_handlers.find(T::ID) == _handlers.end());
+
+            _handlers.emplace(std::piecewise_construct,
+                std::forward_as_tuple(T::ID),
+                std::forward_as_tuple(toIdCallback, fromIdCallback));
+
+            _adminLock.Unlock();
+        }
+
+        template<typename T>
+        void Remove()
+        {
+            _adminLock.Lock();
+
+            ASSERT(_handlers.find(T::ID) != _handlers.end());
+
+            _handlers.erase(T::ID);
+
+            _adminLock.Unlock();
+        }
+
+        void Clear()
+        {
+            _adminLock.Lock();
+
+            _handlers.clear();
+
+            _adminLock.Unlock();
+        }
+
+        template<typename T>
+        bool Exists() const
+        {
+            bool result = false;
+
+            _adminLock.Lock();
+
+            result = (_handlers.find(T::ID) != _handlers.end());
+
+            _adminLock.Unlock();
+
+            return (result);
+        }
+
+        template<typename T>
+        T* LookUp(const string& id, const Core::JSONRPC::Context& context)
+        {
+            T* obj{};
+
+            _adminLock.Lock();
+
+            auto translator = _handlers.find(T::ID);
+
+            if (translator != _handlers.end()) {
+                Core::IUnknown* unknown = (*translator).second.second(context, id);
+
+                if (unknown != nullptr) {
+                    obj = unknown->QueryInterface<T>();
+                    unknown->Release();
+                }
+            }
+
+            _adminLock.Unlock();
+
+            return (obj);
+        }
+
+        template<typename T>
+        string InstanceId(const T* const object, const Core::JSONRPC::Context& context) const
+        {
+            string id;
+
+            _adminLock.Lock();
+
+            auto translator = _handlers.find(T::ID);
+
+            if (translator != _handlers.end()) {
+                id = (*translator).second.first(context, object);
+            }
+
+            _adminLock.Unlock();
+
+            return (id);
+        }
+
+        template<typename T>
+        string InstanceId(const T* const object) const
+        {
+            Core::JSONRPC::Context context{};
+            return (InstanceId<T>(object, context));
+        }
+
+    private:
+        template<typename T, typename METHOD>
+        string Execute(const Core::JSONRPC::Context&, const T* obj, METHOD method, const TemplateIntToType<false>&)
+        {
+            using INFO = typename Core::TypeTraits::lambda_traits<METHOD>;
+            return (ConvertToId<T, METHOD, typename INFO::result_type>(obj, method, TemplateIntToType<std::is_integral<typename INFO::result_type>::value>()));
+        }
+        template<typename T, typename METHOD, typename INDEX>
+        string ConvertToId(const T* obj, METHOD method, const TemplateIntToType<false>&)
+        {
+            return (method(obj));
+        }
+        template<typename T, typename METHOD, typename INDEX>
+        string ConvertToId(const T* obj, METHOD method, const TemplateIntToType<true>&)
+        {
+            Core::NumberType<INDEX> number(method(obj));
+            return (number.Text());
+        }
+        template<typename T, typename METHOD>
+        string Execute(const Core::JSONRPC::Context& context, const T* obj, METHOD method, const TemplateIntToType<true>&)
+        {
+            using INFO = typename Core::TypeTraits::lambda_traits<METHOD>;
+            return (ConvertToId<T, METHOD, typename INFO::result_type>(context, obj, method, TemplateIntToType<std::is_integral<typename INFO::result_type>::value>()));
+        }
+        template<typename T, typename METHOD, typename INDEX>
+        string ConvertToId(const Core::JSONRPC::Context& context, const T* obj, METHOD method, const TemplateIntToType<false>&)
+        {
+            return (method(context, obj));
+        }
+        template<typename T, typename METHOD, typename INDEX>
+        string ConvertToId(const Core::JSONRPC::Context& context, const T* obj, METHOD method, const TemplateIntToType<true>&)
+        {
+            Core::NumberType<INDEX> number(method(context, obj));
+            return (number.Text());
+        }
+
+    private:
+        template<typename METHOD>
+        Core::IUnknown* Execute(const Core::JSONRPC::Context&, const string& id, METHOD method, const TemplateIntToType<false>&)
+        {
+            using INDEX = typename Core::TypeTraits::lambda_traits<METHOD>::template argument<0>::type;
+            return (ConvertFromId<METHOD, INDEX>(id, method, TemplateIntToType<std::is_integral<INDEX>::value>()));
+        }
+        template<typename METHOD, typename INDEX>
+        Core::IUnknown* ConvertFromId(const string& id, METHOD method, const TemplateIntToType<false>&)
+        {
+            return (method(id));
+        }
+        template<typename METHOD, typename INDEX>
+        Core::IUnknown* ConvertFromId(const string& id, METHOD method, const TemplateIntToType<true>&)
+        {
+            Core::NumberType<INDEX> number(id.c_str(), static_cast<uint32_t>(id.length()));
+            return (method(number.Value()));
+        }
+        template<typename METHOD>
+        Core::IUnknown* Execute(const Core::JSONRPC::Context& context, const string& id, METHOD method, const TemplateIntToType<true>&)
+        {
+            using INDEX = typename Core::TypeTraits::lambda_traits<METHOD>::template argument<1>::type;
+            return (ConvertFromId<METHOD,INDEX>(context, id, method, TemplateIntToType<std::is_integral<INDEX>::value>()));
+        }
+        template<typename METHOD, typename INDEX>
+        Core::IUnknown* ConvertFromId(const Core::JSONRPC::Context& context, const string& id, METHOD method, const TemplateIntToType<false>&)
+        {
+            return (method(context, id));
+        }
+        template<typename METHOD, typename INDEX>
+        Core::IUnknown* ConvertFromId(const Core::JSONRPC::Context& context, const string& id, METHOD method, const TemplateIntToType<true>&)
+        {
+            Core::NumberType<INDEX> number(id.c_str(), static_cast<uint32_t>(id.length()));
+            return (method(context, number.Value()));
+        }
+
+    private:
+        mutable Core::CriticalSection _adminLock;
+        std::unordered_map<uint32_t, Handlers> _handlers;
+    };
+
+    class JSONRPCSupportsAutoObjectLookup : virtual public JSONRPCSupportsObjectLookup {
+    public:
+        JSONRPCSupportsAutoObjectLookup(const JSONRPCSupportsAutoObjectLookup&) = delete;
+        JSONRPCSupportsAutoObjectLookup& operator=(const JSONRPCSupportsAutoObjectLookup&) = delete;
+        JSONRPCSupportsAutoObjectLookup(JSONRPCSupportsAutoObjectLookup&&) = delete;
+        JSONRPCSupportsAutoObjectLookup& operator=(JSONRPCSupportsAutoObjectLookup&&) = delete;
+
+        JSONRPCSupportsAutoObjectLookup()
+            : JSONRPCSupportsObjectLookup()
+            , _lock()
+            , _interfaces()
+            , _callback()
+            , _nextId(1)
+        {
+        }
+        JSONRPCSupportsAutoObjectLookup(const PluginHost::JSONRPC::TokenCheckFunction& validation)
+            : JSONRPCSupportsObjectLookup(validation)
+            , _lock()
+            , _interfaces()
+            , _callback()
+            , _nextId(1)
+        {
+        }
+        JSONRPCSupportsAutoObjectLookup(const std::vector<uint8_t>& versions)
+            : JSONRPCSupportsObjectLookup(versions)
+            , _lock()
+            , _interfaces()
+            , _callback()
+            , _nextId(1)
+        {
+        }
+        JSONRPCSupportsAutoObjectLookup(const std::vector<uint8_t>& versions, const TokenCheckFunction& validation)
+            : JSONRPCSupportsObjectLookup(versions, validation)
+            , _lock()
+            , _interfaces()
+            , _callback()
+            , _nextId(1)
+        {
+        }
+        ~JSONRPCSupportsAutoObjectLookup() override
+        {
+            ASSERT(_interfaces.empty() == true);
+        }
+
+    public:
+        using LifetimeCallback = std::function<void(const bool acquired, const uint32_t, Core::IUnknown*)>;
+
+    public:
+        template<typename METHOD>
+        void Callback(METHOD cb)
+        {
+            _lock.Lock();
+
+            _callback = cb;
+
+            _lock.Unlock();
+        }
+
+    public:
+        template<typename T>
+        void InstallHandler()
+        {
+            _lock.Lock();
+
+            const uint32_t interfaceId = T::ID;
+            ASSERT(interfaceId != 0);
+
+            ASSERT(_interfaces.find(interfaceId) == _interfaces.end());
+
+            _interfaces.emplace(std::piecewise_construct, std::make_tuple(interfaceId), std::make_tuple());
+
+            JSONRPCSupportsObjectLookup::Add<T>(
+                [this, interfaceId](const Core::JSONRPC::Context& context, const Core::IUnknown* obj) -> uint32_t {
+                    return (LookUpImpl(obj, interfaceId, context));
+                },
+                [this, interfaceId](const Core::JSONRPC::Context& context, const uint32_t instanceId) {
+                    return (LookUpImpl(instanceId, interfaceId, context));
+                }
+            );
+
+            _lock.Unlock();
+        }
+
+        template<typename T>
+        void UninstallHandler()
+        {
+            _lock.Lock();
+
+            JSONRPCSupportsObjectLookup::Remove<T>();
+
+            auto faceIt = _interfaces.find(T::ID);
+            ASSERT(faceIt != _interfaces.end());
+
+            auto& storage = (*faceIt).second;
+            ASSERT(storage.empty() == true); // otherwise it's a leak!
+
+            _interfaces.erase(T::ID);
+
+            _lock.Unlock();
+        }
+
+        void ClearHandlers()
+        {
+            _lock.Lock();
+
+            JSONRPCSupportsObjectLookup::Clear();
+
+            for (auto& entry : _interfaces) {
+                DEBUG_VARIABLE(entry);
+                ASSERT(entry.second.empty() == true);
+            }
+
+            _interfaces.clear();
+
+            _lock.Unlock();
+        }
+
+    public:
+        template<typename T>
+        uint32_t Store(Core::IUnknown* obj, const Core::JSONRPC::Context& context)
+        {
+            uint32_t instanceId = 0;
+
+            ASSERT(obj != nullptr);
+            obj->AddRef();
+
+            _lock.Lock();
+
+            auto faceIt = _interfaces.find(T::ID);
+            ASSERT(faceIt != _interfaces.end());
+
+            auto& storage = (*faceIt).second;
+
+            instanceId = _nextId++;
+
+            storage.emplace(std::piecewise_construct,
+                std::forward_as_tuple(instanceId),
+                std::forward_as_tuple(context.ChannelId(), obj));
+
+            if (_callback != nullptr) {
+                _callback(true, T::ID, obj);
+            }
+
+            _lock.Unlock();
+
+            return (instanceId);
+        }
+
+        template<typename T>
+        T* Dispose(const Core::JSONRPC::Context& context, const string& instanceId)
+        {
+            uint32_t intId = 0;
+            Core::FromString(instanceId, intId);
+            return (Dispose<T>(context, instanceId));
+        }
+
+        template<typename T>
+        T* Dispose(const Core::JSONRPC::Context& context, const uint32_t instanceId)
+        {
+            T* obj{};
+
+            _lock.Lock();
+
+            auto faceIt = _interfaces.find(T::ID);
+            ASSERT(faceIt != _interfaces.end());
+
+            auto& storage = (*faceIt).second;
+            auto it = storage.find(instanceId);
+
+            if (it != storage.end() && ((*it).second.first == context.ChannelId())) {
+                obj = (*it).second.second->template QueryInterface<T>();
+                ASSERT(obj != nullptr);
+
+                if (_callback != nullptr) {
+                    _callback(false, T::ID, obj);
+                }
+
+                obj->Release();
+                // The caller should release one last time to destroy.
+
+                storage.erase(it);
+            }
+
+            _lock.Unlock();
+
+            return (obj);
+        }
+
+        template<typename T>
+        bool Check(const string& instanceId, const uint32_t channelId) const
+        {
+            uint32_t intId = 0;
+            Core::FromString(instanceId, intId);
+            return (Check<T>(intId, channelId));
+        }
+
+        template<typename T>
+        bool Check(const uint32_t instanceId, const uint32_t channelId) const
+        {
+            bool result = false;
+
+            _lock.Lock();
+
+            auto faceIt = _interfaces.find(T::ID);
+            ASSERT(faceIt != _interfaces.end());
+
+            auto& storage = (*faceIt).second;
+
+            auto it = storage.find(instanceId);
+
+            if ((it != storage.end()) && ((*it).second.first == channelId)) {
+                result = true;
+            }
+
+            _lock.Unlock();
+
+            return (result);
+        }
+
+    public:
+        void Closed(const Core::JSONRPC::Context& context)
+        {
+            Closed(context.ChannelId());
+        }
+
+        void Closed(const uint32_t channel)
+        {
+            _lock.Lock();
+
+            for (auto& interface : _interfaces) {
+                auto& storage = interface.second;
+                auto it = storage.begin();
+
+                while (it != storage.end()) {
+                    if ((*it).second.first == channel) {
+                        Core::IUnknown* obj = (*it).second.second;
+                        ASSERT(obj != nullptr);
+
+                        if (_callback != nullptr) {
+                            _callback(false, interface.first, obj);
+                        }
+
+                        obj->Release();
+                        it = storage.erase(it);
+                    }
+                    else {
+                        ++it;
+                    }
+                }
+            }
+
+            _lock.Unlock();
+        }
+
+    private:
+        uint32_t LookUpImpl(const Core::IUnknown* const obj, const uint32_t interfaceId, const Core::JSONRPC::Context& context) const
+        {
+            uint32_t id = 0;
+
+            ASSERT(interfaceId != 0);
+
+            if (obj != nullptr) {
+                _lock.Lock();
+
+                auto faceIt = _interfaces.find(interfaceId);
+                ASSERT(faceIt != _interfaces.end());
+
+                auto& storage = (*faceIt).second;
+
+                for (auto const& entry : storage) {
+                    if (entry.second.second == obj) {
+                        if ((context.ChannelId() == static_cast<uint32_t>(~0)) || (entry.second.first == context.ChannelId())) {
+                            id = entry.first;
+                        }
+
+                        break;
+                    }
+                }
+
+                _lock.Unlock();
+            }
+
+            return (id);
+        }
+
+        Core::IUnknown* LookUpImpl(const uint32_t instanceId, const uint32_t interfaceId, const Core::JSONRPC::Context& context) const
+        {
+            Core::IUnknown* obj{};
+
+            ASSERT(interfaceId != 0);
+
+            if (instanceId != 0) {
+                _lock.Lock();
+
+                auto faceIt = _interfaces.find(interfaceId);
+                ASSERT(faceIt != _interfaces.end());
+
+                auto& storage = (*faceIt).second;
+
+                auto const it = storage.find(instanceId);
+                if ((it != storage.cend()) && (((*it).second.first == context.ChannelId()) || (context.ChannelId() == static_cast<uint32_t>(~0)))) {
+
+                    obj = (*it).second.second;
+                    ASSERT(obj != nullptr);
+
+                    obj->AddRef();
+                }
+
+                _lock.Unlock();
+            }
+
+            return (obj);
+        }
+
+    private:
+        mutable Core::CriticalSection _lock;
+        std::unordered_map<uint32_t, std::unordered_map<uint32_t, std::pair<uint32_t, Core::IUnknown*>>> _interfaces;
+        LifetimeCallback _callback;
+        uint32_t _nextId;
     };
 
 #ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
 
-namespace JSONRPCErrorAssessorTypes {
+    namespace JSONRPCErrorAssessorTypes {
 
         using FunctionCallbackType  = uint32_t (*) (const Core::JSONRPC::Context&, const string&, const string&, const uint32_t errorcode, string&);
         using StdFunctionCallbackType = std::function<int32_t(const Core::JSONRPC::Context&, const string&, const string&, const uint32_t errorcode, string&)>;
-}
+    }
 
     template<typename JSONRPCERRORASSESSORTYPE>
     class EXTERNAL JSONRPCErrorAssessor : public JSONRPC {
     public:
-
         JSONRPCErrorAssessor(JSONRPCERRORASSESSORTYPE errorhandler)
             : JSONRPC()
             , _errorhandler(errorhandler)
-            {
-            }
+        {
+        }
 
         ~JSONRPCErrorAssessor() override = default;
 
@@ -1066,26 +1936,24 @@ namespace JSONRPCErrorAssessorTypes {
             return JSONRPC::InvokeHandler<JSONRPCERRORASSESSORTYPE>(channelId, id, token, method, parameters, response, _errorhandler);
         }
 
-
-        private:
-            JSONRPCERRORASSESSORTYPE _errorhandler;
+    private:
+        JSONRPCERRORASSESSORTYPE _errorhandler;
     };
 
     template<>
     class EXTERNAL JSONRPCErrorAssessor<JSONRPCErrorAssessorTypes::StdFunctionCallbackType> : public JSONRPC {
     public:
-
         JSONRPCErrorAssessor(const JSONRPCErrorAssessorTypes::StdFunctionCallbackType& errorhandler)
             : JSONRPC()
             , _errorhandler(errorhandler)
-            {
-            }
+        {
+        }
 
         JSONRPCErrorAssessor(JSONRPCErrorAssessorTypes::StdFunctionCallbackType&& errorhandler)
             : JSONRPC()
             , _errorhandler(std::move(errorhandler))
-            {
-            }
+        {
+        }
 
         ~JSONRPCErrorAssessor() override = default;
 
@@ -1099,149 +1967,11 @@ namespace JSONRPCErrorAssessorTypes {
             return JSONRPC::InvokeHandler<const JSONRPCErrorAssessorTypes::StdFunctionCallbackType&>(channelId, id, token, method, parameters, response, _errorhandler);
         }
 
-
-        private:
-            JSONRPCErrorAssessorTypes::StdFunctionCallbackType _errorhandler;
+    private:
+        JSONRPCErrorAssessorTypes::StdFunctionCallbackType _errorhandler;
     };
 
 #endif // __DISABLE_USE_COMPLEMENTARY_CODE_SET__
-
-    template<typename T, typename ID>
-    class LookupStorageType {
-    public:
-        LookupStorageType()
-            : _lock()
-            , _storage()
-            , _nextId(1)
-        {
-        }
-        ~LookupStorageType() = default;
-
-        LookupStorageType(const LookupStorageType&) = delete;
-        LookupStorageType(LookupStorageType&&) = delete;
-        LookupStorageType& operator=(const LookupStorageType&) = delete;
-        LookupStorageType& operator=(LookupStorageType&&) = delete;
-
-    public:
-        uint32_t Store(T* obj, const Core::JSONRPC::Context& context)
-        {
-            ID id = 0;
-
-            ASSERT(obj != nullptr);
-
-            if (obj != nullptr) {
-
-                obj->AddRef();
-
-                _lock.Lock();
-
-                id = _nextId++;
-
-                _storage.emplace(std::piecewise_construct,
-                    std::forward_as_tuple(id),
-                    std::forward_as_tuple(context.ChannelId(), obj));
-
-                _lock.Unlock();
-            }
-
-            return (id);
-        }
-
-        T* Lookup(const Core::JSONRPC::Context& context, const ID id)
-        {
-            T* obj{};
-
-            _lock.Lock();
-
-            auto it = _storage.find(id);
-
-            if ((it != _storage.end()) && ((*it).second.first == context.ChannelId())) {
-                obj = (*it).second.second;
-                obj->AddRef();
-            }
-
-            _lock.Unlock();
-
-            return (obj);
-        }
-
-        const T* Lookup(const Core::JSONRPC::Context& context, const ID id) const
-        {
-            const T* obj{};
-
-            _lock.Lock();
-
-            auto const it = _storage.cfind(id);
-
-            if ((it != _storage.cend()) && ((*it).second.first == context.ChannelId())) {
-                obj = (*it).second.second;
-                obj->AddRef();
-            }
-
-            _lock.Unlock();
-
-            return (obj);
-        }
-
-        T* Dispose(const Core::JSONRPC::Context& context, const ID id)
-        {
-            T* obj{};
-
-            _lock.Lock();
-
-            auto it = _storage.find(id);
-
-            if (it != _storage.end() && ((*it).second.first == context.ChannelId())) {
-                obj = (*it).second.second;
-                _storage.erase(it);
-            }
-
-            _lock.Unlock();
-
-            return (obj);
-        }
-
-    public:
-        using OnCloseCallback = std::function<void(const ID, const uint32_t, T*)>;
-
-        void Closed(const uint32_t channel, const OnCloseCallback& callback = nullptr)
-        {
-            _lock.Lock();
-
-            auto it = _storage.begin();
-
-            while (it != _storage.end()) {
-                if ((*it).second.first == channel) {
-
-                    T* obj = (*it).second.second;
-                    ASSERT(obj != nullptr);
-
-                    if (callback) {
-                        callback((*it).first, T::ID, obj);
-                    }
-
-                    obj->Release();
-                    it = _storage.erase(it);
-                }
-                else {
-                    ++it;
-                }
-            }
-
-            _lock.Unlock();
-
-        }
-
-        void Closed(const Core::JSONRPC::Context& context, const OnCloseCallback& callback = nullptr)
-        {
-            Closed(context.ChannelId(), callback);
-        }
-
-    private:
-        mutable Core::CriticalSection _lock;
-        std::map<ID, std::pair<uint32_t, T*>> _storage;
-        ID _nextId;
-    };
 
 } // namespace Thunder::PluginHost
 }

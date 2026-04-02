@@ -237,7 +237,41 @@ namespace RPC {
         DestructorMap _destructors;
     };
 
-    static ProcessShutdown& g_destructor = Core::SingletonType<ProcessShutdown>::Instance();
+    class ProcessShutdownAccessor {
+    private:
+
+        ProcessShutdownAccessor() 
+        { 
+            _destructor = &Core::SingletonType<ProcessShutdown>::Instance();
+        }
+        ~ProcessShutdownAccessor() = default;
+
+        ProcessShutdownAccessor(ProcessShutdownAccessor&&) = delete;
+        ProcessShutdownAccessor(const ProcessShutdownAccessor&) = delete;
+        ProcessShutdownAccessor& operator=(ProcessShutdownAccessor&&) = delete;
+        ProcessShutdownAccessor& operator=(const ProcessShutdownAccessor&) = delete;
+
+    public:
+        // note usage of the methods below in this file guarantee they are not used from multiple threads 
+        // at the same time, if that is needed a mem barrier would be required
+
+        static ProcessShutdown& Acquire() 
+        {
+            static ProcessShutdownAccessor accessor;
+            ASSERT(_destructor != nullptr);
+            return *_destructor;
+        } 
+
+        static ProcessShutdown* Get() 
+        {
+            return _destructor;
+        }
+
+    private:
+        static ProcessShutdown* _destructor;
+    };
+
+    ProcessShutdown* ProcessShutdownAccessor::_destructor = nullptr;
 
     /* static */ std::atomic<uint32_t> Communicator::RemoteConnection::_sequenceId(1);
 
@@ -247,10 +281,18 @@ namespace RPC {
 
         Core::TextSegmentIterator places(Core::TextFragment(pathName), false, '|');
 
+#ifdef __APPLE__
 #ifdef VERSIONED_LIBRARY_LOADING
-        static const std::string suffixFilter = "*.so." + std::to_string(THUNDER_VERSION);
+    static const std::string suffixFilter = "*." + std::to_string(THUNDER_VERSION)+ ".dylib";
 #else
-        static const std::string suffixFilter = "*.so";
+    static const std::string suffixFilter = "*.dylib";
+#endif
+#else
+#ifdef VERSIONED_LIBRARY_LOADING
+    static const std::string suffixFilter = "*.so." + std::to_string(THUNDER_VERSION);
+#else
+    static const std::string suffixFilter = "*.so";
+#endif
 #endif
 
         while (places.Next() == true) {
@@ -321,7 +363,7 @@ namespace RPC {
         // Just submit our selves for destruction !!!!
 
         // Time to shoot the application, it will trigger a close by definition of the channel, if it is still standing..
-        g_destructor.Destruct(Id(), *this);
+        ProcessShutdownAccessor::Acquire().Destruct(Id(), *this);
     }
 
     uint32_t Communicator::LocalProcess::RemoteId() const
@@ -343,14 +385,14 @@ namespace RPC {
     void Communicator::ContainerProcess::Terminate() /* override */
     {
         if (_container.IsValid() == true) {
-            g_destructor.Destruct(Id(), *this);
+            ProcessShutdownAccessor::Acquire().Destruct(Id(), *this);
         }
     }
 
     void Communicator::ContainerProcess::PostMortem() /* override */
     {
-        Core::process_t pid;
-        if ( (_container.IsValid() == true) && ((pid = static_cast<Core::process_t>(_container->Pid())) != 0) ) {
+        pid_t pid;
+        if ( (_container.IsValid() == true) && ((pid = static_cast<pid_t>(_container->Pid())) != 0) ) {
             Core::ProcessInfo process(pid);
             process.Dump();
         }
@@ -403,11 +445,14 @@ namespace RPC {
         _connectionMap.Destroy();
 
         // Now there are no more connections pending. Remove my pending IMonitorable::ICallback settings.
-        g_destructor.WaitForCompletion(_connectionMap);
+        ProcessShutdown* shutdown = ProcessShutdownAccessor::Get();
+        if(shutdown != nullptr) {
+            shutdown->WaitForCompletion(_connectionMap);
+        }
     }
     void Communicator::Destroy(const uint32_t id) {
-        // This is a forceull call, blocking, to kill that specific connection
-        g_destructor.ForceDestruct(id);
+        // This is a forcefull call, blocking, to kill that specific connection
+        ProcessShutdownAccessor::Acquire().ForceDestruct(id);
     }
     void Communicator::LoadProxyStubs(const string& pathName) {
         RPC::LoadProxyStubs(pathName);
@@ -475,6 +520,7 @@ namespace RPC {
 
         if ((result == Core::ERROR_NONE) && (_announceEvent.Lock(waitTime) != Core::ERROR_NONE)) {
             result = Core::ERROR_OPENING_FAILED;
+            BaseClass::Close(0);
         }
 
         return (result);
@@ -491,6 +537,7 @@ namespace RPC {
 
         if ((result == Core::ERROR_NONE) && (_announceEvent.Lock(waitTime) != Core::ERROR_NONE)) {
             result = Core::ERROR_OPENING_FAILED;
+            BaseClass::Close(0);
         }
 
         return (result);
@@ -509,6 +556,7 @@ namespace RPC {
 
         if ((result == Core::ERROR_NONE) && (_announceEvent.Lock(waitTime) != Core::ERROR_NONE)) {
             result = Core::ERROR_OPENING_FAILED;
+            BaseClass::Close(0);
         }
 
         return (result);
@@ -554,6 +602,8 @@ namespace RPC {
 
         if (announceMessage->Response().IsSet() == true) {
             string jsonMessagingCategories(announceMessage->Response().MessagingCategories());
+
+            Assertion::AssertionUnit::Instance();
 
 #if defined(WARNING_REPORTING_ENABLED)
             string jsonDefaultWarningCategories(announceMessage->Response().WarningReportingCategories());

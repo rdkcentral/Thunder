@@ -100,15 +100,15 @@ namespace RPC {
         public:
             uint32_t Initialize()
             {
-                return (CommunicatorClient::Open(Core::infinite));
+                return (CommunicatorClient::Open(_parent._channelWaitTime));
             }
             void Deintialize()
             {
-                CommunicatorClient::Close(Core::infinite);
+                CommunicatorClient::Close(_parent._channelWaitTime);
             }
             void Unlink()
             {
-                CommunicatorClient::Close(Core::infinite);
+                CommunicatorClient::Close(_parent._channelWaitTime);
             }
             void StateChange() override {
                 CommunicatorClient::StateChange();
@@ -123,9 +123,12 @@ namespace RPC {
         ConnectorType(ConnectorType<ENGINE>&&) = delete;
         ConnectorType(const ConnectorType<ENGINE>&) = delete;
         ConnectorType<ENGINE>& operator=(const ConnectorType<ENGINE>&) = delete;
+        ConnectorType<ENGINE>& operator=(ConnectorType<ENGINE>&&) = delete;
 
-        ConnectorType()
-            : _comChannels() {
+        explicit ConnectorType(const uint32_t channelWaitTime = Core::infinite)
+            : _comChannels()
+            , _channelWaitTime(channelWaitTime)
+        {
         }
         virtual ~ConnectorType() = default;
 
@@ -155,6 +158,7 @@ namespace RPC {
 
     private:
         Core::ProxyMapType<Core::NodeId, Channel> _comChannels;
+        const uint32_t _channelWaitTime; // const to make sure it threadsafe to access
     };
 
 } // namespace RPC

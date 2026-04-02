@@ -17,6 +17,7 @@
  * limitations under the License.
  */
 
+#include "Errors.h"
 #include "ProcessInfo.h"
 #include "FileSystem.h"
 #include "SystemInfo.h"
@@ -122,7 +123,7 @@ namespace Core {
     }
 
     template <typename ACCEPTFUNCTION>
-    static void FindChildren(std::list<uint32_t>& children, ACCEPTFUNCTION acceptfunction)
+    static void FindChildren(std::list<pid_t>& children, ACCEPTFUNCTION acceptfunction)
     {
         DIR* dp;
         struct dirent* ep;
@@ -169,7 +170,7 @@ namespace Core {
      * that starts with value of *item*. The search is case-sensitive
      * in both cases.
      */
-    static void FindPid(const string& item, const bool exact, std::list<uint32_t>& pids)
+    static void FindPid(const string& item, const bool exact, std::list<pid_t>& pids)
     {
         DIR* dp;
         struct dirent* ep;
@@ -246,7 +247,7 @@ namespace Core {
         , _index(0)
     {
 #if !defined(__WINDOWS__) && !defined(__APPLE__)
-        FindChildren(_pids, [=](const uint32_t, const uint32_t) { return true; });
+        FindChildren(_pids, [=](const pid_t, const pid_t) { return true; });
 #endif
         Reset();
     }
@@ -258,7 +259,7 @@ namespace Core {
         , _index(0)
     {
 #if !defined(__WINDOWS__) && !defined(__APPLE__)
-        FindChildren(_pids, [=](const process_t foundparentPID, const uint32_t childPID) {
+        FindChildren(_pids, [=](const pid_t foundparentPID, const pid_t childPID) {
             bool accept = false;
             char fullname[PATH_MAX];
             ProcessName(foundparentPID, fullname, sizeof(fullname));
@@ -276,13 +277,13 @@ namespace Core {
     }
 
     // Get the Child Processes with a name name from a Parent pid
-    ProcessInfo::Iterator::Iterator(const process_t parentPID VARIABLE_IS_NOT_USED, const string& childname VARIABLE_IS_NOT_USED, const bool removepath VARIABLE_IS_NOT_USED)
+    ProcessInfo::Iterator::Iterator(const pid_t parentPID VARIABLE_IS_NOT_USED, const string& childname VARIABLE_IS_NOT_USED, const bool removepath VARIABLE_IS_NOT_USED)
         : _pids()
         , _current()
         , _index(0)
     {
 #if !defined(__WINDOWS__) && !defined(__APPLE__)
-        FindChildren(_pids, [=](const process_t foundparentPID, const uint32_t childPID) {
+        FindChildren(_pids, [=](const pid_t foundparentPID, const pid_t childPID) {
             bool accept = false;
 
             if (parentPID == foundparentPID) {
@@ -297,7 +298,7 @@ namespace Core {
     }
 
     // Get the Children of the given PID.
-    ProcessInfo::Iterator::Iterator(const process_t parentPID VARIABLE_IS_NOT_USED)
+    ProcessInfo::Iterator::Iterator(const pid_t parentPID VARIABLE_IS_NOT_USED)
     {
 #ifdef __WINDOWS__
         HANDLE hSnapShot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
@@ -313,7 +314,7 @@ namespace Core {
         }
 #else
 #ifndef __APPLE__
-        FindChildren(_pids, [=](const uint32_t foundparentPID, const uint32_t) {
+        FindChildren(_pids, [=](const pid_t foundparentPID, const pid_t) {
             return parentPID == foundparentPID;
         });
 #endif
@@ -354,7 +355,7 @@ namespace Core {
     {
     }
     // Specifice Process Info
-    ProcessInfo::ProcessInfo(const process_t id)
+    ProcessInfo::ProcessInfo(const pid_t id)
         : _pid(id)
         , _memory(id)
 #ifdef __WINDOWS__
@@ -514,7 +515,7 @@ namespace Core {
         }
 #else
 #ifndef __APPLE__ //No straight forward way to set process name in OSX
-        if (static_cast<uint32_t>(::getpid()) == _pid) {
+        if (::getpid() == _pid) {
             prctl(PR_SET_NAME, name.c_str(), 0, 0, 0, 0);
         }
 #endif
@@ -585,7 +586,7 @@ namespace Core {
     /* static */ void ProcessInfo::FindByName(const string& name VARIABLE_IS_NOT_USED, const bool exact VARIABLE_IS_NOT_USED, std::list<ProcessInfo>& processInfos VARIABLE_IS_NOT_USED)
     {
 #if !defined(__WINDOWS__) && !defined(__APPLE__)
-        std::list<uint32_t> pidList;
+        std::list<pid_t> pidList;
         FindPid(name, exact, pidList);
 
         processInfos.clear();
@@ -714,7 +715,7 @@ PUSH_WARNING(DISABLE_WARNING_CONVERSION_TO_GREATERSIZE)
 POP_WARNING()
     }
 
-    ProcessInfo::Memory::Memory(const process_t pid)
+    ProcessInfo::Memory::Memory(const pid_t pid)
         : _pid(pid)
         , _uss(0)
         , _pss(0)

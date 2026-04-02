@@ -25,14 +25,27 @@ namespace Thunder {
 
 namespace Logging {
 
-    // Announce upfront all SYSLOG categories...
-    SYSLOG_ANNOUNCE(Crash);
-    SYSLOG_ANNOUNCE(Startup);
-    SYSLOG_ANNOUNCE(Shutdown);
-    SYSLOG_ANNOUNCE(Fatal);
-    SYSLOG_ANNOUNCE(Error);
-    SYSLOG_ANNOUNCE(ParsingError);
-    SYSLOG_ANNOUNCE(Notification);
+    // -----------------------------------------------------------------
+    // REGISTRATION
+    // -----------------------------------------------------------------
+
+    namespace {
+
+        static class Instantiation {
+        public:
+            Instantiation()
+            {
+                SYSLOG_ANNOUNCE(Crash)
+                SYSLOG_ANNOUNCE(Startup)
+                SYSLOG_ANNOUNCE(Shutdown)
+                SYSLOG_ANNOUNCE(Fatal)
+                SYSLOG_ANNOUNCE(Error)
+                SYSLOG_ANNOUNCE(ParsingError)
+                SYSLOG_ANNOUNCE(Notification)
+            }
+        } ControlsRegistration;
+
+    }
 
     static const TCHAR* UnknownCallsign = {_T("NoTLSCallsign") };
 
@@ -70,7 +83,7 @@ namespace Logging {
         }
     }
 
-    void DumpSystemFiles(const Core::process_t pid)
+    void DumpSystemFiles(const pid_t pid)
     {
         static auto logProcPath = [](const std::string& path) {
             std::ifstream fileStream(path);

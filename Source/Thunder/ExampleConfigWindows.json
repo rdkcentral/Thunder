@@ -3,16 +3,21 @@
   "binding": "127.0.0.1",
   "idletime": 60,
   "ipv6": false,
-  "persistentpath": "D:/domotica/artifacts/Persistent",
-  "volatilepath": "D:/domotica//artifacts/temp",
-  "datapath": "D:/domotica/artifacts/Debug/Plugins",
-  "systempath": "D:/domotica/artifacts/Debug",
-  "proxystubpath": "D:/domotica/artifacts/ProxyStubs/Debug",
+  "persistentpath": "C:/ThunderWin/artifacts/Persistent",
+  "volatilepath": "C:/ThunderWin/artifacts/temp",
+  "datapath": "C:/ThunderWin/artifacts/Debug/Plugins",
+  "systempath": "C:/ThunderWin/artifacts/Debug",
+  "proxystubpath": "C:/ThunderWin/artifacts/ProxyStubs/Debug",
   "communicator": "127.0.0.1:62000",
   "redirect": "Service/Controller/UI",
   "observe": {
-    "proxystubpath": "D:/domotica/artifacts/dynamic/proxystubs",
-    "configpath": "D:/domotica/artifacts/dynamic/config"
+    "proxystubpath": "C:/ThunderWin/artifacts/dynamic/proxystubs",
+    "configpath": "C:/ThunderWin/artifacts/dynamic/config"
+  },
+  "process": {
+    "threadpoolcount": 4,
+    "lowprioritythreadcount": 3,
+    "mediumprioritythreadcount": 3
   },
   "messaging": {
     "port": 63000,
@@ -42,6 +47,10 @@
         {
           "module": "Plugin_ZigbeeControl",
           "enabled": false
+        },
+        {
+          "module": "Plugin_USBControl",
+          "enabled": true
         },
         {
           "module": "Plugin_Butler",
@@ -86,6 +95,18 @@
       "configuration": {
         "root": {
           "mode": "Local"
+        }
+      }
+    },
+    {
+      "callsign": "WifiControl",
+      "locator": "libWifiControl.so",
+      "classname": "WifiControl",
+      "startmode": "Activated",
+      "configuration": {
+        "application": null,
+        "root": {
+          "mode": "Off"
         }
       }
     },
@@ -461,8 +482,18 @@
       "startmode": "Activated",
       "communicator": "127.0.0.1:2349",
       "configuration": {
-        "port": 8080,
-        "binding": "0.0.0.0",
+        "access": {
+          "binding": "0.0.0.0:8080",
+          "certificate": "websecurity.crt",
+          "key2": "websecurity.key"
+        },
+        "domains": [
+          {
+            "domain": "localhost.lan",
+            "path": "Service/Controller/UI",
+            "redirect": "https://www.googlw.com/forwarded"
+          }
+        ],
         "root": {
           "mode": "Local"
         }

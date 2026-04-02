@@ -1,5 +1,8 @@
 name: Build Thunder on Linux
 
+permissions:
+  contents: read
+
 on:
   workflow_dispatch:
   push:
@@ -17,7 +20,7 @@ on:
 
 jobs:
   Thunder:
-    uses: rdkcentral/Thunder/.github/workflows/Linux build template.yml@master
+    uses: ./.github/workflows/Linux build template.yml
 
   ThunderInterfaces:
     needs: Thunder

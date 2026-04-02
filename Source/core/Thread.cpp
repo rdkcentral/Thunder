@@ -371,6 +371,8 @@ POP_WARNING()
     {
         bool blOK = false;
 
+        m_enumState.Lock();
+
         switch (m_enumState) {
         case INITIALIZED:
             blOK = ((enumNewState == RUNNING) || (enumNewState == BLOCKED) || (enumNewState == STOPPED) || (enumNewState == STOPPING));
@@ -418,6 +420,8 @@ POP_WARNING()
                 m_enumState.SetState(enumNewState);
             }
         }
+
+        m_enumState.Unlock();
 
         return (blOK);
     }

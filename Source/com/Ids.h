@@ -78,6 +78,8 @@ namespace RPC {
         ID_SHELL_CONNECTIONSERVER_NOTIFICATION     = (ID_OFFSET_INTERNAL + 0x0043),
         ID_STATECONTROL                            = (ID_OFFSET_INTERNAL + 0x0044),
         ID_STATECONTROL_NOTIFICATION               = (ID_OFFSET_INTERNAL + 0x0045),
+        ID_STATE_CONTROLLER                        = (ID_OFFSET_INTERNAL + 0x0046),
+        ID_STATE_CONTROLLER_NOTIFICATION           = (ID_OFFSET_INTERNAL + 0x0047),
 
         ID_SUBSYSTEM                               = (ID_OFFSET_INTERNAL + 0x0050),
         ID_SUBSYSTEM_NOTIFICATION                  = (ID_OFFSET_INTERNAL + 0x0051),
@@ -92,8 +94,10 @@ namespace RPC {
         ID_REMOTE_INSTANTIATION                    = (ID_OFFSET_INTERNAL + 0x0070),
         ID_SYSTEM_METADATA                         = (ID_OFFSET_INTERNAL + 0x0071),
 
-        ID_EXTERNAL_INTERFACE_OFFSET               = (ID_OFFSET_INTERNAL + 0x0080),
+        ID_EXTENSIONS_INTERFACE_OFFSET             = (ID_OFFSET_INTERNAL + 0x0080),
+        ID_EXTERNAL_INTERFACE_OFFSET               = (ID_OFFSET_INTERNAL + 0x1000),
         ID_EXTERNAL_QA_INTERFACE_OFFSET            = (0xA000),
+        ID_EXTERNAL_EXAMPLE_INTERFACE_OFFSET       = (0xB000),
         ID_EXTERNAL_CC_INTERFACE_OFFSET            = (0xCC00) // ends on 0xDFFF
     };
 }

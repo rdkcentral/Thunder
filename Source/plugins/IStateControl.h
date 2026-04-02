@@ -24,6 +24,8 @@
 
 #include <com/ICOM.h>
 
+// @insert "IShell.h"
+
 namespace Thunder {
 namespace PluginHost {
 
@@ -58,7 +60,9 @@ namespace PluginHost {
         static const TCHAR* ToString(const command value);
 
         virtual Core::hresult Configure(PluginHost::IShell* framework) = 0;
+
         virtual state State() const = 0;
+
         virtual Core::hresult Request(const command state) = 0;
 
         virtual void Register(IStateControl::INotification* notification) = 0;

@@ -36,7 +36,7 @@ namespace PluginHost {
         else {
             // Time to flush all the "System information", before we send signals. This too keep 
             // those figures as close to the moment of hange detect.
-            Logging::DumpSystemFiles(static_cast<Core::process_t>(connection->RemoteId()));
+            Logging::DumpSystemFiles(static_cast<pid_t>(connection->RemoteId()));
         
             connection->PostMortem();
         }

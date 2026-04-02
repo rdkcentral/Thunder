@@ -103,7 +103,7 @@ Ddefines a literal as a known identifier (equivalent of `#define` in C++ code)
 |[@out](#out)|Marks an output parameter | | Yes|Yes|Method Parameter|
 |[@inout](#inout)|Marks as input and output parameter (equivalent to `@in @out`) | | Yes|Yes| Method Parameter|
 |[@restrict](#restrict)|Specifies valid range for a parameter | | Yes |Yes| Method Parameter |
-|[@interface](#interface)| Specifies a parameter holding interface ID value for void* interface passing |  | Yes | No |Method paramter|
+|[@interface](#interface)| Specifies a parameter holding interface ID value for void* interface passing or indicates iterator should not be collated |  | Yes | No |Method paramter|
 |[@length](#length)|Specifies the expression to evaluate length of an array parameter (can be other parameter name, or constant, or math expression)|  | No | Yes | Method Parameter|
 |[@maxlength](#maxlength)|Specifies a maximum buffer length value |  | No | Yes |Method parameter|
 |[@default](#default)|Provides a default value for an unset optional type |  | Yes | Yes |Method parameter|
@@ -143,12 +143,13 @@ When the function returns, the parameter will have the modified length value. Th
 
 #### @restrict
 
-Specifies a valid range for a parameter (e.g. for buffers and strings it could specify a valid size). Ranges are inclusive.
+Specifies a valid range for a parameter (e.g. it can indicate a valid size for buffers, strings, arrays, std::vector, or iterators). Ranges are inclusive.
 
 If a parameter is outside the valid range, then there are two possibilities:
 
 * If running a debug build, an ASSERT will be triggered if the value is outside the allowed range
 * If the stub generator is invoked with the `--secure` flag, then the range will be checked on all builds and an error (`ERROR_INVALID_RANGE`) will be returned if the value is outside the range
+* If one just wants to indicate a string must contain at least one character, empty would not be valid, the tag @restrict:nonempty can be used with that parameter.
 
 ##### Example
 
@@ -163,6 +164,10 @@ This tag specifies a parameter holding interface ID value for `void*` interface 
 
 Functions like [Acquire](https://github.com/rdkcentral/Thunder/blob/master/Source/com/ICOM.h#L45) will return the pointer to the queried interface. For such functions, this tag will specify which field to look for to get the corresponding interface id.
 
+A second usage for this tag is to indicate an iterator should not be collated. Iterators can be collated in Thunder (meaning all their values will be transferred in one go and all follow up Next calls will be local instead of remote).
+If this is not desired (e.g. because the iterator holds a huge number of items making this a too big of memory overhead or because you only need a few items from the iterator instead of most of them) one can add the interface with the iterator parameter or with the iterator typedef.
+At the moment the default behavior for the code generators is to have all iterators not collated. By passing the the flag --collated-iterators to the proxy stub generator all iterators will become collated, expect of the course the ones that have the tag @interface.
+
 ##### Example
 
 In [ICOM.h](https://github.com/rdkcentral/Thunder/blob/master/Source/com/ICOM.h#L45) specifies parameter 3 interfaceId holds the interface id for the returned interface.
@@ -170,9 +175,13 @@ In [ICOM.h](https://github.com/rdkcentral/Thunder/blob/master/Source/com/ICOM.h#
 <hr/>
 
 #### @length
-This tag should be associated with an array. It specifies the expresion to evaluate length of an array parameter (can be other parameter name, or constant, or math expression)
+This tag should be associated with an array. It specifies the expression to evaluate length of an array parameter (can be other parameter name, or constant, or math expression)
 
 Use round parenthesis for expressions, e.g.  `@length:bufferSize` `@length:(width * height * 4)`
+
+
+Note @length:return can be used in case the length of the array is the return value of the method instead of an in/in-out parameter.
+
 
 ##### Example
 **From another parameter**
@@ -201,6 +210,10 @@ In `IOCDM.h`:
 
 <hr/>
 
+**returned**
+
+See [here](https://github.com/rdkcentral/ThunderInterfaces/blob/16d1459ae85940fa71d6836301dc2b4288e9f3b4/interfaces/ICryptography.h#L57) for an example.
+
 #### @maxlength
 Used with the `@out` or `@inout` tag. It specifies a maximum buffer length value (a constant, a parameter name or a math expression). If not specified, `@length` is considered as maximum length
 
@@ -216,7 +229,7 @@ This tag should be associated with optional types. It provides a default value f
 
 Note: Unless a parameter is optional, it must be set.
 
-Note: Currently, OptionalType does not work with C-Style arrays.
+Note: Currently, OptionalType does not work with C-Style arrays, of course a fixed array of OptionalTypes is supported.
 
 ##### Example
 
@@ -259,8 +272,9 @@ In [IController.h](https://github.com/rdkcentral/Thunder/blob/master/Source/plug
 |[@text](#text)| Renames identifier Method, Parameter, PoD Member, Enum, Interface | | No | Yes |Enum, Method parameter, Method name, PoD member, Interface |
 |[@prefix](#prefix)| Prepends identifier for all JSON-RPC methods and properties in a class | | No | Yes | Class |
 |[@statuslistener](#statuslistener)| Notifies when a JSON-RPC client registers/unregisters from an notification | | No | Yes | Method |
-|[@lookup](#lookup)| Creates a JSON-RPC interface to access dynamically created sessions | | No | Yes | Method |
+|[@async](#async)| Indicates a method is asynchronous for the JSON-RPC interface | | No | Yes | Method |
 |[@encode](#encode)|Encodes data into a different format |  | Yes | Yes |Method parameter|
+|[@wrapped](#wrapped)|Encodes a single out parameter in a wrapped format |  | No | Yes |Class and Method parameter|
 
 #### @json
 This tag helps to generate JSON-RPC files for the given Class/Struct/enum.
@@ -391,7 +405,11 @@ Indicates that enumerator lists should be packed into into a bit mask.
 #### @index
 Used in conjunction with @property. Allows a property list to be accessed at a given index.
 
-Index should be the first parameter in the function. 
+Index should be the first parameter in the function. It is allowed to make the index a Core::OptionalType<>.
+
+The @index tag can also be used to mark an event parameter to be indexed, so clients can subscribe to the event for a specific value of that indexed parameter: for more info see [here](../interfaces/#indexed-events)
+
+As for a short amount of time the @index for events generated code for the JSON-RPC interface that expected a dot (.) as a separator for the index in the clientid instead of a '@' in the designator, @index:deprecated can be put at the indexed event parameter (so instead of just @index) to indicate this indexed event should generate code that uses the old deprecated index format (see the generated documentation for what the interface would be like). Only use this for backwards compatibility reasons. 
 
 ##### Example
 [IController.h](https://github.com/rdkcentral/Thunder/blob/6fa31a946314fdbad05792a216b33891584fb4b5/Source/plugins/IController.h#L125) sets the `@index` tag on the `index` parameter.
@@ -455,7 +473,17 @@ This tag is applicable to enums, method names, method parameters, PoD members an
 * When used for a method name, it will replace the actual method name with the text that is given in the tag while keeping the case of the text as is.
 * When used for a method parameter, it will replace the parameter name with the text that is given in the tag while keeping the case of the text as is.
 * When used for a PoD member, it will replace the PoD member name with the text that is given in the tag while keeping the case of the text as is. Please note that the tag must be placed before the ';'  following the PoD member name (see the examples below).
-* When used for a whole interface it must be used in the form '@text:keep'. It will in this case make the JSON generator use the name of the above items in JSON code exactly as specified in the interface, including the case of the text. Please note that of course the interface designer is responsible for making the interface compliant and consistent with the interface guideliness in use (even more perhaps then with the other uses of @text as now the whole interface is influenced). Please see an example on how to apply this form of @text below in the examples.
+* When used at interface level it will influence the casing generated for the JSON-RPC for the whole interface (that is Method names, Parameter names, POD member names, Event names and Enum names). The following options can be used with @text at interface level:
+    * @text:standard generates the names for all elements in the JSON-RPC interface according the "standard" convention (camelCase for everything except enums which are UPPER_SNAKE). If nothing is specified the default is used (which is if not overridden with the commandline parameter --case-convention, see below, is "standard")
+	* @text:keep keeps the names for all elements as is in the header file for the JSONRPC interface
+	* @text:legacy (or as an alternative @text:legacy_lowercase) generates the names for all elements in the JSON-RPC interface to be completely lowercase and PascalCase for enums (this used to be convention for Thunder 5.1 and older).
+	* @text:custom allows influencing the generation of the casing in the JSON-RPC interface per element. The format to use is @text:custom=< METHODS >,< EVENTS >,< PARAMETERS >,< MEMBERS >,< ENUMS > where allowed values are "lower", "upper", "lowersnake", uppersnake", "camel", "pascal", "keep". See the example section below for more information as well.
+
+Please note that of course the interface designer is responsible for making the interface compliant and consistent with the interface casing guidelines in use (even more perhaps when using @text at interface level as now the whole interface is influenced). 
+
+The following commandline options for the JSON-RPC generator are available to also influence the casing used for the generated JSON-RPC code:
+* "--case-convention < CONVENTION >" selects the default convention to be used on interface level, if not passed the generator will use "standard". Possible values: standard, keep and legacy. 
+* "--ignore-source-case-convention" will make the generator ignore the @text set at interface level
 
 ##### Example
 <hr>
@@ -489,6 +517,28 @@ In this example now for all enums, method names, method parameters and PoD membe
   struct EXTERNAL IExample : virtual public Core::IUnknown {
 ```
 </hr>
+
+<hr>
+
+In this example now for all method names, method parameters, PoD member names and events will be lowercase in the JSON generated code, enums will be PascalCase
+
+```cpp hl_lines="1"
+  /* @json 1.0.0 @text:legacy_lowercase */
+  struct EXTERNAL IExample : virtual public Core::IUnknown {
+```
+</hr>
+
+<hr>
+
+In this example now for all method names will be lowercase in the JSON generated code, events will be uppercase, parameters will be lower snake, PoD members will be upper snake and enums will be camel case.
+
+```cpp hl_lines="1"
+  /* @json 1.0.0 @text:custom=lower,upper,lowersnake,uppersnake,camel */
+  struct EXTERNAL IExample : virtual public Core::IUnknown {
+```
+</hr>
+
+
 <hr>
 
 #### @prefix
@@ -514,19 +564,37 @@ For more details, click [here](../interfaces/#notification-registration)
 </hr>
 <hr>
 
-#### @lookup
+#### @async
 
-This tag is used on methods, to create a JSON-RPC interface that is dynamically accessing created objects (or sessions).
+Use this tag, to indicate a method on the COM-RPC interface should lead to an asynchronous JSON-RPC function, meaning the completion of the functionality triggered by calling the function is not achieved when the method returns but when a specific event is sent to indicate this.
 
-For more details, click [here](../interfaces/#object-lookup)
+For more details, click [here](../interfaces/#asynchronous-functions)
 
-<hr/>
+</hr>
 
 #### @encode
 
-This tag encodes data into an alternate format.
+This tag encodes or decodes (if an input parameter) data into/from an alternate format.
 
-* `@encode:base64` encodes arrays as base64 JSON-RPC arrays, on the condition that the array base is type `uint8_t`.
+* `@encode:base64` encodes/decodes arrays (or std::vector or ptr+len buffers) as base64 JSON-RPC string, on the condition that the array base is type `uint8_t` or `char`.
+* `@encode:hex` encodes/decodes arrays (or std::vector or ptr+len buffers) as a Hex JSON-RPC string, on the condition that the array base is type `uint8_t` or `char`.
+
+@encode:autolookup is another form of encode: it indicates this interface is used as an object in another interface. See for more info [here](../interfaces/#object-lookup)
+
+An alternative to "autolookup" is custom lookup where one can keep track of how an object-id is connected to an object in a custom manor (in autolookup this is automatic and arranged for you under the hood).
+Custom lookup is indicated with the @encode:lookup tag.
+See for more info on custom object lookup [here](../interfaces/#custom-object-lookup)
+
+For COM-RPC `@encode:text` can be used to have conversion code created for an enum (enum to string and vice versa), this can useful for example in case the enum must be added to a Trace or message as string.
+Example:
+```cpp
+ // @encode:text
+        enum state : uint16_t {
+            PLAYING = 0x0001,
+            STOPPED = 0x0002,
+            SUSPENDING = 0x0004
+        };
+```
 
 ##### Example
 
@@ -571,6 +639,65 @@ Example list:
 
 <hr>
 
+#### @wrapped
+
+This tag can be placed at class or method level, where at class level is by far preferable as it prevents inconsistencies in JSON-RPC function handling.
+Wrapped will for a single output parameter also add the parameter name to the result, making it always a JSON object.
+Note can also be used for array, std::vector, iterator etc. single output parameter. As for a POD it does not immediately make sense to have it wrapped, it becomes a JSON object inside an object, wrapped will be ignored for POD when the wrapped is put on class level. If put on method level however the POD is wrapped as that than is the clear expectation of the interface designer.
+Wrapped cannot be used for properties as that does not make sense.
+Incorrect or inconsistent usage will lead to an error raised by the code generators. Of course the documentation generators do take the wrapped tag into account.
+
+Remark: of course it is preferable to keep the JSON-RPC interface as whole consistent so for that reason be hesitant when using this tag (it was added as there are interface where workarounds are used to achieve the wrapped effect).
+
+#### Example
+
+Without the wrapped tag in case of a single output parameter the result will be as short as possible to make it as efficient as possible:
+
+e.g. with this interface (without wrapped):
+
+```cpp
+    // @json 1.0.0 
+    struct EXTERNAL ITest : virtual public Core::IUnknown {
+
+        enum { ID = ID_TEST };
+
+        virtual Core::hresult Test(uint8_t& test /* @out */ ) const = 0;
+    };
+```
+this is the returned JSON-RPC result for the Test function
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 42,
+  "result": 0
+}
+```
+
+if we enable the wrapped tag for this interface:
+
+```cpp
+    // @json 1.0.0 @wrapped
+    struct EXTERNAL ITest : virtual public Core::IUnknown {
+
+        enum { ID = ID_TEST };
+
+        virtual Core::hresult Test(uint8_t& test /* @out */ ) const = 0;
+    };
+```
+
+the returned JSON-RPC result for the Test function has changed to this:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 42,
+  "result": {
+    "test": 0
+  }
+}
+```
+
 ### JSON-RPC Documentation Related Tags
 
 | Tag|Short Description|Deprecated|StubGen|JsonGen|Scope|
@@ -582,6 +709,8 @@ Example list:
 |[@details](#details)|Specifies detaild description of a method/property/notification | | No| Yes|Method|
 |[@param](#param)|Provide description for method/notification parameter or property/notification index |  | No | Yes|Method|
 |[@retval](#retval)|Specifies possible return error codes for method/property (can be many) | | No|Yes|Method|
+|[@pre](#precondition)|Allows you to specify the preconditions for a method (documentation only) |  | No | Yes |Method |
+|[@post](#postcondition)|Allows you to specify the postconditions for a method (documentation only) |  | No | Yes |Method |
 
 #### @sourcelocation
 By default, the documentation generator will add links to the implemented interface definitions. 
@@ -669,5 +798,23 @@ This tag adds description about each return codes specified in the generated mar
 
 ##### Example
 In [IVolumeControl.h](https://github.com/rdkcentral/ThunderInterfaces/blob/5fa166bd17c6b910696c6113c5520141bcdea07b/interfaces/IVolumeControl.h#L54), it uses this tag to add description about the returned error code.
+
+<hr/>
+
+#### @precondition
+This tag is used in document creation.
+
+The syntax for this tag is `@precondition <Description>`. It is associated with function/property
+
+This tag adds description about the preconditions required before calling this function\property
+
+<hr/>
+
+#### @postcondition
+This tag is used in document creation.
+
+The syntax for this tag is `@postcondition <Description>`. It is associated with function/property
+
+This tag adds description about the postconditions reached after calling this function\property
 
 <hr/>

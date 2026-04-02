@@ -19,6 +19,7 @@
  
 #pragma once
 
+#include <unordered_set>
 #include "Thread.h"
 #include "ResourceMonitor.h"
 #include "Number.h"
@@ -55,6 +56,11 @@ namespace Core {
             uint32_t                    Runs;
             Core::OptionalType<string>  Job;
         };
+        enum class Priority : uint8_t {
+            High = 0,
+            Medium = 1,
+            Low = 2
+        };
 
         #ifdef __CORE_WARNING_REPORTING__
         struct EXTERNAL DispatchedJobMetaData {
@@ -90,7 +96,15 @@ namespace Core {
              *        conversion from ProxyType<IDispatch> to MeasurableJob in
              *        QueueType methods such as Post or Insert.
              */
-            MeasurableJob(MeasurableJob&&) = delete;
+            MeasurableJob(MeasurableJob&& other) noexcept
+                : _job(std::move(other._job))
+                , _time(other._time)
+            {
+                other._time = NumberType<uint64_t>::Max();
+            }
+
+            MeasurableJob& operator=(MeasurableJob&&) = default;
+            MeasurableJob& operator=(const MeasurableJob&) = default;
 
             MeasurableJob()
                 : _job()
@@ -109,8 +123,6 @@ namespace Core {
                 }
             }
 
-            MeasurableJob& operator=(MeasurableJob&&) = default;
-            MeasurableJob& operator=(const MeasurableJob&) = default;
 
         public:
             bool operator==(const MeasurableJob& other) const
@@ -121,7 +133,7 @@ namespace Core {
             {
                 return _job != other._job;
             }
-            IJob* Process(IDispatcher* dispatcher)
+            void Process(IDispatcher* dispatcher)
             {
                 ASSERT(dispatcher != nullptr);
                 ASSERT(_job.IsValid());
@@ -131,8 +143,6 @@ namespace Core {
 
                 REPORT_OUTOFBOUNDS_WARNING(WarningReporting::JobTooLongWaitingInQueue, static_cast<uint32_t>((Time::Now().Ticks() - _time) / Time::TicksPerMillisecond));
                 REPORT_DURATION_WARNING({ dispatcher->Dispatch(request); }, WarningReporting::JobTooLongToFinish);
-
-                return (dynamic_cast<IJob*>(request));
             }
             bool IsValid() const
             {
@@ -167,7 +177,13 @@ namespace Core {
         using QueueElement = ProxyType<IDispatch>;
         #endif
 
-        using MessageQueue = QueueType< QueueElement >;
+        #if defined(__JOB_QUEUE_STATIC_PRIORITY__)
+        using MessageQueue = CategoryQueueType< QueueElement, false >;
+        #elif defined(__JOB_QUEUE_DYNAMIC_PRIORITY__)
+        using MessageQueue = CategoryQueueType< QueueElement, true >;
+        #else
+		using MessageQueue = QueueType< QueueElement >;
+        #endif
 
     public:   
         template<typename IMPLEMENTATION>
@@ -185,7 +201,9 @@ namespace Core {
             class Worker : public IJob {
             public:
                 Worker() = delete;
+                Worker(Worker&&) = delete;
                 Worker(const Worker&) = delete;
+                Worker& operator=(Worker&&) = delete;
                 Worker& operator=(const Worker&) = delete;
 
                 Worker(JobType<IMPLEMENTATION>& parent) : _parent(parent) {
@@ -205,12 +223,15 @@ namespace Core {
             };
 
         public:
-            JobType(const JobType<IMPLEMENTATION>& copy) = delete;
-            JobType<IMPLEMENTATION>& operator=(const JobType<IMPLEMENTATION>& RHS) = delete;
+            // Deleting the move operators here is important as the varargs c'tor icw the casting operator allowed it to behave as a move operator
+            JobType(JobType<IMPLEMENTATION>&&) = delete;
+            JobType(const JobType<IMPLEMENTATION>&) = delete;
+            JobType<IMPLEMENTATION>& operator=(JobType<IMPLEMENTATION>&&) = delete;
+            JobType<IMPLEMENTATION>& operator=(const JobType<IMPLEMENTATION>&) = delete;
 
-PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
+            PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
             template <typename... Args>
-            JobType(Args&&... args)
+            explicit JobType(Args&&... args)
                 : _implementation(args...)
                 , _state(IDLE)
                 , _job(*this)
@@ -218,7 +239,7 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
             {
                 _job.AddRef();
             }
-POP_WARNING()
+            POP_WARNING()
             ~JobType()
             {
                 ASSERT (_state == IDLE);
@@ -241,6 +262,31 @@ POP_WARNING()
 
                 return (result);
             }
+            /**
+             * @brief Attempt to submit the associated job to the thread pool.
+             *
+             * This function inspects and updates the internal atomic _state to decide
+             * how to handle the submission:
+             * - If the pool state is IDLE, it atomically transitions IDLE -> SUBMITTED
+             *   and returns a ProxyType<IDispatch> that represents the newly submitted job.
+             * - If the pool state is EXECUTING or SCHEDULE, it atomically sets the state
+             *   to RESUBMIT (EXECUTING -> RESUBMIT or SCHEDULE -> RESUBMIT) to request
+             *   a re-run, but does not return a dispatch proxy.
+             * - In any other state (including already RESUBMIT), no state change is made
+             *   and an empty proxy is returned.
+             *
+             * The implementation uses compare_exchange_strong on a shared atomic state
+             * and relies on short-circuit evaluation to perform at most one successful
+             * transition. Callers should inspect the returned ProxyType<IDispatch> to
+             * determine whether this call actually enqueued the job (non-empty) or
+             * merely marked it for resubmission / left it unchanged (empty).
+             *
+             * Thread-safety: safe to call concurrently; state transitions are performed
+             * atomically. No exception guarantees beyond those of ProxyType construction.
+             *
+             * @return ProxyType<IDispatch> Non-empty when the job was transitioned from
+             *         IDLE to SUBMITTED (i.e., submission succeeded). Empty otherwise.
+             */
             ProxyType<IDispatch> Submit() {
 
                 state executing = EXECUTING;
@@ -370,7 +416,9 @@ POP_WARNING()
 
         class EXTERNAL Minion {
         public:
+            Minion(Minion&&) = delete;
             Minion(const Minion&) = delete;
+            Minion& operator=(Minion&&) = delete;
             Minion& operator=(const Minion&) = delete;
 
             Minion(ThreadPool& parent, IDispatcher* dispatcher)
@@ -439,27 +487,18 @@ POP_WARNING()
 
                     _parent.SaveDispatchedJobContext(data);
 
-                    IJob* job = _currentRequest.Process(_dispatcher);
+                    _currentRequest.Process(_dispatcher);
 
                     _parent.RemoveDispatchedJobContext(data);
 
-                    if (job != nullptr) {
-                        // Maybe we need to reschedule this request....
-                        _parent.Closure(*job);
-                    }
                     #else
                     IDispatch* request = &(*_currentRequest);
 
                     _dispatcher->Dispatch(request); 
 
-                    IJob* job = dynamic_cast<IJob*>(request);
-
-                    if (job != nullptr) {
-                        // Maybe we need to reschedule this request....
-                        _parent.Closure(*job);
-                    }
-
                     #endif
+
+                    _parent.Completed(_currentRequest);
 
                     // if someone is observing this run, (WaitForCompletion) make sure that
                     // thread, sees that his object was running and is now completed.
@@ -491,11 +530,7 @@ POP_WARNING()
             mutable CriticalSection _adminLock;
             Event _signal;
             std::atomic<uint32_t> _interestCount;
-            #ifdef __CORE_WARNING_REPORTING__
-            MeasurableJob _currentRequest;
-            #else
-            ProxyType<IDispatch> _currentRequest;
-            #endif
+            QueueElement _currentRequest;
             uint32_t _runs;
         };
 
@@ -503,7 +538,9 @@ POP_WARNING()
         class EXTERNAL Executor : public Thread {
         public:
             Executor() = delete;
+            Executor(Executor&&) = delete;
             Executor(const Executor&) = delete;
+            Executor& operator=(Executor&&) = delete;
             Executor& operator=(const Executor&) = delete;
 
             Executor(ThreadPool& parent, IDispatcher* dispatcher, const uint32_t stackSize, const TCHAR* name)
@@ -529,7 +566,7 @@ POP_WARNING()
                 Thread::Run();
             }
             void Stop () {
-                Thread::Wait(Thread::STOPPED|Thread::BLOCKED, infinite);
+                Thread::Stop();
             }
             Minion& Me() {
                 return (_minion);
@@ -548,21 +585,32 @@ POP_WARNING()
         };
 
     public:
-        ThreadPool(const ThreadPool& a_Copy) = delete;
-        ThreadPool& operator=(const ThreadPool& a_RHS) = delete;
+        ThreadPool(ThreadPool&&) = delete;
+        ThreadPool(const ThreadPool&) = delete;
+        ThreadPool& operator=(ThreadPool&&) = delete;
+        ThreadPool& operator=(const ThreadPool&) = delete;
 
-        ThreadPool(const uint8_t count, const uint32_t stackSize, const uint32_t queueSize, IDispatcher* dispatcher, IScheduler* scheduler, Minion* external, ICallback* callback) 
+        ThreadPool(const uint8_t count, const uint32_t stackSize, const uint32_t queueSize, IDispatcher* dispatcher, IScheduler* scheduler, Minion* external, ICallback* callback, const uint16_t lowPriorityThreadCount = 0, const uint16_t mediumPriorityThreadCount = 0, const uint8_t additionalThreads = 0)
+            #if defined(__JOB_QUEUE_STATIC_PRIORITY__) || defined(__JOB_QUEUE_DYNAMIC_PRIORITY__)
+            : _queue(lowPriorityThreadCount, mediumPriorityThreadCount, queueSize)
+            #else
             : _queue(queueSize)
+            #endif 
             , _scheduler(scheduler)
             #ifdef __CORE_WARNING_REPORTING__
             , _dispatchedJobMonitor(nullptr)
             #endif
             , _external(external)
             , _callback(callback)
+            , _unitsSet()
         {
+            DEBUG_VARIABLE(additionalThreads);
+            ASSERT(((lowPriorityThreadCount <= (count + additionalThreads)) && (mediumPriorityThreadCount <= (count + additionalThreads))));
+
             const TCHAR* name = _T("WorkerPool::Thread");
             for (uint8_t index = 0; index < count; index++) {
                 _units.emplace_back(*this, dispatcher, stackSize, name);
+                _unitsSet.insert(_units.back().Id());
             }
         }
         ~ThreadPool() {
@@ -612,13 +660,64 @@ POP_WARNING()
             ASSERT(job.IsValid() == true);
             ASSERT(_queue.HasEntry(job) == false);
 
-            if (Thread::ThreadId() == ResourceMonitor::Instance().Id()) {
+            thread_id threadId = Thread::ThreadId();
+
+            if (threadId == ResourceMonitor::Instance().Id() || HasThreadID(threadId)) {
                 _queue.Post(job);
             }
             else {
                 _queue.Insert(job, waitTime);
             }
 
+        }
+        void Submit(const ProxyType<IDispatch>& job, const uint32_t waitTime, const Priority priority VARIABLE_IS_NOT_USED)
+        {
+            ASSERT(job.IsValid() == true);
+            ASSERT(_queue.HasEntry(job) == false);
+
+#if defined(__JOB_QUEUE_STATIC_PRIORITY__) || defined(__JOB_QUEUE_DYNAMIC_PRIORITY__)
+            if (priority == Priority::High) {
+                uint8_t total = Count();
+                uint8_t active = 0;
+                std::list<Executor>::const_iterator it = _units.cbegin();
+
+                while (it != _units.cend()) {
+                    if (it->IsActive()) {
+                        ++active;
+                    }
+                    ++it;
+                }
+
+                if (active >= total) {
+                    ASSERT(active == total);
+                    TRACE_L1("PriorityQueue: High-priority submit while no free workers; pending=%u, active=%u, total=%u", Pending(), active, total);
+                }
+            }
+
+            typename MessageQueue::category cat = MessageQueue::category::LOW;
+            switch (priority) {
+            case Priority::High:
+                cat = MessageQueue::category::HIGH;
+                break;
+            case Priority::Medium:
+                cat = MessageQueue::category::MEDIUM;
+                break;
+            case Priority::Low:
+                cat = MessageQueue::category::LOW;
+                break;
+            }
+
+            thread_id threadId = Thread::ThreadId();
+
+            if (threadId == ResourceMonitor::Instance().Id() || HasThreadID(threadId)) {
+                _queue.Post(job, cat);
+            } else {
+                _queue.Insert(job, waitTime, cat);
+            }
+#else
+            // No priority support in the queue: fall back to non-priority submit.
+            Submit(job, waitTime);
+#endif
         }
         uint32_t Revoke(const ProxyType<IDispatch>& job, const uint32_t waitTime)
         {
@@ -669,6 +768,32 @@ POP_WARNING()
                 index++;
             }
         }
+        bool WaitForStop(uint32_t timeout = Core::infinite) 
+        {
+            std::list<Executor>::iterator index = _units.begin();
+            bool allStopped = true;
+            
+            while (index != _units.end()) {
+                if (!index->Wait(Thread::STOPPED, timeout)) {
+                    allStopped = false;
+                }
+                index++;
+            }
+            
+            return allStopped;
+        }
+        bool HasThreadID(const thread_id id) const
+        {
+            return (_unitsSet.find(id) != _unitsSet.end());
+        }
+        void Announce(const thread_id id)
+        {
+            _unitsSet.insert(id);
+        }
+        void Revoke(const thread_id id)
+        {
+            _unitsSet.erase(id);
+        }
 
         #ifdef __CORE_WARNING_REPORTING__
         void SetDispatchedJobMonitor(IDispatchedJobMonitor* dispatchedJobMonitor)
@@ -692,6 +817,55 @@ POP_WARNING()
         #endif
 
     private:
+        // This seems to be a work-a-round- on windows to detect a method if it is *not* within a
+        // template class. If we do not wrap it in a template, MSVC tried to compile both paths
+		// also if the method is *not* available. This is not the case on GCC.
+        template<typename QUEUE>
+        struct CompletionCallback {
+        public:
+            // -----------------------------------------------------
+            // Check for Completion method on Queue
+            // -----------------------------------------------------
+            IS_MEMBER_AVAILABLE_INHERITANCE_TREE(Completion, hasCompletion);
+
+            template <typename TYPE = QUEUE>
+            inline static typename Core::TypeTraits::enable_if<hasCompletion<TYPE, void, const QueueElement&>::value, void>::type
+                Completion(QUEUE& queue, const QueueElement& job)
+            {
+                queue.Completion(job);
+            }
+            template <typename TYPE = QUEUE>
+            inline static typename Core::TypeTraits::enable_if<!hasCompletion<TYPE, void, const QueueElement&>::value, void>::type
+                Completion(QUEUE&, const QueueElement&)
+            {
+            }
+        };
+
+        void Completed(QueueElement& request)
+        {
+            ASSERT(request.IsValid());
+
+            // Report completion of this extracte Job
+            CompletionCallback<MessageQueue>::Completion(_queue, request);
+
+            IJob* job = dynamic_cast<IJob*>(request.operator->());
+
+            if (job != nullptr) {
+                // Maybe we need to reschedule this request....
+                Time scheduleTime;
+                ProxyType<IDispatch> resubmit = job->Resubmit(scheduleTime);
+                if (resubmit.IsValid() == true) {
+                    if ((scheduleTime.IsValid() == false) || (_scheduler == nullptr) || (scheduleTime < Time::Now())) {
+                        _queue.Post(resubmit);
+                    }
+                    else {
+                        // See if we have a hook that can process scheduled entries :-)
+                        _scheduler->Schedule(scheduleTime, resubmit);
+                    }
+                }
+            }
+        }
+
         void Idle() {
             if (_callback != nullptr) {
                 _queue.Lock();
@@ -711,21 +885,6 @@ POP_WARNING()
                 }
             }
         }
-        void Closure(IJob& job) {
-            Time scheduleTime;
-            _queue.Lock();
-            ProxyType<IDispatch> resubmit = job.Resubmit(scheduleTime);
-            if (resubmit.IsValid() == true) {
-                if ((scheduleTime.IsValid() == false) || (_scheduler == nullptr) || (scheduleTime < Time::Now()) ) {
-                    _queue.Post(resubmit);
-                }
-                else {
-                    // See if we have a hook that can process scheduled entries :-)
-                    _scheduler->Schedule(scheduleTime, resubmit);
-                }
-            }
-            _queue.Unlock();
-        }
 
     private:
         MessageQueue _queue;
@@ -736,6 +895,7 @@ POP_WARNING()
         #endif
         Minion* _external;
         ICallback* _callback;
+        std::unordered_set<thread_id> _unitsSet;
     };
 
 }

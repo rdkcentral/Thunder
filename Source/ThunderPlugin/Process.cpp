@@ -111,8 +111,8 @@ POP_WARNING()
         WorkerPoolImplementation& operator=(const WorkerPoolImplementation&) = delete;
 
 PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
-        WorkerPoolImplementation(const uint8_t threads, const uint32_t stackSize, const uint32_t queueSize, const string& callsign)
-            : WorkerPool(threads - 1, stackSize, queueSize, &_dispatcher, this)
+        WorkerPoolImplementation(const uint8_t threads, const uint32_t stackSize, const uint32_t queueSize, const string& callsign, const uint8_t additionalThreads = 1)
+            : WorkerPool((threads - additionalThreads), stackSize, queueSize, &_dispatcher, this, (threads > 2 ? (threads - 1) : threads), (threads > 2 ? (threads - 1) : threads), additionalThreads)
             , _dispatcher(callsign)
             , _sink(*this)
         {
@@ -169,7 +169,7 @@ POP_WARNING()
         ConsoleOptions& operator= (const ConsoleOptions&&) = delete;
 
         ConsoleOptions(int argumentCount, TCHAR* arguments[])
-            : Core::Options(argumentCount, arguments, _T("h:l:c:C:r:p:s:d:a:m:i:u:g:t:e:E:x:V:v:P:S:f:"))
+            : Core::Options(argumentCount, arguments, _T("h:l:c:C:r:p:s:X:d:a:m:i:u:g:t:e:E:x:V:v:P:S:f:"))
             , Locator(nullptr)
             , ClassName(nullptr)
             , Callsign(nullptr)
@@ -179,6 +179,7 @@ POP_WARNING()
             , Exchange(0)
             , PersistentPath()
             , SystemPath()
+            , ExtensionPath()
             , DataPath()
             , VolatilePath()
             , AppPath()
@@ -204,6 +205,7 @@ POP_WARNING()
         uint32_t Exchange;
         string PersistentPath;
         string SystemPath;
+        string ExtensionPath;
         string DataPath;
         string VolatilePath;
         string AppPath;
@@ -249,6 +251,9 @@ POP_WARNING()
                 break;
             case 's':
                 SystemPath = Core::Directory::Normalize(Strip(argument));
+                break;
+            case 'X':
+                ExtensionPath = Core::Directory::Normalize(Strip(argument));
                 break;
             case 'd':
                 DataPath = Core::Directory::Normalize(Strip(argument));
@@ -312,10 +317,11 @@ POP_WARNING()
             TRACE_L1("Attempting to load '%s' from %s...", options.ClassName, path.c_str());
 
             Core::Library library(path.c_str());
+	    const Core::IService* loader;
 
-            if (library.IsLoaded() == true) {
+            if ( (library.IsLoaded() == true) && ((loader = Core::ServiceAdministrator::LibraryToService(library)) != nullptr) ) {
                 // Instantiate the object
-                result = Core::ServiceAdministrator::Instance().Instantiate(library, options.ClassName, options.Version, options.InterfaceId);
+                result = Core::ServiceAdministrator::Instance().Instantiate(loader, options.ClassName, options.Version, options.InterfaceId);
             }
         }
 
@@ -351,10 +357,16 @@ POP_WARNING()
                     result = CheckInstance((Core::Directory::Normalize(options.SystemRootPath + options.SystemPath) + options.Locator), options);
 
                     if (result == nullptr) {
-                        result = CheckInstance((Core::Directory::Normalize(options.SystemRootPath + options.DataPath) + options.Locator), options);
+                        if (options.ExtensionPath.empty() == false) {
+                            result = CheckInstance((Core::Directory::Normalize(options.SystemRootPath + options.ExtensionPath) + options.Locator), options);
+                        }
 
                         if (result == nullptr) {
-                            result = CheckInstance((Core::Directory::Normalize(options.SystemRootPath + options.AppPath + _T("Plugins")) + options.Locator), options);
+                            result = CheckInstance((Core::Directory::Normalize(options.SystemRootPath + options.DataPath) + options.Locator), options);
+
+                            if (result == nullptr) {
+                                result = CheckInstance((Core::Directory::Normalize(options.SystemRootPath + options.AppPath + _T("Plugins")) + options.Locator), options);
+                            }
                         }
                     }
                 }
@@ -600,6 +612,7 @@ int main(int argc, char** argv)
         printf("        [-g <group>]\n");
         printf("        [-p <persistent path>]\n");
         printf("        [-s <system path>]\n");
+        printf("        [-X <extension path>]\n");
         printf("        [-d <data path>]\n");
         printf("        [-v <volatile path>]\n");
         printf("        [-f <linker_path>...\n");

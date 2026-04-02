@@ -23,6 +23,32 @@
 
 namespace Thunder {
 namespace ProxyStub {
+
+    Core::IUnknown* UnknownStub::ExtractInstance(Core::ProxyType<Core::IPCChannel>& channel, const Core::ProxyType<RPC::InvokeMessage>& message, const bool log) const
+    {
+        ASSERT(message->Parameters().IsValid() == true);
+
+        Core::instance_id rawIdentifier(message->Parameters().Implementation());
+
+        Core::IUnknown* implementation(Convert(reinterpret_cast<void*>(rawIdentifier)));
+
+        ASSERT(implementation != nullptr);
+        if (implementation == nullptr) {
+            if (log == true) {
+                SYSLOG(Logging::Error, (_T("COMRPC check failed, instance is nullptr, interface ID [%u]"), message->Parameters().InterfaceId()));
+                TRACE_L1("Warning: This COM-RPC failure will not propagate!");
+            }
+        } else if ((RPC::Administrator::Instance().SecureProxyStubs() == true) && (RPC::Administrator::Instance().IsValid(channel, RPC::instance_cast(implementation), message->Parameters().InterfaceId()) == false)) {
+            if (log == true) {
+                SYSLOG(Logging::Error, (_T("COMRPC Security check failed, unknown instance, interface ID [%u]"), message->Parameters().InterfaceId()));
+                TRACE_L1("Warning: This COM-RPC failure will not propagate!");
+            }
+            implementation = nullptr;
+        }
+
+        return implementation;
+    }
+
     // -------------------------------------------------------------------------------------------
     // STUB
     // -------------------------------------------------------------------------------------------
@@ -30,68 +56,87 @@ namespace ProxyStub {
         Core::ProxyType<Core::IPCChannel>& channel,
         Core::ProxyType<RPC::InvokeMessage>& message)
     {
-        Core::instance_id rawIdentifier(message->Parameters().Implementation());
+        if ((RPC::Administrator::Instance().CoherentProxyStubs() == true) && (message->Parameters().IsValid() == false)) {
+            SYSLOG(Logging::Error, (_T("COMRPC Coherency check failed, message incomplete")));
+            TRACE_L1("Warning: This COM-RPC failure will not propagate!");
+            return;
+        } 
 
-        Core::IUnknown* implementation(Convert(reinterpret_cast<void*>(rawIdentifier)));
-
-        ASSERT(implementation != nullptr);
+        Core::IUnknown* implementation = ExtractInstance(channel, message, true);
 
         if (implementation != nullptr) {
-            switch (index) {
-            case 0: {
-                // AddRef
-                implementation->AddRef();
-                break;
-            }
-            case 1: {
-                // Release
-                RPC::Data::Frame::Writer response(message->Response().Writer());
-                RPC::Data::Frame::Reader reader(message->Parameters().Reader());
 
-                // Get the amount of Release we have to do..
-                uint32_t dropReleases(reader.Number<uint32_t>());
-                uint32_t result;
-
-                ASSERT(dropReleases > 0);
-
-                // This is an external referenced interface that we handed out, so it should
-                // be registered. Lets unregister this reference, it is dropped
-                // Dropping the ReceoverSey, if applicable
-                RPC::Administrator::Instance().UnregisterInterface(channel, implementation, InterfaceId(), dropReleases);
-
-                do {
-                   result = implementation->Release();
-                   dropReleases--;
-                } while ((dropReleases != 0) && ((result == Core::ERROR_NONE) || (result == Core::ERROR_COMPOSIT_OBJECT)));
-
-                ASSERT(dropReleases == 0);
-
-                response.Number<uint32_t>(result);
-                break;
-            }
-            case 2: {
-                // QueryInterface
-                RPC::Data::Frame::Reader reader(message->Parameters().Reader());
-                RPC::Data::Frame::Writer response(message->Response().Writer());
-                uint32_t newInterfaceId(reader.Number<uint32_t>());
-
-                void* newInterface = implementation->QueryInterface(newInterfaceId);
-
-                if (newInterface != nullptr) {
-                    if (RPC::Administrator::Instance().RegisterInterface(channel, newInterface, newInterfaceId) == false) {
-                        Convert(newInterface)->Release();
-                        newInterface = nullptr;
-                    }
+            if (index < Length()) {
+                switch (static_cast<StubMethodsIndexType>(index)) {
+                case StubMethodsIndexType::ADRREF: {
+                    // AddRef
+                    implementation->AddRef();
+                    break;
                 }
+                case StubMethodsIndexType::RELEASE: {
+                    // Release
+                    RPC::Data::Frame::Writer response(message->Response().Writer());
+                    RPC::Data::Frame::Reader reader(message->Parameters().Reader());
 
-                response.Number<Core::instance_id>(RPC::instance_cast<void*>(newInterface));
+                    // Get the amount of Release we have to do..
+                    if ((RPC::Administrator::Instance().CoherentProxyStubs() == true) && (reader.Length() < (Core::RealSize<uint32_t>()))) {
+                        SYSLOG(Logging::Error, (_T("COMRPC Coherency check failed, Release message incomplete, interface ID [%u]"), message->Parameters().InterfaceId()));
+                        TRACE_L1("Warning: This COM-RPC failure will not propagate!");
+                        return;
+                    }
+                    uint32_t dropReleases(reader.Number<uint32_t>());
 
-                break;
-            }
-            default: {
-                TRACE_L1("Method ID [%d] not existing.\n", index);
-                break;
-            }
+                    uint32_t result;
+
+                    ASSERT(dropReleases > 0);
+
+                    // This is an external referenced interface that we handed out, so it should
+                    // be registered. Lets unregister this reference, it is dropped
+                    // Dropping the RecoverySet, if applicable
+                    RPC::Administrator::Instance().UnregisterInterface(channel, implementation, InterfaceId(), dropReleases);
+
+                    do {
+                        result = implementation->Release();
+                        dropReleases--;
+                    } while ((dropReleases != 0) && ((result == Core::ERROR_NONE) || (result == Core::ERROR_COMPOSIT_OBJECT)));
+
+                    ASSERT(dropReleases == 0);
+
+                    response.Number<uint32_t>(result);
+                    break;
+                }
+                case StubMethodsIndexType::QUERYINTERFACE: {
+                    // QueryInterface
+                    RPC::Data::Frame::Reader reader(message->Parameters().Reader());
+                    RPC::Data::Frame::Writer response(message->Response().Writer());
+
+                    if ((RPC::Administrator::Instance().CoherentProxyStubs() == true) && (reader.Length() < (Core::RealSize<uint32_t>()))) {
+                        SYSLOG(Logging::Error, (_T("COMRPC Coherency check failed, QueryInterface message incomplete, interface ID [%u]"), message->Parameters().InterfaceId()));
+                        TRACE_L1("Warning: This COM-RPC failure will not propagate!");
+                        return;
+                    }
+                    uint32_t newInterfaceId(reader.Number<uint32_t>());
+
+                    void* newInterface = implementation->QueryInterface(newInterfaceId);
+
+                    if (newInterface != nullptr) {
+                        if (RPC::Administrator::Instance().RegisterInterface(channel, newInterface, newInterfaceId) == false) {
+                            Convert(newInterface)->Release();
+                            newInterface = nullptr;
+                        }
+                    }
+
+                    response.Number<Core::instance_id>(RPC::instance_cast<void*>(newInterface));
+
+                    break;
+                }
+                default: {
+                    ASSERT(false);
+                    break;
+                }
+                }
+            } else {
+                TRACE_L1("Method ID [%d] not existing.\n", index); // no syslog needed, message should have already been checked, here it would be a programming error
             }
         }
     }
@@ -99,6 +144,34 @@ namespace ProxyStub {
     // -------------------------------------------------------------------------------------------
     // PROXY
     // -------------------------------------------------------------------------------------------
+
+    uint32_t UnknownProxy::Invoke(Core::ProxyType<RPC::InvokeMessage>& message, const uint32_t waitTime) const
+    {
+        uint32_t result = Core::ERROR_UNAVAILABLE | COM_ERROR;
+
+        _adminLock.Lock();
+	    Core::ProxyType<Core::IPCChannel> channel (_channel);
+        _adminLock.Unlock();
+
+        if (channel.IsValid() == true) {
+            result = channel->Invoke(message, waitTime);
+
+            if (result != Core::ERROR_NONE) {
+
+                if (result == Core::ERROR_TIMEDOUT) {
+                Shutdown();
+                }
+
+                result |= COM_ERROR;
+
+                // Oops something failed on the communication. Report it.
+                TRACE_L1("IPC method invocation failed for 0x%X, Method ID 0x%X error: %d", message->Parameters().InterfaceId(), message->Parameters().MethodId(), result);
+            }
+        }
+
+        return (result);
+    }
+
     uint32_t UnknownProxy::Id() const
     {
         uint32_t id = 0;
@@ -106,6 +179,19 @@ namespace ProxyStub {
             id = _channel->Id();
         }
         return (id);
+    }
+
+    void UnknownProxy::Shutdown() const
+    {
+        _adminLock.Lock();
+        if (_channel.IsValid() == true) {
+            RPC::Communicator::Client* comchannel = dynamic_cast<RPC::Communicator::Client*>(_channel.operator->());
+            if (comchannel != nullptr) {
+                SYSLOG(Logging::Error, (_T("Shutting down the socket to avoid side-effects likely because an IPC method Invoke failed due to timeout. Execution of code may or may not have happened.")));
+                comchannel->Source().Close(0);
+            }
+        }
+        _adminLock.Unlock();
     }
 
     static class UnknownInstantiation {

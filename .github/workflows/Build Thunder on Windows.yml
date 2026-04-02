@@ -1,5 +1,8 @@
 name: Build Thunder on Windows
 
+permissions:
+  contents: read
+
 on:
   workflow_dispatch:
   push:

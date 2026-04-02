@@ -22,6 +22,8 @@
 #include "JSON.h"
 #include "Module.h"
 #include "TypeTraits.h"
+#include "Errors.h"
+#include "Number.h"
 
 #include <cctype>
 #include <functional>
@@ -32,6 +34,10 @@ namespace Thunder {
 namespace Core {
 
     namespace JSONRPC {
+
+        // used to signal that a string instance ID is the next parameter
+        struct instance_id_follows_t { explicit instance_id_follows_t() = default; };
+        static constexpr instance_id_follows_t instance_id_follows{};
 
         class EXTERNAL Message : public Core::JSON::Container {
         public:
@@ -114,15 +120,15 @@ namespace Core {
                     switch (frameworkError) {
                     case Core::ERROR_INTERNAL_JSONRPC:
                         Code = -32603; // Internal Error
-                        Text = _T("Unknown jsonrpc error.");
+                        Text = _T("Unknown JSON-RPC error.");
                         break;
                     case Core::ERROR_INVALID_ENVELOPPE:
-                        Text = _T("Invalid Request.");
+                        Text = _T("Invalid request.");
                         Code = -32600; // Invalid request
                         break;
                     case Core::ERROR_INVALID_PARAMETER:
                         Code = -32602; // Invalid parameters
-                        Text = _T("Invalid Parameters.");
+                        Text = _T("Invalid parameters.");
                         break;
                     case Core::ERROR_UNKNOWN_METHOD:
                         Text = _T("Unknown method.");
@@ -130,11 +136,11 @@ namespace Core {
                         break;
                     case Core::ERROR_PRIVILIGED_REQUEST:
                         Code = -32604; // Priviliged
-                        Text = _T("method invocation not allowed.");
+                        Text = _T("Method invocation not allowed.");
                         break;
                     case Core::ERROR_PRIVILIGED_DEFERRED:
                         Code = -32604;
-                        Text = _T("method invokation is deferred, Currently not allowed.");
+                        Text = _T("Method invocation is deferred, currently not allowed.");
                         break;
                     case Core::ERROR_TIMEDOUT:
                         Code = -32000; // Server defined, now mapped to Timed out
@@ -144,8 +150,12 @@ namespace Core {
                         Code = -32700; // Parse error
                         Text = _T("Parsing of the parameters failed");
                         break;
-                    case Core::ERROR_INVALID_RANGE:
-                        Code = ApplicationErrorCodeBase - Core::ERROR_INVALID_RANGE;
+                    case Core::ERROR_NOT_EXIST:
+                        Code = ApplicationErrorCodeBase - Core::ERROR_NOT_EXIST;
+                        Text = _T("The service is not available.");
+                        break;
+                    case Core::ERROR_INVALID_SIGNATURE:
+                        Code = ApplicationErrorCodeBase - Core::ERROR_INVALID_SIGNATURE;
                         Text = _T("Requested version is not supported.");
                         break;
                     case Core::ERROR_INCORRECT_URL:
@@ -154,31 +164,47 @@ namespace Core {
                         break;
                     case Core::ERROR_ILLEGAL_STATE:
                         Code = ApplicationErrorCodeBase - Core::ERROR_ILLEGAL_STATE;
-                        Text = _T("The service is in an illegal state!!!.");
+                        Text = _T("The service is in an illegal state.");
                         break;
                     case Core::ERROR_FAILED_REGISTERED:
                         Code = ApplicationErrorCodeBase - Core::ERROR_FAILED_REGISTERED;
-                        Text = _T("Registration already done!!!.");
+                        Text = _T("Registration failed.");
                         break;
                     case Core::ERROR_FAILED_UNREGISTERED:
                         Code = ApplicationErrorCodeBase - Core::ERROR_FAILED_UNREGISTERED;
-                        Text = _T("Unregister was already done!!!.");
+                        Text = _T("Unregister failed.");
                         break;
                     case Core::ERROR_HIBERNATED:
                         Code = ApplicationErrorCodeBase - Core::ERROR_HIBERNATED;
-                        Text = _T("The service is in an Hibernated state!!!.");
+                        Text = _T("The service is hibernated.");
                         break;
                     case Core::ERROR_UNAVAILABLE:
                         Code = ApplicationErrorCodeBase - Core::ERROR_UNAVAILABLE;
-                        Text = _T("Requested service is not available.");
+                        Text = _T("The service is not active.");
+                        break;
+                    case Core::ERROR_NOT_SUPPORTED:
+                        Code = ApplicationErrorCodeBase - Core::ERROR_NOT_SUPPORTED;
+                        Text = _T("The operation is not supported.");
                         break;
                     default:
-                        if ((frameworkError & 0x80000000) == 0) {
-                            Code = ApplicationErrorCodeBase - static_cast<int32_t>(frameworkError);
-                        } else {
+                        if ((frameworkError & COM_ERROR) != 0) {
                             Code = ApplicationErrorCodeBase - static_cast<int32_t>(frameworkError & 0x7FFFFFFF) - 500;
+                        } else {
+#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+                            int24_t customcode = IsCustomCode(frameworkError);
+                            if (customcode != 0) {
+                                Code = (Core::Overflowed(customcode) == true ? 0 : static_cast<int32_t>(customcode));
+                            } else {
+#endif
+                                Code = ApplicationErrorCodeBase - static_cast<int32_t>(frameworkError);
+#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+                            }
+#endif
                         }
-                        Text = Core::ErrorToString(frameworkError);
+
+                        if (Text.IsSet() == false) {
+                            Text = Core::ErrorToStringExtended(frameworkError);
+                        }
                         break;
                     }
                 }
@@ -189,7 +215,13 @@ namespace Core {
 
         public:
             static constexpr TCHAR DefaultVersion[] = _T("2.0");
+            static constexpr TCHAR KeyId[] = _T("id");
+            static constexpr TCHAR KeyMethod[] = _T("method");
+            static constexpr TCHAR KeyParameters[] = _T("params");
+            static constexpr TCHAR KeyResult[] = _T("result");
+            static constexpr TCHAR KeyError[] = _T("error");
 
+            Message& operator=(Message&&) = delete;
             Message& operator=(const Message&) = delete;
 
             Message()
@@ -203,11 +235,11 @@ namespace Core {
                 , _implicitCallsign()
             {
                 Add(_T("jsonrpc"), &JSONRPC);
-                Add(_T("id"), &Id);
-                Add(_T("method"), &Designator);
-                Add(_T("params"), &Parameters);
-                Add(_T("result"), &Result);
-                Add(_T("error"), &Error);
+                Add(KeyId, &Id);
+                Add(KeyMethod, &Designator);
+                Add(KeyParameters, &Parameters);
+                Add(KeyResult, &Result);
+                Add(KeyError, &Error);
 
                 Clear();
             }
@@ -222,13 +254,12 @@ namespace Core {
                 , _implicitCallsign(copy._implicitCallsign)
             {
                 Add(_T("jsonrpc"), &JSONRPC);
-                Add(_T("id"), &Id);
-                Add(_T("method"), &Designator);
-                Add(_T("params"), &Parameters);
-                Add(_T("result"), &Result);
-                Add(_T("error"), &Error);
+                Add(KeyId, &Id);
+                Add(KeyMethod, &Designator);
+                Add(KeyParameters, &Parameters);
+                Add(KeyResult, &Result);
+                Add(KeyError, &Error);
             }
-
             Message(Message&& move) noexcept
                 : Core::JSON::Container()
                 , JSONRPC(std::move(move.JSONRPC))
@@ -240,16 +271,140 @@ namespace Core {
                 , _implicitCallsign(std::move(move._implicitCallsign))
             {
                 Add(_T("jsonrpc"), &JSONRPC);
-                Add(_T("id"), &Id);
-                Add(_T("method"), &Designator);
-                Add(_T("params"), &Parameters);
-                Add(_T("result"), &Result);
-                Add(_T("error"), &Error);
+                Add(KeyId, &Id);
+                Add(KeyMethod, &Designator);
+                Add(KeyParameters, &Parameters);
+                Add(KeyResult, &Result);
+                Add(KeyError, &Error);
             }
-
             ~Message() override = default;
 
         public:
+            static string Join(const string& callsign, const string& version, const string& prefix, const string& instanceId, const string& method, const string& index)
+            {
+                string out;
+
+                if (callsign.empty() == false) {
+                    out += callsign;
+                    out += TCHAR('.');
+                }
+
+                if (version.empty() == false) {
+                    out += version;
+                    out += TCHAR('.');
+                }
+
+                if (prefix.empty() == false) {
+                    out += prefix;
+
+                    if (instanceId.empty() == false) {
+                        out += TCHAR('#');
+                        out += instanceId;
+                    }
+
+                    out += _T("::");
+                }
+
+                out += Formalize(method);
+
+                if (index.empty() == false) {
+                    out += TCHAR('@');
+                    out += index;
+                }
+
+                return (out);
+            }
+            static string Join(const string& prefix, const string& instanceId, const string& method)
+            {
+                string out;
+
+                if (prefix.empty() == false) {
+                    out += prefix;
+
+                    if (instanceId.empty() == false) {
+                        out += TCHAR('#');
+                        out += instanceId;
+                    }
+
+                    out += _T("::");
+                }
+
+                out += Formalize(method);
+
+                return (out);
+            }
+            static string Join(const string& prefix, const string& method)
+            {
+                string out;
+
+                if (prefix.empty() == false) {
+                    out += prefix;
+                    out += _T("::");
+                }
+
+                out += Formalize(method);
+
+                return (out);
+            }
+            static void Split(const string& designator, string* outCallsign, string* outVersion, string* outPrefix, string* outInstanceId, string* outMethod, string* outIndex)
+            {
+                // [Callsign.][version.][prefix[#instanceid]::]method[@index]
+
+                const size_t idxI = designator.rfind(TCHAR('@'));
+
+                if ((outIndex != nullptr) && (idxI != string::npos)) {
+                    (*outIndex) = designator.substr(idxI + 1);
+                }
+
+                size_t idxM = designator.rfind(TCHAR('.'), idxI);
+
+                if ((idxM != string::npos) && (idxM != 0)) {
+
+                    const size_t idxV = (designator.rfind(TCHAR('.'), (idxM - 1)) + 1);
+
+                    size_t i = idxV;
+                    while ((i < idxM) && (::isdigit(designator[i]))) {
+                        i++;
+                    }
+
+                    const size_t end = ((i == idxM) ? (idxV - 1) : idxM);
+
+                    if ((outVersion != nullptr) && (end != idxM)) {
+                        (*outVersion) = designator.substr(idxV, (idxM - idxV));
+                    }
+
+                    if ((outCallsign != nullptr) && (end != string::npos)) {
+                        (*outCallsign) = designator.substr(0, end);
+                    }
+                }
+
+                idxM++;
+
+                const size_t idxP = designator.rfind(_T("::"), idxI);
+
+                if ((idxP != string::npos) && ((idxP + 1) < designator.size())) {
+
+                    if ((outInstanceId != nullptr) || (outPrefix != nullptr)) {
+
+                        const size_t idxId = designator.rfind(TCHAR('#'), idxP);
+
+                        if ((outInstanceId != nullptr) && (idxId != string::npos)) {
+                            (*outInstanceId) = designator.substr((idxId + 1), (idxP - idxId - 1));
+                        }
+
+                        if (outPrefix != nullptr) {
+                            (*outPrefix) = designator.substr(idxM, (std::min(idxP, idxId) - idxM));
+                        }
+                    }
+
+                    idxM = (idxP + 2);
+                }
+
+                if (outMethod != nullptr) {
+                    (*outMethod) = designator.substr(idxM, ((idxI == string::npos)? idxI : (idxI - idxM)));
+                    Formalize(*outMethod);
+                }
+            }
             static string Callsign(const string& designator)
             {
                 size_t pos = designator.find_last_of('.', designator.find_last_of('@'));
@@ -266,26 +421,55 @@ namespace Core {
                 }
                 return (pos == string::npos ? EMPTY_STRING : designator.substr(0, pos));
             }
-            static string Method(const string& designator)
+            static void Formalize(VARIABLE_IS_NOT_USED string& method)
             {
-                size_t end = designator.find_last_of('@');
-                size_t begin = designator.find_last_of('.', end);
-                size_t lookup = designator.find_first_of('#', begin+1);
-                string method;
-
-                if (lookup != string::npos) {
-                    size_t ns = designator.find_first_of(':', lookup + 1);
-                    method = designator.substr((begin == string::npos) ? 0 : begin + 1, lookup - begin - 1) + (ns != string::npos? designator.substr(ns, end - ns) : string{});
-                 }
-                else {
-                    method = designator.substr((begin == string::npos) ? 0 : begin + 1, (end == string::npos ? string::npos : (begin == string::npos) ? end : end - begin - 1));
-                }
-
+#ifdef __ENABLE_JSONRPC_FORGIVING_METHOD_CASE_HANDLING__                
 PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE) // Support pascal casing during the transition period
                 ToCamelCase(method);
 POP_WARNING()
+#endif
+            }
+            static string Formalize(const string& method)
+            {
+                string formalized = method;
+                Formalize(formalized);
+                return (formalized);
+            }
+            static string Method(const string& designator)
+            {
+                size_t end = designator.find_last_of('@');
+                size_t begin = designator.find_last_of('.', end) + 1;
+                size_t lookup = designator.find_first_of('#', begin);
+                string method;
+
+                if (lookup != string::npos) {
+                    size_t prefix = designator.find_first_of(':', lookup + 1);
+                    method = designator.substr(begin, lookup - begin);
+                    if (prefix != string::npos) {
+                        method += designator.substr(prefix, end - prefix);
+                    }
+                 }
+                else {
+                    method = designator.substr(begin, end - begin);
+                }
+
+                Formalize(method);
 
                 return (method);
+            }
+            static string Prefix(const string& designator)
+            {
+                string prefix;
+
+                size_t end = designator.find_last_of(':');
+
+                if (end != string::npos) {
+                    size_t begin = designator.find_last_of('.', end) + 1;
+                    size_t lookup = designator.find_first_of('#', begin);
+                    prefix = designator.substr(begin, std::min(lookup,end - 1) - begin);
+                }
+
+                return (prefix);
             }
             static string FullMethod(const string& designator)
             {
@@ -376,16 +560,16 @@ POP_WARNING()
 
                 return (end == string::npos ? EMPTY_STRING : designator.substr(end + 1, string::npos));
             }
-            static uint32_t InstanceId(const string& designator)
+            static string InstanceId(const string& designator)
             {
                 const size_t pos = designator.find_first_of('#');
-                uint32_t val = 0;
+                string id;
 
-                if (pos != string::npos) {
-                    Core::FromString(designator.substr(pos + 1, (designator.find_first_of(":@", pos) - (pos + 1))), val);
+                if ((pos != string::npos) && (designator.size() > pos)) {
+                    id = designator.substr(pos + 1, (designator.find_first_of(":@", pos) - (pos + 1)));
                 }
 
-                return (val);
+                return (id);
             }
             void Clear() override
             {
@@ -490,6 +674,11 @@ POP_WARNING()
                 , _sequence(sequence)
                 , _token(token) {
             }
+            Context(const uint32_t channelId)
+                : _channelId(channelId)
+                , _sequence(~0)
+                , _token() {
+            }
             ~Context() = default;
 
         public:
@@ -520,7 +709,7 @@ POP_WARNING()
             private:
                 Entry() = delete;
                 Entry& operator=(const Entry&) = delete;
-                
+
                 union Functions {
                     Functions(const Functions& function, const bool async)
                     {
@@ -751,18 +940,20 @@ POP_WARNING()
             {
                 return (EventIterator(_handlers));
             }
-            inline bool Copy(const Handler& copy, const string& method)
+            inline bool Copy(const Handler& copy, const string& methodName)
             {
                 bool copied = false;
 
-                HandlerMap::const_iterator index = copy._handlers.find(method);
+                string formalMethodName = Message::Formalize(methodName);
+
+                HandlerMap::const_iterator index = copy._handlers.find(formalMethodName);
 
                 if (index != copy._handlers.end()) {
                     copied = true;
                     const Entry& info(index->second);
 
                     _handlers.emplace(std::piecewise_construct,
-                        std::forward_as_tuple(method),
+                        std::forward_as_tuple(std::move(formalMethodName)),
                         std::forward_as_tuple(info));
                 }
 
@@ -772,7 +963,8 @@ POP_WARNING()
             // The interface is prepared.
             inline uint32_t Exists(const string& methodName) const
             {
-                return ((_handlers.find(methodName) != _handlers.end()) ? Core::ERROR_NONE : Core::ERROR_UNKNOWN_METHOD);
+                string formalMethodName = Message::Formalize(methodName);
+                return ((_handlers.find(formalMethodName) != _handlers.end()) ? Core::ERROR_NONE : Core::ERROR_UNKNOWN_METHOD);
             }
             bool HasVersionSupport(const uint8_t number) const
             {
@@ -814,19 +1006,23 @@ POP_WARNING()
                 InternalProperty<PARAMETER, GET_METHOD, SET_METHOD, REALOBJECT>(::TemplateIntToType<SET_COUNT::Arguments>(), methodName, getMethod, setMethod, objectPtr);
             }
 
+        private:
+            template<typename METHOD>
+            struct handler_traits {
+                template <int N>
+                using ARG = typename std::decay<typename TypeTraits::func_traits<METHOD>::template argument<N>::type>::type;
+
+                static constexpr auto hasContext = std::is_same<ARG<0>, Context>::value;
+                static constexpr auto hasIndex = (std::is_same<ARG<0>, string>::value | std::is_same<ARG<1>, string>::value | std::is_same<ARG<3>, string>::value);
+                static constexpr auto hasInstanceId = (std::is_same<ARG<0>, instance_id_follows_t>::value | std::is_same<ARG<1>, instance_id_follows_t>::value);
+            };
+
         public:
             template <typename INBOUND, typename OUTBOUND, typename METHOD>
             void Register(const string& methodName, const METHOD& method)
             {
-                using ARG0 = typename std::decay<typename TypeTraits::func_traits<METHOD>::template argument<0>::type>::type;
-                using ARG1 = typename std::decay<typename TypeTraits::func_traits<METHOD>::template argument<1>::type>::type;
-                using ARG2 = typename std::decay<typename TypeTraits::func_traits<METHOD>::template argument<2>::type>::type;
-                constexpr auto HAS_CONTEXT = std::is_same<ARG0, Context>::value;
-                constexpr auto HAS_INDEX = (std::is_same<ARG0, string>::value | std::is_same<ARG1, string>::value | std::is_same<ARG2, string>::value);
-                constexpr auto HAS_INSTANCEID = (std::is_same<ARG0, uint32_t>::value | std::is_same<ARG1, uint32_t>::value);
-
                 InternalRegister<INBOUND, OUTBOUND, METHOD>(
-                    ::TemplateIntToType<HAS_CONTEXT | (HAS_INDEX << 1) | (HAS_INSTANCEID << 2)>(),
+                    ::TemplateIntToType<handler_traits<METHOD>::hasContext | (handler_traits<METHOD>::hasIndex << 1) | (handler_traits<METHOD>::hasInstanceId << 2)>(),
                     ::TemplateIntToType<std::is_same<INBOUND, void>::value>(),
                     ::TemplateIntToType<std::is_same<OUTBOUND, void>::value>(),
                     methodName,
@@ -835,15 +1031,8 @@ POP_WARNING()
             template <typename INBOUND, typename OUTBOUND, typename METHOD, typename REALOBJECT>
             void Register(const string& methodName, const METHOD& method, REALOBJECT* objectPtr)
             {
-                using ARG0 = typename std::decay<typename TypeTraits::func_traits<METHOD>::template argument<0>::type>::type;
-                using ARG1 = typename std::decay<typename TypeTraits::func_traits<METHOD>::template argument<1>::type>::type;
-                using ARG2 = typename std::decay<typename TypeTraits::func_traits<METHOD>::template argument<2>::type>::type;
-                constexpr auto HAS_CONTEXT = std::is_same<ARG0, Context>::value;
-                constexpr auto HAS_INDEX = (std::is_same<ARG0, string>::value | std::is_same<ARG1, string>::value | std::is_same<ARG2, string>::value);
-                constexpr auto HAS_INSTANCEID = (std::is_same<ARG0, uint32_t>::value | std::is_same<ARG1, uint32_t>::value);
-
                 InternalRegister<INBOUND, OUTBOUND, METHOD, REALOBJECT>(
-                    ::TemplateIntToType<HAS_CONTEXT | (HAS_INDEX << 1) | (HAS_INSTANCEID << 2)>(),
+                    ::TemplateIntToType<handler_traits<METHOD>::hasContext | (handler_traits<METHOD>::hasIndex << 1) | (handler_traits<METHOD>::hasInstanceId << 2)>(),
                     ::TemplateIntToType<std::is_same<INBOUND, void>::value>(),
                     ::TemplateIntToType<std::is_same<OUTBOUND, void>::value>(),
                     methodName,
@@ -869,10 +1058,12 @@ POP_WARNING()
             }
             void Register(const string& methodName, const InvokeFunction& lambda)
             {
+                string formalMethodName = Message::Formalize(methodName);
+
                 // Due to versioning, we do allow to overwrite methods that have been registered.
                 // These are typically methods that are different from the preferred interface..
                 auto retval = _handlers.emplace(std::piecewise_construct,
-                                    std::make_tuple(methodName),
+                                    std::make_tuple(std::move(formalMethodName)),
                                     std::make_tuple(lambda));
 
                 if ( retval.second == false ) {
@@ -881,11 +1072,13 @@ POP_WARNING()
             }
             void Register(const string& methodName, const CallbackFunction& lambda)
             {
+                string formalMethodName = Message::Formalize(methodName);
+
                 // Due to versioning, we do allow to overwrite methods that have been registered.
                 // These are typically methods that are different from the preferred interface..
 
                 auto retval = _handlers.emplace(std::piecewise_construct,
-                                    std::make_tuple(methodName),
+                                    std::make_tuple(std::move(formalMethodName)),
                                     std::make_tuple(lambda));
 
                 if ( retval.second == false ) {
@@ -897,23 +1090,28 @@ POP_WARNING()
                 ASSERT(methodName.empty() == false);
                 ASSERT(primaryName.empty() == false);
 
-                auto retval = _handlers.find(primaryName);
+                string formalMethodName = Message::Formalize(methodName);
+                string formalPrimaryName = Message::Formalize(primaryName);
+
+                auto retval = _handlers.find(formalPrimaryName);
                 ASSERT(retval != _handlers.end());
 
-                auto retvalAlias = _handlers.find(methodName);
+                auto retvalAlias = _handlers.find(formalMethodName);
                 ASSERT(retvalAlias == _handlers.end());
 
                 // Register the handler under an alternative name.
 
                 if ((retval != _handlers.end()) && (retvalAlias == _handlers.end()))  {
                     _handlers.emplace(std::piecewise_construct,
-                        std::make_tuple(methodName),
+                        std::make_tuple(std::move(formalMethodName)),
                         std::make_tuple(retval->second));
                 }
             }
             void Unregister(const string& methodName)
             {
-                HandlerMap::iterator index = _handlers.find(methodName);
+                string formalMethodName = Message::Formalize(methodName);
+
+                HandlerMap::iterator index = _handlers.find(formalMethodName);
 
                 ASSERT((index != _handlers.end()) && _T("Do not unregister methods that are not registered!!!"));
 
@@ -1194,28 +1392,28 @@ POP_WARNING()
             void InternalRegister(const ::TemplateIntToType<4>&, const ::TemplateIntToType<1>&, const ::TemplateIntToType<1>&, const string& methodName, const METHOD& method)
             {
                 Register(methodName, [method](const Context&, const string& methodName, const string& /* parameters */, string& /* result */) -> uint32_t {
-                    return (InternalRegisterImpl<METHOD>(method, Message::InstanceId(methodName)));
+                    return (InternalRegisterImpl<METHOD>(method, instance_id_follows, Message::InstanceId(methodName)));
                 });
             }
             template <typename INBOUND, typename OUTBOUND, typename METHOD> // id+inbound
             void InternalRegister(const ::TemplateIntToType<4>&, const ::TemplateIntToType<0>&, const ::TemplateIntToType<1>&, const string& methodName, const METHOD& method)
             {
                 Register(methodName, [method](const Context&, const string& methodName, const string& parameters, string& result) -> uint32_t {
-                    return (InternalRegisterImpl<INBOUND, METHOD>(parameters, result, method, Message::InstanceId(methodName)));
+                    return (InternalRegisterImpl<INBOUND, METHOD>(parameters, result, method, instance_id_follows, Message::InstanceId(methodName)));
                 });
             }
             template <typename INBOUND, typename OUTBOUND, typename METHOD> // id+outbound
             void InternalRegister(const ::TemplateIntToType<4>&, const ::TemplateIntToType<1>&, const ::TemplateIntToType<0>&, const string& methodName, const METHOD& method)
             {
                 Register(methodName, [method](const Context&, const string& methodName, const string&, string& result) -> uint32_t {
-                    return (InternalRegisterImpl<OUTBOUND, METHOD>(result, method, Message::InstanceId(methodName)));
+                    return (InternalRegisterImpl<OUTBOUND, METHOD>(result, method, instance_id_follows, Message::InstanceId(methodName)));
                 });
             }
             template <typename INBOUND, typename OUTBOUND, typename METHOD> // id+inbound+outbound
             void InternalRegister(const ::TemplateIntToType<4>&, const ::TemplateIntToType<0>&, const ::TemplateIntToType<0>&, const string& methodName, const METHOD& method)
             {
                 Register(methodName, [method](const Context&, const string& methodName, const string& parameters, string& result) -> uint32_t {
-                    return (InternalRegisterImplIO<INBOUND, OUTBOUND, METHOD>(parameters, result, method, Message::InstanceId(methodName)));
+                    return (InternalRegisterImplIO<INBOUND, OUTBOUND, METHOD>(parameters, result, method, instance_id_follows, Message::InstanceId(methodName)));
                 });
             }
 
@@ -1224,28 +1422,28 @@ POP_WARNING()
             void InternalRegister(const ::TemplateIntToType<5>&, const ::TemplateIntToType<1>&, const ::TemplateIntToType<1>&, const string& methodName, const METHOD& method)
             {
                 Register(methodName, [method](const Context& context, const string& methodName, const string& /* parameters */, string& /* result */) -> uint32_t {
-                    return (InternalRegisterImpl<METHOD>(method, context, Message::InstanceId(methodName)));
+                    return (InternalRegisterImpl<METHOD>(method, context, instance_id_follows, Message::InstanceId(methodName)));
                 });
             }
             template <typename INBOUND, typename OUTBOUND, typename METHOD> // context+id+inbound
             void InternalRegister(const ::TemplateIntToType<5>&, const ::TemplateIntToType<0>&, const ::TemplateIntToType<1>&, const string& methodName, const METHOD& method)
             {
                 Register(methodName, [method](const Context& context, const string& methodName, const string& parameters, string& result) -> uint32_t {
-                    return (InternalRegisterImpl<INBOUND, METHOD>(parameters, result, method, context, Message::InstanceId(methodName)));
+                    return (InternalRegisterImpl<INBOUND, METHOD>(parameters, result, method, context, instance_id_follows, Message::InstanceId(methodName)));
                 });
             }
             template <typename INBOUND, typename OUTBOUND, typename METHOD> // context+id+outbound
             void InternalRegister(const ::TemplateIntToType<5>&, const ::TemplateIntToType<1>&, const ::TemplateIntToType<0>&, const string& methodName, const METHOD& method)
             {
                 Register(methodName, [method](const Context& context, const string& methodName, const string&, string& result) -> uint32_t {
-                    return (InternalRegisterImpl<OUTBOUND, METHOD>(result, method, context, Message::InstanceId(methodName)));
+                    return (InternalRegisterImpl<OUTBOUND, METHOD>(result, method, context, instance_id_follows, Message::InstanceId(methodName)));
                 });
             }
             template <typename INBOUND, typename OUTBOUND, typename METHOD> // context+id+inbound+outbound
             void InternalRegister(const ::TemplateIntToType<5>&, const ::TemplateIntToType<0>&, const ::TemplateIntToType<0>&, const string& methodName, const METHOD& method)
             {
                 Register(methodName, [method](const Context& context, const string& methodName, const string& parameters, string& result) -> uint32_t {
-                    return (InternalRegisterImplIO<INBOUND, OUTBOUND, METHOD>(parameters, result, method, context, Message::InstanceId(methodName)));
+                    return (InternalRegisterImplIO<INBOUND, OUTBOUND, METHOD>(parameters, result, method, context, instance_id_follows, Message::InstanceId(methodName)));
                 });
             }
 
@@ -1254,21 +1452,21 @@ POP_WARNING()
             void InternalRegister(const ::TemplateIntToType<6>&, const ::TemplateIntToType<0>&, const ::TemplateIntToType<1>&, const string& methodName, const METHOD& method)
             {
                 Register(methodName, [method](const Context&, const string& methodName, const string& parameters, string& result) -> uint32_t {
-                    return (InternalRegisterImpl<INBOUND, METHOD>(parameters, result, method, Message::InstanceId(methodName), Message::Index(methodName)));
+                    return (InternalRegisterImpl<INBOUND, METHOD>(parameters, result, method, instance_id_follows, Message::InstanceId(methodName), Message::Index(methodName)));
                 });
             }
             template <typename INBOUND, typename OUTBOUND, typename METHOD> // id+index+outbound
             void InternalRegister(const ::TemplateIntToType<6>&, const ::TemplateIntToType<1>&, const ::TemplateIntToType<0>&, const string& methodName, const METHOD& method)
             {
                 Register(methodName, [method](const Context&, const string& methodName, const string&, string& result) -> uint32_t {
-                    return (InternalRegisterImpl<OUTBOUND, METHOD>(result, method, Message::InstanceId(methodName), Message::Index(methodName)));
+                    return (InternalRegisterImpl<OUTBOUND, METHOD>(result, method, instance_id_follows, Message::InstanceId(methodName), Message::Index(methodName)));
                 });
             }
             template <typename INBOUND, typename OUTBOUND, typename METHOD> // id+index+inbound+outbound
             void InternalRegister(const ::TemplateIntToType<6>&, const ::TemplateIntToType<0>&, const ::TemplateIntToType<0>&, const string& methodName, const METHOD& method)
             {
                 Register(methodName, [method](const Context&, const string& methodName, const string& parameters, string& result) -> uint32_t {
-                    return (InternalRegisterImplIO<INBOUND, OUTBOUND, METHOD>(parameters, result, method, Message::InstanceId(methodName), Message::Index(methodName)));
+                    return (InternalRegisterImplIO<INBOUND, OUTBOUND, METHOD>(parameters, result, method, instance_id_follows, Message::InstanceId(methodName), Message::Index(methodName)));
                 });
             }
 
@@ -1277,21 +1475,21 @@ POP_WARNING()
             void InternalRegister(const ::TemplateIntToType<7>&, const ::TemplateIntToType<0>&, const ::TemplateIntToType<1>&, const string& methodName, const METHOD& method)
             {
                 Register(methodName, [method](const Context& context, const string& methodName, const string& parameters, string& result) -> uint32_t {
-                    return (InternalRegisterImpl<INBOUND, METHOD>(parameters, result, method, context, Message::InstanceId(methodName), Message::Index(methodName)));
+                    return (InternalRegisterImpl<INBOUND, METHOD>(parameters, result, method, context, instance_id_follows, Message::InstanceId(methodName), Message::Index(methodName)));
                 });
             }
             template <typename INBOUND, typename OUTBOUND, typename METHOD> // context+id+index+outbound
             void InternalRegister(const ::TemplateIntToType<7>&, const ::TemplateIntToType<1>&, const ::TemplateIntToType<0>&, const string& methodName, const METHOD& method)
             {
                 Register(methodName, [method](const Context& context, const string& methodName, const string&, string& result) -> uint32_t {
-                    return (InternalRegisterImpl<OUTBOUND, METHOD>(result, method, context, Message::InstanceId(methodName), Message::Index(methodName)));
+                    return (InternalRegisterImpl<OUTBOUND, METHOD>(result, method, context, instance_id_follows, Message::InstanceId(methodName), Message::Index(methodName)));
                 });
             }
             template <typename INBOUND, typename OUTBOUND, typename METHOD> // context+id+index+inbound+outbound
             void InternalRegister(const ::TemplateIntToType<7>&, const ::TemplateIntToType<0>&, const ::TemplateIntToType<0>&, const string& methodName, const METHOD& method)
             {
                 Register(methodName, [method](const Context& context, const string& methodName, const string& parameters, string& result) -> uint32_t {
-                    return (InternalRegisterImplIO<INBOUND, OUTBOUND, METHOD>(parameters, result, method, context, Message::InstanceId(methodName), Message::Index(methodName)));
+                    return (InternalRegisterImplIO<INBOUND, OUTBOUND, METHOD>(parameters, result, method, context, instance_id_follows, Message::InstanceId(methodName), Message::Index(methodName)));
                 });
             }
 
@@ -1406,28 +1604,28 @@ POP_WARNING()
             void InternalRegister(const ::TemplateIntToType<4>&, const ::TemplateIntToType<1>&, const ::TemplateIntToType<1>&, const string& methodName, const METHOD& method, REALOBJECT* objectPtr)
             {
                 Register(methodName, [method, objectPtr](const Context&, const string& methodName, const string& /* parameters */, string& /* result */) -> uint32_t {
-                    return (InternalRegisterImpl(std::bind(method, objectPtr, std::placeholders::_1), Message::InstanceId(methodName)));
+                    return (InternalRegisterImpl(std::bind(method, objectPtr, std::placeholders::_1), instance_id_follows, Message::InstanceId(methodName)));
                 });
             }
             template <typename INBOUND, typename OUTBOUND, typename METHOD, typename REALOBJECT> // id+inbound
             void InternalRegister(const ::TemplateIntToType<4>&, const ::TemplateIntToType<0>&, const ::TemplateIntToType<1>&, const string& methodName, const METHOD& method, REALOBJECT* objectPtr)
             {
                 Register(methodName, [method, objectPtr](const Context&, const string& methodName, const string& parameters, string& result) -> uint32_t {
-                    return (InternalRegisterImpl<INBOUND>(parameters, result, std::bind(method, objectPtr, std::placeholders::_1, std::placeholders::_2), Message::InstanceId(methodName)));
+                    return (InternalRegisterImpl<INBOUND>(parameters, result, std::bind(method, objectPtr, std::placeholders::_1, std::placeholders::_2), instance_id_follows, Message::InstanceId(methodName)));
                 });
             }
             template <typename INBOUND, typename OUTBOUND, typename METHOD, typename REALOBJECT> // id+outbound
             void InternalRegister(const ::TemplateIntToType<4>&, const ::TemplateIntToType<1>&, const ::TemplateIntToType<0>&, const string& methodName, const METHOD& method, REALOBJECT* objectPtr)
             {
                 Register(methodName, [method, objectPtr](const Context&, const string& methodName, const string&, string& result) -> uint32_t {
-                    return (InternalRegisterImpl<OUTBOUND>(result, std::bind(method, objectPtr, std::placeholders::_1, std::placeholders::_2), Message::InstanceId(methodName)));
+                    return (InternalRegisterImpl<OUTBOUND>(result, std::bind(method, objectPtr, std::placeholders::_1, std::placeholders::_2), instance_id_follows, Message::InstanceId(methodName)));
                 });
             }
             template <typename INBOUND, typename OUTBOUND, typename METHOD, typename REALOBJECT> // id+inbound+outbound
             void InternalRegister(const ::TemplateIntToType<4>&, const ::TemplateIntToType<0>&, const ::TemplateIntToType<0>&, const string& methodName, const METHOD& method, REALOBJECT* objectPtr)
             {
                 Register(methodName, [method, objectPtr](const Context&, const string& methodName, const string& parameters, string& result) -> uint32_t {
-                    return (InternalRegisterImplIO<INBOUND, OUTBOUND>(parameters, result, std::bind(method, objectPtr, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3), Message::InstanceId(methodName)));
+                    return (InternalRegisterImplIO<INBOUND, OUTBOUND>(parameters, result, std::bind(method, objectPtr, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3), instance_id_follows, Message::InstanceId(methodName)));
                 });
             }
 
@@ -1450,7 +1648,7 @@ POP_WARNING()
             void InternalRegister(const ::TemplateIntToType<6>&, const ::TemplateIntToType<0>&, const ::TemplateIntToType<0>&, const string& methodName, const METHOD& method, REALOBJECT* objectPtr)
             {
                 Register(methodName, [method, objectPtr](const Context&, const string& methodName, const string& parameters, string& result) -> uint32_t {
-                    return (InternalRegisterImplIO<INBOUND, OUTBOUND>(parameters, result, std::bind(method, objectPtr, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4), Message::InstanceId(methodName), Message::Index(methodName)));
+                    return (InternalRegisterImplIO<INBOUND, OUTBOUND>(parameters, result, std::bind(method, objectPtr, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4), instance_id_follows, Message::InstanceId(methodName), Message::Index(methodName)));
                 });
             }
 
@@ -1491,7 +1689,7 @@ POP_WARNING()
 
                 if (report.IsSet() == false) {
                     code = method(std::forward<Args>(args)..., inbound, outbound);
-                    if (code == Core::ERROR_NONE) {
+                    if ((code == Core::ERROR_NONE) && (outbound.IsSet() == true)) {
                         outbound.ToString(result);
                     }
                     else {
@@ -1512,7 +1710,7 @@ POP_WARNING()
 
                 uint32_t code = method(std::forward<Args>(args)..., outbound);
 
-                if (code == Core::ERROR_NONE) {
+                if ((code == Core::ERROR_NONE) && (outbound.IsSet() == true)) {
                     outbound.ToString(result);
                 }
                 else {

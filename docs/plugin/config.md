@@ -40,6 +40,7 @@ These are the options applicable to all plugins
 | configuration.root.remoteaddress | If running in distributed mode, the address of the COM-RPC socket on the network to connect to | string    | -           | -                                |
 | persistentpathpostfix            | Instead of using the plugin callsign, use this as the persistent path postfix. Useful if you are cloning plugins and want them to use the same persistent directory | string    | -           | sharedPersistentDirectory        |
 | volatilepathpostfix              | Instead of using the plugin callsign, use this as the volatile path postfix. Useful if you are cloning plugins and want them to use the same volatile directory | string    | -           | sharedVolatileDirectory          |
+| throttle				           | maximum number of JSON-RPC requests allowed in parallel to this plugin | int | -                                                | 3                                                     |
 | systemrootpath                   | Custom directory to search for the plugin .so files          | string    | -           |                                  |
 | startuporder                     | A simple mechanism for prioritising autostart plugins. Plugins will be started based on their startup order value - e.g. lower values will cause plugins to be started earlier than plugins with higher values | int       | 50          | 10                               |
 

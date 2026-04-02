@@ -84,6 +84,9 @@
     <ClInclude Include="LockableContainer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="MACAddress.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="Measurement.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -207,9 +210,6 @@
     <ClInclude Include="Trace.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="TriState.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="TypeTraits.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -256,6 +256,15 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="IPCMessage.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="AssertionControl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IAssertionControl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Messaging.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -366,6 +375,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="WarningReportingCategories.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="AssertionControl.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Messaging.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

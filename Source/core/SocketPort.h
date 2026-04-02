@@ -48,15 +48,6 @@
 namespace Thunder {
     namespace Core {
         class EXTERNAL SocketPort : public IResource {
-        private:
-            // -------------------------------------------------------------------------
-            // This object should not be copied, assigned or created with a default
-            // constructor. Prevent them from being used, generatoed by the compiler.
-            // define them but do not implement them. Compile error and/or link error.
-            // -------------------------------------------------------------------------
-            SocketPort(const SocketPort& a_RHS) = delete;
-            SocketPort& operator=(const SocketPort& a_RHS) = delete;
-
         public:
             typedef enum {
                 READ = 0x001,
@@ -68,6 +59,7 @@ namespace Thunder {
                 LINK = 0x040,
                 MONITOR = 0x080,
                 WRITESLOT = 0x100,
+                REMOTE_CLOSED = 0x200,
                 UPDATE = 0x8000
 
             } enumState;
@@ -82,6 +74,11 @@ namespace Thunder {
             } enumType;
 
         public:
+            SocketPort(SocketPort&& a_RHS) = delete;
+            SocketPort(const SocketPort& a_RHS) = delete;
+            SocketPort& operator=(SocketPort&& a_RHS) = delete;
+            SocketPort& operator=(const SocketPort& a_RHS) = delete;
+
             SocketPort(const enumType socketType,
                 const NodeId& localNode,
                 const NodeId& remoteNode,
@@ -139,7 +136,8 @@ namespace Thunder {
             }
             inline bool IsSuspended() const
             {
-                return ((State() & (SocketPort::SHUTDOWN | SocketPort::EXCEPTION)) == SocketPort::SHUTDOWN);
+                return (((State() & (SocketPort::SHUTDOWN | SocketPort::EXCEPTION| SocketPort::REMOTE_CLOSED)) == (SocketPort::SHUTDOWN)) ||
+                ((State() & (SocketPort::SHUTDOWN | SocketPort::EXCEPTION| SocketPort::REMOTE_CLOSED)) == (SocketPort::REMOTE_CLOSED)));
             }
             inline bool IsForcedClosing() const
             {
@@ -312,12 +310,13 @@ POP_WARNING()
         };
 
         class EXTERNAL SocketStream : public SocketPort {
-        private:
+        public:
             SocketStream() = delete;
+            SocketStream(SocketStream&&) = delete;
             SocketStream(const SocketStream&) = delete;
+            SocketStream& operator=(SocketStream&&) = delete;
             SocketStream& operator=(const SocketStream&) = delete;
 
-        public:
             SocketStream(const bool rawSocket,
                 const NodeId& localNode,
                 const NodeId& remoteNode,
@@ -326,7 +325,6 @@ POP_WARNING()
                 : SocketStream(rawSocket, localNode, remoteNode, sendBufferSize, receiveBufferSize, sendBufferSize, receiveBufferSize)
             {
             }
-
             SocketStream(const bool rawSocket,
                 const NodeId& localNode,
                 const NodeId& remoteNode,
@@ -337,7 +335,6 @@ POP_WARNING()
                 : SocketPort((rawSocket ? SocketPort::RAW : SocketPort::STREAM), localNode, remoteNode, sendBufferSize, receiveBufferSize, socketSendBufferSize, socketReceiveBufferSize)
             {
             }
-
             SocketStream(const bool rawSocket,
                 const SOCKET& connector,
                 const NodeId& remoteNode,
@@ -346,7 +343,6 @@ POP_WARNING()
                 : SocketStream(rawSocket, connector, remoteNode, sendBufferSize, receiveBufferSize, sendBufferSize, receiveBufferSize)
             {
             }
-
             SocketStream(const bool rawSocket,
                 const SOCKET& connector,
                 const NodeId& remoteNode,
@@ -357,17 +353,17 @@ POP_WARNING()
                 : SocketPort((rawSocket ? SocketPort::RAW : SocketPort::STREAM), connector, remoteNode, sendBufferSize, receiveBufferSize, socketSendBufferSize, socketReceiveBufferSize)
             {
             }
-
             ~SocketStream() override = default;
         };
 
         class EXTERNAL SocketDatagram : public SocketPort {
-        private:
+        public:
             SocketDatagram() = delete;
+            SocketDatagram(SocketDatagram&&) = delete;
             SocketDatagram(const SocketDatagram&) = delete;
+            SocketDatagram& operator=(SocketDatagram&&) = delete;
             SocketDatagram& operator=(const SocketDatagram&) = delete;
 
-        public:
             SocketDatagram(const bool rawSocket,
                 const NodeId& localNode,
                 const NodeId& remoteNode,
@@ -376,7 +372,6 @@ POP_WARNING()
                 : SocketDatagram(rawSocket, localNode, remoteNode, sendBufferSize, receiveBufferSize, sendBufferSize, receiveBufferSize)
             {
             }
-
             SocketDatagram(const bool rawSocket,
                 const NodeId& localNode,
                 const NodeId& remoteNode,
@@ -387,21 +382,18 @@ POP_WARNING()
                 : SocketPort((rawSocket ? SocketPort::RAW : SocketPort::DATAGRAM), localNode, remoteNode, sendBufferSize, receiveBufferSize, socketSendBufferSize, socketReceiveBufferSize)
             {
             }
-
-            ~SocketDatagram() override
-            {
-            }
+            ~SocketDatagram() override = default;
         };
 
         class EXTERNAL SocketListner {
         private:
             class EXTERNAL Handler : public SocketPort {
-            private:
-                Handler() = delete;
-                Handler(const Handler&) = delete;
-                Handler& operator=(const Handler&) = delete;
-
             public:
+                Handler() = delete;
+                Handler(Handler&&) = delete;
+                Handler(const Handler&) = delete;
+                Handler& operator=(Handler&&) = delete;
+                Handler& operator=(const Handler&) = delete;
                 Handler(SocketListner& parent)
                     : SocketPort(SocketPort::LISTEN, Core::NodeId(), Core::NodeId(), 0, 0)
                     , _parent(parent)
@@ -412,14 +404,16 @@ POP_WARNING()
                     , _parent(parent)
                 {
                 }
-                ~Handler()
-                {
-                }
+                ~Handler() override = default;
 
             public:
                 inline void LocalNode(const Core::NodeId& localNode)
                 {
                     SocketPort::LocalNode(localNode);
+                }
+                inline const Core::NodeId& LocalNode() const
+                {
+                    return (SocketPort::LocalNode());
                 }
                 uint16_t SendData(uint8_t* /* dataFrame */, const uint16_t /* maxSendSize */) override
                 {
@@ -473,7 +467,7 @@ POP_WARNING()
             }
             POP_WARNING()
 
-                virtual ~SocketListner()
+            virtual ~SocketListner()
             {
                 TRACE_L5("Destructor SocketListner <%p>", (this));
 
@@ -481,6 +475,10 @@ POP_WARNING()
             }
 
         public:
+            inline const Core::NodeId& LocalNode() const
+            {
+                return (_socket.LocalNode());
+            }
             inline bool IsListening() const
             {
                 return (_socket.IsListening());
@@ -507,7 +505,6 @@ POP_WARNING()
         protected:
             inline void LocalNode(const Core::NodeId& localNode)
             {
-
                 ASSERT(_socket.IsClosed() == true);
 
                 _socket.LocalNode(localNode);

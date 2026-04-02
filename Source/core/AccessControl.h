@@ -22,6 +22,7 @@
 #include "Module.h"
 #include "NodeId.h"
 #include "Portability.h"
+#include "Errors.h"
 
 #ifdef __POSIX__
 #include <grp.h>

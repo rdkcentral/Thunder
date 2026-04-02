@@ -28,14 +28,34 @@ namespace Thunder {
 
         static Plugin::Metadata<Plugin::Controller> metadata(
             // Version (Major, Minor, Patch)
-            1, 0, 0,
-            // Preconditions
+            1, 0, 0, 
+
+            // precondition
             {},
-            // Terminations
+
+            // terminaltion
             {},
-            // Controls
+
+            // control
             {}
         );
+
+        inline Exchange::Controller::ILifeTime::state ToLifeTimeState(const PluginHost::IStateControl::state input)
+        {
+            using SC = PluginHost::IStateControl;
+            using LT = Exchange::Controller::ILifeTime;
+
+            switch (input) {
+            case SC::SUSPENDED:
+                return (LT::SUSPENDED);
+            case SC::RESUMED:
+                return (LT::RESUMED);
+            case SC::UNINITIALIZED:
+            case SC::EXITED:
+            default:
+                return (LT::UNKNOWN);
+            }
+        }
     }
 
 namespace Plugin {
@@ -124,7 +144,7 @@ namespace Plugin {
         Exchange::Controller::JConfiguration::Register(*this, this);
         Exchange::Controller::JDiscovery::Register(*this, this);
         Exchange::Controller::JSystem::Register(*this, this);
-        Exchange::Controller::JLifeTime::Register(*this, this);
+        Exchange::Controller::JLifeTime::Register(*this, this, this);
         Exchange::Controller::JMetadata::Register(*this, this);
         Exchange::Controller::JSubsystems::Register(*this, this);
         Exchange::Controller::JEvents::Register(*this, this);
@@ -221,19 +241,28 @@ namespace Plugin {
         return (result);
     }
 
-    Core::hresult Controller::Persist()
+    Core::hresult Controller::Persist(const Core::OptionalType<string>& callsign)
     {
         ASSERT(_pluginServer != nullptr);
-
-        Core::hresult result = _pluginServer->Persist();
+        Core::hresult result = _pluginServer->Persist(callsign);
 
         // Normalise return code
         if (result != Core::ERROR_NONE) {
             result = Core::ERROR_GENERAL;
         }
-
         return result;
+    }
 
+    Core::hresult Controller::Restore(const Core::OptionalType<string>& callsign)
+    {
+        ASSERT(_pluginServer != nullptr);
+        Core::hresult result = _pluginServer->Restore(callsign);
+
+        // Normalise return code
+        if (result != Core::ERROR_NONE) {
+            result = Core::ERROR_GENERAL;
+        }
+        return result;
     }
 
     Core::hresult Controller::Delete(const string& path)
@@ -399,6 +428,9 @@ namespace Plugin {
         Core::ProxyType<Web::Response> result(PluginHost::IFactories::Instance().Response());
         result->ContentType = Web::MIME_JSON;
 
+        result->ErrorCode = Web::STATUS_OK;
+        result->Message = "OK";
+
         if (index.Next() == false) {
             Core::ProxyType<Web::JSONBodyType<PluginHost::Metadata>> response(jsonBodyMetadataFactory.Element());
 
@@ -527,6 +559,9 @@ namespace Plugin {
             Core::ProxyType<Web::JSONBodyType<PluginHost::Metadata::Version>> response(jsonBodyVersionFactory.Element());
             _pluginServer->Metadata(*response);
             result->Body(Core::ProxyType<Web::IBody>(response));
+        } else {
+            result->ErrorCode = Web::STATUS_BAD_REQUEST;
+            result->Message = _T("Bad request.");
         }
 
         return (result);
@@ -651,7 +686,7 @@ namespace Plugin {
                 }
             } else if (index.Current() == _T("Persist")) {
 
-                _pluginServer->Persist();
+                _pluginServer->Persist(Core::OptionalType<string>());
 
                 result->ErrorCode = Web::STATUS_OK;
                 result->Message = _T("Current configuration stored");
@@ -782,27 +817,37 @@ namespace Plugin {
     Core::hresult Controller::Invoke(const uint32_t channelId, const uint32_t id, const string& token, const string& method, const string& parameters, string& response /* @out */) /* override */
     {
         Core::hresult result = Core::ERROR_BAD_REQUEST;
-        string callsign(Core::JSONRPC::Message::Callsign(method));
 
-        if (callsign.empty() || (callsign == PluginHost::JSONRPC::Callsign())) {
+        const size_t indexDelimiter = method.find_last_of(TCHAR('@'));
+        const size_t compositeDelimiter = method.find_last_of(PluginHost::ICompositPlugin::Delimiter, indexDelimiter);
+        string callsign;
+
+        if ((compositeDelimiter == string::npos) && (((callsign = Core::JSONRPC::Message::Callsign(method), callsign.empty() == true) || (callsign == PluginHost::JSONRPC::Callsign())))) {
             result = PluginHost::JSONRPC::Invoke(channelId, id, token, method, parameters, response);
         }
         else {
             Core::ProxyType<PluginHost::IShell> service;
 
-            result = _pluginServer->Services().FromIdentifier(callsign, service);
+            if (compositeDelimiter != string::npos) {
+                // Composite designator: split it into bridge and callsign
+                const size_t versionDelimiter = method.find_last_of(TCHAR('.'), compositeDelimiter);
+                const string bridge = method.substr(0, (versionDelimiter == string::npos? compositeDelimiter : versionDelimiter));
+                callsign = Core::JSONRPC::Message::Callsign(method.substr(compositeDelimiter + 1));
+                result =  _pluginServer->Services().FromIdentifier(bridge, (callsign.empty() == true? PluginHost::JSONRPC::Callsign() : callsign), service);
+            }
+            else {
+                result = _pluginServer->Services().FromIdentifier(callsign, service);
+            }
 
             if (result == Core::ERROR_NONE) {
-                ASSERT(service.IsValid());
+                ASSERT(service.IsValid() == true);
+
                 PluginHost::IShell::state currrentState = service->State();
-                if (currrentState != PluginHost::IShell::state::ACTIVATED)
-                {
+
+                if (currrentState != PluginHost::IShell::state::ACTIVATED) {
                     result = (currrentState == PluginHost::IShell::state::HIBERNATED ? Core::ERROR_HIBERNATED : Core::ERROR_UNAVAILABLE);
-                    response = (currrentState == PluginHost::IShell::state::HIBERNATED ? _T("Service is hibernated") : _T("Service is not active"));
                 }
                 else {
-                    ASSERT(service.IsValid());
-
                     PluginHost::IDispatcher* dispatcher = service->QueryInterface<PluginHost::IDispatcher>();
 
                     if (dispatcher != nullptr) {
@@ -820,21 +865,75 @@ namespace Plugin {
         return (result);
     }
 
-    Core::hresult Controller::Register(Exchange::Controller::ILifeTime::INotification* notification)
+    Core::hresult Controller::Register(Exchange::Controller::ILifeTime::INotification* notification, const Core::OptionalType<string>& callsign)
     {
         ASSERT(notification != nullptr);
 
         Core::hresult result = Core::ERROR_ALREADY_CONNECTED;
         _adminLock.Lock();
 
-        // Make sure a sink is not registered multiple times.
-        LifeTimeNotifiers::iterator index(std::find(_lifeTimeObservers.begin(), _lifeTimeObservers.end(), notification));
-        ASSERT(index == _lifeTimeObservers.end());
+        bool conflict = false;
 
-        if (index == _lifeTimeObservers.end()) {
-            _lifeTimeObservers.push_back(notification);
+        for (const auto& entry : _lifeTimeObservers) {
+
+            if (entry.first == notification) {
+
+                if (entry.second.IsSet() == false) {
+                    // Already registered for all
+                    conflict = true;
+                    break;
+                }
+
+                if (callsign.IsSet() == false) {
+                    // Can't register for all, because at least one specific callsign is already registered
+                    conflict = true;
+                    break;
+                }
+
+                if (entry.second.Value() == callsign.Value()) {
+                    // Duplicate registration for a specific callsign is not allowed
+                    conflict = true;
+                    break;
+                }
+            }
+        }
+
+        ASSERT(conflict == false);
+
+        if (conflict == false) {
             notification->AddRef();
+            _lifeTimeObservers.emplace_back(notification, callsign);
             result = Core::ERROR_NONE;
+
+            if (callsign.IsSet() == true) {
+                Core::ProxyType<PluginHost::IShell> service = FromIdentifier(callsign.Value());
+
+                if (service.IsValid() == true) {
+
+                    if (service->State() == PluginHost::IShell::state::ACTIVATED) {
+                        notification->StateChange(service->Callsign(), service->State(), service->Reason());
+                    }
+
+                    PluginHost::IStateControl* control = service->QueryInterface<PluginHost::IStateControl>();
+
+                    if (control != nullptr) {
+                        const Exchange::Controller::ILifeTime::state ltState = ToLifeTimeState(control->State());
+                        notification->StateControlStateChange(service->Callsign(), ltState);
+                        control->Release();
+                    }
+                }
+            }
+            else {
+                auto it = _pluginServer->Services().Services();
+
+                while (it.Next() == true) {
+                    Core::ProxyType<PluginHost::IShell> service = it.Current();
+
+                    if (service->State() == PluginHost::IShell::state::ACTIVATED) {
+                        notification->StateChange(service->Callsign(), service->State(), service->Reason());
+                    }
+                }
+            }
         }
 
         _adminLock.Unlock();
@@ -842,23 +941,32 @@ namespace Plugin {
         return (result);
     }
 
-    Core::hresult Controller::Unregister(Exchange::Controller::ILifeTime::INotification* notification)
+    Core::hresult Controller::Unregister(Exchange::Controller::ILifeTime::INotification* notification, const Core::OptionalType<string>& callsign)
     {
         ASSERT(notification != nullptr);
 
         Core::hresult result = Core::ERROR_NOT_EXIST;
         _adminLock.Lock();
 
-        LifeTimeNotifiers::iterator index(std::find(_lifeTimeObservers.begin(), _lifeTimeObservers.end(), notification));
+        auto match = [&](const LifeTimeObserver& entry) -> bool {
+            return ((entry.first == notification) &&
+                    ((callsign.IsSet() == false) ?
+                        (entry.second.IsSet() == false) :
+                        ((entry.second.IsSet() == true) && (entry.second.Value() == callsign.Value()))));
+        };
+
+        for (auto it = _lifeTimeObservers.begin(); it != _lifeTimeObservers.end(); ++it) {
+
+            if (match(*it) == true) {
+                it->first->Release();
+                _lifeTimeObservers.erase(it);
+                result = Core::ERROR_NONE;
+                break;
+            }
+        }
 
         // Make sure you do not unregister something you did not register !!!
-        ASSERT(index != _lifeTimeObservers.end());
-
-        if (index != _lifeTimeObservers.end()) {
-            (*index)->Release();
-            _lifeTimeObservers.erase(index);
-            result = Core::ERROR_NONE;
-        }
+        ASSERT(result == Core::ERROR_NONE);
 
         _adminLock.Unlock();
 
@@ -918,7 +1026,6 @@ namespace Plugin {
             if (_pluginServer->Services().FromIdentifier(callsign, service) == Core::ERROR_NONE) {
                 ASSERT(service.IsValid());
                 result = service->Deactivate(PluginHost::IShell::REQUESTED);
-
                 // Normalise return code
                 if ((result != Core::ERROR_NONE) && (result != Core::ERROR_ILLEGAL_STATE) && (result !=  Core::ERROR_INPROGRESS)) {
                     result = Core::ERROR_CLOSING_FAILED;
@@ -975,7 +1082,7 @@ namespace Plugin {
                 PluginHost::IStateControl* stateControl = service->QueryInterface<PluginHost::IStateControl>();
 
                 if (stateControl == nullptr) {
-                    result = Core::ERROR_UNAVAILABLE;
+                    result = Core::ERROR_NOT_SUPPORTED;
                 }
                 else {
                     result = stateControl->Request(PluginHost::IStateControl::command::SUSPEND);
@@ -989,7 +1096,6 @@ namespace Plugin {
         else {
             result = Core::ERROR_PRIVILIGED_REQUEST;
         }
-
         return result;
     }
 
@@ -1006,7 +1112,7 @@ namespace Plugin {
                 PluginHost::IStateControl* stateControl = service->QueryInterface<PluginHost::IStateControl>();
 
                 if (stateControl == nullptr) {
-                    result = Core::ERROR_UNAVAILABLE;
+                    result = Core::ERROR_NOT_SUPPORTED;
                 }
                 else {
                     result = stateControl->Request(PluginHost::IStateControl::command::RESUME);
@@ -1045,10 +1151,11 @@ namespace Plugin {
 
     Core::hresult Controller::DiscoveryResults(IDiscovery::Data::IDiscoveryResultsIterator*& outResults) const
     {
-        std::list<IDiscovery::Data::DiscoveryResult> results;
+        std::vector<IDiscovery::Data::DiscoveryResult> results;
 
         if (_probe != nullptr) {
             Probe::Iterator index(_probe->Instances());
+            results.reserve(_probe->Instances().Count());
 
             while (index.Next() == true) {
                 IDiscovery::Data::DiscoveryResult result;
@@ -1065,8 +1172,9 @@ namespace Plugin {
 
         if (results.empty() == false) {
             using Iterator = IDiscovery::Data::IDiscoveryResultsIterator;
+            using IteratorImpl = RPC::IteratorType<Iterator, decltype(results)>;
 
-            outResults = Core::ServiceType<RPC::IteratorType<Iterator>>::Create<Iterator>(results);
+            outResults = Core::ServiceType<IteratorImpl>::Create<Iterator>(std::move(results));
             ASSERT(outResults != nullptr);
         }
         else {
@@ -1079,26 +1187,24 @@ namespace Plugin {
     Core::hresult Controller::Services(const Core::OptionalType<string>& callsign, IMetadata::Data::IServicesIterator*& outServices) const
     {
         Core::hresult result = Core::ERROR_UNAVAILABLE;
-        std::list<IMetadata::Data::Service> services;
+        std::vector<IMetadata::Data::Service> services;
 
         if (callsign.IsSet() == false) {
             auto it = _pluginServer->Services().Services();
 
             while (it.Next() == true) {
                 string info;
-                const string& callsign(it.Current()->Callsign());
+                const string& cs(it.Index());
 
                 if (it.Current().operator->()->Metadata(info) == Core::ERROR_NONE) {
                     PluginHost::Metadata::Service meta;
                     meta.FromString(info);
-                    IMetadata::Data::Service service(meta);
 
-                    // Make sure the list is sorted..
-                    std::list<IMetadata::Data::Service>::iterator index(services.begin());
-                    while ((index != services.end()) && (index->Callsign < callsign)) {
-                        index++;
+                    if (cs.find(PluginHost::ICompositPlugin::Delimiter) != string::npos) {
+                        meta.Callsign = cs;
                     }
-                    services.insert(index, service);
+
+                    services.push_back(IMetadata::Data::Service(meta));
                 }
             }
         }
@@ -1118,9 +1224,15 @@ namespace Plugin {
         }
 
         if (services.empty() == false) {
-            using Iterator = IMetadata::Data::IServicesIterator;
+            std::sort(services.begin(), services.end(),
+                [](const IMetadata::Data::Service& a, const IMetadata::Data::Service& b) {
+                    return a.Callsign < b.Callsign;
+                });
 
-            outServices = Core::ServiceType<RPC::IteratorType<Iterator>>::Create<Iterator>(services);
+            using Iterator = IMetadata::Data::IServicesIterator;
+            using IteratorImpl = RPC::IteratorType<Iterator, decltype(services)>;
+
+            outServices = Core::ServiceType<IteratorImpl>::Create<Iterator>(std::move(services));
             ASSERT(outServices != nullptr);
             result = Core::ERROR_NONE;
         }
@@ -1143,7 +1255,8 @@ namespace Plugin {
 
         if (callStackInfo.empty() == false) {
 
-            std::list<IMetadata::Data::CallStack> callstack;
+            std::vector<IMetadata::Data::CallStack> callstack;
+            callstack.reserve(callStackInfo.size());
 
             for (const Core::callstack_info& entry : callStackInfo) {
                 IMetadata::Data::CallStack cs;
@@ -1162,8 +1275,9 @@ namespace Plugin {
             }
 
             using Iterator = IMetadata::Data::ICallStackIterator;
+            using IteratorImpl = RPC::IteratorType<Iterator, decltype(callstack)>;
 
-            outCallStack = Core::ServiceType<RPC::IteratorType<Iterator>>::Create<Iterator>(callstack);
+            outCallStack = Core::ServiceType<IteratorImpl>::Create<Iterator>(std::move(callstack));
             ASSERT(outCallStack != nullptr);
 
             result = Core::ERROR_NONE;
@@ -1184,8 +1298,8 @@ namespace Plugin {
         _pluginServer->Metadata(meta);
 
         if (meta.Length() > 0) {
-            std::list<IMetadata::Data::Link> links;
-
+            std::vector<IMetadata::Data::Link> links;
+            links.reserve(meta.Length());
             auto it = meta.Elements();
 
             while (it.Next() == true) {
@@ -1205,8 +1319,9 @@ namespace Plugin {
             }
 
             using Iterator = IMetadata::Data::ILinksIterator;
+            using IteratorImpl = RPC::IteratorType<Iterator, decltype(links)>;
 
-            outLinks = Core::ServiceType<RPC::IteratorType<Iterator>>::Create<Iterator>(links);
+            outLinks = Core::ServiceType<IteratorImpl>::Create<Iterator>(std::move(links));
             ASSERT(outLinks != nullptr);
         }
         else {
@@ -1239,8 +1354,9 @@ namespace Plugin {
 
         if (proxySearch == true) {
             using Iterator = IMetadata::Data::IProxiesIterator;
+            using IteratorImpl = RPC::IteratorType<Iterator, decltype(collection)>;
 
-            outProxies = Core::ServiceType<RPC::IteratorType<Iterator>>::Create<Iterator>(std::move(collection));
+            outProxies = Core::ServiceType<IteratorImpl>::Create<Iterator>(std::move(collection));
             ASSERT(outProxies != nullptr);
             result = Core::ERROR_NONE;
         }
@@ -1255,8 +1371,8 @@ namespace Plugin {
 
         if (meta.ThreadPoolRuns.Length() > 0) {
 
-            std::list<IMetadata::Data::Thread> threads;
-
+            std::vector<IMetadata::Data::Thread> threads;
+            threads.reserve(meta.ThreadPoolRuns.Length());
             auto it = meta.ThreadPoolRuns.Elements();
 
             while (it.Next() == true) {
@@ -1265,8 +1381,9 @@ namespace Plugin {
             }
 
             using Iterator = IMetadata::Data::IThreadsIterator;
+            using IteratorImpl = RPC::IteratorType<Iterator, decltype(threads)>;
 
-            outThreads = Core::ServiceType<RPC::IteratorType<Iterator>>::Create<Iterator>(threads);
+            outThreads = Core::ServiceType<IteratorImpl>::Create<Iterator>(std::move(threads));
             ASSERT(outThreads != nullptr);
         }
         else {
@@ -1284,8 +1401,8 @@ namespace Plugin {
 
         if (meta.PendingRequests.Length() > 0) {
 
-            std::list<string> requests;
-
+            std::vector<string> requests;
+            requests.reserve(meta.PendingRequests.Length());
             auto it = meta.PendingRequests.Elements();
 
             while (it.Next() == true) {
@@ -1293,8 +1410,9 @@ namespace Plugin {
             }
 
             using Iterator = IMetadata::Data::IPendingRequestsIterator;
+            using IteratorImpl = RPC::IteratorType<Iterator, decltype(requests)>;
 
-            outRequests = Core::ServiceType<RPC::IteratorType<Iterator>>::Create<Iterator>(requests);
+            outRequests = Core::ServiceType<IteratorImpl>::Create<Iterator>(std::move(requests));
             ASSERT(outRequests != nullptr);
         }
         else {
@@ -1311,8 +1429,8 @@ namespace Plugin {
         PluginHost::ISubSystem* subSystem = _service->SubSystems();
 
         if (subSystem != nullptr) {
-            std::list<ISubsystems::Subsystem> subsystems;
-
+            std::vector<ISubsystems::Subsystem> subsystems;
+            subsystems.reserve(PluginHost::ISubSystem::END_LIST);
             std::underlying_type<PluginHost::ISubSystem::subsystem>::type i = 0;
 
             while (i < PluginHost::ISubSystem::END_LIST) {
@@ -1324,7 +1442,9 @@ namespace Plugin {
 
             subSystem->Release();
 
-            outSubsystems = Core::ServiceType<RPC::IteratorType<ISubsystems::ISubsystemsIterator>>::Create<ISubsystems::ISubsystemsIterator>(subsystems);
+            using IteratorImpl = RPC::IteratorType<ISubsystems::ISubsystemsIterator, decltype(subsystems)>;
+
+            outSubsystems = Core::ServiceType<IteratorImpl>::Create<ISubsystems::ISubsystemsIterator>(std::move(subsystems));
             ASSERT(outSubsystems != nullptr);
         }
         else {
@@ -1334,7 +1454,7 @@ namespace Plugin {
         return (Core::ERROR_NONE);
     }
 
-    Core::hresult Controller::Version(IMetadata::Data::Version& version) const
+    Core::hresult Controller::Framework(IMetadata::Data::Version& version) const
     {
         PluginHost::Metadata::Version ver;
 
@@ -1347,22 +1467,94 @@ namespace Plugin {
 
         return (Core::ERROR_NONE);
     }
-
     void Controller::NotifyStateChange(const string& callsign, const PluginHost::IShell::state& state, const PluginHost::IShell::reason& reason)
     {
+        ASSERT(callsign.empty() == false);
+
         _adminLock.Lock();
 
-        LifeTimeNotifiers::const_iterator index = _lifeTimeObservers.begin();
+        for (const auto& entry : _lifeTimeObservers) {
+            if ((entry.second.IsSet() == false) || (entry.second.Value() == callsign)) {
+                entry.first->StateChange(callsign, state, reason);
+            }
+        }
 
-        while(index != _lifeTimeObservers.end()) {
-            (*index)->StateChange(callsign, state, reason);
-            index++;
+        _adminLock.Unlock();
+
+        // also notify the JSON RPC listeners (if any...)
+
+        // First notify observers that registered for all (notification will include the callsign)
+        Exchange::Controller::JLifeTime::Event::StateChange(*this, {}, callsign, state, reason);
+
+        // ... then the specific observers (notification will not inlcude a callsign)
+        Exchange::Controller::JLifeTime::Event::StateChange(*this, callsign, {}, state, reason);
+    }
+
+    void Controller::NotifyStateControlStateChange(const string& callsign, const Exchange::Controller::ILifeTime::state& state)
+    {
+       ASSERT(callsign.empty() == false);
+
+       _adminLock.Lock();
+
+        for (const auto& entry : _lifeTimeObservers) {
+            if ((entry.second.IsSet() == false) || (entry.second.Value() == callsign)) {
+                entry.first->StateControlStateChange(callsign, state);
+            }
         }
 
         _adminLock.Unlock();
 
         // also notify the JSON RPC listeners (if any)
-        Exchange::Controller::JLifeTime::Event::StateChange(*this, callsign, state, reason);
+        Exchange::Controller::JLifeTime::Event::StateControlStateChange(*this, {}, callsign, state);
+        Exchange::Controller::JLifeTime::Event::StateControlStateChange(*this, callsign, {}, state);
+    }
+
+    void Controller::SendInitialStateSnapshot(const string& client, const Core::OptionalType<string>& callsign)
+    {
+        if (callsign.IsSet() == false) {
+            _adminLock.Lock();
+
+            ASSERT(_pluginServer != nullptr);
+            auto it = _pluginServer->Services().Services();
+
+            while (it.Next() == true) {
+                Core::ProxyType<PluginHost::IShell> service = it.Current();
+
+                if (service->State() == PluginHost::IShell::state::ACTIVATED) {
+                    const string serviceCallsign = service->Callsign();
+
+                    Exchange::Controller::JLifeTime::Event::StateChange(*this, {}, serviceCallsign, service->State(), service->Reason(), client);
+                }
+            }
+
+            _adminLock.Unlock();
+        }
+        else if (callsign.Value().empty() == false) {
+            Core::ProxyType<PluginHost::IShell> service = FromIdentifier(callsign.Value());
+
+            if ((service.IsValid() == true) && (service->State() == PluginHost::IShell::state::ACTIVATED)) {
+                const string serviceCallsign = service->Callsign();
+
+                Exchange::Controller::JLifeTime::Event::StateChange(*this, serviceCallsign, {}, service->State(), service->Reason(), client);
+            }
+        }
+    }
+
+    void Controller::SendInitialStateControlSnapshot(const string& client, const Core::OptionalType<string>& callsign)
+    {
+        if ((callsign.IsSet() == true) && (callsign.Value().empty() == false)) {
+            Core::ProxyType<PluginHost::IShell> service = FromIdentifier(callsign.Value());
+
+            if (service.IsValid() == true) {
+                PluginHost::IStateControl* control = service->QueryInterface<PluginHost::IStateControl>();
+
+                if (control != nullptr) {
+                    const Exchange::Controller::ILifeTime::state ltState = ToLifeTimeState(control->State());
+                    Exchange::Controller::JLifeTime::Event::StateControlStateChange(*this, service->Callsign(), {}, ltState, client);
+                    control->Release();
+                }
+            }
+        }
     }
 
     Core::hresult Controller::BuildInfo(IMetadata::Data::BuildInfo& buildInfo) const
@@ -1441,9 +1633,9 @@ namespace Plugin {
             buildInfo.WCharSupport = true;
         #endif
 
-        #ifdef THREADPOOL_COUNT
-            buildInfo.ThreadPoolCount = THREADPOOL_COUNT;
-        #endif
+        ASSERT(_pluginServer != nullptr);
+
+        buildInfo.ThreadPoolCount = _pluginServer->Configuration().ThreadPoolCount();
 
         buildInfo.COMRPCTimeOut = RPC::CommunicationTimeOut;
 

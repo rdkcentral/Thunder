@@ -58,12 +58,14 @@ add_library(${TARGET}
         WorkerPool.cpp
         XGetopt.cpp
         ResourceMonitor.cpp
+        Errors.cpp
         )
 
 #TODO: Remove all non public headers from this list,
 # All the interface headers are here, these will be installed to staging
 set(PUBLIC_HEADERS
         ASN1.h
+        AssertionControl.h
         DoorBell.h
         Config.h
         core.h
@@ -77,6 +79,7 @@ set(PUBLIC_HEADERS
         FileObserver.h
         Frame.h
         IAction.h
+        IAssertionControl.h
         IIterator.h
         IObserver.h
         IPCMessage.h
@@ -84,6 +87,7 @@ set(PUBLIC_HEADERS
         IPCChannel.h
         IPCConnector.h
         ISO639.h
+        IWarningReportingControl.h
         JSON.h
         JSONRPC.h
         KeyValue.h
@@ -91,8 +95,10 @@ set(PUBLIC_HEADERS
         Link.h
         LockableContainer.h
         Measurement.h
+        MACAddress.h
         Media.h
         MessageException.h
+        Messaging.h
         Module.h
         Netlink.h
         NetworkInfo.h
@@ -135,18 +141,19 @@ set(PUBLIC_HEADERS
         Time.h
         Timer.h
         Trace.h
-        TriState.h
         TypeTraits.h
         ValueRecorder.h
         XGetopt.h
         WorkerPool.h
-        IWarningReportingControl.h
         WarningReportingControl.h
         WarningReportingCategories.h
         Module.h
         CallsignTLS.h
         TokenizedStringList.h
         MessageStore.h
+        ICustomErrorCode.h
+        Errors.h
+        ExtraNumberDefinitions.h
         ${CMAKE_CURRENT_BINARY_DIR}/generated/core/Version.h
         )
 
@@ -168,7 +175,7 @@ endif()
 
 if(MESSAGING)
     target_compile_definitions(${TARGET} PUBLIC __CORE_MESSAGING__)
-    target_sources(${TARGET} PRIVATE MessageStore.cpp)
+    target_sources(${TARGET} PRIVATE Messaging.cpp MessageStore.cpp AssertionControl.cpp)
     message(STATUS "Messaging enabled")
 endif()
 
@@ -201,6 +208,11 @@ endif()
 if (INSTANCE_ID_BITS)
     target_compile_definitions(${TARGET} PUBLIC __CORE_INSTANCE_BITS__=${INSTANCE_ID_BITS})
     message(STATUS "COMRPC instanceid defined as ${INSTANCE_ID_BITS} bits.")
+endif()
+
+if (ENABLE_JSONRPC_FORGIVING_METHOD_CASE_HANDLING)
+    target_compile_definitions(${TARGET} PUBLIC __ENABLE_JSONRPC_FORGIVING_METHOD_CASE_HANDLING__=${ENABLE_JSONRPC_FORGIVING_METHOD_CASE_HANDLING})
+    message(STATUS "json rpc forgiving method handling enabled")
 endif()
 
 if(BLUETOOTH_SUPPORT)
@@ -248,7 +260,7 @@ target_link_libraries(${TARGET}
         )
 
 set_target_properties(${TARGET} PROPERTIES
-          CXX_STANDARD 11
+          CXX_STANDARD ${CXX_STD}
           CXX_STANDARD_REQUIRED YES
           FRAMEWORK FALSE
           PUBLIC_HEADER "${PUBLIC_HEADERS}" # specify the public headers
@@ -297,7 +309,7 @@ if(SYSTEMD_FOUND)
         PRIVATE
         Systemd::Systemd
     )
-    SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -DSYSTEMD_FOUND")
+    target_compile_definitions(${TARGET} PRIVATE SYSTEMD_FOUND)
 endif()
 
 # ===========================================================================================

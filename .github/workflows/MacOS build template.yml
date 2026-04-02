@@ -1,5 +1,8 @@
 name: MacOS build template
 
+permissions:
+  contents: read
+
 on:
   workflow_call:
 
@@ -16,9 +19,9 @@ jobs:
     steps:
 # --------- Installing packages ---------
     - name: Install necessary packages
+      env:
+        HOMEBREW_NO_AUTO_UPDATE: 1
       run: |
-          brew update
-          brew upgrade
           brew install ninja zlib
           python3 -m venv venv
           source venv/bin/activate
@@ -99,8 +102,7 @@ jobs:
       run: |
         source venv/bin/activate
         cmake -G Ninja -S Thunder -B ${{matrix.build_type}}/build/Thunder \
-        -DCMAKE_CXX_FLAGS="-Wall -Wextra -Wpedantic -Werror" \
-        -DCMAKE_C_FLAGS="-Wall -Wextra -Wpedantic -Werror" \
+        -DENABLE_STRICT_COMPILER_SETTINGS=ON \
         -DBUILD_SHARED_LIBS=${{matrix.shared_libs}} \
         -DBINDING="127.0.0.1" \
         -DCMAKE_BUILD_TYPE=${{matrix.build_type}} \

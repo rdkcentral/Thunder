@@ -37,7 +37,9 @@ add_executable(${TEST_RUNNER_NAME}
    test_ipcclient.cpp
    test_iso639.cpp
    test_iterator.cpp
+   test_jsonobject.cpp
    test_jsonparser.cpp
+   test_jsonstring.cpp
    test_keyvalue.cpp
    test_library.cpp
    test_lockablecontainer.cpp
@@ -72,8 +74,8 @@ add_executable(${TEST_RUNNER_NAME}
    test_thread.cpp
    test_threadpool.cpp
    test_time.cpp
+   test_time_arithmetic.cpp
    test_timer.cpp
-   test_tristate.cpp
    #test_valuerecorder.cpp
    test_weblinkjson.cpp
    test_weblinktext.cpp
@@ -101,7 +103,9 @@ add_executable(${TEST_RUNNER_NAME}
    test_hex2strserialization.cpp
    test_iso639.cpp
    test_iterator.cpp
+   test_jsonobject.cpp
    test_jsonparser.cpp
+   test_jsonstring.cpp
    test_keyvalue.cpp
    test_library.cpp
    test_lockablecontainer.cpp
@@ -131,7 +135,6 @@ add_executable(${TEST_RUNNER_NAME}
    test_threadpool.cpp
    test_time.cpp
    test_timer.cpp
-   test_tristate.cpp
    #test_valuerecorder.cpp
    test_workerpool.cpp
    test_xgetopt.cpp

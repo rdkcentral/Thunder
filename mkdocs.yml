@@ -31,7 +31,6 @@ nav:
         - Runc: plugin/execution-modes/containers/runc.md
         - Lxc: plugin/execution-modes/containers/lxc.md
     - Plugin Lifecycle: plugin/lifecycle.md
-    - Design Principles: plugin/principles.md
     - Interfaces:
       - Interface-Driven Development: plugin/interfaces/interfaces.md
       - Documentation generation: plugin/interfaces/docs.md
@@ -46,6 +45,9 @@ nav:
     - Private COM-RPC : plugin/private-comrpc.md
     - Split Implementation: plugin/split-implementation.md
     - Composite Plugins: plugin/composite.md
+    - Plugin Development Tools:
+      - ThunderDevTools: plugin/devtools/devtools.md
+      - Plugin Skeleton Generator: plugin/devtools/pluginskeletongenerator.md
   - Common Utilities:
     - Strings: utils/strings.md
     - File Handling:
@@ -63,6 +65,7 @@ nav:
     - Processes: utils/processes.md
     - Protocols:
       - WebSocket: rfc/websocket.md
+    - Custom Codes: utils/customcodes.md
   - Client Development:
     - Introduction: client/intro.md
     - JSON-RPC App: client/json-rpc.md

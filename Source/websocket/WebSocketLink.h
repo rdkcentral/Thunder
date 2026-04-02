@@ -190,7 +190,9 @@ namespace Web {
             UPGRADING = 0x02,
             WEBSOCKET = 0x04,
             SUSPENDED = 0x08,
-            ACTIVITY  = 0x10
+            READ_ACTIVITY  = 0x10,
+            WRITE_ACTIVITY  = 0x20,
+            PINGED = 0x40
         };
 
         DEPRECATED constexpr static EnumlinkState WEBSERVER { EnumlinkState::WEBSERVICE };
@@ -482,6 +484,7 @@ POP_WARNING()
                 _pingFireTime = Core::Time::Now().Ticks();
 
                 _adminLock.Lock();
+                _state |= PINGED;
 
                 _handler.Ping();
 
@@ -566,7 +569,8 @@ POP_WARNING()
 
                 _adminLock.Lock();
 
-                _state |= ACTIVITY;
+                if ((_state & PINGED) != 0 )
+                    _state |= WRITE_ACTIVITY;
 
                 if ((_state & WEBSOCKET) != 0) {
                     if (maxSendSize > 8) {
@@ -592,7 +596,7 @@ POP_WARNING()
 
                 _adminLock.Lock();
 
-                _state |= ACTIVITY;
+                _state |= READ_ACTIVITY;
 
                 if ((_state & WEBSOCKET) != 0) {
                     bool tooSmall = false;
@@ -633,6 +637,7 @@ POP_WARNING()
                                     } else if (_handler.FrameType() == WebSocket::Protocol::PONG) {
                                         if (_pingFireTime != 0) {
                                             TRACE_L1("Ping acknowledged by a pong in %d (uS)", static_cast<uint32_t>(static_cast<uint64_t>(Core::Time::Now().Ticks() - _pingFireTime)));
+                                            _state &= (~PINGED);
                                             _pingFireTime = 0;
                                         } else {
                                             TRACE_L1("Pong received but nu ping requested ??? [%d] ", __LINE__);
@@ -713,14 +718,24 @@ POP_WARNING()
             {
                 Core::SafeSyncType<Core::CriticalSection> lock(_adminLock);
 
-                _state &= ~ACTIVITY;
+                _state &= ~(READ_ACTIVITY|WRITE_ACTIVITY);
             }
 
             bool HasActivity() const
             {
-                Core::SafeSyncType<Core::CriticalSection> lock(_adminLock);
-
-                return ((_state & ACTIVITY) != 0);
+                return IsStateSet(WRITE_ACTIVITY|READ_ACTIVITY);
+            }
+            bool HasReadActivity() const
+            {
+                return IsStateSet(READ_ACTIVITY);
+            }
+            bool HasWriteActivity() const
+            {
+                return IsStateSet(WRITE_ACTIVITY);
+            }
+            bool IsPingInProgress() const
+            {
+                return IsStateSet(PINGED);
             }
 
             void Lock() const {
@@ -732,6 +747,13 @@ POP_WARNING()
             }
 
         private:
+            bool IsStateSet(const uint8_t& state) const
+            {
+                Core::SafeSyncType<Core::CriticalSection> lock(_adminLock);
+                bool result = (( _state & state) != 0);
+                return result;
+            }
+
             inline uint16_t State() const
             {
                 return (_state.load(Core::memory_order::memory_order_relaxed));
@@ -1039,6 +1061,18 @@ POP_WARNING()
         {
             return (_channel.HasActivity());
         }
+        bool HasReadActivity() const
+        {
+            return (_channel.HasReadActivity());
+        }
+        bool HasWriteActivity() const
+        {
+            return (_channel.HasWriteActivity());
+        }
+        bool IsPingInProgress() const
+        {
+            return (_channel.IsPingInProgress());
+        }
         const string& Path() const
         {
             return (_channel.Path());
@@ -1088,13 +1122,19 @@ POP_WARNING()
         }
         uint32_t Open(const uint32_t waitTime)
         {
-            _channel.Open(0);
+            uint32_t result;
 
-            return WaitForLink(waitTime);
+            REPORT_DURATION_WARNING( { _channel.Open(0); result = WaitForLink(waitTime); }, WarningReporting::SocketOperationTooLong)
+
+            return (result);
         }
         uint32_t Close(const uint32_t waitTime)
         {
-            return (_channel.Close(waitTime));
+            uint32_t result;
+
+            REPORT_DURATION_WARNING( { result = _channel.Close(waitTime); }, WarningReporting::SocketOperationTooLong)
+
+            return (result);
         }
         void Ping()
         {

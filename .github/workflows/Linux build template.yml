@@ -1,5 +1,8 @@
 name: Linux build template
 
+permissions:
+  contents: read
+
 on:
   workflow_call:
 
@@ -16,22 +19,49 @@ jobs:
     name: Build type - ${{matrix.shared_libs == 'OFF' && 'Static ' || ''}}${{matrix.build_type}}${{matrix.architecture == '32' && ' x86' || ''}}
     steps:
 # --------- Installing packages ---------
-    - name: Install necessary packages
-      uses: nick-fields/retry@v3
-      with:
-        timeout_minutes: 10
-        max_attempts: 10
-        command: |
-          sudo gem install apt-spy2
-          sudo apt-spy2 fix --commit --launchpad --country=US
-          echo "deb http://archive.ubuntu.com/ubuntu/ jammy main universe restricted multiverse" | sudo tee -a /etc/apt/sources.list
-          echo "deb http://archive.ubuntu.com/ubuntu/ jammy-updates main universe restricted multiverse" | sudo tee -a /etc/apt/sources.list
-          ${{matrix.architecture == '32' && 'sudo dpkg --add-architecture i386' || ':'}}
-          sudo apt-get update
-          sudo apt install python3-pip build-essential cmake ninja-build libusb-1.0-0-dev ${{matrix.architecture == '32' && 'zlib1g-dev:i386 libssl-dev:i386 libsbc-dev:i386 gcc-13-multilib g++-13-multilib' || 'zlib1g-dev libssl-dev libsbc-dev'}}
-          python3 -m venv venv
-          source venv/bin/activate
-          pip install jsonref
+    - name: Prepare apt (add i386 if needed)
+      if: ${{ matrix.architecture == '32' }}
+      run: |
+        sudo dpkg --add-architecture i386
+
+    - name: Update apt indices (with retries)
+      shell: bash
+      run: |
+        set -euo pipefail
+        for attempt in {1..5}; do
+          if sudo apt-get update -o Acquire::Retries=5 -o Acquire::http::Timeout=30; then
+            break
+          fi
+          echo "apt-get update failed (attempt $attempt), retrying..."
+          sleep $((attempt*10))
+        done
+
+    - name: Install system dependencies
+      shell: bash
+      run: |
+        set -euo pipefail
+        export DEBIAN_FRONTEND=noninteractive
+        PKGS="python3-venv python3-pip build-essential cmake ninja-build libusb-1.0-0-dev"
+        if [ "${{ matrix.architecture }}" = "32" ]; then
+          PKGS="$PKGS zlib1g-dev:i386 libssl-dev:i386 libsbc-dev:i386 gcc-13-multilib g++-13-multilib"
+        else
+          PKGS="$PKGS zlib1g-dev libssl-dev libsbc-dev"
+        fi
+        for attempt in {1..4}; do
+          if sudo apt-get install -y --no-install-recommends $PKGS; then
+            break
+          fi
+          echo "apt-get install failed (attempt $attempt), cleaning up & retrying..."
+          sudo apt-get clean
+          sleep $((attempt*15))
+        done
+
+    - name: Set up Python environment
+      run: |
+        python3 -m venv venv
+        source venv/bin/activate
+        pip install --upgrade pip
+        pip install jsonref
 
 # ----- Checkout & DependsOn regex -----
 # --------- Thunder ----------
@@ -92,7 +122,8 @@ jobs:
         cmake -G Ninja -S ThunderTools -B ${{matrix.build_type}}/build/ThunderTools \
         -DCMAKE_CXX_FLAGS="-Wall -Wextra -Wpedantic -Werror -m${{matrix.architecture}}" \
         -DCMAKE_C_FLAGS="-Wall -Wextra -Wpedantic -Werror -m${{matrix.architecture}}" \
-        -DCMAKE_INSTALL_PREFIX=${{matrix.build_type}}/install/usr
+        -DCMAKE_INSTALL_PREFIX=${{matrix.build_type}}/install/usr \
+        ${{(matrix.build_type == 'Release' && matrix.shared_libs == 'ON' && matrix.architecture == '64') && '-DPROXYSTUB_GENERATOR_ENABLE_SECURITY=ON -DPROXYSTUB_GENERATOR_ENABLE_COHERENCY=ON' || ''}}
         cmake --build ${{matrix.build_type}}/build/ThunderTools --target install
 
     - name: Regex Thunder
@@ -110,8 +141,9 @@ jobs:
         source venv/bin/activate
         ${{matrix.architecture == '32' && 'export PKG_CONFIG_PATH=/usr/lib/i386-linux-gnu/pkgconfig:$PKG_CONFIG_PATH' || 'PKG_CONFIG_PATH=/usr/lib/x86_64-linux-gnu/pkgconfig:$PKG_CONFIG_PATH'}}
         cmake -G Ninja -S Thunder -B ${{matrix.build_type}}/build/Thunder \
-        -DCMAKE_CXX_FLAGS="-Wall -Wextra -Wpedantic -Werror -m${{matrix.architecture}}" \
-        -DCMAKE_C_FLAGS="-Wall -Wextra -Wpedantic -Werror -m${{matrix.architecture}}" \
+        -DCMAKE_CXX_FLAGS="-m${{matrix.architecture}}" \
+        -DCMAKE_C_FLAGS="-m${{matrix.architecture}}" \
+        -DENABLE_STRICT_COMPILER_SETTINGS=ON \
         -DBUILD_SHARED_LIBS=${{matrix.shared_libs}} \
         -DBINDING="127.0.0.1" \
         -DCMAKE_BUILD_TYPE=${{matrix.build_type}} \
@@ -123,15 +155,20 @@ jobs:
         -DPROXYSTUB_PATH="${PWD}/${{matrix.build_type}}/install/usr/lib/wpeframework/proxystubs" \
         -DSYSTEM_PATH="${PWD}/${{matrix.build_type}}/install/usr/lib/wpeframework/plugins" \
         -DVOLATILE_PATH="tmp" \
-        -DBLUETOOTH_SUPPORT=ON \
         -DBLUETOOTH=ON \
-        -DDOWNLOAD_BLUEZ_UTIL_HEADERS=ON \
         -DBLUETOOTH_AUDIO_SUPPORT=ON \
         -DBLUETOOTH_GATT_SUPPORT=ON \
+        -DBLUETOOTH_SUPPORT=ON \
+        -DBROADCAST=ON \
+        -DDOWNLOAD_BLUEZ_UTIL_HEADERS=ON \
+        -DHIBERNATESUPPORT=ON \
+        -DHIBERNATE_CHECKPOINTSERVER=ON \
         -DLOCALTRACER=ON \
-        -DWARNING_REPORTING=ON \
+        -DPERFORMANCE_MONITOR=ON \
+        -DPRIVILEGEDREQUEST=ON \
         -DPROCESSCONTAINERS=ON \
         -DPROCESSCONTAINERS_RUNC=ON \
+        -DWARNING_REPORTING=ON \
         ${{steps.regexthunder.outputs.first_match}}
         cmake --build ${{matrix.build_type}}/build/Thunder --target install
 

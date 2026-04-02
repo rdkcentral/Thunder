@@ -34,6 +34,7 @@ namespace RPC {
         , _channelProxyMap()
         , _channelReferenceMap()
         , _danglingProxies()
+        , _securitySettingProxyStubs(SecureProxyStubType::PROXYSTUBS_SECURITY_NONE)
         , _delegatedReleases(true)
     {
     }
@@ -116,13 +117,13 @@ namespace RPC {
         proxy->Complete(response);
     }
 
-    bool Administrator::UnregisterUnknownProxy(const ProxyStub::UnknownProxy& proxy)
+    bool Administrator::UnregisterUnknownProxy(const ProxyStub::UnknownProxy& proxy, uint32_t channelId)
     {
         bool removed = false;
 
         _adminLock.Lock();
 
-        ChannelMap::iterator index(_channelProxyMap.find(proxy.Id()));
+        ChannelMap::iterator index(_channelProxyMap.find(channelId));
 
         if (index != _channelProxyMap.end()) {
             Proxies::iterator entry(index->second.second.begin());
@@ -150,6 +151,7 @@ namespace RPC {
             else {
                 TRACE_L1("Could not find the Proxy entry to be unregistered from a channel perspective.");
             }
+
         }
 
         _adminLock.Unlock();
@@ -157,20 +159,56 @@ namespace RPC {
         return removed;
     }
 
-    void Administrator::Invoke(Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<InvokeMessage>& message)
+    ProxyStub::UnknownStub* Administrator::ExtractStub(const uint32_t interfaceId) const
     {
-        uint32_t interfaceId(message->Parameters().InterfaceId());
+        ProxyStub::UnknownStub* result = nullptr;
 
         // stub are loaded before any action is taken and destructed if the process closes down, so no need to lock..
-        Stubs::iterator index(_stubs.find(interfaceId));
-
+        Stubs::const_iterator index(_stubs.find(interfaceId));
         if (index != _stubs.end()) {
-            uint32_t methodId(message->Parameters().MethodId());
-            REPORT_DURATION_WARNING({ index->second->Handle(methodId, channel, message); },  WarningReporting::TooLongInvokeRPC, interfaceId, methodId);
+            result = index->second;
         } else {
-            // Oops this is an unknown interface, Do not think this could happen.
-            TRACE_L1("Unknown interface. %d", interfaceId);
+            // Oops this is an unknown interface, 
+            SYSLOG(Logging::Error, (_T("Unknown interface received, either the received COMRPC Invoke message had an invalid interface ID or the interface was not registered, interface ID [%u]"), interfaceId));
         }
+        return (result);
+    }
+
+
+    Core::IUnknown* Administrator::ExtractIUnknown(Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<InvokeMessage>& message) const
+    {
+        ASSERT(channel.IsValid() == true);
+        ASSERT(message.IsValid() == true);
+        ASSERT(message->Parameters().IsValid() == true);
+
+        Core::IUnknown* result = nullptr;
+
+        uint32_t interfaceId(message->Parameters().InterfaceId());
+
+        ProxyStub::UnknownStub* stub = ExtractStub(interfaceId);
+
+        if (stub != nullptr) {
+            result = stub->ExtractInstance(channel, message, false);
+        }
+
+        return result;
+    }
+
+
+    void Administrator::Invoke(Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<InvokeMessage>& message)
+    {
+        ASSERT(channel.IsValid() == true);
+        ASSERT(message.IsValid() == true);
+        ASSERT(message->Parameters().IsValid() == true);
+
+        uint32_t interfaceId(message->Parameters().InterfaceId());
+
+        ProxyStub::UnknownStub* stub = ExtractStub(interfaceId);
+
+        if (stub != nullptr) {
+            uint16_t methodId = message->Parameters().MethodId();
+            REPORT_DURATION_WARNING({ stub->Handle(methodId, channel, message); }, WarningReporting::TooLongInvokeRPC, interfaceId, methodId);
+        } 
     }
 
     bool Administrator::IsValid(const Core::ProxyType<Core::IPCChannel>& channel, const Core::instance_id& impl, const uint32_t id) const
@@ -400,6 +438,68 @@ namespace RPC {
         }
     }
 
+    // make sure the security setting is only set once, in a thread safe way without locking...
+    struct Administrator::ProxyStubSecuritySettingSetter {
+        ProxyStubSecuritySettingSetter(Administrator& administrator, const SecureProxyStubType secure)
+        {
+            administrator._securitySettingProxyStubs = secure;
+        }
+    };
+
+    void Administrator::Announce(uint32_t interfaceID, ProxyStub::UnknownStub* stub, IMetadata* proxy, const SecureProxyStubType secure)
+    {
+        static ProxyStubSecuritySettingSetter securitytypesetter(*this, secure);
+
+        ASSERT(stub != nullptr);
+        ASSERT(proxy != nullptr);
+
+        if (secure == _securitySettingProxyStubs) {
+
+            _adminLock.Lock();
+
+#ifdef __DEBUG__
+            if (_stubs.find(interfaceID) != _stubs.end()) {
+                TRACE_L1("Interface (stub) %d, gets registered multiple times !!!", interfaceID);
+            } else if (_proxy.find(interfaceID) != _proxy.end()) {
+                TRACE_L1("Interface (proxy) %d, gets registered multiple times !!!", interfaceID);
+            }
+#endif
+            _stubs.insert(std::pair<uint32_t, ProxyStub::UnknownStub*>(interfaceID, stub));
+            stub = nullptr;
+            _proxy.insert(std::pair<uint32_t, IMetadata*>(interfaceID, proxy));
+            proxy = nullptr;
+            _adminLock.Unlock();
+        } else {
+
+            SYSLOG(Logging::Error, (_T("Proxy and Stubs for interface %U were generated with a different proxystub security setting than the other Proxy and Stubs, it will be ignored (so expect errors due to this)")));
+        }
+    }
+
+    void Administrator::Recall(uint32_t interfaceID)
+    {
+        _adminLock.Lock();
+
+        Stubs::iterator stub(_stubs.find(interfaceID));
+        if (stub != _stubs.end()) {
+            PUSH_WARNING(DISABLE_WARNING_DELETE_INCOMPLETE)
+            delete stub->second;
+            POP_WARNING()
+            _stubs.erase(interfaceID);
+        } else {
+            TRACE_L1("Failed to find a Stub for %d.", interfaceID);
+        }
+
+        Factories::iterator proxy(_proxy.find(interfaceID));
+        if (proxy != _proxy.end()) {
+            delete proxy->second;
+            _proxy.erase(interfaceID);
+        } else {
+            TRACE_L1("Failed to find a Proxy for %d.", interfaceID);
+        }
+
+        _adminLock.Unlock();
+    }
+
     Core::IUnknown* Administrator::Convert(void* rawImplementation, const uint32_t id)
     {
         Stubs::const_iterator index (_stubs.find(id));
@@ -412,7 +512,7 @@ namespace RPC {
         return(index != _stubs.end() ? index->second->Convert(rawImplementation) : nullptr);
     }
 
-    void Administrator::DeleteChannel(const Core::ProxyType<Core::IPCChannel>& channel, Proxies& pendingProxies)
+    void Administrator::DeleteChannel(const Core::ProxyType<Core::IPCChannel>& channel, Danglings& pendingProxies)
     {
         _adminLock.Lock();
 
@@ -446,19 +546,22 @@ namespace RPC {
 
         if (index != _channelProxyMap.end()) {
             for (auto entry : index->second.second) {
-                entry->Invalidate();
+                if (entry->Invalidate() == true) {
+                    // This is actually for the pendingProxies to be reported
+                    // dangling!!
+                    // Note: If the invalidation succeeds, hence why we are here, 
+                    //       a reference has been taken on the interface so it can
+                    //       be properly released, once it is reported!
+                    pendingProxies.emplace_back(std::pair<uint32_t,Core::IUnknown*>(entry->InterfaceId(), entry->Parent()));
+                }
+                // The _channelProxyMap does have a reference for each Proxy it
+                // holds, so it is safe to just move the vector from the map to
+                // the _danglingProxies. This is to keep the Proxies we created
+                // registered untill, really the last reference is dropped. Till
+                // that time we keep track of the proxy and report it as a potential
+                // leak that should be investigated!!!
                 _danglingProxies.emplace_back(entry);
-
-                // This is actually for the pendingProxies to be reported
-                // dangling!!
-                entry->AddRef();
             }
-            // The _channelProxyMap does have a reference for each Proxy it
-            // holds, so it is safe to just move the vector from the map to
-            // the pendingProxies. The receiver of pendingProxies has to take
-            // care of releasing the last reference we, as administration layer
-            // hold upon this..
-            pendingProxies = std::move(index->second.second);
             _channelProxyMap.erase(index);
         }
 

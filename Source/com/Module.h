@@ -26,7 +26,7 @@
 #include <core/core.h>
 #include <messaging/messaging.h>
 
-#ifdef __CORE_WARNING_REPORTING__
+#ifdef WARNING_REPORTING_ENABLED
 #include <warningreporting/warningreporting.h>
 #endif
 

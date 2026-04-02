@@ -22,7 +22,6 @@
 #include "Sync.h"
 #include "Frame.h"
 #include "Enumerate.h"
-#include "Singleton.h"
 
 namespace Thunder {
 
@@ -31,6 +30,7 @@ ENUM_CONVERSION_BEGIN(Core::Messaging::Metadata::type)
     { Core::Messaging::Metadata::type::LOGGING, _TXT("Logging") },
     { Core::Messaging::Metadata::type::REPORTING, _TXT("Reporting") },
     { Core::Messaging::Metadata::type::OPERATIONAL_STREAM, _TXT("OperationalStream") },
+    { Core::Messaging::Metadata::type::ASSERT, _TXT("Assert") },
 ENUM_CONVERSION_END(Core::Messaging::Metadata::type)
 
     namespace {
@@ -46,7 +46,10 @@ ENUM_CONVERSION_END(Core::Messaging::Metadata::type)
             Controls(const Controls&) = delete;
             Controls& operator=(const Controls&) = delete;
 
-            Controls() = default;
+            Controls()
+                : _storage(nullptr)
+            {
+            }
             ~Controls()
             {
                 _adminLock.Lock();
@@ -69,6 +72,10 @@ ENUM_CONVERSION_END(Core::Messaging::Metadata::type)
 
                 ASSERT(std::find(_controlList.begin(), _controlList.end(), control) == _controlList.end());
                 _controlList.push_back(control);
+
+                if (_storage != nullptr) {
+                    control->Enable(_storage->Default(control->Metadata()));
+                }
 
                 _adminLock.Unlock();
             }
@@ -101,21 +108,31 @@ ENUM_CONVERSION_END(Core::Messaging::Metadata::type)
                 _adminLock.Unlock();
             }
 
+            void Set(Core::Messaging::IStore* storage)
+            {
+                _adminLock.Lock();
+
+                ASSERT((_storage == nullptr) ^ (storage == nullptr));
+
+                _storage = storage;
+
+                _adminLock.Unlock();
+            }
+
         private:
             mutable Core::CriticalSection _adminLock;
             ControlList _controlList;
+            Core::Messaging::IStore* _storage;
         };
 
         Controls& ControlsInstance()
         {
-            // do not use the SingleTonType as ControlsInstance will be referenced 
+            // do not use the SingletonType as ControlsInstance will be referenced 
             // the SingleTonType dispose and the Controls would be newly created instead
             // of the current one used
             static Controls instance;
-            return instance;
+            return (instance);
         }
-
-        static Core::Messaging::IStore* _storage;
     }
 
 namespace Core {
@@ -125,25 +142,33 @@ namespace Core {
         const char* MODULE_LOGGING = _T("SysLog");
         const char* MODULE_REPORTING = _T("Reporting");
         const char* MODULE_OPERATIONAL_STREAM = _T("Operational Stream");
+        const char* MODULE_ASSERT = _T("Assert");
 
         uint16_t Metadata::Serialize(uint8_t buffer[], const uint16_t bufferSize) const
         {
-            uint16_t length = static_cast<uint16_t>(sizeof(_type) + (_category.size() + 1));
+            uint16_t length = static_cast<uint16_t>(sizeof(_type));
 
-            if (_type == TRACING) {
-                length += static_cast<uint16_t>(_module.size() + 1);
+            if (_type != ASSERT) {
+                length += static_cast<uint16_t>(_category.size() + 1);
+
+                if (_type == TRACING) {
+                    length += static_cast<uint16_t>(_module.size() + 1);
+                }
             }
 
-            ASSERT(bufferSize >= length);
+            INTERNAL_ASSERT(bufferSize >= length);
 
             if (bufferSize >= length) {
                 Core::FrameType<0> frame(buffer, bufferSize, bufferSize);
                 Core::FrameType<0>::Writer frameWriter(frame, 0);
                 frameWriter.Number(_type);
-                frameWriter.NullTerminatedText(_category);
 
-                if (_type == TRACING) {
-                    frameWriter.NullTerminatedText(_module);
+                if (_type != ASSERT) {
+                    frameWriter.NullTerminatedText(_category);
+
+                    if (_type == TRACING) {
+                        frameWriter.NullTerminatedText(_module);
+                    }
                 }
             }
             else {
@@ -157,31 +182,39 @@ namespace Core {
         {
             uint16_t length = 0;
 
-            ASSERT(bufferSize > (sizeof(_type) + (sizeof(_category[0]) * 2)));
+            ASSERT(bufferSize > sizeof(_type));
 
-            if (bufferSize > (sizeof(_type) + (sizeof(_category[0]) * 2))) {
+            if (bufferSize > sizeof(_type)) {
                 Core::FrameType<0> frame(const_cast<uint8_t*>(buffer), bufferSize, bufferSize);
                 Core::FrameType<0>::Reader frameReader(frame, 0);
+
                 _type = frameReader.Number<type>();
-                _category = frameReader.NullTerminatedText();
+                length = static_cast<uint16_t>(sizeof(_type));
 
-                length = (static_cast<uint16_t>(sizeof(_type) + (static_cast<uint16_t>(_category.size()) + 1)));
+                if (_type != ASSERT) {
+                    _category = frameReader.NullTerminatedText();
+                    length += static_cast<uint16_t>(_category.size()) + 1;
 
-                if (_type == TRACING) {
-                    _module = frameReader.NullTerminatedText();
-                    length += (static_cast<uint16_t>(_module.size()) + 1);
-                }
-                else if (_type == LOGGING) {
-                    _module = MODULE_LOGGING;
-                }
-                else if (_type == REPORTING) {
-                    _module = MODULE_REPORTING;
-                }
-                else if (_type == OPERATIONAL_STREAM) {
-                    _module = MODULE_OPERATIONAL_STREAM;
+                    if (_type == TRACING) {
+                        _module = frameReader.NullTerminatedText();
+                        length += static_cast<uint16_t>(_module.size()) + 1;
+                    }
+                    else if (_type == LOGGING) {
+                        _module = MODULE_LOGGING;
+                    }
+                    else if (_type == REPORTING) {
+                        _module = MODULE_REPORTING;
+                    }
+                    else if (_type == OPERATIONAL_STREAM) {
+                        _module = MODULE_OPERATIONAL_STREAM;
+                    }
+                    else {
+                        ASSERT(_type != Metadata::type::INVALID);
+                    }
                 }
                 else {
-                    ASSERT(_type != Metadata::type::INVALID);
+                    _category = EXPAND_AND_QUOTE(ASSERT_CATEGORY);
+                    _module = MODULE_ASSERT;
                 }
 
                 length = std::min<uint16_t>(bufferSize, length);
@@ -197,7 +230,7 @@ namespace Core {
             if (length != 0) {
                 const uint16_t extra = static_cast<uint16_t>(sizeof(_timeStamp));
 
-                ASSERT(bufferSize >= (length + extra));
+                INTERNAL_ASSERT(bufferSize >= (length + extra));
 
                 if (bufferSize >= (length + extra)) {
                     Core::FrameType<0> frame(buffer + length, bufferSize - length, bufferSize - length);
@@ -390,13 +423,88 @@ namespace Core {
             return (result);
         }
 
+        uint16_t IStore::Assert::Serialize(uint8_t buffer[], const uint16_t bufferSize) const
+        {
+            uint16_t length = MessageInfo::Serialize(buffer, bufferSize);
+
+            if (length != 0) {
+                const uint16_t extra = static_cast<uint16_t>(sizeof(_processId) + (_processName.size() + 1) + (_fileName.size() + 1) + sizeof(_lineNumber) + (_callstack.size() + 1));
+
+                if (bufferSize >= (length + extra)) {
+                    Core::FrameType<0> frame(buffer + length, bufferSize - length, bufferSize - length);
+                    Core::FrameType<0>::Writer frameWriter(frame, 0);
+                    frameWriter.Number(_processId);
+                    frameWriter.NullTerminatedText(_processName);
+                    frameWriter.NullTerminatedText(_fileName);
+                    frameWriter.Number(_lineNumber);
+                    frameWriter.NullTerminatedText(_callstack);
+                    length += extra;
+                }
+                else {
+                    length = 0;
+                }
+            }
+
+            return (length);
+        }
+
+        uint16_t IStore::Assert::Deserialize(const uint8_t buffer[], const uint16_t bufferSize)
+        {
+            uint16_t length = MessageInfo::Deserialize(buffer, bufferSize);
+
+            ASSERT(length <= bufferSize);
+
+            if ((length <= bufferSize) && (length != 0)) {
+                Core::FrameType<0> frame(const_cast<uint8_t*>(buffer) + length, bufferSize - length, bufferSize - length);
+                Core::FrameType<0>::Reader frameReader(frame, 0);
+                _processId = frameReader.Number<uint16_t>();
+                _processName = frameReader.NullTerminatedText();
+                _fileName = frameReader.NullTerminatedText();
+                _lineNumber = frameReader.Number<uint16_t>();
+                _callstack = frameReader.NullTerminatedText();
+                length += static_cast<uint16_t>(sizeof(_processId) + (_processName.size() + 1) + (_fileName.size() + 1) + sizeof(_lineNumber) + (_callstack.size() + 1));
+            }
+            else {
+                length = 0;
+            }
+
+            return (length);
+        }
+
+        string IStore::Assert::ToString(const abbreviate abbreviate) const
+        {
+            string result;
+            const Core::Time now(TimeStamp());
+
+            if (abbreviate == abbreviate::ABBREVIATED) {
+                const string time(now.ToTimeOnly(true));
+                result = Core::Format("%s[%s]:[%s]:[%s]:[%s:%u]: ",
+                        Callstack().c_str(),
+                        time.c_str(),
+                        Module().c_str(),
+                        ProcessName().c_str(),
+                        Core::FileNameOnly(FileName().c_str()),
+                        LineNumber());
+            }
+            else {
+                const string time(now.ToRFC1123(true));
+                result = Core::Format("%s[%s]:[%s]:[%s]:[%u]:[%s]:[%s:%u]: ",
+                        Callstack().c_str(),
+                        time.c_str(),
+                        Module().c_str(),
+                        Category().c_str(),
+                        ProcessId(),
+                        ProcessName().c_str(),
+                        Core::FileNameOnly(FileName().c_str()),
+                        LineNumber());
+            }
+
+            return (result);
+        }
+
         /* static */ void IControl::Announce(IControl* control)
         {
             ControlsInstance().Announce(control);
-
-            if (_storage != nullptr) {
-                control->Enable(_storage->Default(control->Metadata()));
-            }
         }
 
         /* static */ void IControl::Revoke(IControl* control) {
@@ -406,15 +514,10 @@ namespace Core {
         /* static */ void IControl::Iterate(IControl::IHandler& handler) {
             ControlsInstance().Iterate(handler);
         }
-
-        /* static */ IStore* IStore::Instance() {
-            return (_storage);
-        }
         
         /* static */ void IStore::Set(IStore* storage)
         {
-            ASSERT ((_storage == nullptr) ^ (storage == nullptr));
-            _storage = storage;
+            ControlsInstance().Set(storage);
         }
     } // namespace Messaging
 } // namespace Core

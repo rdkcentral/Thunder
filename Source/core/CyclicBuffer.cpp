@@ -19,6 +19,7 @@
 
 #include "CyclicBuffer.h"
 #include "ProcessInfo.h"
+#include "Thread.h"
 
 namespace Thunder {
 namespace Core {
@@ -64,7 +65,10 @@ namespace Core {
 
                 ret = pthread_condattr_setpshared(&cond_attr, PTHREAD_PROCESS_SHARED);
                 ASSERT(ret == 0); DEBUG_VARIABLE(ret);
-
+#ifndef __APPLE__
+                ret = pthread_condattr_setclock(&cond_attr, CLOCK_MONOTONIC);
+                ASSERT(ret == 0); DEBUG_VARIABLE(ret);
+#endif
                 ret = pthread_cond_init(&(_administration->_signal), &cond_attr);
                 ASSERT(ret == 0); DEBUG_VARIABLE(ret);
 
@@ -97,11 +101,7 @@ namespace Core {
                 _administration->_reserved = 0;
                 _administration->_reservedWritten = 0;
 
-                #ifndef __WINDOWS__
                 std::atomic_init(&(_administration->_reservedPID), static_cast<pid_t>(0));
-                #else
-                std::atomic_init(&(_administration->_reservedPID), static_cast<DWORD>(0));
-                #endif
 
                 _administration->_tailIndexMask = 1;
                 _administration->_roundCountModulo = 1L << 31;
@@ -159,6 +159,11 @@ namespace Core {
                 ret = pthread_cond_init(&(_administration->_signal), &cond_attr);
                 ASSERT(ret == 0); DEBUG_VARIABLE(ret);
 
+#ifndef __APPLE__
+                ret = pthread_condattr_setclock(&cond_attr, CLOCK_MONOTONIC);
+                ASSERT(ret == 0); DEBUG_VARIABLE(ret);
+#endif
+
                 pthread_mutexattr_t mutex_attr;
 
                 // default values
@@ -187,11 +192,8 @@ namespace Core {
 
                 _administration->_reserved = 0;
                 _administration->_reservedWritten = 0;
-#ifndef __WINDOWS__
+
                 std::atomic_init(&(_administration->_reservedPID), static_cast<pid_t>(0));
-#else
-                std::atomic_init(&(_administration->_reservedPID), static_cast<DWORD>(0));
-#endif
 
                 _administration->_tailIndexMask = 1;
                 _administration->_roundCountModulo = 1L << 31;
@@ -322,10 +324,11 @@ namespace Core {
 #else
             ReleaseSemaphore(_signal, _administration->_agents.load(), nullptr);
 #endif
+            uint8_t count = 0;
 
             // Wait till all waiters have seen the trigger..
             while (_administration->_agents.load() > 0) {
-                std::this_thread::yield();
+                Core::Thread::Yield(count);
             }
         }
     }
@@ -427,8 +430,8 @@ namespace Core {
 
     uint32_t CyclicBuffer::Write(const uint8_t buffer[], const uint32_t length)
     {
-        ASSERT(length < _administration->_size);
-        ASSERT(IsValid() == true);
+        INTERNAL_ASSERT(length < _administration->_size);
+        INTERNAL_ASSERT(IsValid() == true);
 
         uint32_t head = _administration->_head;
         uint32_t tail = _administration->_tail;
@@ -438,15 +441,14 @@ namespace Core {
         if (_administration->_reservedPID != 0) {
 #ifdef __WINDOWS__
             // We are writing because of reservation.
-            ASSERT(_administration->_reservedPID == ::GetCurrentProcessId());
+            INTERNAL_ASSERT(_administration->_reservedPID == ::GetCurrentProcessId());
 #else
             // We are writing because of reservation.
-            ASSERT(_administration->_reservedPID == ::getpid());
+            INTERNAL_ASSERT(_administration->_reservedPID == ::getpid());
 #endif
-
             // Check if we are not writing more than reserved.
             uint32_t newReservedWritten = _administration->_reservedWritten + length;
-            ASSERT(newReservedWritten <= _administration->_reserved);
+            INTERNAL_ASSERT(newReservedWritten <= _administration->_reserved);
 
             // Set up everything for actual write operation.
             writeStart = (head + _administration->_reservedWritten) % _administration->_size;
@@ -538,19 +540,20 @@ namespace Core {
 
     uint32_t CyclicBuffer::Reserve(const uint32_t length)
     {
+        pid_t processId;
+        pid_t expectedProcessId = 0;
+
 #ifdef __WINDOWS__
-        DWORD processId = GetCurrentProcessId();
-        DWORD expectedProcessId = static_cast<DWORD>(0);
+        processId = GetCurrentProcessId();
 #else
-        pid_t processId = ::getpid();
-        pid_t expectedProcessId = static_cast<pid_t>(0);
+        processId = ::getpid();
 #endif
 
         if ((length >= Size()) || (((_administration->_state.load() & state::OVERWRITE) == 0) && (length >= Free())))
             return Core::ERROR_INVALID_INPUT_LENGTH;
 
         bool noOtherReservation = atomic_compare_exchange_strong(&(_administration->_reservedPID), &expectedProcessId, processId);
-        ASSERT(noOtherReservation);
+        INTERNAL_ASSERT(noOtherReservation);
 
         if (!noOtherReservation)
             return Core::ERROR_ILLEGAL_STATE;
@@ -562,7 +565,7 @@ namespace Core {
         }
 
         AssureFreeSpace(actualLength);
-        ASSERT(actualLength <= Free());
+        INTERNAL_ASSERT(actualLength <= Free());
 
         _administration->_reserved = actualLength;
         _administration->_reservedWritten = 0;
