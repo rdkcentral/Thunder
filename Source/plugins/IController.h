@@ -87,8 +87,19 @@ namespace Controller {
         enum { ID = RPC::ID_CONTROLLER_CONFIGURATION };
 
         // @alt storeconfig
-        // @brief Stores all configuration to the persistent memory
-        virtual Core::hresult Persist() = 0;
+        // @brief Stores configuration to the persistent memory
+        // @details If callsign is not provided, configuration for all plugins is persisted.
+        //          If callsign is provided but empty, only the Controller configuration is persisted.
+        //          If callsign is provided with a specific value, only that plugin's configuration is persisted.
+        // @param callsign: Plugin callsign to persist (omit for all plugins, empty string for Controller only)
+        virtual Core::hresult Persist(const Core::OptionalType<string>& callsign = {}) = 0;
+
+        // @brief Restores configuration back to default
+        // @details If callsign is not provided, configuration for all plugins is restored to default.
+        //          If callsign is provided but empty, only the Controller configuration is restored.
+        //          If callsign is provided with a specific value, only that plugin's configuration is restored.
+        // @param callsign: Plugin callsign to restore (omit for all plugins, empty string for Controller only)
+        virtual Core::hresult Restore(const Core::OptionalType<string>& callsign = {}) = 0;
 
         // @property
         // @brief Service configuration
