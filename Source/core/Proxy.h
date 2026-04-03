@@ -155,10 +155,14 @@ POP_WARNING()
             inline operator const IReferenceCounted* () const {
                 return (this);
             }
+            // coverity[PW.CONVERSION_FUNCTION_NOT_USABLE] - Intentional: ProxyObject exposes both the
+            // ref-counted wrapper and the underlying CONTEXT via implicit conversion. This is the
+            // proxy pattern by design; ambiguity in overload resolution is accepted.
             inline operator CONTEXT& ()
             {
                 return (*this);
             }
+            // coverity[PW.CONVERSION_FUNCTION_NOT_USABLE]
             inline operator const CONTEXT& () const
             {
                 return (*this);
@@ -1557,10 +1561,13 @@ POP_WARNING()
 
                 return (result);
             }
+            // coverity[MISSING_LOCK] - Intentional: diagnostic accessors returning a momentary
+            // snapshot. Callers are expected to tolerate a slightly stale value.
             inline uint32_t CreatedElements() const
             {
                 return (_createdElements);
             }
+            // coverity[MISSING_LOCK]
             inline uint32_t QueuedElements() const
             {
                 return (static_cast<uint32_t>(_queue.size()));
