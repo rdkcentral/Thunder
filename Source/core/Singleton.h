@@ -172,6 +172,7 @@ namespace Core {
 
         inline static bool Dispose()
         {
+            bool disposed = false;
             // Unprotected. Make sure the dispose is *ONLY* called
             // after all usage of the singleton is completed!!!
             SINGLETON* ptr = g_TypedSingleton.exchange(nullptr, std::memory_order_acq_rel);
@@ -179,9 +180,9 @@ namespace Core {
             if (ptr != nullptr) {
                 // Bypass the destructor's store — we already zeroed via exchange.
                 delete ptr;
-                return true;
+                disposed = true;
             }
-            return false;
+            return disposed;
         }
 
     private:
