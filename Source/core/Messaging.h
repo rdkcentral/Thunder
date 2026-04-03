@@ -270,64 +270,13 @@ namespace Core {
             }
 
             template<typename T>
-            uint16_t SerializeNumeric(uint8_t buffer[], uint16_t offset, uint16_t bufferSize, T value) const
-            {
-                uint16_t result = 0;
-
-                if (static_cast<uint16_t>(bufferSize - offset) >= sizeof(T)) {
-                    std::memcpy(buffer + offset, &value, sizeof(T));
-                    result = sizeof(T);
-                }
-
-                return (result);
-            }
+            uint16_t SerializeNumeric(uint8_t buffer[], uint16_t bufferSize, T value) const;
 
             template<typename T>
-            uint16_t DeserializeIntegral(const uint8_t buffer[], uint16_t offset, uint16_t bufferSize)
-            {
-                uint16_t result = 0;
-
-                if (static_cast<uint16_t>(bufferSize - offset) >= sizeof(T)) {
-                    T v;
-                    std::memcpy(&v, buffer + offset, sizeof(T));
-
-                    if constexpr (std::is_signed_v<T>) {
-                        _numericValue._signed = static_cast<int64_t>(v);
-                    }
-                    else {
-                        _numericValue._unsigned = static_cast<uint64_t>(v);
-                    }
-                    _text = std::to_string(v);
-                    result = sizeof(T);
-                }
-
-                return (result);
-            }
+            uint16_t DeserializeIntegral(const uint8_t buffer[], uint16_t offset, uint16_t bufferSize);
 
             template<typename T>
-            uint16_t DeserializeFloat(const uint8_t buffer[], uint16_t offset, uint16_t bufferSize)
-            {
-                static_assert(std::is_same_v<T, float> || std::is_same_v<T, double>, "Only float or double");
-                uint16_t result = 0;
-
-                if (static_cast<uint16_t>(bufferSize - offset) >= sizeof(T)) {
-                    T v;
-                    std::memcpy(&v, buffer + offset, sizeof(T));
-
-                    if constexpr (std::is_same_v<T, float>) {
-                        _numericValue._float = v;
-                    }
-                    else {
-                        _numericValue._double = v;
-                    }
-                    char buf[64];
-                    snprintf(buf, sizeof(buf), "%g", static_cast<double>(v));
-                    _text = buf;
-                    result = sizeof(T);
-                }
-
-                return (result);
-            }
+            uint16_t DeserializeFloat(const uint8_t buffer[], uint16_t offset, uint16_t bufferSize);
 
             ValueType _type;
             string _text;

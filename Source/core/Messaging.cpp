@@ -46,36 +46,98 @@ namespace Core {
             return (static_cast<uint16_t>(_text.size() + 1));
         }
 
+        template<typename T>
+        uint16_t TelemetryMessage::SerializeNumeric(uint8_t buffer[], uint16_t bufferSize, T value) const
+        {
+            uint16_t result = 0;
+
+            if (bufferSize >= (1 + sizeof(T))) {
+                buffer[0] = static_cast<uint8_t>(_type);
+                Core::FrameType<0> frame(buffer + 1, bufferSize - 1, bufferSize - 1);
+                Core::FrameType<0>::Writer writer(frame, 0);
+                writer.Number(value);
+                result = 1 + sizeof(T);
+            }
+
+            return (result);
+        }
+
+        template<typename T>
+        uint16_t TelemetryMessage::DeserializeIntegral(const uint8_t buffer[], uint16_t offset, uint16_t bufferSize)
+        {
+            uint16_t result = 0;
+
+            if (static_cast<uint16_t>(bufferSize - offset) >= sizeof(T)) {
+                Core::FrameType<0> frame(const_cast<uint8_t*>(buffer + offset), bufferSize - offset, bufferSize - offset);
+                Core::FrameType<0>::Reader reader(frame, 0);
+                T v = reader.template Number<T>();
+
+                if constexpr (std::is_signed_v<T>) {
+                    _numericValue._signed = static_cast<int64_t>(v);
+                }
+                else {
+                    _numericValue._unsigned = static_cast<uint64_t>(v);
+                }
+                _text = std::to_string(v);
+                result = sizeof(T);
+            }
+
+            return (result);
+        }
+
+        template<typename T>
+        uint16_t TelemetryMessage::DeserializeFloat(const uint8_t buffer[], uint16_t offset, uint16_t bufferSize)
+        {
+            static_assert(std::is_same_v<T, float> || std::is_same_v<T, double>, "Only float or double");
+            uint16_t result = 0;
+
+            if (static_cast<uint16_t>(bufferSize - offset) >= sizeof(T)) {
+                Core::FrameType<0> frame(const_cast<uint8_t*>(buffer + offset), bufferSize - offset, bufferSize - offset);
+                Core::FrameType<0>::Reader reader(frame, 0);
+                T v = reader.template Number<T>();
+
+                if constexpr (std::is_same_v<T, float>) {
+                    _numericValue._float = v;
+                }
+                else {
+                    _numericValue._double = v;
+                }
+                char buf[64];
+                snprintf(buf, sizeof(buf), "%g", static_cast<double>(v));
+                _text = buf;
+                result = sizeof(T);
+            }
+
+            return (result);
+        }
+
         uint16_t TelemetryMessage::Serialize(uint8_t buffer[], const uint16_t bufferSize) const
         {
             uint16_t offset = 0;
 
-            if (bufferSize > 0) {
-                // First byte: value type tag
-                buffer[0] = static_cast<uint8_t>(_type);
-                offset = 1;
+            switch (_type) {
+            case ValueType::TEXT: {
+                if (bufferSize > 1) {
+                    buffer[0] = static_cast<uint8_t>(_type);
+                    offset = 1;
 
-                switch (_type) {
-                case ValueType::TEXT: {
-                    if (offset < bufferSize) {
-                        Core::FrameType<0> frame(buffer + offset, bufferSize - offset, bufferSize - offset);
-                        Core::FrameType<0>::Writer writer(frame, 0);
-                        writer.NullTerminatedText(_text, bufferSize - offset);
-                        offset += std::min(static_cast<uint16_t>(bufferSize - offset), static_cast<uint16_t>(_text.size() + 1));
-                    }
-                    break;
+                    Core::FrameType<0> frame(buffer + offset, bufferSize - offset, bufferSize - offset);
+                    Core::FrameType<0>::Writer writer(frame, 0);
+                    writer.NullTerminatedText(_text, bufferSize - offset);
+                    offset += std::min(static_cast<uint16_t>(bufferSize - offset), static_cast<uint16_t>(_text.size() + 1));
                 }
-                case ValueType::INT8:    offset += SerializeNumeric(buffer, offset, bufferSize, static_cast<int8_t>(_numericValue._signed));     break;
-                case ValueType::UINT8:   offset += SerializeNumeric(buffer, offset, bufferSize, static_cast<uint8_t>(_numericValue._unsigned));  break;
-                case ValueType::INT16:   offset += SerializeNumeric(buffer, offset, bufferSize, static_cast<int16_t>(_numericValue._signed));    break;
-                case ValueType::UINT16:  offset += SerializeNumeric(buffer, offset, bufferSize, static_cast<uint16_t>(_numericValue._unsigned)); break;
-                case ValueType::INT32:   offset += SerializeNumeric(buffer, offset, bufferSize, static_cast<int32_t>(_numericValue._signed));    break;
-                case ValueType::UINT32:  offset += SerializeNumeric(buffer, offset, bufferSize, static_cast<uint32_t>(_numericValue._unsigned)); break;
-                case ValueType::INT64:   offset += SerializeNumeric(buffer, offset, bufferSize, _numericValue._signed);                          break;
-                case ValueType::UINT64:  offset += SerializeNumeric(buffer, offset, bufferSize, _numericValue._unsigned);                        break;
-                case ValueType::FLOAT32: offset += SerializeNumeric(buffer, offset, bufferSize, _numericValue._float);                           break;
-                case ValueType::FLOAT64: offset += SerializeNumeric(buffer, offset, bufferSize, _numericValue._double);                          break;
-                }
+                break;
+            }
+            case ValueType::INT8:    offset = SerializeNumeric(buffer, bufferSize, static_cast<int8_t>(_numericValue._signed));     break;
+            case ValueType::UINT8:   offset = SerializeNumeric(buffer, bufferSize, static_cast<uint8_t>(_numericValue._unsigned));  break;
+            case ValueType::INT16:   offset = SerializeNumeric(buffer, bufferSize, static_cast<int16_t>(_numericValue._signed));    break;
+            case ValueType::UINT16:  offset = SerializeNumeric(buffer, bufferSize, static_cast<uint16_t>(_numericValue._unsigned)); break;
+            case ValueType::INT32:   offset = SerializeNumeric(buffer, bufferSize, static_cast<int32_t>(_numericValue._signed));    break;
+            case ValueType::UINT32:  offset = SerializeNumeric(buffer, bufferSize, static_cast<uint32_t>(_numericValue._unsigned)); break;
+            case ValueType::INT64:   offset = SerializeNumeric(buffer, bufferSize, _numericValue._signed);                          break;
+            case ValueType::UINT64:  offset = SerializeNumeric(buffer, bufferSize, _numericValue._unsigned);                        break;
+            case ValueType::FLOAT32: offset = SerializeNumeric(buffer, bufferSize, _numericValue._float);                           break;
+            case ValueType::FLOAT64: offset = SerializeNumeric(buffer, bufferSize, _numericValue._double);                          break;
             }
 
             return (offset);
