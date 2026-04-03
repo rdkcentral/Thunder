@@ -86,11 +86,19 @@ namespace Core {
 #endif
 
 #ifndef __WINDOWS__
-            // Check if domain path already exists, if so remove.
+            // Remove any stale domain socket path before binding. Using unlink()
+            // directly avoids the TOCTOU race between access() and remove().
             if (_doorbell.Type() == NodeId::TYPE_DOMAIN) {
-                if (access(_doorbell.HostName().c_str(), F_OK) != -1) {
-                    TRACE_L1("Found out domain path already exists, deleting: %s", _doorbell.HostName().c_str());
-                    remove(_doorbell.HostName().c_str());
+                const string path = _doorbell.HostName();
+
+                if (::unlink(path.c_str()) != 0) {
+                    const int err = errno;
+
+                    if (err != ENOENT) {
+                        TRACE_L1("Failed to remove domain socket %s: %s", path.c_str(), strerror(err));
+                    }
+                } else {
+                    TRACE_L1("Removed stale domain socket: %s", path.c_str());
                 }
             }
 #endif

@@ -1603,6 +1603,9 @@ namespace Plugin {
             extensions |= IMetadata::Data::BuildInfo::PROCESS_CONTAINERS;
         #endif
         
+        // coverity[DEADCODE] - extensions is set via #ifdef blocks above. If no optional
+        // features are enabled the guard is dead in that build configuration, but it is
+        // intentionally defensive for all other configurations.
         if (extensions != 0) {
             buildInfo.Extensions = static_cast<IMetadata::Data::BuildInfo::extensiontype>(extensions);
         }

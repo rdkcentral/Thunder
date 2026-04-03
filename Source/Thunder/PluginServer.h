@@ -657,7 +657,7 @@ namespace PluginHost {
                         ASSERT_VERBOSE(((_state & 0x1) == state::STATE_OR), "Must not use NOT_ in preconditions (subsystem 0x%08x)", input);
 
                         // Make sure the event is only set once (POSITIVE or NEGATIVE)
-                        if ((((_mask & (1 << bitNr)) != 0) && ((_events & (1 << bitNr)) != 0)) || ((_state & 0x1) != state::STATE_OR)) {
+                        if ((((_mask & (1u << bitNr)) != 0) && ((_events & (1u << bitNr)) != 0)) || ((_state & 0x1) != state::STATE_OR)) {
                             _state = STATE_ERROR;
                         }
                     }
@@ -665,16 +665,16 @@ namespace PluginHost {
                         ASSERT_VERBOSE(((_state & 0x1) == state::STATE_AND), "Must only use NOT_ in terminations (subsystem 0x%08x)", input);
 
                         // Make sure the event is only set once (POSITIVE or NEGATIVE)
-                        if ((((_mask & (1 << bitNr)) != 0) && ((_events & (1 << bitNr)) == 0)) || ((_state & 0x1) != state::STATE_AND)) {
+                        if ((((_mask & (1u << bitNr)) != 0) && ((_events & (1u << bitNr)) == 0)) || ((_state & 0x1) != state::STATE_AND)) {
                             _state = STATE_ERROR;
                         }
                         else {
-                            _events |= (1 << bitNr);
+                            _events |= (1u << bitNr);
                         }
                     }
 
                     // This bit should be taken into account if we check the condition
-                    _mask |= 1 << bitNr;
+                    _mask |= 1u << bitNr;
                 }
 
             private:
