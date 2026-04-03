@@ -106,10 +106,18 @@ namespace Core {
         /**
          * @brief Event class for telemetry messages that can carry typed values.
          *
-         *        Supports three value types:
+         *        Supports the following ValueType values:
          *        - TEXT:    a formatted string (default, backward-compatible)
-         *        - INTEGER: a 64-bit signed integer (e.g., counters, RAM/CPU values)
-         *        - FLOAT:   a double-precision floating-point value
+         *        - INT8:    an 8-bit signed integer
+         *        - UINT8:   an 8-bit unsigned integer
+         *        - INT16:   a 16-bit signed integer
+         *        - UINT16:  a 16-bit unsigned integer
+         *        - INT32:   a 32-bit signed integer
+         *        - UINT32:  a 32-bit unsigned integer
+         *        - INT64:   a 64-bit signed integer
+         *        - UINT64:  a 64-bit unsigned integer
+         *        - FLOAT32: a single-precision floating-point value
+         *        - FLOAT64: a double-precision floating-point value
          *
          *        The Data() method always returns a string representation for
          *        publishers that only understand text (Console, Syslog, etc.).
