@@ -150,6 +150,7 @@ namespace Core {
             if (bufferSize > 0) {
                 _type = static_cast<ValueType>(buffer[0]);
                 offset = 1;
+                _text.clear();
                 _numericValue = {};
 
                 switch (_type) {
@@ -174,7 +175,6 @@ namespace Core {
                 case ValueType::FLOAT64: offset += DeserializeFloat<double>(buffer, offset, bufferSize);       break;
                 default: {
                     _type = ValueType::TEXT;
-                    _text.clear();
                     offset = 0;
                     break;
                 }
