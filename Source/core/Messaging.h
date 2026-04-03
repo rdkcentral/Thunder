@@ -22,6 +22,10 @@
 #include "Module.h"
 #include "MessageStore.h"
 
+#include <cstdio>
+#include <cstring>
+#include <type_traits>
+
 namespace Thunder {
 
 namespace Core {
@@ -97,6 +101,237 @@ namespace Core {
 
         private:
             string _text;
+        };
+
+        /**
+         * @brief Event class for telemetry messages that can carry typed values.
+         *
+         *        Supports three value types:
+         *        - TEXT:    a formatted string (default, backward-compatible)
+         *        - INTEGER: a 64-bit signed integer (e.g., counters, RAM/CPU values)
+         *        - FLOAT:   a double-precision floating-point value
+         *
+         *        The Data() method always returns a string representation for
+         *        publishers that only understand text (Console, Syslog, etc.).
+         *        TelemetryOutput inspects ValueType() to forward the native
+         *        typed value to the external backend without precision loss.
+         *
+         *        Serialization format:
+         *          [1 byte: ValueType]  then:
+         *            TEXT:      [null-terminated string]
+         *            INT8:      [1 byte]
+         *            UINT8:     [1 byte]
+         *            INT16:     [2 bytes]
+         *            UINT16:    [2 bytes]
+         *            INT32:     [4 bytes]
+         *            UINT32:    [4 bytes]
+         *            INT64:     [8 bytes]
+         *            UINT64:    [8 bytes]
+         *            FLOAT32:   [4 bytes, IEEE 754]
+         *            FLOAT64:   [8 bytes, IEEE 754]
+         */
+        class EXTERNAL TelemetryMessage : public Core::Messaging::IEvent {
+        public:
+            enum class ValueType : uint8_t {
+                TEXT    = 0,
+                INT8    = 1,
+                UINT8   = 2,
+                INT16   = 3,
+                UINT16  = 4,
+                INT32   = 5,
+                UINT32  = 6,
+                INT64   = 7,
+                UINT64  = 8,
+                FLOAT32 = 9,
+                FLOAT64 = 10
+            };
+
+            TelemetryMessage()
+                : _type(ValueType::TEXT)
+                , _text()
+                , _numericValue{}
+            {
+            }
+
+            explicit TelemetryMessage(const string& text)
+                : _type(ValueType::TEXT)
+                , _text(text)
+                , _numericValue{}
+            {
+            }
+
+            // Signed integral types
+            template<typename T, std::enable_if_t<std::is_integral_v<std::decay_t<T>> && std::is_signed_v<std::decay_t<T>> && !std::is_same_v<std::decay_t<T>, bool>, int> = 0>
+            explicit TelemetryMessage(T value)
+                : _type(SignedTag<sizeof(T)>())
+                , _text(std::to_string(static_cast<int64_t>(value)))
+                , _numericValue{}
+            {
+                _numericValue._signed = static_cast<int64_t>(value);
+            }
+
+            // Unsigned integral types
+            template<typename T, std::enable_if_t<std::is_integral_v<std::decay_t<T>> && std::is_unsigned_v<std::decay_t<T>> && !std::is_same_v<std::decay_t<T>, bool>, int> = 0>
+            explicit TelemetryMessage(T value)
+                : _type(UnsignedTag<sizeof(T)>())
+                , _text(std::to_string(static_cast<uint64_t>(value)))
+                , _numericValue{}
+            {
+                _numericValue._unsigned = static_cast<uint64_t>(value);
+            }
+
+            // float
+            explicit TelemetryMessage(float value)
+                : _type(ValueType::FLOAT32)
+                , _text()
+                , _numericValue{}
+            {
+                _numericValue._float = value;
+                char buf[64];
+                snprintf(buf, sizeof(buf), "%g", static_cast<double>(value));
+                _text = buf;
+            }
+
+            // double
+            explicit TelemetryMessage(double value)
+                : _type(ValueType::FLOAT64)
+                , _text()
+                , _numericValue{}
+            {
+                _numericValue._double = value;
+                char buf[64];
+                snprintf(buf, sizeof(buf), "%g", value);
+                _text = buf;
+            }
+
+            TelemetryMessage(const TelemetryMessage&) = delete;
+            TelemetryMessage& operator=(const TelemetryMessage&) = delete;
+
+            uint16_t Serialize(uint8_t buffer[], const uint16_t bufferSize) const override;
+            uint16_t Deserialize(const uint8_t buffer[], const uint16_t bufferSize) override;
+
+            const string& Data() const override {
+                return (_text);
+            }
+
+            ValueType Type() const {
+                return (_type);
+            }
+
+            bool IsSigned() const {
+                return (_type == ValueType::INT8  || _type == ValueType::INT16 ||
+                        _type == ValueType::INT32 || _type == ValueType::INT64);
+            }
+
+            bool IsUnsigned() const {
+                return (_type == ValueType::UINT8  || _type == ValueType::UINT16 ||
+                        _type == ValueType::UINT32 || _type == ValueType::UINT64);
+            }
+
+            bool IsFloatingPoint() const {
+                return (_type == ValueType::FLOAT32 || _type == ValueType::FLOAT64);
+            }
+
+            int64_t SignedValue() const {
+                return (_numericValue._signed);
+            }
+
+            uint64_t UnsignedValue() const {
+                return (_numericValue._unsigned);
+            }
+
+            float Float32Value() const {
+                return (_numericValue._float);
+            }
+
+            double Float64Value() const {
+                return (_numericValue._double);
+            }
+
+        private:
+            template<size_t N>
+            static constexpr ValueType SignedTag() {
+                static_assert(N == 1 || N == 2 || N == 4 || N == 8, "Unsupported signed integer size");
+                return (N == 1) ? ValueType::INT8
+                     : (N == 2) ? ValueType::INT16
+                     : (N == 4) ? ValueType::INT32
+                     :            ValueType::INT64;
+            }
+
+            template<size_t N>
+            static constexpr ValueType UnsignedTag() {
+                static_assert(N == 1 || N == 2 || N == 4 || N == 8, "Unsupported unsigned integer size");
+                return (N == 1) ? ValueType::UINT8
+                     : (N == 2) ? ValueType::UINT16
+                     : (N == 4) ? ValueType::UINT32
+                     :            ValueType::UINT64;
+            }
+
+            template<typename T>
+            uint16_t SerializeNumeric(uint8_t buffer[], uint16_t offset, uint16_t bufferSize, T value) const {
+                uint16_t result = 0;
+
+                if (static_cast<uint16_t>(bufferSize - offset) >= sizeof(T)) {
+                    std::memcpy(buffer + offset, &value, sizeof(T));
+                    result = sizeof(T);
+                }
+
+                return (result);
+            }
+
+            template<typename T>
+            uint16_t DeserializeIntegral(const uint8_t buffer[], uint16_t offset, uint16_t bufferSize) {
+                uint16_t result = 0;
+
+                if (static_cast<uint16_t>(bufferSize - offset) >= sizeof(T)) {
+                    T v;
+                    std::memcpy(&v, buffer + offset, sizeof(T));
+
+                    if constexpr (std::is_signed_v<T>) {
+                        _numericValue._signed = static_cast<int64_t>(v);
+                    }
+                    else {
+                        _numericValue._unsigned = static_cast<uint64_t>(v);
+                    }
+                    _text = std::to_string(v);
+                    result = sizeof(T);
+                }
+
+                return (result);
+            }
+
+            template<typename T>
+            uint16_t DeserializeFloat(const uint8_t buffer[], uint16_t offset, uint16_t bufferSize) {
+                static_assert(std::is_same_v<T, float> || std::is_same_v<T, double>, "Only float or double");
+                uint16_t result = 0;
+
+                if (static_cast<uint16_t>(bufferSize - offset) >= sizeof(T)) {
+                    T v;
+                    std::memcpy(&v, buffer + offset, sizeof(T));
+
+                    if constexpr (std::is_same_v<T, float>) {
+                        _numericValue._float = v;
+                    }
+                    else {
+                        _numericValue._double = v;
+                    }
+                    char buf[64];
+                    snprintf(buf, sizeof(buf), "%g", static_cast<double>(v));
+                    _text = buf;
+                    result = sizeof(T);
+                }
+
+                return (result);
+            }
+
+            ValueType _type;
+            string _text;
+            union NumericValue {
+                int64_t  _signed;
+                uint64_t _unsigned;
+                float    _float;
+                double   _double;
+            } _numericValue;
         };
 
     }

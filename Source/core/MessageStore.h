@@ -53,7 +53,8 @@ namespace Core {
                 LOGGING             = 2,
                 REPORTING           = 3,
                 OPERATIONAL_STREAM  = 4,
-                ASSERT              = 5
+                ASSERT              = 5,
+                TELEMETRY           = 6
             };
 
 // @stop
@@ -99,7 +100,7 @@ namespace Core {
             }
 
             bool Default() const {
-                return (_type == type::TRACING ? false : true);
+                return ((_type == type::TRACING || _type == type::TELEMETRY) ? false : true);
             }
 
             bool Specific() const {
@@ -388,6 +389,28 @@ namespace Core {
                 uint16_t _lineNumber;
                 string _callstack;
         };
+
+           /**
+            * @brief Data-Carrier, extended information about the telemetry-type message.
+            *        No additional info for now, used for function overloading.
+            */
+            class EXTERNAL Telemetry : public MessageInfo {
+            public:
+                Telemetry(const Telemetry&) = default;
+                Telemetry& operator=(const Telemetry&) = default;
+                Telemetry(Telemetry&&) = default;
+                Telemetry& operator=(Telemetry&&) = default;
+
+                Telemetry()
+                    : MessageInfo()
+                {
+                }
+                Telemetry(const MessageInfo& messageInfo)
+                    : MessageInfo(messageInfo)
+                {
+                }
+                ~Telemetry() = default;
+            };
 
             public:
             virtual ~IStore() = default;

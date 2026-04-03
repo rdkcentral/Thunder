@@ -36,6 +36,7 @@ set(PUBLIC_HEADERS
         MessageUnit.h
         TraceCategories.h
         TraceControl.h
+        TelemetryControl.h
         Control.h
         Logging.h
         LoggingCategories.h
