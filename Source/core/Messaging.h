@@ -23,7 +23,6 @@
 #include "MessageStore.h"
 
 #include <cstdio>
-#include <cstring>
 #include <type_traits>
 
 namespace Thunder {
