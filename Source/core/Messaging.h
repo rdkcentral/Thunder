@@ -113,8 +113,8 @@ namespace Core {
          *
          *        The Data() method always returns a string representation for
          *        publishers that only understand text (Console, Syslog, etc.).
-         *        TelemetryOutput inspects ValueType() to forward the native
-         *        typed value to the external backend without precision loss.
+         *        Consumers that support typed telemetry can inspect Type() to
+         *        forward or process the native value without precision loss.
          *
          *        Serialization format:
          *          [1 byte: ValueType]  then:
@@ -180,7 +180,6 @@ namespace Core {
                 _numericValue._unsigned = static_cast<uint64_t>(value);
             }
 
-            // float
             explicit TelemetryMessage(float value)
                 : _type(ValueType::FLOAT32)
                 , _text()
@@ -192,7 +191,6 @@ namespace Core {
                 _text = buf;
             }
 
-            // double
             explicit TelemetryMessage(double value)
                 : _type(ValueType::FLOAT64)
                 , _text()
@@ -250,8 +248,10 @@ namespace Core {
 
         private:
             template<size_t N>
-            static constexpr ValueType SignedTag() {
+            static constexpr ValueType SignedTag()
+            {
                 static_assert(N == 1 || N == 2 || N == 4 || N == 8, "Unsupported signed integer size");
+
                 return (N == 1) ? ValueType::INT8
                      : (N == 2) ? ValueType::INT16
                      : (N == 4) ? ValueType::INT32
@@ -259,8 +259,10 @@ namespace Core {
             }
 
             template<size_t N>
-            static constexpr ValueType UnsignedTag() {
+            static constexpr ValueType UnsignedTag()
+            {
                 static_assert(N == 1 || N == 2 || N == 4 || N == 8, "Unsupported unsigned integer size");
+
                 return (N == 1) ? ValueType::UINT8
                      : (N == 2) ? ValueType::UINT16
                      : (N == 4) ? ValueType::UINT32
@@ -268,7 +270,8 @@ namespace Core {
             }
 
             template<typename T>
-            uint16_t SerializeNumeric(uint8_t buffer[], uint16_t offset, uint16_t bufferSize, T value) const {
+            uint16_t SerializeNumeric(uint8_t buffer[], uint16_t offset, uint16_t bufferSize, T value) const
+            {
                 uint16_t result = 0;
 
                 if (static_cast<uint16_t>(bufferSize - offset) >= sizeof(T)) {
@@ -280,7 +283,8 @@ namespace Core {
             }
 
             template<typename T>
-            uint16_t DeserializeIntegral(const uint8_t buffer[], uint16_t offset, uint16_t bufferSize) {
+            uint16_t DeserializeIntegral(const uint8_t buffer[], uint16_t offset, uint16_t bufferSize)
+            {
                 uint16_t result = 0;
 
                 if (static_cast<uint16_t>(bufferSize - offset) >= sizeof(T)) {
@@ -301,7 +305,8 @@ namespace Core {
             }
 
             template<typename T>
-            uint16_t DeserializeFloat(const uint8_t buffer[], uint16_t offset, uint16_t bufferSize) {
+            uint16_t DeserializeFloat(const uint8_t buffer[], uint16_t offset, uint16_t bufferSize)
+            {
                 static_assert(std::is_same_v<T, float> || std::is_same_v<T, double>, "Only float or double");
                 uint16_t result = 0;
 

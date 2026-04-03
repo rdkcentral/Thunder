@@ -66,11 +66,11 @@ namespace Core {
                     break;
                 }
                 case ValueType::INT8:    offset += SerializeNumeric(buffer, offset, bufferSize, static_cast<int8_t>(_numericValue._signed));     break;
-                case ValueType::UINT8:   offset += SerializeNumeric(buffer, offset, bufferSize, static_cast<uint8_t>(_numericValue._unsigned));   break;
+                case ValueType::UINT8:   offset += SerializeNumeric(buffer, offset, bufferSize, static_cast<uint8_t>(_numericValue._unsigned));  break;
                 case ValueType::INT16:   offset += SerializeNumeric(buffer, offset, bufferSize, static_cast<int16_t>(_numericValue._signed));    break;
-                case ValueType::UINT16:  offset += SerializeNumeric(buffer, offset, bufferSize, static_cast<uint16_t>(_numericValue._unsigned));  break;
+                case ValueType::UINT16:  offset += SerializeNumeric(buffer, offset, bufferSize, static_cast<uint16_t>(_numericValue._unsigned)); break;
                 case ValueType::INT32:   offset += SerializeNumeric(buffer, offset, bufferSize, static_cast<int32_t>(_numericValue._signed));    break;
-                case ValueType::UINT32:  offset += SerializeNumeric(buffer, offset, bufferSize, static_cast<uint32_t>(_numericValue._unsigned));  break;
+                case ValueType::UINT32:  offset += SerializeNumeric(buffer, offset, bufferSize, static_cast<uint32_t>(_numericValue._unsigned)); break;
                 case ValueType::INT64:   offset += SerializeNumeric(buffer, offset, bufferSize, _numericValue._signed);                          break;
                 case ValueType::UINT64:  offset += SerializeNumeric(buffer, offset, bufferSize, _numericValue._unsigned);                        break;
                 case ValueType::FLOAT32: offset += SerializeNumeric(buffer, offset, bufferSize, _numericValue._float);                           break;
