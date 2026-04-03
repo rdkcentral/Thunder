@@ -174,6 +174,8 @@ namespace Core {
                 case ValueType::FLOAT64: offset += DeserializeFloat<double>(buffer, offset, bufferSize);       break;
                 default: {
                     _type = ValueType::TEXT;
+                    _text.clear();
+                    offset = 0;
                     break;
                 }
                 }

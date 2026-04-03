@@ -196,11 +196,7 @@ namespace Core {
                     _category = frameReader.NullTerminatedText();
                     length += static_cast<uint16_t>(_category.size()) + 1;
 
-                    if (_type == TRACING) {
-                        _module = frameReader.NullTerminatedText();
-                        length += static_cast<uint16_t>(_module.size()) + 1;
-                    }
-                    else if (_type == TELEMETRY) {
+                    if ((_type == TRACING) || (_type == TELEMETRY)) {
                         _module = frameReader.NullTerminatedText();
                         length += static_cast<uint16_t>(_module.size()) + 1;
                     }
