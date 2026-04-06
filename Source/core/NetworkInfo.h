@@ -447,11 +447,7 @@ namespace Core {
             : _index(copy._index)
         {
         }
-        inline AdapterIterator(AdapterIterator&& move) noexcept
-            : _index(move._index)
-        {
-            move._index = (static_cast<uint16_t>(~0));
-        }
+        inline AdapterIterator(AdapterIterator&&) = delete;
         inline ~AdapterIterator()
         {
         }
@@ -462,15 +458,7 @@ namespace Core {
             return (*this);
         }
 
-        inline AdapterIterator& operator=(AdapterIterator&& move) noexcept
-        {
-            if (this != &move) {
-                _index = move._index;
-
-                move._index = (static_cast<uint16_t>(~0));
-            }
-            return (*this);
-        }
+        inline AdapterIterator& operator=(AdapterIterator&& move) = delete;
 
     public:
         inline uint16_t Index() const
@@ -545,12 +533,7 @@ namespace Core {
             , _list(copy._list)
             , _index(_list.begin()) {
         }
-        inline IPV4AddressIterator(IPV4AddressIterator&& move)
-            : _reset(move._reset)
-            , _list(std::move(move._list))
-            , _index(std::move(move._index)) {
-            move._reset = true;
-        }
+        inline IPV4AddressIterator(IPV4AddressIterator&& move)=delete;
         inline ~IPV4AddressIterator() = default;
 
         inline IPV4AddressIterator& operator=(const IPV4AddressIterator& RHS)
@@ -566,17 +549,7 @@ namespace Core {
             return (*this);
         }
 
-        inline IPV4AddressIterator& operator=(IPV4AddressIterator&& move)
-        {
-            if (this != &move) {
-                _reset = move._reset;
-                _list = std::move(move._list);
-                _index = std::move(move._index);
-
-                move._reset = true;
-            }
-            return (*this);
-        }
+        inline IPV4AddressIterator& operator=(IPV4AddressIterator&& move) = delete;
     public:
         inline bool IsValid() const
         {

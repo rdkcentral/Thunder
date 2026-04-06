@@ -181,22 +181,10 @@ namespace Thunder {
                     , _index(_container.begin())
                 {
                 }
-                Iterator(Iterator&& move) noexcept
-                    : _position(0)
-                    , _container(std::move(move._container))
-                    , _index(_container.begin())
-                {
-                }
+                Iterator(Iterator&&) = delete;
                 ~Iterator() = default;
 
-                Iterator& operator=(Iterator&& rhs) noexcept
-                {
-                    _position = 0;
-                    _container = std::move(rhs._container);
-                    _index = _container.begin();
-
-                    return (*this);
-                }
+                Iterator& operator=(Iterator&&) = delete;
                 Iterator& operator=(ControlList&& rhs) noexcept
                 {
                     _position = 0;

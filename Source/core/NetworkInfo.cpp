@@ -1825,15 +1825,6 @@ namespace Core {
             while ( (Next() == true) && (Name() != name) ) { /* Intentionally left empty */ }
         }
     }
-    AdapterIterator::AdapterIterator(AdapterIterator&& move)
-        : AdapterIterator() {
-        _reset = move._reset;
-        _list = std::move(move._list);
-        _index = std::move(move._index);
-
-         move._reset = 0;
-    }
-
     AdapterIterator& AdapterIterator::operator=(const AdapterIterator& RHS)
     {
         _reset = true;
@@ -1848,18 +1839,9 @@ namespace Core {
         return (*this);
     }
 
-    AdapterIterator& AdapterIterator::operator=(AdapterIterator&& move)
-    {
-        if (this != &move) {
-            _reset = move._reset;
-            _list = std::move(move._list);
-            _index = std::move(move._index);
+    AdapterIterator::AdapterIterator(AdapterIterator&& move)=delete;
+    AdapterIterator& AdapterIterator::operator=(AdapterIterator&& move)=delete;
 
-            move._reset = 0;
-        }
-
-        return (*this);
-    }
 
 #endif
 

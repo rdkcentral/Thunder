@@ -2039,11 +2039,7 @@ namespace PluginHost {
                     , _index()
                     , _position(0) {
                 }
-                Iterator(Iterator&& move)
-                    : _container(std::move(move._container))
-                    , _index()
-                    , _position(0) {
-                }
+                Iterator(Iterator&&) = delete;
                 Iterator(const Iterator& copy)
                     : _container(copy._container)
                     , _index()
@@ -2055,14 +2051,7 @@ namespace PluginHost {
                     }
                 }
 
-                Iterator& operator=(Iterator&& move) {
-                    if (this != &move) {
-                        _container = std::move(move._container);
-                        _index = std::move(move._index);
-                        _position = move._position;
-                    }
-                    return (*this);
-                }
+                Iterator& operator=(Iterator&&) = delete;
                 Iterator& operator=(const Iterator& copy) {
                     _container = copy._container;
                     _position = copy._position;

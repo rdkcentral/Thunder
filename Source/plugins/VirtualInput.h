@@ -322,13 +322,7 @@ POP_WARNING()
                 , _position(copy._position)
             {
             }
-            Iterator(Iterator&& move) noexcept
-                : _consumers(std::move(move._consumers))
-                , _index(std::move(move._index))
-                , _position(move._position)
-            {
-                move._position = ~0;
-            }
+            Iterator(Iterator&&) = delete;
             ~Iterator()
             {
             }
@@ -341,18 +335,7 @@ POP_WARNING()
                 return (*this);
             }
 
-            Iterator& operator=(Iterator&& move) noexcept
-            {
-                if (this != &move) {
-                    _consumers = std::move(move._consumers);
-                    _index = std::move(move._index);
-                    _position = move._position;
-
-                    move._position = ~0;
-                }
-
-                return (*this);
-            }
+            Iterator& operator=(Iterator&&) = delete;
 
         public:
             bool IsValid() const

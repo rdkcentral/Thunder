@@ -62,13 +62,7 @@ namespace Core {
                 , _iterator(_clients.begin())
             {
             }
-            IteratorType(IteratorType<HANDLECLIENT>&& move)
-                : _atHead(move._atHead)
-                , _clients(std::move(move._clients))
-                , _iterator(std::move(move._iterator))
-            {
-                move._atHead = true;
-            }
+            IteratorType(IteratorType<HANDLECLIENT>&&) = delete;
             ~IteratorType() = default;
 
             IteratorType& operator=(const IteratorType<HANDLECLIENT>& RHS)
@@ -78,16 +72,7 @@ namespace Core {
                 _clients = RHS._clients;
                 _iterator = RHS._iterator;
             }
-            IteratorType& operator=(IteratorType<HANDLECLIENT>&& move)
-            {
-                if (this != &move) {
-                    _atHead = move._atHead;
-                    _clients = std::move(move._clients);
-                    _iterator = std::move(move._iterator);
-
-                    move._atHead = true;
-                }
-            }
+            IteratorType& operator=(IteratorType<HANDLECLIENT>&&) = delete;
 
         public:
             inline bool IsValid() const

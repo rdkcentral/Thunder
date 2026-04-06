@@ -67,14 +67,7 @@ namespace Core {
                 index++;
             }
         }
-        IteratorType(IteratorType<CONTAINER, ELEMENT, ITERATOR>&& move)
-            : m_Container(move.m_Container)
-            , m_Iterator(std::move(move.m_Iterator))
-            , m_Index(move.m_Index)
-        {
-            move.m_Container = nullptr;
-            move.m_Index = 0;
-        }
+        IteratorType(IteratorType<CONTAINER, ELEMENT, ITERATOR>&&) = delete;
         IteratorType(const IteratorType<CONTAINER, ELEMENT, ITERATOR>& copy)
             : m_Container(copy.m_Container)
             , m_Iterator(copy.m_Iterator)
@@ -91,18 +84,7 @@ namespace Core {
 
             return (*this);
         }
-        IteratorType<CONTAINER, ELEMENT, ITERATOR>& operator=(IteratorType<CONTAINER, ELEMENT, ITERATOR>&& move)
-        {
-            if (this != &move) {
-                m_Container = move.m_Container;
-                m_Iterator = std::move(move.m_Iterator);
-                m_Index = move.m_Index;
-
-                move.m_Container = nullptr;
-                move.m_Index = 0;
-            }
-            return (*this);
-        }
+        IteratorType<CONTAINER, ELEMENT, ITERATOR>& operator=(IteratorType<CONTAINER, ELEMENT, ITERATOR>&&) = delete;
 
     public:
         virtual bool IsValid() const
@@ -274,14 +256,7 @@ namespace Core {
             , m_Index(copy.m_Index)
         {
         }
-        IteratorMapType(IteratorMapType<CONTAINER, KEY, ELEMENT, ITERATOR>&& move)
-            : m_Container(move.m_Container)
-            , m_Iterator(std::move(move.m_Iterator))
-            , m_Index(move.m_Index)
-        {
-            move.m_Container = nullptr;
-            move.m_Index = 0;
-        }
+        IteratorMapType(IteratorMapType<CONTAINER, KEY, ELEMENT, ITERATOR>&& move) = delete;
         ~IteratorMapType()
         {
         }
@@ -294,18 +269,7 @@ namespace Core {
 
             return (*this);
         }
-        IteratorMapType<CONTAINER, KEY, ELEMENT, ITERATOR>& operator=(IteratorMapType<CONTAINER, KEY, ELEMENT, ITERATOR>&& move)
-        {
-            if (this != &move) {
-                m_Container = move.m_Container;
-                m_Iterator = std::move(move.m_Iterator);
-                m_Index = move.m_Index;
-
-                move.m_Container = nullptr;
-                move.m_Index = 0;
-            }
-            return (*this);
-        }
+        IteratorMapType<CONTAINER, KEY, ELEMENT, ITERATOR>& operator=(IteratorMapType<CONTAINER, KEY, ELEMENT, ITERATOR>&& move) = delete;
 
     public:
         virtual bool IsValid() const

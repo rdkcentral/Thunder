@@ -852,14 +852,7 @@ POP_WARNING()
                     , _position(copy._position)
                 {
                 }
-                EventIterator(EventIterator&& move) noexcept
-                    : _container(move._container)
-                    , _index(std::move(move._index))
-                    , _position(move._position)
-                {
-                    move._container = nullptr;
-                    move._position = ~0;
-                }
+                EventIterator(EventIterator&&) = delete;
                 ~EventIterator() = default;
 
                 EventIterator& operator=(const EventIterator& rhs)
@@ -870,18 +863,7 @@ POP_WARNING()
 
                     return (*this);
                 }
-                EventIterator& operator=(EventIterator&& move) noexcept
-                {
-                    if (this != &move) {
-                        _container = move._container;
-                        _index = std::move(move._index);
-                        _position = move._position;
-
-                        move._container = nullptr;
-                        move._position = ~0;
-                    }
-                    return (*this);
-                }
+                EventIterator& operator=(EventIterator&&) = delete;
             public:
                 bool IsValid() const
                 {
