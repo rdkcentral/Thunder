@@ -147,7 +147,7 @@ namespace Crypto {
         uint8_t hsb2 = static_cast<uint8_t>(random() & 0xFF);
         uint8_t lsb2 = static_cast<uint8_t>(random() & 0xFF);
 #endif // __LINUX__
-        value = (hsb1 << 24) | (lsb1 < 16) | (hsb2 << 8) | lsb2;
+        value = (hsb1 << 24) | (lsb1 << 16) | (hsb2 << 8) | lsb2;
 #else
 #error "Can not create random functionality"
 #endif
@@ -185,8 +185,8 @@ namespace Crypto {
         uint16_t hsw2 = static_cast<uint16_t>(random() & 0xFFFF);
         uint16_t lsw2 = static_cast<uint16_t>(random() & 0xFFFF);
 #endif // __LINUX__
-        value = (hsw1 << 16) | lsw1;
-        value = (value << 32) | (hsw2 << 16) | lsw2;
+        value = (static_cast<uint64_t>(hsw1) << 16) | lsw1;
+        value = (value << 32) | (static_cast<uint64_t>(hsw2) << 16) | lsw2;
 #elif RAND_MAX >= 0xFF
 #ifdef __WINDOWS__
         uint8_t hsb1 = static_cast<uint8_t>(rand() & 0xFF);
@@ -208,8 +208,8 @@ namespace Crypto {
         uint8_t hsb4 = static_cast<uint8_t>(random() & 0xFF);
         uint8_t lsb4 = static_cast<uint8_t>(random() & 0xFF);
 #endif // __LINUX__
-        value = (hsb1 << 24) | (lsb1 < 16) | (hsb2 << 8) | lsb2;
-        value = (value << 32) | (hsb3 << 24) | (lsb3 < 16) | (hsb4 << 8) | lsb4;
+        value = (hsb1 << 24) | (lsb1 << 16) | (hsb2 << 8) | lsb2;
+        value = (value << 32) | (hsb3 << 24) | (lsb3 << 16) | (hsb4 << 8) | lsb4;
 #else
 #error "Can not create random functionality"
 #endif

@@ -106,7 +106,7 @@ namespace PluginHost {
             string _firmwareVersion;
         };
 
-        class Provisioning : public RPC::IteratorType<PluginHost::ISubSystem::IProvisioning> {
+        class Provisioning : public RPC::IteratorType<PluginHost::ISubSystem::IProvisioning, std::vector<string>> {
         public:
             Provisioning(const Provisioning&) = delete;
             Provisioning& operator=(const Provisioning&) = delete;
@@ -114,13 +114,13 @@ namespace PluginHost {
             Provisioning() = delete;
 
             Provisioning(PluginHost::ISubSystem::IProvisioning* info)
-                : RPC::IteratorType<PluginHost::ISubSystem::IProvisioning>(info)
+                : RPC::IteratorType<PluginHost::ISubSystem::IProvisioning, std::vector<string>>(info)
                 , _storage(info->Storage())
             {
             }
 
-            Provisioning(std::list<std::string>&& labels, const std::string& storage)
-                : RPC::IteratorType<PluginHost::ISubSystem::IProvisioning>(labels)
+            Provisioning(std::vector<string>&& labels, const string& storage)
+                : RPC::IteratorType<PluginHost::ISubSystem::IProvisioning, std::vector<string>>(std::move(labels))
                 , _storage(storage)
             {
             }
@@ -493,7 +493,7 @@ namespace PluginHost {
                         _provisioning = nullptr;
                     }
 
-                    _provisioning = Core::ServiceType<Provisioning>::Create<PluginHost::ISubSystem::IProvisioning>(std::list<std::string>(), "");
+                    _provisioning = Core::ServiceType<Provisioning>::Create<PluginHost::ISubSystem::IProvisioning>(std::vector<string>(), "");
 
                     _adminLock.Unlock();
                 } else {
