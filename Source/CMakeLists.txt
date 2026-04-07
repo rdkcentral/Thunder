@@ -49,7 +49,8 @@ option(DISABLE_USE_COMPLEMENTARY_CODE_SET
         "Disable the complementary code set" OFF)
 option(ENABLE_JSONRPC_FORGIVING_METHOD_CASE_HANDLING
         "Enable json rpc forgiving camel and pascal case method handling" OFF)
-
+option(ACCEPT_VERSION_IN_CALLSIGNs
+        "Accept version in callsign syntax (version is ignored)" OFF)
 
 if(HIDE_NON_EXTERNAL_SYMBOLS)
     set(CMAKE_CXX_VISIBILITY_PRESET hidden)

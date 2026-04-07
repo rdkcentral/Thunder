@@ -3507,7 +3507,19 @@ namespace PluginHost {
 
                 _adminLock.Lock();
 
-                auto it = _services.find(callsign);
+                Plugins::const_iterator it;
+
+#ifdef __ACCEPT_VERSION_IN_CALLSIGN__
+                // JSON-RPC version number has no meaning here, but such syntax was previously accidentally allowed.
+                const uint16_t length = static_cast<uint16_t>(callsign.length());
+                if ((length > 2) && (callsign[length - 2] == TCHAR('.')) && (::isdigit(callsign[length - 1])) != 0) {
+                    TRACE_L1("Ignoring version number in callsign '%s'", callsign.c_str());
+                    SYSLOG(Logging::Notification, (_T("Version number not expected in a callsign ('%s'), ignored!"), callsign.c_str()));
+                    it = _services.find(string(callsign.data(), (callsign.length() - 2)));
+                } else
+#endif // __ACCEPT_VERSION_IN_CALLSIGN__
+
+                it = _services.find(callsign);
 
                 if (it != _services.end()) {
                     ASSERT(it->second != nullptr);

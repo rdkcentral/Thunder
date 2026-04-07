@@ -49,6 +49,12 @@ if (TREE_REFERENCE)
             )
 endif()
 
+if(ACCEPT_VERSION_IN_CALLSIGN)
+   target_compile_definitions(${TARGET} PRIVATE __ACCEPT_VERSION_IN_CALLSIGN__=${ACCEPT_VERSION_IN_CALLSIGN})
+   message(STATUS "accept version in callsign syntax")
+endif()
+
+
 target_include_directories(${TARGET}
         PUBLIC
             $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/../plugins/generated/jsonrpc>
