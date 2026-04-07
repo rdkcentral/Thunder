@@ -3753,7 +3753,7 @@ namespace PluginHost {
                 if ((length > 2) && (callsign[length - 2] == TCHAR('.')) && (::isdigit(callsign[length - 1])) != 0) {
                     TRACE_L1("Ignoring version number in callsign '%s'", callsign.c_str());
                     SYSLOG(Logging::Notification, (_T("Version number not expected in a callsign ('%s'), ignored!"), callsign.c_str()));
-                    it = _services.find(string(callsign.data(), (callsign.length() - 2)));
+                    it = _services.find(string(callsign.data(), (length - 2)));
                 } else
 #endif // __ACCEPT_VERSION_IN_CALLSIGN__
 
