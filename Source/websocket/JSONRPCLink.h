@@ -585,11 +585,17 @@ namespace Thunder {
             {
                 std::function<void(const INBOUND& parameters)> actualMethod = method;
                 InvokeFunction implementation = [actualMethod](const Core::JSONRPC::Context&, const string&, const string& parameters, string& result) -> uint32_t {
+                    Core::OptionalType<Core::JSON::Error> report;
                     INBOUND inbound;
-                    inbound.FromString(parameters);
-                    actualMethod(inbound);
+                    uint32_t resultCode = Core::ERROR_PARSE_FAILURE;
+                    inbound.FromString(parameters, report);
+
+                    if (report.IsSet() == false) {
+                        actualMethod(inbound);
+                        resultCode = Core::ERROR_NONE;
+                    }
                     result.clear();
-                    return (Core::ERROR_NONE);
+                    return (resultCode);
                 };
 
                 _handler.Register(eventName, implementation);
@@ -600,11 +606,17 @@ namespace Thunder {
                 // using INBOUND = typename Core::TypeTraits::func_traits<METHOD>::template argument<0>::type;
                 std::function<void(INBOUND parameters)> actualMethod = std::bind(method, objectPtr, std::placeholders::_1);
                 InvokeFunction implementation = [actualMethod](const Core::JSONRPC::Context&, const string&, const string& parameters, string& result) -> uint32_t {
+                    Core::OptionalType<Core::JSON::Error> report;
                     INBOUND inbound;
-                    inbound.FromString(parameters);
-                    actualMethod(inbound);
+                    uint32_t resultCode = Core::ERROR_PARSE_FAILURE;
+                    inbound.FromString(parameters, report);
+
+                    if (report.IsSet() == false) {
+                        actualMethod(inbound);
+                        resultCode = Core::ERROR_NONE;
+                    }
                     result.clear();
-                    return (Core::ERROR_NONE);
+                    return (resultCode);
                 };
                 _handler.Register(eventName, implementation);
             }
