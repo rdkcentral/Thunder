@@ -3091,6 +3091,7 @@ POP_WARNING()
             void Open() {
                 _processAdministrator.Open();
             }
+
             void* Instantiate(const RPC::Object& object, const uint32_t waitTime, uint32_t& sessionId, const string& dataPath, const string& persistentPath, const string& volatilePath)
             {
                 return (_processAdministrator.Create(sessionId, object, waitTime, dataPath, persistentPath, volatilePath));
