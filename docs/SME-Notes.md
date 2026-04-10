@@ -1,6 +1,11 @@
 # Thunder — Additional Constraints
 
-Thunder should always adhere to the contraints described here.
+Thunder should always adhere to the constraints described here.
+
+## Document Role
+
+This document is the implementation-focused companion to `docs/thunder-architecture-brief.md`.
+It captures coding guardrails, lifecycle discipline, and common high-impact mistakes used during day-to-day development and reviews.
 
 ## COM Interface Design
 
@@ -99,3 +104,38 @@ If copying an object is unsafe or meaningless, delete the copy constructor and c
 - **`Core::Event` / `Core::Semaphore` is for signaling** — one thread signals, another waits. Never also use it as a resource guard.
 - Be aware of **priority inversion**: threads at different priorities coordinating via the same `CriticalSection` create inversion risk. Keep critical sections as short as possible.
 - Prevent **deadlocks**: establish and document lock acquisition order. Never acquire lock B while holding lock A if any code path acquires A while holding B.
+
+## Operational Guardrails
+
+The following guardrails consolidate recurring implementation mistakes and layer responsibilities into this single SME document.
+
+### Cross-Cutting Non-Negotiables
+
+- Keep business/domain behavior inside plugins. Treat `Source/core/` and `Source/Thunder/` as infrastructure layers.
+- Prefer COM-RPC interface calls for inter-plugin communication; avoid JSON-RPC hops for in-daemon plugin-to-plugin calls.
+- Do not use exceptions (`throw`, `try`, `catch`) in Thunder code paths.
+- Do not change published COM interface method signatures in place; extend through versioned interfaces.
+- Do not use STL containers that are not COM-marshable (`std::list`, `std::map`) at process boundaries; use iterator interfaces.
+- Never delete COM objects directly; use `Release()` and proper ref-count ownership.
+
+### Common High-Impact Mistakes
+
+- Avoid `RPC::CommunicatorClient` usage from daemon plugins for intra-daemon calls; it defeats in-process short-circuiting and adds avoidable IPC latency.
+- Do not persist raw pointers returned by `QueryInterfaceByCallsign<T>()` across independent plugin lifecycle transitions; use a lifecycle-aware smart wrapper pattern.
+- Always unregister JSON-RPC methods/properties in `Deinitialize()` for everything registered in `Initialize()`.
+- Do not put activation logic in constructors or teardown logic in destructors; keep constructor/destructor trivial.
+- For OOP implementation classes using plugin-smart-interface monitoring, ensure root worker threads are configured with at least two threads to avoid deadlock.
+- Always release COM iterator interfaces after iteration to avoid cumulative leaks under load.
+
+### Layer Responsibilities
+
+- `core`: remain dependency-clean from upper layers, use `ResourceMonitor`/`WorkerPool` primitives for readiness and async work, and keep platform code behind explicit guards.
+- `com`: preserve proxy/stub and message-label dispatch safety, and avoid template-message dynamic-cast assumptions across library boundaries.
+- `plugins`: enforce strict `Initialize()`/`Deinitialize()` symmetry, `IShell*` ref-count discipline, and subsystem/notification registration order.
+- `Thunder` runtime: preserve ServiceMap locking discipline, lifecycle-state transition ownership, and throttled dispatch behavior.
+
+### Governance Guidance
+
+- Treat implementation-instruction material as process governance, not as a replacement for architecture/source-of-truth design docs.
+- If guidance changes imply ABI, lifecycle, or execution-mode semantics, update architecture and interface documentation in the same change.
+- Keep guidance naming and scope explicit and consistent so enforcement does not silently degrade.
