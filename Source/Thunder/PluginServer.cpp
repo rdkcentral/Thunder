@@ -72,10 +72,9 @@ namespace PluginHost {
 #else
     /* static */ const TCHAR* Server::ConfigFile = _T("/etc/" EXPAND_AND_QUOTE(NAMESPACE) "/config.json");
 #endif
-
-    /* static */ const TCHAR* Server::PluginOverrideFile = _T("PluginHost/override.json");
     /* static */ const TCHAR* Server::ExtensionsConfigDirectory = _T("extensions/");
     /* static */ const TCHAR* Server::PluginConfigDirectory = _T("plugins/");
+    /* static */ const TCHAR* Server::PluginOverrideDirectory = _T(EXPAND_AND_QUOTE(NAMESPACE) "/services/");
     /* static */ const TCHAR* Server::CommunicatorConnector = _T("COMMUNICATOR_CONNECTOR");
 
     static const TCHAR _defaultControllerCallsign[] = _T("Controller");
@@ -229,6 +228,9 @@ namespace PluginHost {
 
     void Server::ServiceMap::Destroy()
     {
+        // coverity[ATOMICITY] - Lock is intentionally dropped around Deactivate() which can
+        // block. The iterator is refreshed (begin()) after re-acquiring the lock each iteration.
+        // This is correct lock-straddling, not a race.
         _adminLock.Lock();
 
         // First, move them all to deactivated except Controller
@@ -678,6 +680,7 @@ namespace PluginHost {
 
             if ((currentState == IShell::state::DEACTIVATION) || (currentState == IShell::state::ACTIVATION) || (currentState == IShell::state::DESTROYED) || (currentState == IShell::state::ACTIVATED) || (currentState == IShell::state::PRECONDITION) || (currentState == IShell::state::HIBERNATED)) {
                 result = Core::ERROR_ILLEGAL_STATE;
+                Unlock();
             } else if (currentState == IShell::state::DEACTIVATED) {
 
                 const Core::EnumerateType<PluginHost::IShell::reason> textReason(why);
@@ -700,9 +703,9 @@ namespace PluginHost {
                 Notify(EMPTY_STRING, string(_T("{\"state\":\"unavailable\",\"reason\":\"")) + textReason.Data() + _T("\"}"));
 #endif
                 Notify(_T("statechange"), string(_T("{\"state\":\"unavailable\",\"reason\":\"")) + textReason.Data() + _T("\"}"));
+            } else {
+                Unlock();
             }
-
-            Unlock();
         } else {
             result = Core::ERROR_NOT_SUPPORTED;
         }
@@ -760,6 +763,9 @@ namespace PluginHost {
                     local->Release();
                     result = Core::ERROR_NONE;
 #endif
+                    // coverity[DEADCODE] - On the non-HIBERNATE_ENABLED path result is always
+                    // ERROR_NONE here, making the else-if appear unreachable to Coverity.
+                    // Both branches are reachable when HIBERNATE_ENABLED is defined.
                     if (result == Core::ERROR_NONE) {
                         if (State() == IShell::state::HIBERNATED) {
                             SYSLOG(Logging::Startup, ("Hibernated plugin [%s]:[%s]", ClassName().c_str(), Callsign().c_str()));
@@ -950,6 +956,9 @@ namespace PluginHost {
 
     void Server::ServiceMap::Close()
     {
+        // coverity[ATOMICITY] - Lock is intentionally dropped around Deactivate() which can
+        // block. The iterator is refreshed after re-acquiring the lock each iteration.
+        // This is correct lock-straddling, not a race.
         _adminLock.Lock();
 
         Core::ProxyType<Service> controller(_server.Controller());
@@ -1230,8 +1239,8 @@ namespace PluginHost {
     {
         IFactories::Assign(&_factoriesImplementation);
 
-        // See if the persitent path for our-selves exist, if not we will create it :-)
-        Core::File persistentPath(_config.PersistentPath() + _T("PluginHost"));
+        // See if the persistent path for our-selves exist, if not we will create it :-)
+        Core::File persistentPath(_config.PersistentPath() + PluginOverrideDirectory);
 
         if (persistentPath.IsDirectory() == false) {
             Core::Directory(persistentPath.Name().c_str()).Create();
@@ -1381,12 +1390,17 @@ namespace PluginHost {
     void Server::Close()
     {
         Plugin::Controller* destructor(_controller->ClassType<Plugin::Controller>());
-        destructor->AddRef();
-        _connections.Close(100);
-        destructor->Stopped();
-        _services.Close();
-        _dispatcher.Stop();
-        destructor->Release();
+
+        ASSERT(destructor != nullptr);
+
+        if (destructor != nullptr) {
+            destructor->AddRef();
+            _connections.Close(100);
+            destructor->Stopped();
+            _services.Close();
+            _dispatcher.Stop();
+            destructor->Release();
+        }
         _inputHandler.Deinitialize();
         _connections.Close(Core::infinite);
 

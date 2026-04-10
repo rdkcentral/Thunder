@@ -15,18 +15,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD ${CXX_STD})
 add_executable(FileMaster file-master.cpp)
 
 set_target_properties(FileMaster PROPERTIES
-        CXX_STANDARD 11
+        CXX_STANDARD ${CXX_STD}
         CXX_STANDARD_REQUIRED YES
         )
 
 add_executable(FileClient file-client.cpp)
 
 set_target_properties(FileClient PROPERTIES
-        CXX_STANDARD 11
+        CXX_STANDARD ${CXX_STD}
         CXX_STANDARD_REQUIRED YES
         )
 install(TARGETS FileClient DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT ${NAMESPACE}_Test)

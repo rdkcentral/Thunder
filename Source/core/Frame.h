@@ -234,7 +234,7 @@ namespace Core {
             void UnlockBuffer(TYPENAME length) const
             {
                 ASSERT(_container != nullptr);
-                ASSERT(length <= Length());
+                ASSERT((length >= 0) && (static_cast<uint32_t>(length) <= Length()));
 
                 _offset += length;
             }
