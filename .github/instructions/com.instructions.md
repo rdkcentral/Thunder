@@ -55,8 +55,9 @@ applyTo: 'Source/com/**'
 - `ERROR_COMPOSIT_OBJECT` returned from `AddRef()` signals a composit (delegate-lifetime) object — `Administrator::RecoverySet` handles this correctly; do not special-case it elsewhere.
 
 ## Collections Across COM Boundaries
-- **Never** pass `std::vector`, `std::list`, `std::map`, or any STL container across a COM interface.
-- Use `RPC::IIteratorType<ELEMENT, ID>` — a COM-safe forward iterator with `Next()` / `Current()` / `Reset()`.
+- `std::list` and `std::map` cannot be marshalled across a COM interface — never use them as interface parameters.
+- `std::vector` is supported with the `@restrict` annotation on the parameter (Thunder 5.x+); for new interfaces prefer `RPC::IIteratorType<ELEMENT, ID>` which works across all versions.
+- `RPC::IIteratorType<ELEMENT, ID>` — a COM-safe forward iterator with `Next()` / `Current()` / `Reset()`.
 - Generate iterators: declare `using IMyIterator = RPC::IIteratorType<IMyElement, RPC::ID_MY_ITERATOR>;` and register `ID_MY_ITERATOR` in `Ids.h`.
 - `IteratorType<CONTAINER, INTERFACE>` provides a concrete in-process implementation of an iterator interface.
 
@@ -66,11 +67,6 @@ applyTo: 'Source/com/**'
 ## COM-RPC Debugging
 - Switch `communicator` to TCP (`"127.0.0.1:62000"`) to capture traffic.
 - Use `thunder-comrpc` Wireshark filter; inspect `invoke.hresult` for failures.
-
-## `Core::ProxyType<T>` — Dynamic Cast Internals
-- `Core::ProxyType<T>` uses `dynamic_cast` internally when converting between types (e.g. `ProxyType<IIPC>` → `ProxyType<InvokeMessage>`).
-- **Never** rely on `ProxyType<T>(base_proxy)` conversion for `IPCMessageType<>` specialisations — `dynamic_cast` on template types is not reliable across dylib boundaries. Use `IIPC::Label()` + `static_cast` instead.
-- This does NOT affect `ProxyType` conversions for non-template types (e.g. `ProxyType<IPCChannel>`) — those work correctly.
 
 ## IPC Message Dispatch Pattern (`Administrator.h`, `Communicator.h`)
 The COM-RPC layer dispatches incoming IPC frames through a handler registry:
@@ -151,19 +147,26 @@ namespace {
 - `MyManualStub` must inherit `ProxyStub::UnknownStubType<IMyInterface, N>` where `N` = number of methods.
 - This is a last resort — always prefer the generator for correctness and maintainability.
 
-## `SmartInterfaceType<T>` — COM-RPC Client Helper
-For external tools/clients connecting to Thunder via COM-RPC, `SmartInterfaceType<T>` provides automatic connection management:
+## COM-RPC Client Helpers
+
+Several helper types exist depending on context:
+
+| Helper | Where to use |
+|--------|--------------|
+| `RPC::SmartInterfaceType<T>` | **External standalone tools** connecting to a running Thunder daemon — handles connection, reconnect, and interface lifecycle |
+| `PluginHost::PluginSmartInterfaceType<T>` | **Plugins** acquiring another plugin's interface — lifecycle-aware, nullifies pointer automatically on target deactivation (see `plugins.instructions.md`) |
+
 ```cpp
+// External tool example using RPC::SmartInterfaceType:
 class MyClient : public RPC::SmartInterfaceType<Exchange::INetworkControl> {
-    // Notifications for connection state
     void Operational(const bool upAndRunning) override { ... }
 };
 MyClient client(_T("/tmp/communicator"), _T("NetworkControl"), ~0);
 client.Open(5000);  // connect with 5s timeout
 auto* iface = client.Interface();  // returns Exchange::INetworkControl*
 ```
-- Handles reconnection, interface re-acquisition, and proxy lifecycle.
 - The COM-RPC socket path must match the daemon's `communicator` config value.
+- Never use `RPC::SmartInterfaceType` from within a daemon plugin — use `PluginSmartInterfaceType` or `QueryInterfaceByCallsign` instead.
 
 ## Adding a New COM Interface (within `com/`)
 1. Define interface in the appropriate header, inheriting `virtual public Core::IUnknown`.

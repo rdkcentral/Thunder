@@ -64,8 +64,8 @@ applyTo: 'Source/Thunder/**'
 - Changes here must be coordinated with `ThunderPlugin/` changes — they share the same IPC protocol version.
 
 ## Hot-Reload
-- Plugin config files in `configs` directory are watched by `FileObserver` — changes trigger `Service::ConfigUpdated()`.
-- Proxy stub `.so` files in `proxystubpath` are hot-loaded — new stubs are registered, stale ones are left loaded (never unloaded at runtime to avoid use-after-free).
+- Plugin config `.json` files in `configs` directory are watched by `FileObserver`. New files cause `ConfigObserver` to register additional plugins via `ServiceMap::Insert()` — changes to already-loaded plugin configs are **not** applied at runtime; a daemon restart is required.
+- Proxy stub shared libraries in `proxystubpath` are hot-loaded — new stubs are registered, stale ones are left loaded (never unloaded at runtime to avoid use-after-free).
 - Never cache the contents of `proxystubpath` — always query at load time.
 
 ## OOP Plugin Launch & Announce Protocol
@@ -92,22 +92,8 @@ When activating an out-of-process (OOP) plugin (`mode: Local` or `Container`):
 - `ProcessShutdown` (background timer) manages graceful shutdown of multiple OOP processes.
 - `RemoteConnectionMap::Closed()` is called when a channel disconnects — notifies `IRemoteConnection::INotification` observers, then calls `Terminate()`.
 
-### CLI Arguments for ThunderPlugin
-| Flag | Meaning |
-|------|---------|
-| `-l` | Plugin library locator (`.so`/`.dylib` path) |
-| `-c` | Class name to instantiate |
-| `-C` | Plugin callsign |
-| `-r` | COM-RPC socket path (communicator) |
-| `-i` | Interface ID to instantiate |
-| `-x` | Exchange ID (links child back to parent's pending `Create()`) |
-| `-V` | Version number |
-| `-s` | System path |
-| `-d` | Data path |
-| `-p` | Persistent path |
-| `-v` | Volatile path |
-| `-m` | Proxy stub path |
-| `-t` | Thread count |
+### `ThunderPlugin` Process
+`ThunderPlugin` is the OOP host binary that runs plugin implementation classes out-of-process. It is **always spawned by Thunder itself** — never launched manually. Its internal CLI arguments (`-l`, `-c`, `-C`, `-r`, `-i`, `-x`, etc.) are implementation details and should not be referenced in plugin code or configuration.
 
 ## Security
 - All JSON-RPC calls pass through `ISecurity::Allowed()` (token-based) before dispatch.

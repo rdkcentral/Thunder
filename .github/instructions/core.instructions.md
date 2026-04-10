@@ -13,16 +13,31 @@ applyTo: 'Source/core/**'
 - Allowed includes: other `core/` headers, OS system headers, `Module.h`, `Portability.h`.
 - Use `#ifdef __LINUX__` / `#ifdef __WINDOWS__` / `#ifdef __POSIX__` / `#ifdef __UNIX__` for OS-specific code — always guarded, never assumed.
 
+## Prefer `core/` Abstractions over Standard Library
+When writing or reviewing code in `Source/core/`, generated plugins, or any Thunder component, prefer Thunder's own abstractions over raw C++ standard library equivalents:
+
+| Instead of… | Use… |
+|-------------|------|
+| `std::mutex` / `std::lock_guard` | `Core::CriticalSection` / `Core::SafeSyncType<>` |
+| `std::thread` / `pthread_create` | `Core::IWorkerPool::Submit()` + `Core::IDispatch` for pooled async work; `Core::Thread` (subclass, override `Worker()`) when an exclusive dedicated thread is required |
+| `std::shared_ptr` / `std::unique_ptr` | `Core::ProxyType<T>` for ref-counted COM objects |
+| `std::this_thread::sleep_for()` | `Core::TimerType<T>` |
+| `std::condition_variable` | `Core::Event` (signalling) |
+| `fopen` / `fclose` | `Core::File` |
+| `assert()` from `<cassert>` | `ASSERT()` |
+
+This ensures portability, integrates with Thunder's lifecycle (WorkerPool, ResourceMonitor), and avoids hidden allocations or exceptions.
+
 ## I/O & Resource Readiness — `IResource` / `ResourceMonitor`
 - All file descriptor readiness (sockets, pipes, doors, eventfds) must go through `ResourceMonitor`.
 - Implement `Core::IResource`: provide `Descriptor()`, `Events()` (returns `POLLIN`/`POLLOUT`/`POLLERR` bits), and `Handle(events)`.
 - Register with `Core::ResourceMonitor::Instance().Register(*this)` and unregister with `Unregister(*this)`.
 - **Never** poll, busy-wait, or call `select()`/`epoll_wait()` directly — `ResourceMonitor` owns the event loop.
 
-## Threading — `WorkerPool` / `IWorkerPool`
+## Threading — `WorkerPool` / `IWorkerPool` / `Thread`
 - Never create raw `std::thread` or `pthread_create` in `core/` code intended for plugins.
-- Dispatch jobs via `Core::IWorkerPool::Instance().Submit(job)` where `job` is a `Core::ProxyType<Core::IDispatch>`.
-- Implement `Core::IDispatch` (single `Dispatch()` method) for any unit of async work.
+- **Pooled async work**: dispatch via `Core::IWorkerPool::Instance().Submit(job)` where `job` is a `Core::ProxyType<Core::IDispatch>`. Implement `Core::IDispatch` (single `Dispatch()` method).
+- **Dedicated exclusive thread**: subclass `Core::Thread` and override `Worker()` — use this only when a long-running loop requires its own thread (e.g. a blocking I/O reader). `Core::Thread` integrates with Thunder's lifecycle and signal handling.
 - `Core::TimerType<T>` schedules timed callbacks — never use `sleep()`, `usleep()`, or `std::this_thread::sleep_for()`.
 
 ## Synchronization — `Sync.h`

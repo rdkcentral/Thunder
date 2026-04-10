@@ -72,6 +72,8 @@ The model must **never** generate the following, regardless of context:
 
 ---
 
+> For coding style and naming conventions, see the **Coding Style and Conventions** section in `constraints.md`.
+
 ## When to Ask
 
 Pause and request clarification rather than guessing when:
