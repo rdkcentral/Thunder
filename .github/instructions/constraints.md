@@ -4,7 +4,7 @@ applyTo: '**'
 
 # Thunder — Additional Constraints
 
-These rules supplement the 15 non-negotiable rules in `copilot-instructions.md`. They cover nuances the model would likely get wrong without being told.
+These rules supplement the 15 non-negotiable rules in `.github/copilot-instructions.md`. They cover nuances the model would likely get wrong without being told.
 
 ---
 

@@ -21,9 +21,9 @@ Use this file to find where detailed documentation or canonical examples live. T
 | Interface design guidelines | `docs/plugin/interfaces/guidelines.md` |
 | ProxyStubGenerator / JsonGenerator annotation tags | `docs/plugin/interfaces/tags.md` |
 | Interface versioning and immutability | `docs/plugin/interfaces/interfaces.md` |
-| COM-RPC internals and debugging (ThunderShark) | `docs/plugin/private-comrpc.md` |
-| Composite plugins | `docs/plugin/composite.md` |
-| ProxyPool pattern | `docs/plugin/proxypool.md` |
+| COM-RPC internals and debugging (ThunderShark) | `docs/plugin/private-comrpc.md` *(stub — see `Source/com/` and `ThunderShark` plugin)* |
+| Composite plugins | `docs/plugin/composite.md` *(stub — see `Source/plugins/IPlugin.h` `ICompositPlugin`)* |
+| ProxyPool pattern | `docs/plugin/proxypool.md` *(stub — see `Source/core/ProxyObject.h` `ProxyPool<T>`)* |
 | Plugin messaging and tracing | `docs/plugin/messaging.md` |
 | Architecture overview | `docs/introduction/architecture/` |
 | Build and run (Linux) | `docs/introduction/build_linux.md` |
@@ -39,7 +39,7 @@ Use this file to find where detailed documentation or canonical examples live. T
 | `PluginSmartInterfaceType<T>` (safe plugin coupling) | `Source/plugins/Types.h` |
 | `Plugin::Metadata<T>` (modern plugin registration) | `Source/plugins/Metadata.h` |
 | `SERVICE_REGISTRATION` macro (legacy registration) | `Source/core/Services.h` |
-| Interface ID allocation | `ThunderInterfaces/interfaces/Ids.h` |
+| Interface ID allocation | `ThunderInterfaces/interfaces/Ids.h` *(in the separate ThunderInterfaces repo)* |
 | Foreground / background log routing logic | `Source/Thunder/PluginHost.cpp` (`_background` flag) |
 | OOP spawn sequence (`Root<T>()`) | `Source/plugins/Shell.cpp`, `Source/Thunder/PluginServer.h` |
 | WorkerPool / ResourceMonitor | `Source/core/WorkerPool.h` |
@@ -53,10 +53,10 @@ Use this file to find where detailed documentation or canonical examples live. T
 
 | Pattern | Path |
 |---------|------|
-| Simple in-process plugin | `ThunderNanoServices/examples/` |
-| OOP split-library plugin (recommended) | `ThunderNanoServices/examples/` (`Pollux` example) |
-| Nano-service (single responsibility, minimal plugin) | Any plugin under `ThunderNanoServices/` |
-| L1 test with mock `IShell` | `rdkservices/Tests/L1Tests/` |
+| Simple in-process plugin | `ThunderNanoServices/examples/` *(ThunderNanoServices repo)* |
+| OOP split-library plugin (recommended) | `ThunderNanoServices/examples/` `Pollux` example *(ThunderNanoServices repo)* |
+| Nano-service (single responsibility, minimal plugin) | Any plugin under `ThunderNanoServices/` *(ThunderNanoServices repo)* |
+| L1 test with mock `IShell` | `rdkservices/Tests/L1Tests/` *(rdkservices repo)* |
 
 ---
 
