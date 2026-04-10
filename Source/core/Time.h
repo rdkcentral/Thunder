@@ -21,6 +21,7 @@
 #define __TIME_H
 
 #include "Portability.h"
+#include "Number.h"
 #include "TextFragment.h"
 
 namespace Thunder {
@@ -275,7 +276,36 @@ public:
             return (element.FromISO8601(buffer));
         }
 
+        /**
+         * Add milliseconds to this time (with saturation).
+         * 
+         * Uses saturation arithmetic to prevent overflow:
+         * - If addition would overflow, result is clamped to the maximum uint64_t value
+         * - Debug builds include assertions to catch boundary issues during development
+         * 
+         * @param timeInMilliseconds Time in milliseconds to add (0 to maximum uint32_t value)
+         * @return Reference to this Time object (modified in-place, enables method chaining)
+         * 
+         * @note Saturation ensures predictable behavior at boundaries:
+         *       - Adding to near-max timestamp returns max timestamp (no unsafe wraparound)
+         *       - Enables safe timeout/scheduling logic without silent data corruption
+         */
         Time& Add(const uint32_t timeInMilliseconds);
+        
+        /**
+         * Subtract milliseconds from this time (with saturation).
+         * 
+         * Uses saturation arithmetic to prevent underflow:
+         * - If subtraction would underflow, result is clamped to 0
+         * - Debug builds include assertions to catch boundary issues during development
+         * 
+         * @param timeInMilliseconds Time in milliseconds to subtract (0 to maximum uint32_t value)
+         * @return Reference to this Time object (modified in-place, enables method chaining)
+         * 
+         * @note Saturation ensures predictable behavior at boundaries:
+         *       - Subtracting from time < input returns 0 (epoch, no unsafe wraparound)
+         *       - Enables safe elapsed-time calculations without silent data corruption
+         */
         Time& Sub(const uint32_t timeInMilliseconds);
 
         string Format(const TCHAR* formatter) const;
@@ -481,12 +511,42 @@ public:
         }
         TimeAsLocal& Add(const uint32_t timeInMilliseconds)
         {
-            uint64_t newTime = Ticks() + static_cast<uint64_t>(timeInMilliseconds) * Time::MilliSecondsPerSecond;
+            // Add with saturation to prevent overflow wrapping to small timestamps.
+
+            const uint64_t currentTicks = Ticks();
+            const uint64_t microSecsToAdd = static_cast<uint64_t>(timeInMilliseconds) * static_cast<uint64_t>(Time::MicroSecondsPerMilliSecond);
+
+            const uint64_t maxTicks = NumberType<uint64_t>::Max();
+
+#ifndef NDEBUG
+            ASSERT_VERBOSE((currentTicks <= (maxTicks - microSecsToAdd)),
+                "TimeAsLocal::Add overflow detected (ticks=%" PRIu64 ", delta=%" PRIu64 ", max=%" PRIu64 ")",
+                currentTicks,
+                microSecsToAdd,
+                maxTicks);
+#endif
+
+            const uint64_t newTime = (currentTicks > (maxTicks - microSecsToAdd)) ? maxTicks : (currentTicks + microSecsToAdd);
+
             return (operator=(TimeAsLocal(newTime)));
         }
+
         TimeAsLocal& Sub(const uint32_t timeInMilliseconds)
         {
-            uint64_t newTime = Ticks() - static_cast<uint64_t>(timeInMilliseconds) * Time::MilliSecondsPerSecond;
+            // Subtract with saturation to prevent underflow wrapping to huge future timestamps.
+
+            const uint64_t currentTicks = Ticks();
+            const uint64_t microSecsToSub = static_cast<uint64_t>(timeInMilliseconds) * static_cast<uint64_t>(Time::MicroSecondsPerMilliSecond);
+
+#ifndef NDEBUG
+            ASSERT_VERBOSE((currentTicks >= microSecsToSub),
+                "TimeAsLocal::Sub underflow detected (ticks=%" PRIu64 ", delta=%" PRIu64 ")",
+                currentTicks,
+                microSecsToSub);
+#endif
+
+            const uint64_t newTime = (currentTicks < microSecsToSub) ? 0 : (currentTicks - microSecsToSub);
+
             return (operator=(TimeAsLocal(newTime)));
         }
         Time::microsecondsfromepoch Ticks() const

@@ -19,6 +19,7 @@
 
 #include "Time.h"
 #include "Number.h"
+#include <inttypes.h>
 #include <time.h>
 #include <cstdio>
 
@@ -1150,15 +1151,54 @@ PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE)
 
     Time& Time::Add(const uint32_t timeInMilliseconds)
     {
-        // Calculate the new time !!
-        uint64_t newTime = Ticks() + (static_cast<uint64_t>(timeInMilliseconds) * static_cast<uint64_t>(MicroSecondsPerMilliSecond));
+        // Add with saturation to prevent overflow wrapping to small timestamps.
+
+        const uint64_t currentTicks = Ticks();
+        const uint64_t microSecsToAdd = static_cast<uint64_t>(timeInMilliseconds) * static_cast<uint64_t>(MicroSecondsPerMilliSecond);
+        uint64_t newTime = currentTicks;
+
+        const uint64_t maxTicks = NumberType<uint64_t>::Max();
+
+#ifndef NDEBUG
+        ASSERT_VERBOSE((currentTicks <= (maxTicks - microSecsToAdd)),
+            "Time::Add overflow detected (ticks=%" PRIu64 ", delta=%" PRIu64 ", max=%" PRIu64 ")",
+            currentTicks,
+            microSecsToAdd,
+            maxTicks);
+#endif
+
+        // Check for overflow before adding to avoid uint64_t wraparound.
+        if (currentTicks > (maxTicks - microSecsToAdd)) {
+            newTime = maxTicks;
+        } else {
+            newTime += microSecsToAdd;
+        }
+        
         return (operator=(Time(newTime)));
     }
 
     Time& Time::Sub(const uint32_t timeInMilliseconds)
     {
-        // Calculate the new time !!
-        uint64_t newTime = Ticks() - (static_cast<uint64_t>(timeInMilliseconds) * static_cast<uint64_t>(MicroSecondsPerMilliSecond));
+        // Subtract with saturation to prevent underflow wrapping to huge future timestamps.
+
+        const uint64_t currentTicks = Ticks();
+        const uint64_t microSecsToSub = static_cast<uint64_t>(timeInMilliseconds) * static_cast<uint64_t>(MicroSecondsPerMilliSecond);
+        uint64_t newTime = currentTicks;
+
+#ifndef NDEBUG
+        ASSERT_VERBOSE((currentTicks >= microSecsToSub),
+            "Time::Sub underflow detected (ticks=%" PRIu64 ", delta=%" PRIu64 ")",
+            currentTicks,
+            microSecsToSub);
+#endif
+
+        // Check for underflow before subtracting to avoid uint64_t wraparound.
+        if (currentTicks < microSecsToSub) {
+            newTime = 0;
+        } else {
+            newTime -= microSecsToSub;
+        }
+        
         return (operator=(Time(newTime)));
     }
 

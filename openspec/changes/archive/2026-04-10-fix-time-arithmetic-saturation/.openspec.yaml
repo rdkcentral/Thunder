@@ -1,0 +1,18 @@
+name: fix-time-arithmetic-saturation
+description: >
+  Fix Time::Add() and Time::Sub() silent overflow/underflow by implementing 
+  saturation behavior. Prevents wrapping to huge/small timestamps; debug builds 
+  assert to catch boundary conditions early.
+status: archived
+created: "2026-04-08"
+archived: "2026-04-10"
+artifacts:
+  proposal.md:
+    type: proposal
+    status: done
+  design.md:
+    type: design
+    status: done
+  tasks.md:
+    type: tasks
+    status: done

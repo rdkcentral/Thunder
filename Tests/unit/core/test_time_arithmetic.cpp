@@ -216,6 +216,73 @@ TEST(TIME_ARITHMETIC, SubTime)
     }
 }
 
+// Test cases for saturation behavior on Add overflow
+TEST(TIME_ARITHMETIC, AddOverflow)
+{
+    const uint64_t maxTicks = ::Thunder::Core::NumberType<uint64_t>::Max();
+
+    // Case 1: Normal add from zero should work correctly
+    {
+        ::Thunder::Core::Time t1(0);
+        t1.Add(100);  // Add 100ms
+        ASSERT_EQ(t1.Ticks(), 100 * ::Thunder::Core::Time::MicroSecondsPerMilliSecond);
+    }
+    
+    // Case 2: Normal add from standard time should work correctly
+    {
+        ::Thunder::Core::Time t2(1000000);  // 1 second in microseconds
+        t2.Add(500);  // Add 500ms
+        ASSERT_EQ(t2.Ticks(), 1000000 + (500 * ::Thunder::Core::Time::MicroSecondsPerMilliSecond));
+    }
+    
+    // Case 3: Add near uint64_t max should saturate to max
+    {
+        // Start near maximum: max - 5000 (leaving room for 5ms in microseconds)
+        ::Thunder::Core::Time t3(maxTicks - 5000);
+        t3.Add(10);  // Try to add 10ms (10000 microseconds), should overflow and saturate
+        ASSERT_EQ(t3.Ticks(), maxTicks);  // Should be saturated to maximum
+    }
+    
+    // Case 4: Add to already-maximum time should remain at maximum
+    {
+        ::Thunder::Core::Time t4(maxTicks);
+        t4.Add(1000);  // Try to add 1 second, should remain at max
+        ASSERT_EQ(t4.Ticks(), maxTicks);
+    }
+}
+
+// Test cases for saturation behavior on Sub underflow
+TEST(TIME_ARITHMETIC, SubUnderflow)
+{
+    // Case 1: Normal sub from larger value should work correctly
+    {
+        ::Thunder::Core::Time t1(1000000);  // 1 second in microseconds
+        t1.Sub(100);  // Subtract 100ms
+        ASSERT_EQ(t1.Ticks(), 1000000 - (100 * ::Thunder::Core::Time::MicroSecondsPerMilliSecond));
+    }
+    
+    // Case 2: Normal sub leaving remainder should work correctly
+    {
+        ::Thunder::Core::Time t2(500000);  // 0.5 seconds in microseconds
+        t2.Sub(200);  // Subtract 200ms
+        ASSERT_EQ(t2.Ticks(), 500000 - (200 * ::Thunder::Core::Time::MicroSecondsPerMilliSecond));
+    }
+    
+    // Case 3: Sub exceeding current ticks should saturate to 0
+    {
+        ::Thunder::Core::Time t3(5000);  // 5ms in microseconds
+        t3.Sub(10);  // Try to subtract 10ms (10000 microseconds), should underflow and saturate
+        ASSERT_EQ(t3.Ticks(), 0);  // Should be saturated to zero (epoch)
+    }
+    
+    // Case 4: Sub from zero should remain at zero
+    {
+        ::Thunder::Core::Time t4(0);
+        t4.Sub(1000);  // Try to subtract 1 second from epoch
+        ASSERT_EQ(t4.Ticks(), 0);  // Should remain at zero
+    }
+}
+
 } // Core
 } // Tests
 } // Thunder

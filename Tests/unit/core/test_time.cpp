@@ -1654,6 +1654,57 @@ namespace Core {
         (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
         tzset();
     }
+
+    TEST(Core_Time, TimeAsLocalAddOverflow)
+    {
+        const uint64_t maxTicks = ::Thunder::Core::NumberType<uint64_t>::Max();
+
+        // Normal add should work correctly
+        {
+            ::Thunder::Core::TimeAsLocal t{::Thunder::Core::Time{1000000}};
+            t.Add(500);
+            ASSERT_EQ(t.Ticks(), 1000000 + (500 * ::Thunder::Core::Time::MicroSecondsPerMilliSecond));
+        }
+
+        // Add near uint64_t max should saturate to max
+        {
+            ::Thunder::Core::TimeAsLocal t{::Thunder::Core::Time{maxTicks - 5000}};
+            t.Add(10);
+            ASSERT_EQ(t.Ticks(), maxTicks);
+        }
+
+        // Add to already-maximum should remain at max
+        {
+            ::Thunder::Core::TimeAsLocal t{::Thunder::Core::Time{maxTicks}};
+            t.Add(1000);
+            ASSERT_EQ(t.Ticks(), maxTicks);
+        }
+    }
+
+    TEST(Core_Time, TimeAsLocalSubUnderflow)
+    {
+        // Normal sub should work correctly
+        {
+            ::Thunder::Core::TimeAsLocal t{::Thunder::Core::Time{1000000}};
+            t.Sub(100);
+            ASSERT_EQ(t.Ticks(), 1000000 - (100 * ::Thunder::Core::Time::MicroSecondsPerMilliSecond));
+        }
+
+        // Sub exceeding current ticks should saturate to 0
+        {
+            ::Thunder::Core::TimeAsLocal t{::Thunder::Core::Time{5000}};
+            t.Sub(10);
+            ASSERT_EQ(t.Ticks(), 0u);
+        }
+
+        // Sub from zero should remain at zero
+        {
+            ::Thunder::Core::TimeAsLocal t{::Thunder::Core::Time{static_cast<::Thunder::Core::Time::microsecondsfromepoch>(0)}};
+            t.Sub(1000);
+            ASSERT_EQ(t.Ticks(), 0u);
+        }
+    }
+
     TEST(Core_Time, JulianDate)
     {
         char* currentZone = getenv("TZ");
