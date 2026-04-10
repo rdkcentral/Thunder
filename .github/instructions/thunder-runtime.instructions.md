@@ -39,7 +39,19 @@ applyTo: 'Source/Thunder/**'
 - `Channel::Submit()` posts a response back to the client — always call on the response path even for error cases.
 
 ## `Controller` — Built-in Management Plugin
-- `Controller` is the only built-in plugin — it handles `activate`, `deactivate`, `status`, `configuration`, `discovery`, `storeconfig`.
+
+Controller is the only plugin that is part of `Source/Thunder/` itself. Key JSON-RPC methods it exposes:
+
+| Method | Purpose |
+|--------|--------|
+| `activate` | Activate a plugin by callsign |
+| `deactivate` | Deactivate a plugin by callsign |
+| `status` | Query plugin status, version, state |
+| `configuration` | Read/write plugin config JSON |
+| `storeconfig` | Persist plugin config to disk |
+| `discovery` | List all known plugins |
+| `harakiri` | Request daemon self-termination |
+
 - The Controller's callsign is `"Controller"` (configurable but conventionally fixed).
 - Do **not** shortcut `ServiceMap` state transitions by calling internal methods — always go through `Controller`'s JSON-RPC interface or `Service::Activate()`/`Deactivate()` public methods.
 - `Controller` also manages `ConfigObserver` (hot-reload of plugin `.json` configs) and proxy stub hot-reload.
@@ -106,34 +118,17 @@ When activating an out-of-process (OOP) plugin (`mode: Local` or `Container`):
 - **Proxy stub hot-load**: when a new `.so`/`.dylib` appears in `proxystubpath`, it is loaded via `Core::Library` and its `Instantiation` static object fires, registering stubs. Already-loaded stubs are **never unloaded** — removing a proxy stub file does not deregister it.
 - **Daemon config**: `config.json` is read once at startup — changes require a daemon restart.
 
-## `Controller` — Built-in Management Plugin
-
-Controller is the only plugin that is part of `Source/Thunder/` itself. Key JSON-RPC methods it exposes:
-
-| Method | Purpose |
-|--------|---------|
-| `activate` | Activate a plugin by callsign |
-| `deactivate` | Deactivate a plugin by callsign |
-| `status` | Query plugin status, version, state |
-| `configuration` | Read/write plugin config JSON |
-| `storeconfig` | Persist plugin config to disk |
-| `discovery` | List all known plugins |
-| `harakiri` | Request daemon self-termination |
-
-- All state transitions to plugins **must** go through `Service::Activate()` / `Service::Deactivate()` public methods or Controller's JSON-RPC — never force-set `_state` directly.
-- Controller's callsign is `"Controller"` (configurable but conventionally fixed).
-
 ## Adding a New Daemon-Level Feature Checklist
 1. Add config fields to `Config.h` (daemon config) or `PluginServer.h` (runtime state).
 2. Lock with `_adminLock` when accessing `ServiceMap` state; `_pluginHandling` when accessing plugin interface pointers.
 3. Add throttled dispatch through `ThrottleQueueType` — do not dispatch directly to `WorkerPool`.
 4. Add post-mortem dump section to `PostMortem.cpp` if the feature has recoverable state.
 5. Add the new feature to `Controller`'s JSON-RPC interface if external management is needed.
-6. Update `ExampleConfigLinux.json` / `ExampleConfigAll.json` with the new config option.
+6. Update the repository's example/default daemon configuration file(s) with the new config option.
 
 ## Cross-Reference
 
 - For the complete OOP plugin lifecycle: see `docs/plugin/execution-modes/outofprocess.md`.
 - For `_adminLock` / `_pluginHandling` locking discipline: see `constraints.md` (Multi-threading Discipline).
 - For adding daemon config fields: see `constraints.md` (Configuration / Paths).
-- For security and ISecurity interface: see `Source/plugins/ISecurity.h`.
+- For security and ISecurity interface: see `Source/plugins/IPlugin.h`.
