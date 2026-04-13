@@ -15,6 +15,10 @@
 
 Highlight changes in proposal, wait for approval, then update the architecture brief as a first step.
 
+### When Updates Require Subject Matter Export Notes Changes
+
+If the architecture brief changes, code changes, or relevant input has been given, keep the SME notes in sync, but always request approval before editing.
+
 ### Architecture Brief Commands
 
 Invoke skill '/architecture-brief'.
