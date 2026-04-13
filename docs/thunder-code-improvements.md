@@ -21,7 +21,12 @@ Status update (2026-04-13):
 	- Tests updated in Tests/unit/core/test_numbertype.cpp with 64-bit expectations and round-trip checks.
 	- Added targeted ctest entry Thunder_test_core_numbertype in Tests/unit/core/CMakeLists.txt using --gtest_filter=Core_NumberType*.
 	- Validation: Thunder_test_core_numbertype passed.
-- Next item: mkstemp fd leak fix in Source/extensions/privilegedrequest/include/privilegedrequest/PrivilegedRequest.h.
+- Item 2 (mkstemp fd leak): proposal prepared and split from hardening.
+	- Proposal: openspec/changes/2026-04-13-fix-privilegedrequest-mkstemp-fd-leak/
+	- Review patch (not applied): openspec/changes/2026-04-13-fix-privilegedrequest-mkstemp-fd-leak/fix.patch
+- Item 3 (LXC null guard): proposal prepared and stored as review patch.
+	- Proposal: openspec/changes/2026-04-13-fix-lxc-null-deref-get-ips/
+	- Review patch (not applied): openspec/changes/2026-04-13-fix-lxc-null-deref-get-ips/fix.patch
 
 TODO backlog:
 - Investigate and document the newly identified issue in a different Thunder branch (details pending).
