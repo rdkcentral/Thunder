@@ -357,6 +357,15 @@ namespace Core {
                         continue;
                     }
                     ::close(tmpFd);
+
+                    // NOTE: 
+                    // A residual TOCTOU window exists between ::unlink(binder) and ::bind().
+                    // On this platform (embedded Linux, controlled process environment) this is
+                    // acceptable. If stricter hardening is required, migrate to Linux abstract
+                    // namespace sockets which bind atomically without a filesystem path. 
+                    // Note that Core::NodeId does not support abstract namespace
+                    // and would need to be bypassed for the client-side bind.
+                    
                     ::unlink(binder);
 
                     const Core::NodeId bindNode(binder);
