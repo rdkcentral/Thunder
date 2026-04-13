@@ -153,39 +153,25 @@ namespace Core {
         }
         inline static uint64_t ToNetwork(uint64_t input)
         {
-#ifdef LITTLE_ENDIAN_PLATFORM
-            return (input);
-#else
-            ASSERT(false); //TODO: To be implemented
-            return (input);
-#endif
+            const uint32_t highPart = htonl(static_cast<uint32_t>(input >> 32));
+            const uint32_t lowPart = htonl(static_cast<uint32_t>(input & 0xFFFFFFFFULL));
+
+            return ((static_cast<uint64_t>(lowPart) << 32) | highPart);
         }
         inline static uint64_t FromNetwork(uint64_t input)
         {
-#ifdef LITTLE_ENDIAN_PLATFORM
-            return (input);
-#else
-            ASSERT(false); //TODO: To be implemented
-            return (input);
-#endif
+            const uint32_t highPart = ntohl(static_cast<uint32_t>(input >> 32));
+            const uint32_t lowPart = ntohl(static_cast<uint32_t>(input & 0xFFFFFFFFULL));
+
+            return ((static_cast<uint64_t>(lowPart) << 32) | highPart);
         }
         inline static int64_t ToNetwork(int64_t input)
         {
-#ifdef LITTLE_ENDIAN_PLATFORM
-            return (input);
-#else
-            ASSERT(false); //TODO: To be implemented
-            return (input);
-#endif
+            return (static_cast<int64_t>(ToNetwork(static_cast<uint64_t>(input))));
         }
         inline static int64_t FromNetwork(int64_t input)
         {
-#ifdef LITTLE_ENDIAN_PLATFORM
-            return (input);
-#else
-            ASSERT(false); //TODO: To be implemented
-            return (input);
-#endif
+            return (static_cast<int64_t>(FromNetwork(static_cast<uint64_t>(input))));
         }
         static uint8_t MaxSize()
         {

@@ -1,0 +1,18 @@
+name: fix-numbertype-network64
+description: >
+  Fix 64-bit NumberType host/network conversion behavior in Source/core/Number.h.
+  Replace incorrect unchanged-return logic with real byte-order conversion and
+  add targeted NumberType validation coverage.
+status: archived
+created: "2026-04-13"
+archived: "2026-04-13"
+artifacts:
+  proposal.md:
+    type: proposal
+    status: done
+  design.md:
+    type: design
+    status: done
+  tasks.md:
+    type: tasks
+    status: done

@@ -64,10 +64,19 @@ namespace Core {
 
         ::Thunder::Core::NumberType<int64_t> val7 = Tester<::Thunder::Core::NumberType<int64_t>>(valdata);
         ::Thunder::Core::NumberType<uint64_t> val8 = (unsigned)Tester<::Thunder::Core::NumberType<int64_t>>(valdata);
-        EXPECT_EQ(::Thunder::Core::NumberType<int64_t>::ToNetwork(val7),90);
-        EXPECT_EQ(::Thunder::Core::NumberType<int64_t>::FromNetwork(val7),90);
-        EXPECT_EQ(::Thunder::Core::NumberType<uint64_t>::ToNetwork(val8),90u);
-        EXPECT_EQ(::Thunder::Core::NumberType<uint64_t>::FromNetwork(val8),90u);
+    #ifdef LITTLE_ENDIAN_PLATFORM
+        constexpr int64_t expectedNetworkSigned64 = 0x5A00000000000000LL;
+        constexpr uint64_t expectedNetworkUnsigned64 = 0x5A00000000000000ULL;
+    #else
+        constexpr int64_t expectedNetworkSigned64 = 90LL;
+        constexpr uint64_t expectedNetworkUnsigned64 = 90ULL;
+    #endif
+        EXPECT_EQ(::Thunder::Core::NumberType<int64_t>::ToNetwork(val7), expectedNetworkSigned64);
+        EXPECT_EQ(::Thunder::Core::NumberType<int64_t>::FromNetwork(val7), expectedNetworkSigned64);
+        EXPECT_EQ(::Thunder::Core::NumberType<uint64_t>::ToNetwork(val8), expectedNetworkUnsigned64);
+        EXPECT_EQ(::Thunder::Core::NumberType<uint64_t>::FromNetwork(val8), expectedNetworkUnsigned64);
+        EXPECT_EQ(::Thunder::Core::NumberType<int64_t>::FromNetwork(::Thunder::Core::NumberType<int64_t>::ToNetwork(val7)), val7.Value());
+        EXPECT_EQ(::Thunder::Core::NumberType<uint64_t>::FromNetwork(::Thunder::Core::NumberType<uint64_t>::ToNetwork(val8)), val8.Value());
 
         val8.MaxSize();
         EXPECT_EQ(val8.Serialize(valdata),2);
