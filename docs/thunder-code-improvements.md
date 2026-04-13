@@ -15,5 +15,14 @@ Suggested fix order:
 4) NetworkInfo explicit ERROR_NOT_SUPPORTED for unimplemented paths
 5) test_networkinfo cleanup/hardening
 
+Status update (2026-04-13):
+- Completed: Number.h 64-bit endianness + tests.
+	- Code updated in Source/core/Number.h for uint64_t/int64_t ToNetwork/FromNetwork conversions.
+	- Tests updated in Tests/unit/core/test_numbertype.cpp with 64-bit expectations and round-trip checks.
+	- Added targeted ctest entry Thunder_test_core_numbertype in Tests/unit/core/CMakeLists.txt using --gtest_filter=Core_NumberType*.
+	- Validation: Thunder_test_core_numbertype passed.
+- Next item: mkstemp fd leak fix in Source/extensions/privilegedrequest/include/privilegedrequest/PrivilegedRequest.h.
+
 TODO backlog:
 - Investigate and document the newly identified issue in a different Thunder branch (details pending).
+- Future hardening enhancement: reduce/eliminate pathname race window around UNIX domain socket `unlink` -> `bind` in privileged request flow (evaluate private 0700 runtime dir, Linux abstract namespace sockets, or descriptor-only alternatives).
