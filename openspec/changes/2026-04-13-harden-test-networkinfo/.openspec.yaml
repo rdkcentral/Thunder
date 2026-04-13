@@ -1,0 +1,17 @@
+name: harden-test-networkinfo
+description: >
+  Harden Tests/unit/core/test_networkinfo.cpp by removing hardcoded adapter
+  assumptions, avoiding host-network mutation in unit tests, and replacing
+  weak self-comparison assertions with meaningful checks.
+status: proposed
+created: "2026-04-13"
+artifacts:
+  proposal.md:
+    type: proposal
+    status: done
+  design.md:
+    type: design
+    status: done
+  tasks.md:
+    type: tasks
+    status: done

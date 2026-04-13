@@ -1,0 +1,16 @@
+name: networkinfo-not-supported-semantics
+description: >
+  Normalize unimplemented non-Linux NetworkInfo adapter operations to return
+  ERROR_NOT_SUPPORTED instead of mixed ASSERT/no-op/ERROR_NONE behavior.
+status: proposed
+created: "2026-04-13"
+artifacts:
+  proposal.md:
+    type: proposal
+    status: done
+  design.md:
+    type: design
+    status: done
+  tasks.md:
+    type: tasks
+    status: done
