@@ -1,0 +1,24 @@
+--- a/Source/extensions/processcontainers/implementations/LXCImplementation/LXCImplementation.cpp
++++ b/Source/extensions/processcontainers/implementations/LXCImplementation/LXCImplementation.cpp
+@@
+             interface.name = lxcContainer->get_running_config_item(lxcContainer, buf);
+             if (interface.name == nullptr)
+                 break;
+ 
+             interface.addresses = lxcContainer->get_ips(lxcContainer, interface.name, NULL, 0);
+-            if (interface.addresses == 0) {
++            interface.numAddresses = 0;
++            if (interface.addresses == nullptr) {
+                 TRACE(Trace::Warning, (_T("Failed to get IP addreses inside container. Interface: %s"), interface.name));
+-            }
+-
+-            interface.numAddresses = 0;
+-            for (int i = 0; interface.addresses[i] != nullptr; i++) {
+-                interface.numAddresses++;
++            } else {
++                for (int i = 0; interface.addresses[i] != nullptr; i++) {
++                    interface.numAddresses++;
++                }
+             }
+ 
+             _interfaces.push_back(interface);

@@ -1,0 +1,17 @@
+name: fix-lxc-null-deref-get-ips
+description: >
+  Guard against null pointer dereference in LXCNetworkInterfaceIterator when
+  lxcContainer->get_ips() returns null, preventing a crash during network
+  interface enumeration.
+status: proposed
+created: "2026-04-13"
+artifacts:
+  proposal.md:
+    type: proposal
+    status: done
+  design.md:
+    type: design
+    status: done
+  tasks.md:
+    type: tasks
+    status: done
