@@ -27,6 +27,13 @@ Status update (2026-04-13):
 - Item 3 (LXC null guard): proposal prepared and stored as review patch.
 	- Proposal: openspec/changes/2026-04-13-fix-lxc-null-deref-get-ips/
 	- Review patch (not applied): openspec/changes/2026-04-13-fix-lxc-null-deref-get-ips/fix.patch
+- Item 4 (NetworkInfo unsupported semantics): proposal prepared and stored as review patch.
+	- Proposal: openspec/changes/2026-04-13-networkinfo-not-supported-semantics/
+	- Review patch (not applied): openspec/changes/2026-04-13-networkinfo-not-supported-semantics/fix.patch
+	- Proposal and design rationale clarified for review (return-value contract and trade-offs).
+- Item 5 (test_networkinfo hardening): proposal prepared and stored as review patch.
+	- Proposal: openspec/changes/2026-04-13-harden-test-networkinfo/
+	- Review patch (not applied): openspec/changes/2026-04-13-harden-test-networkinfo/fix.patch
 
 TODO backlog:
 - Investigate and document the newly identified issue in a different Thunder branch (details pending).
