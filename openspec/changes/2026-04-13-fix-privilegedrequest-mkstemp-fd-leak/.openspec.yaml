@@ -1,0 +1,16 @@
+name: fix-privilegedrequest-mkstemp-fd-leak
+description: >
+  Close the file descriptor returned by mkstemp in PrivilegedRequest::Connection::UniqueDomainName
+  to prevent descriptor leaks while preserving current UNIX domain socket behavior.
+status: proposed
+created: "2026-04-13"
+artifacts:
+  proposal.md:
+    type: proposal
+    status: done
+  design.md:
+    type: design
+    status: done
+  tasks.md:
+    type: tasks
+    status: done

@@ -1,0 +1,16 @@
+name: harden-privilegedrequest-unix-socket-path-race
+description: >
+  Evaluate and harden UNIX domain socket pathname handling in PrivilegedRequest
+  to reduce or eliminate race exposure around unlink and bind.
+status: proposed
+created: "2026-04-13"
+artifacts:
+  proposal.md:
+    type: proposal
+    status: done
+  design.md:
+    type: design
+    status: done
+  tasks.md:
+    type: tasks
+    status: done
