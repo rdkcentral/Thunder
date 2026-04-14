@@ -2517,6 +2517,46 @@ namespace PluginHost {
                         }
                 }
 
+                Notifier(Notifier&& other) 
+                    : _type(other._type)
+                {
+                    switch (_type) {
+                    case Type::ALL:
+                        _allnotifier = std::move(other._allnotifier);
+                        break;
+                    case Type::CALLSIGN:
+                        _callsignnotifier = std::move(other._callsignnotifier);
+                        break;
+                    case Type::INTERFACE:
+                        _interfacenotifier = std::move(other._interfacenotifier);
+                        break;
+                    default:
+                        ASSERT(false);
+                    }
+                }
+                Notifier& operator=(Notifier&& other) 
+                {
+                    if (this != &other) {
+                        _type = other._type;
+                        switch (_type) {
+                        case Type::ALL:
+                            _allnotifier = std::move(other._allnotifier);
+                            break;
+                        case Type::CALLSIGN:
+                            _callsignnotifier = std::move(other._callsignnotifier);
+                            break;
+                        case Type::INTERFACE:
+                            _interfacenotifier = std::move(other._interfacenotifier);
+                            break;
+                        default:
+                            ASSERT(false);
+                        }
+                    }
+                    return *this;
+                }
+                Notifier(const Notifier&) = delete;
+                Notifier& operator=(const Notifier&) = delete;
+
             public:
                 bool SendNotification(const string& callsign, PluginHost::IShell* entry) const
                 {

@@ -295,7 +295,7 @@ namespace PluginHost {
         }
         else {
             _queryInterfaceLock.Lock();
-            if ((State() == IShell::state::ACTIVATED) || (State() == IShell::state::DEACTIVATION)) { //needed as we only want to send plugin state notifications when the plugin is active or deactivating which is not gueranteed by the lock itself as it comes from the same thread handling the activation and deactivation 
+            if ((State() == IShell::state::ACTIVATED) || (State() == IShell::state::DEACTIVATION)) { //needed as we only want to send plugin state notifications when the plugin is active or deactivating which is not guaranteed by the lock itself as it comes from the same thread handling the activation and deactivation
                 if (id == PluginHost::IDispatcher::ID) {
                     if (_jsonrpc != nullptr) {
                         _jsonrpc->AddRef();
@@ -384,9 +384,9 @@ namespace PluginHost {
                 result = Core::ERROR_PENDING_CONDITIONS;
                 State(PRECONDITION);
 
-                if (Thunder::Messaging::LocalLifetimeType<Activity, &Thunder::Core::System::MODULE_NAME, Thunder::Core::Messaging::Metadata::type::TRACING>::IsEnabled() == true) {
+                _queryInterfaceLock.Unlock();
 
-                    _queryInterfaceLock.Unlock();
+                if (Thunder::Messaging::LocalLifetimeType<Activity, &Thunder::Core::System::MODULE_NAME, Thunder::Core::Messaging::Metadata::type::TRACING>::IsEnabled() == true) {
 
                     string feedback;
                     uint8_t index = 1;
