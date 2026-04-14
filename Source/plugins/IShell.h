@@ -20,6 +20,8 @@
 #ifndef __ISHELL_H__
 #define __ISHELL_H__
 
+// coverity[PW.INCLUDE_RECURSION] - Mutual include with IPlugin.h is intentional and safe;
+// both files are guarded by include guards (__IPLUGIN_H__ / __ISHELL_H__).
 #include "IPlugin.h"
 #include "ISubSystem.h"
 

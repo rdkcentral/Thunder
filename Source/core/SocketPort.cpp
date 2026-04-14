@@ -498,7 +498,7 @@ namespace Thunder {
 
         uint32_t SocketPort::Open(const uint32_t waitTime, const string& specificInterface)
         {
-            uint32_t nStatus = Core::ERROR_ILLEGAL_STATE;
+            uint32_t nStatus = Core::ERROR_GENERAL;
 
             m_ReadBytes = 0;
             m_SendBytes = 0;
@@ -514,6 +514,11 @@ namespace Thunder {
                     m_State.fetch_or(SocketPort::UPDATE, Core::memory_order::memory_order_relaxed);
                     nStatus = Core::ERROR_INPROGRESS;
                 }
+            }
+            else if (m_State.load(Core::memory_order::memory_order_relaxed) != 0) {
+                // Socket is already open — caller violated the Open() precondition.
+                TRACE_L1("Socket is already open, Open() called twice on the same instance.");
+                nStatus = Core::ERROR_ILLEGAL_STATE;
             }
             else {
                 ASSERT((m_Socket == INVALID_SOCKET) && (m_State.load(Core::memory_order::memory_order_relaxed) == 0));
@@ -540,6 +545,10 @@ namespace Thunder {
                     else if (m_SocketType == LISTEN) {
                         if (::listen(m_Socket, MAX_LISTEN_QUEUE) == SOCKET_ERROR) {
                             TRACE_L1("Error on port socket LISTEN. Error %d", __ERRORRESULT__);
+                            // ERROR_GENERAL signals an OS-level failure during socket setup.
+                            // The socket was constructed but listen() rejected it — the fd
+                            // must be cleaned up via DestroySocket() at the bottom of Open().
+                            nStatus = Core::ERROR_GENERAL;
                         }
                         else {
                             // Trigger state to Open
@@ -596,10 +605,13 @@ namespace Thunder {
                 }
 
             }
-            else {
+            else if (nStatus != Core::ERROR_ILLEGAL_STATE) {
+                // ERROR_ILLEGAL_STATE is returned when the socket is already open and
+                // registered in the ResourceMonitor — destroying it here would corrupt
+                // the monitor's poll array. All other error paths constructed a new
+                // socket that failed before registration and must be cleaned up.
                 DestroySocket(m_Socket);
             }
-
             return (nStatus);
         }
 
@@ -767,10 +779,18 @@ namespace Thunder {
 
 #ifndef __WINDOWS__
             int foundUnixSocketFd = -1;
-            // Check if domain path already exists, if so remove.
-            if ((localNode.Type() == NodeId::TYPE_DOMAIN) && (m_SocketType == SocketPort::LISTEN)) {
-                if (access(localNode.HostName().c_str(), R_OK | W_OK) != -1) {
+            // Remove any stale socket file before binding. All domain socket types
+            // except STREAM call bind() on their local path and will fail with
+            // EADDRINUSE if a leftover file exists (e.g. after a crash).
+            // STREAM sockets are excluded because they call connect() to a remote
+            // path — they never bind to a path of their own.
+            if ((localNode.Type() == NodeId::TYPE_DOMAIN) && (m_SocketType != SocketPort::STREAM)) {
 #ifdef SYSTEMD_FOUND
+                // Systemd socket activation only applies to LISTEN sockets — systemd
+                // creates and passes pre-bound listening sockets to the process via
+                // SD_LISTEN_FDS_START file descriptors. DATAGRAM and SEQUENCED sockets
+                // are never handed over by systemd, so there is no fd to inherit here.
+                if (m_SocketType == SocketPort::LISTEN) {
                     int fd, n;
                     n = sd_listen_fds(0);
                     TRACE_L1("Found %d systemd created listening sockets", n);
@@ -784,13 +804,29 @@ namespace Thunder {
                             }
                         }
                     }
+                }
 #endif
-                    if (foundUnixSocketFd == -1) {
-                        TRACE_L1("Found out domain path already exists, deleting: %s", localNode.HostName().c_str());
-                        remove(localNode.HostName().c_str());
+                // Only attempt unlink if systemd did not hand us a pre-bound fd.
+                // If it did, the socket file is managed by systemd and must not be removed.
+                if (foundUnixSocketFd == -1) {
+                    const string path = localNode.HostName();
+
+                    // Unconditional unlink avoids the TOCTOU race that exists when using
+                    // access() followed by remove() — another process could create or delete
+                    // the file between those two calls. A single unlink() is atomic.
+                    if (::unlink(path.c_str()) == 0) {
+                        TRACE_L1("Removed stale domain socket: %s", path.c_str());
+                    } else {
+                        const int err = errno;
+
+                        if (err != ENOENT) {
+                            TRACE_L1("Failed to remove domain socket %s: %s", path.c_str(), strerror(err));
+                            return INVALID_SOCKET;
+                        }
                     }
                 }
             }
+
             if (foundUnixSocketFd != -1) {
                 if (SetNonBlocking(foundUnixSocketFd) == false) {
                     TRACE_L1("Error on setting non blocking");
@@ -828,22 +864,6 @@ namespace Thunder {
                     TRACE_L1("Error on setting SO_REUSEADDR option. Error %d: %s", __ERRORRESULT__, strerror(__ERRORRESULT__));
                 }
             }
-
-#ifndef __WINDOWS__
-            else if ((localNode.Type() == NodeId::TYPE_DOMAIN) && (m_SocketType == SocketPort::LISTEN)) {
-                // The effect of SO_REUSEADDR  but then on Domain Sockets :-)
-                if (unlink(localNode.HostName().c_str()) == -1) {
-                    int report = __ERRORRESULT__;
-
-                    if (report != 2) {
-                        ::close(l_Result);
-                        l_Result = INVALID_SOCKET;
-
-                        TRACE_L1("Error on unlinking domain socket. Error %d: %s", report, strerror(report));
-                    }
-                }
-            }
-#endif
 
 #ifdef __APPLE__
     {
@@ -1334,7 +1354,16 @@ namespace Thunder {
     #ifdef __WINDOWS__
                     _unlink(m_LocalNode.HostName().c_str());
     #else
-                    unlink(m_LocalNode.HostName().c_str());
+                    const string path = m_LocalNode.HostName();
+
+                    if (::unlink(path.c_str()) != 0) {
+                        const int err = __ERRORRESULT__;
+                        if (err != ENOENT) {
+                            TRACE_L1("Failed to remove domain socket on close %s: %s", path.c_str(), strerror(err));
+                        }
+                    } else {
+                        TRACE_L1("Removed domain socket on close: %s", path.c_str());
+                    }
     #endif
                 }
             }
@@ -1485,9 +1514,8 @@ namespace Thunder {
             ip_mreq_source multicastRequest;
 #else
             ip_mreq_source multicastRequest;
-
-            // TODO, Fix multicast join with interface
-            // multicastRequest.imr_interface = in_addr{ 0, 0;
+            memset(&multicastRequest, 0, sizeof(multicastRequest));
+            multicastRequest.imr_interface.s_addr = INADDR_ANY;
 #endif
 
 #ifdef __WINDOWS__
@@ -1515,9 +1543,8 @@ namespace Thunder {
             ip_mreq_source multicastRequest;
 #else
             ip_mreq_source multicastRequest;
-
-            // TODO, Fix multicast join with source
-            // multicastRequest.imr_interface = 0;
+            memset(&multicastRequest, 0, sizeof(multicastRequest));
+            multicastRequest.imr_interface.s_addr = INADDR_ANY;
 #endif
 
 #ifdef __WINDOWS__

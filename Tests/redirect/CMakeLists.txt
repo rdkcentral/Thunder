@@ -23,11 +23,11 @@ target_link_libraries(redirect
         )
 
 set_target_properties(redirect PROPERTIES
-        CXX_STANDARD 11
+        CXX_STANDARD ${CXX_STD}
         CXX_STANDARD_REQUIRED YES
         )
 
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
+target_link_options(redirect PRIVATE -pthread)
 
 install(TARGETS redirect DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT ${NAMESPACE}_Test)
 

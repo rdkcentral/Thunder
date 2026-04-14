@@ -83,7 +83,7 @@ if(PROCESSCONTAINERS)
 endif(PROCESSCONTAINERS)
 
 set_target_properties(${TARGET} PROPERTIES
-        CXX_STANDARD 11
+        CXX_STANDARD ${CXX_STD}
         CXX_STANDARD_REQUIRED YES
         FRAMEWORK FALSE
         PUBLIC_HEADER "${PUBLIC_HEADERS}" # specify the public headers

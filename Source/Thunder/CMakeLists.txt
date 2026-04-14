@@ -22,6 +22,8 @@ get_filename_component(TARGET ${CMAKE_CURRENT_SOURCE_DIR} NAME)
 set(THREADPOOL_COUNT "4" CACHE STRING "The number of threads in the thread pool")
 set(ENABLE_TRACING_MODULES ""  CACHE STRING "A space separated list of specific tracing modules to be enabled at start.")
 
+option(SKIP_PERSISTENT_PATH_INSTALL "This will skip installing the persistent path and its privileges. Needed for local build/installs" OFF)
+
 add_executable(${TARGET}
         Controller.cpp
         PluginHost.cpp
@@ -46,6 +48,12 @@ if (TREE_REFERENCE)
               -DTREE_REFERENCE=${TREE_REFERENCE}
             )
 endif()
+
+if(ACCEPT_VERSION_IN_CALLSIGN)
+   target_compile_definitions(${TARGET} PRIVATE __ACCEPT_VERSION_IN_CALLSIGN__=${ACCEPT_VERSION_IN_CALLSIGN})
+   message(STATUS "accept version in callsign syntax")
+endif()
+
 
 target_include_directories(${TARGET}
         PUBLIC
@@ -93,7 +101,7 @@ if(HIBERNATESUPPORT)
 endif()
 
 set_target_properties(${TARGET} PROPERTIES
-        CXX_STANDARD 11
+        CXX_STANDARD ${CXX_STD}
         CXX_STANDARD_REQUIRED YES
         FRAMEWORK FALSE
         VERSION ${VERSION}
@@ -107,10 +115,12 @@ install(
         FRAMEWORK DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT ${NAMESPACE}_Runtime
 )
 
+if(NOT SKIP_PERSISTENT_PATH_INSTALL)
 install(DIRECTORY
     DESTINATION ${PERSISTENT_PATH} COMPONENT ${NAMESPACE}_Runtime
     DIRECTORY_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_WRITE GROUP_EXECUTE
 )
+endif()
 
 add_subdirectory(scripts)
 

@@ -27,7 +27,7 @@ target_link_libraries(WPELibraryTestLoader
         )
 
 set_target_properties(WPELibraryTestLoader PROPERTIES
-        CXX_STANDARD 11
+        CXX_STANDARD ${CXX_STD}
         CXX_STANDARD_REQUIRED YES
         )
 

@@ -185,8 +185,9 @@ namespace Messaging {
         for (auto& client : _clients) {
             client.second.Validate();
             uint16_t size = _readBufferSize;
+            uint32_t status;
 
-            while (client.second.PopData(size, _readBuffer.get()) != Core::ERROR_READ_ERROR) {
+            while (((status = client.second.PopData(size, _readBuffer.get())) == Core::ERROR_NONE) || (status == Core::ERROR_GENERAL)) {
                 ASSERT(size != 0);
 
                 if (size > _readBufferSize) {

@@ -24,35 +24,59 @@ namespace Thunder {
 
 namespace RPC {
 
-    template<typename INTERFACE>
+    template<typename INTERFACE, typename CONTAINER = std::list<typename INTERFACE::Element>>
     class IteratorType : public INTERFACE {
-    public:
-        using Container = typename std::list<typename INTERFACE::Element>;
+    private:
+        template<typename, typename = void>
+        struct has_reserve : std::false_type {};
 
+        template<typename C>
+        struct has_reserve<C, std::void_t<decltype(std::declval<C>().reserve(std::declval<typename C::size_type>()))>> : std::true_type {};
+
+    public:
         IteratorType() = delete;
         IteratorType(const IteratorType&) = delete;
         IteratorType& operator=(const IteratorType&) = delete;
 
-        explicit IteratorType(Container&& container)
-            : _container(std::forward<Container>(container))
+        explicit IteratorType(CONTAINER&& container)
+            : _container(std::forward<CONTAINER>(container))
             , _index(0)
         {
             _iterator = _container.begin();
         }
-        template <typename CONTAINER, typename PREDICATE>
-        IteratorType(const CONTAINER& container, PREDICATE predicate)
+        template <typename T = typename INTERFACE::Element,
+                  std::enable_if_t<!std::is_same_v<CONTAINER, std::list<T>>, int> = 0>
+        IteratorType(std::list<T>&& container)
+            : _container()
+            , _index(0)
+        {
+            TRACE_L1("Thunder::RPC::IteratorType: Using std::list as a source container is less efficient.");
+
+            if constexpr (has_reserve<CONTAINER>::value == true) {
+                _container.reserve(container.size());
+            }
+
+            std::move(
+                std::make_move_iterator(container.begin()),
+                std::make_move_iterator(container.end()),
+                std::back_inserter(_container));
+
+            _iterator = _container.begin();
+        }
+        template <typename SOURCECONTAINER, typename PREDICATE>
+        IteratorType(const SOURCECONTAINER& container, PREDICATE predicate)
             : _container()
             , _index(0)
         {
             std::copy_if(container.begin(), container.end(), std::back_inserter(_container), predicate);
             _iterator = _container.begin();
         }
-        template <typename CONTAINER>
-        IteratorType(const CONTAINER& container)
+        template <typename SOURCECONTAINER>
+        IteratorType(const SOURCECONTAINER& container)
             : _container()
             , _index(0)
         {
-            std::copy_if(container.begin(), container.end(), std::back_inserter(_container), [](const typename INTERFACE::Element& /* data */) { return (true); });
+            std::copy(container.begin(), container.end(), std::back_inserter(_container));
             _iterator = _container.begin();
         }
         template <typename KEY, typename VALUE>
@@ -166,17 +190,14 @@ POP_WARNING()
 
             return (*_iterator);
         }
-        void Add(const typename INTERFACE::Element& element) {
-            _container.push_back(element);
-        }
-
-        BEGIN_INTERFACE_MAP(IteratorType<INTERFACE>)
+        using SelfType = IteratorType<INTERFACE, CONTAINER>;
+        BEGIN_INTERFACE_MAP(SelfType)
             INTERFACE_ENTRY(INTERFACE)
         END_INTERFACE_MAP
 
     private:
-        Container _container;
-        mutable typename Container::iterator _iterator;
+        CONTAINER _container;
+        mutable typename CONTAINER::iterator _iterator;
         mutable uint32_t _index;
     };
 }
