@@ -164,11 +164,11 @@ namespace Core {
                     ASSERT(_domainSocket == -1);
 
 #ifndef __WINDOWS__
-                    string clientName(UniqueDomainName(connector));
-                    _domainSocket = OpenDomainSocket(clientName);
+                    string clientName;
+                    _domainSocket = OpenUniqueDomainSocket(connector, clientName);
 
                     if (_domainSocket == -1) {
-                        TRACE_L1("failed to open domain socket: %s", clientName.c_str());
+                        TRACE_L1("failed to open domain socket for connector: %s", connector.c_str());
                         result = Core::ERROR_BAD_REQUEST;
                     } else {
                         const Core::NodeId server(connector.c_str());
@@ -213,11 +213,11 @@ namespace Core {
                     result = Core::ERROR_UNAVAILABLE;
 
 #ifndef __WINDOWS__
-                    string clientName(UniqueDomainName(connector));
-                    _domainSocket = OpenDomainSocket(clientName);
+                    string clientName;
+                    _domainSocket = OpenUniqueDomainSocket(connector, clientName);
 
                     if (_domainSocket == -1) {
-                        TRACE_L1("failed to open domain socket: %s", clientName.c_str());
+                        TRACE_L1("failed to open domain socket for connector: %s", connector.c_str());
                         result = Core::ERROR_BAD_REQUEST;
                     } else {
                         const Core::NodeId server(connector.c_str());
@@ -320,25 +320,68 @@ namespace Core {
 #ifndef __WINDOWS__
             static constexpr char Delimiter = '|';
 
-            string UniqueDomainName(const string connector) const
+            int OpenUniqueDomainSocket(const string& connector, string& boundName)
             {
+                static constexpr int MaxRetries = 5;
+
                 char* binder = static_cast<char*>(::alloca(connector.length() + 1 + 6 + 1));
 
-                std::size_t delimiter = connector.find(Delimiter);
-
-                if (delimiter == string::npos) {
-                    ::strcpy(binder, connector.c_str());
-                    ::strcpy(&binder[connector.length()], _T(".XXXXXX"));
-                } else {
-                    ::memcpy(binder, connector.c_str(), delimiter);
-                    ::strcpy(&binder[delimiter], _T(".XXXXXX"));
+                int fd = ::socket(AF_UNIX, SOCK_DGRAM, 0);
+                if (fd < 0) {
+                    return (-1);
                 }
 
-                ASSERT(strlen(binder) < MaxFilePathLength);
-PUSH_WARNING(DISABLE_WARNING_UNUSED_RESULT)
-                ::mkstemp(binder);
-POP_WARNING()
-                return (string(binder));
+                const int flags = fcntl(fd, F_GETFL, 0) | O_NONBLOCK;
+                if (::fcntl(fd, F_SETFL, flags) != 0) {
+                    TRACE_L1("Error on port socket F_SETFL call. Error: %s", strerror(errno));
+                    ::close(fd);
+                    return (-1);
+                }
+
+                for (int attempt = 0; attempt < MaxRetries; attempt++) {
+                    const std::size_t delimiter = connector.find(Delimiter);
+
+                    if (delimiter == string::npos) {
+                        ::strcpy(binder, connector.c_str());
+                        ::strcpy(&binder[connector.length()], _T(".XXXXXX"));
+                    } else {
+                        ::memcpy(binder, connector.c_str(), delimiter);
+                        ::strcpy(&binder[delimiter], _T(".XXXXXX"));
+                    }
+
+                    ASSERT(strlen(binder) < MaxFilePathLength);
+
+                    const int tmpFd = ::mkstemp(binder);
+                    if (tmpFd < 0) {
+                        TRACE_L1("mkstemp failed. Error: %s", strerror(errno));
+                        continue;
+                    }
+                    ::close(tmpFd);
+
+                    // NOTE: 
+                    // A residual TOCTOU window exists between ::unlink(binder) and ::bind().
+                    // On this platform (embedded Linux, controlled process environment) this is
+                    // acceptable. If stricter hardening is required, migrate to Linux abstract
+                    // namespace sockets which bind atomically without a filesystem path. 
+                    // Note that Core::NodeId does not support abstract namespace
+                    // and would need to be bypassed for the client-side bind.
+                    
+                    ::unlink(binder);
+
+                    const Core::NodeId bindNode(binder);
+                    if (::bind(fd, bindNode, bindNode.Size()) == 0) {
+                        boundName = string(binder);
+                        return (fd);
+                    }
+
+                    if (errno != EADDRINUSE) {
+                        TRACE_L1("Error on port socket bind call. Error: %s", strerror(errno));
+                        break;
+                    }
+                }
+
+                ::close(fd);
+                return (-1);
             }
             int OpenDomainSocket(const string& connector) const
             {
