@@ -382,7 +382,7 @@ static Thunder::Core::PublishedServiceType<ACTUALCLASS> ServiceMetadata_##ACTUAL
 #endif
 
 #define BEGIN_INTERFACE_MAP(ACTUALCLASS)                                                                \
-    void* QueryInterface(const uint32_t interfaceNumber, const bool asIUnknown = false VARIABLE_IS_NOT_USED) override        \
+    void* QueryInterface(const uint32_t interfaceNumber, const bool asIUnknown VARIABLE_IS_NOT_USED = false) override        \
     {                                                                                                   \
         if (interfaceNumber == Thunder::Core::IUnknown::ID) {                                           \
             AddRef();                                                                                   \
