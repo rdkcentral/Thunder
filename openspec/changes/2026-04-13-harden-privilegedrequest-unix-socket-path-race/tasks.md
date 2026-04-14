@@ -16,6 +16,14 @@
 - [ ] Keep request/offer/listen semantics unchanged.
 - [ ] Ensure cleanup logic handles socket file and runtime path lifecycle safely.
 
+### Task 2.3: Incremental retry hardening follow-up (post-resync)
+- [x] Document landed client-side retry behavior and open gaps.
+- [x] Prepare review patch for remaining retry gaps:
+	- Add attempt-indexed retry diagnostics for unique bind collisions.
+	- Add bounded retry behavior for server-side fixed connector bind (`OpenDomainSocket`).
+	- Keep existing protocol and lifecycle semantics unchanged.
+	- Review patch: `openspec/changes/2026-04-13-harden-privilegedrequest-unix-socket-path-race/fix.patch`
+
 ## Phase 3: Validation
 
 ### Task 3.1: Functional validation

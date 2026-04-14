@@ -1,0 +1,69 @@
+--- a/Source/extensions/privilegedrequest/include/privilegedrequest/PrivilegedRequest.h
++++ b/Source/extensions/privilegedrequest/include/privilegedrequest/PrivilegedRequest.h
+@@
+                     const Core::NodeId bindNode(binder);
+                     if (::bind(fd, bindNode, bindNode.Size()) == 0) {
+                         boundName = string(binder);
+                         return (fd);
+                     }
+ 
+                     if (errno != EADDRINUSE) {
+                         TRACE_L1("Error on port socket bind call. Error: %s", strerror(errno));
+                         break;
+                     }
++
++                    TRACE_L1("Unique domain socket bind collision on attempt %d/%d", (attempt + 1), MaxRetries);
+                 }
++
++                TRACE_L1("Failed to bind unique domain socket after %d attempts.", MaxRetries);
+ 
+                 ::close(fd);
+                 return (-1);
+             }
+             int OpenDomainSocket(const string& connector) const
+             {
++                static constexpr int MaxRetries = 5;
+                 int fd = ::socket(AF_UNIX, SOCK_DGRAM, 0);
+@@
+                     if (::fcntl(fd, F_SETFL, flags) != 0) {
+                         TRACE_L1("Error on port socket F_SETFL call. Error: %s", strerror(errno));
+                         ::close(fd);
+                         fd = -1;
+                     } else {
+-                        ::unlink(connector.c_str());
+-
+-                        const Core::NodeId binder(connector.c_str());
+-
+-                        if (::bind(fd, binder, binder.Size()) != 0) {
+-                            TRACE_L1("Error on port socket bind call. Error: %s", strerror(errno));
+-                            ::close(fd);
+-                            fd = -1;
++                        bool bound = false;
++
++                        for (int attempt = 0; attempt < MaxRetries; attempt++) {
++                            ::unlink(connector.c_str());
++
++                            const Core::NodeId binder(connector.c_str());
++
++                            if (::bind(fd, binder, binder.Size()) == 0) {
++                                bound = true;
++                                break;
++                            }
++
++                            if (errno != EADDRINUSE) {
++                                TRACE_L1("Error on port socket bind call. Error: %s", strerror(errno));
++                                break;
++                            }
++
++                            TRACE_L1("Domain socket bind collision on attempt %d/%d", (attempt + 1), MaxRetries);
++                        }
++
++                        if (bound == false) {
++                            TRACE_L1("Failed to bind domain socket after %d attempts.", MaxRetries);
++                            ::close(fd);
++                            fd = -1;
+                         }
+                     }
+                 }
+                 return (fd);
+             }

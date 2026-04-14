@@ -22,8 +22,8 @@ Status update (2026-04-13):
 	- Added targeted ctest entry Thunder_test_core_numbertype in Tests/unit/core/CMakeLists.txt using --gtest_filter=Core_NumberType*.
 	- Validation: Thunder_test_core_numbertype passed.
 - Item 2 (mkstemp fd leak): proposal prepared and split from hardening.
-	- Proposal: openspec/changes/2026-04-13-fix-privilegedrequest-mkstemp-fd-leak/
-	- Review patch (not applied): openspec/changes/2026-04-13-fix-privilegedrequest-mkstemp-fd-leak/fix.patch
+	- Archived change: openspec/changes/archive/2026-04-14-fix-privilegedrequest-mkstemp-fd-leak/
+	- Review patch (historical): openspec/changes/archive/2026-04-14-fix-privilegedrequest-mkstemp-fd-leak/fix.patch
 - Item 3 (LXC null guard): proposal prepared and stored as review patch.
 	- Proposal: openspec/changes/2026-04-13-fix-lxc-null-deref-get-ips/
 	- Review patch (not applied): openspec/changes/2026-04-13-fix-lxc-null-deref-get-ips/fix.patch
@@ -42,6 +42,19 @@ Administration update (2026-04-14):
 - LXC Item 3 (null guard) remains patch-only and is delegated for colleague review.
 - LXC Item 6 (C-string bounds hardening) remains patch-only and is delegated for colleague review.
 - Source file `Source/extensions/processcontainers/implementations/LXCImplementation/LXCImplementation.cpp` is kept unchanged for both LXC items pending external review.
+
+PrivilegedRequest race-hardening review update (2026-04-14):
+- Landed from colleague as part of hardening suggestions:
+	- `OpenUniqueDomainSocket` now has bounded retry behavior (`MaxRetries = 5`) for client-side unique bind collisions.
+	- Retry loop is limited to `EADDRINUSE`; non-collision bind failures break immediately.
+	- `mkstemp`-based unique path generation is rebuilt on each attempt.
+- Confirmed gaps (still open):
+	- No equivalent retry behavior on server-side fixed connector bind path (`OpenDomainSocket`).
+	- No attempt-indexed tracing for retry diagnostics (collision count / exhaustion).
+	- No explicit bounded backoff between retries.
+- Follow-up prepared (not applied):
+	- Review patch to close retry gaps: `openspec/changes/2026-04-13-harden-privilegedrequest-unix-socket-path-race/fix.patch`
+	- Scope: server-side bind retries + attempt-indexed retry diagnostics only.
 
 TODO backlog:
 - Investigate and document the newly identified issue in a different Thunder branch (details pending).
