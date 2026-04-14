@@ -30,7 +30,8 @@ add_executable(${TARGET}
         SystemInfo.cpp
         PostMortem.cpp
         )
-
+separate_arguments(BREAKPAD_LDFLAGS)
+target_link_libraries(${TARGET} PRIVATE "${BREAKPAD_LDFLAGS}")
 target_compile_definitions(${TARGET}
         PRIVATE
           NAMESPACE=${NAMESPACE}
@@ -84,17 +85,26 @@ if (PROCESSCONTAINERS)
 endif(PROCESSCONTAINERS)
 
 if(HIBERNATESUPPORT)
+    option(HIBERNATESUPPORT_AUTOWAKEUP "Auto-wakeup for Hibernate" OFF)
     target_link_libraries(${TARGET} PRIVATE
         ${NAMESPACE}Hibernate::${NAMESPACE}Hibernate)
     target_compile_definitions(${TARGET} PUBLIC
          HIBERNATE_SUPPORT_ENABLED=1)
 endif()
 
+find_package(Systemd)
+if (SYSTEMD_FOUND)
+    target_link_libraries( ${TARGET}
+            PRIVATE
+            Systemd::Systemd
+            )
+    SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -DSYSTEMD_FOUND")
+endif()
+
 set_target_properties(${TARGET} PROPERTIES
         CXX_STANDARD 11
         CXX_STANDARD_REQUIRED YES
         FRAMEWORK FALSE
-        VERSION ${VERSION}
         )
 
 install(

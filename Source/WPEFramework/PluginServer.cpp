@@ -24,6 +24,10 @@
 #include <syslog.h>
 #endif
 
+#ifdef SYSTEMD_FOUND
+#include <systemd/sd-daemon.h>
+#endif /* SYSTEMD_FOUND */
+
 #ifdef PROCESSCONTAINERS_ENABLED
 #include "../processcontainers/ProcessContainer.h"
 #endif
@@ -277,6 +281,14 @@ namespace PluginHost
     /* virtual */ void* Server::Service::QueryInterface(const uint32_t id)
     {
         void* result = nullptr;
+#ifdef HIBERNATE_SUPPORT_AUTOWAKEUP_ENABLED
+        Lock();
+        if(IsHibernated())
+        {
+            Wakeup();
+        }
+        Unlock();
+#endif
         if (id == Core::IUnknown::ID) {
             AddRef();
             result = static_cast<IUnknown*>(this);
@@ -333,7 +345,7 @@ namespace PluginHost
             Unlock();
             result = Core::ERROR_ILLEGAL_STATE;
         } else if (currentState == IShell::state::HIBERNATED) {
-            result = Wakeup(3000);
+            result = Wakeup();
             Unlock();
         } else if ((currentState == IShell::state::DEACTIVATED) || (currentState == IShell::state::PRECONDITION)) {
 
@@ -1083,6 +1095,7 @@ POP_WARNING()
         _services.Open();
         ServiceMap::Iterator iterator(_services.Services());
 
+#if 0
         // Load the metadata for the subsystem information..
         while (iterator.Next() == true)
         {
@@ -1101,6 +1114,7 @@ POP_WARNING()
                 }
             }
         }
+#endif
 
         _controller->Activate(PluginHost::IShell::STARTUP);
 
@@ -1136,7 +1150,24 @@ POP_WARNING()
           {
             return lhs->StartupOrder() < rhs->StartupOrder();
           });
+        for (auto service : configured_services)
+        {
+            if (service->State() != PluginHost::Service::state::UNAVAILABLE) {
+                if (service->Extension() == true ) {
+                    if (service->Startup() == PluginHost::IShell::startup::ACTIVATED ) {
+                        SYSLOG(Logging::Startup, (_T("Activating Extension [%s]:[%s]"),
+                            service->ClassName().c_str(), service->Callsign().c_str()));
+                        service->Activate(PluginHost::IShell::STARTUP);
+                    }
+                    else {
+                        SYSLOG(Logging::Startup, (_T("Activation of Extension [%s]:[%s] delayed, autostart is false"),
+                            service->ClassName().c_str(), service->Callsign().c_str()));
+                    }
+                }
+            }
+        }
 
+#if 0
         for (auto service : configured_services)
         {
             if (service->State() != PluginHost::Service::state::UNAVAILABLE) {
@@ -1151,6 +1182,11 @@ POP_WARNING()
                 }
             }
         }
+#endif
+#ifdef SYSTEMD_FOUND
+        SYSLOG(Logging::Startup, (_T("Notify that WPEFramework Systemd Service is Ready")));
+        sd_notify(0, "READY=1");
+#endif /* SYSTEMD_FOUND */
     }
 
     void Server::Close()

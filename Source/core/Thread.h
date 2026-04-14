@@ -224,6 +224,15 @@ namespace Core {
         }
         static ::ThreadId ThreadId();
 
+        static void Yield(uint8_t& count, const uint32_t sleepTimeMs = 1) {
+            if (count < 50) {
+                std::this_thread::yield();
+                ++count;
+            } else {
+                SleepMs(sleepTimeMs);
+                count = 0;
+            }
+        }
         template <typename STORAGETYPE>
         static STORAGETYPE& GetContext()
         {

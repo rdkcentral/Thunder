@@ -128,7 +128,7 @@ namespace WPEFramework {
 
 				public:
 					ChannelImpl(CommunicationChannel* parent, const Core::NodeId& remoteNode, const string& callsign, const string& query)
-						: BaseClass(5, FactoryImpl::Instance(), callsign, _T("JSON"), query, "", false, false, false, remoteNode.AnyInterface(), remoteNode, 256, 256)
+						: BaseClass(5, FactoryImpl::Instance(), callsign, _T("JSON"), query, "", false, false, false, remoteNode.AnyInterface(), remoteNode, 256, -1)
 						, _parent(*parent)
 					{
 					}
@@ -256,7 +256,7 @@ namespace WPEFramework {
 				}
 				uint32_t Initialize()
 				{
-					return (Open(1000));
+					return (Open(2000));
 				}
 				void Deinitialize()
 				{

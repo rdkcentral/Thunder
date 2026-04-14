@@ -529,7 +529,6 @@ inline void EXTERNAL SleepS(unsigned int a_Time)
 
 #if !defined(NDEBUG)
 #if defined(_THUNDER_DEBUG) || !defined(_THUNDER_NDEBUG)
-#define __DEBUG__
 #ifdef _THUNDER_PRODUCTION
 #error "Production and Debug is not a good match. Select Production or Debug, not both !!"
 #endif
@@ -894,8 +893,15 @@ namespace Core {
         ERROR_CODE(ERROR_FAILED_UNREGISTERED, 49) \
         ERROR_CODE(ERROR_PRIVILIGED_DEFERRED, 51) \
         ERROR_CODE(ERROR_UNKNOWN_METHOD, 53) \
+        ERROR_CODE(ERROR_INVALID_PARAMETER, 54) \
         ERROR_CODE(ERROR_COMPOSIT_OBJECT, 57)\
-        ERROR_CODE(ERROR_ABORTED, 58)
+        ERROR_CODE(ERROR_ABORTED, 58) \
+        ERROR_CODE(ERROR_INVALID_DEVICENAME, 59) \
+        ERROR_CODE(ERROR_INVALID_MOUNTPOINT, 60) \
+        ERROR_CODE(ERROR_FIRMWAREUPDATE_INPROGRESS,61) \
+        ERROR_CODE(ERROR_FIRMWAREUPDATE_UPTODATE,62)
+
+
 
     #define ERROR_CODE(CODE, VALUE) CODE = VALUE,
 
@@ -978,5 +984,7 @@ namespace std {
 #endif
 
 #define THUNDER_VERSION 4
+#define THUNDER_VERSION_MAJOR 4
+#define THUNDER_VERSION_MINOR 4
 
 #endif // __PORTABILITY_H
