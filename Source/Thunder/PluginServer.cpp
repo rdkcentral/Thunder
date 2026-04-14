@@ -292,19 +292,18 @@ namespace PluginHost {
             asIUknown == false ? result = static_cast<PluginHost::IShell::IConnectionServer*>(this) : result = static_cast<Core::IUnknown*>(this);
         }
         else {
-            _pluginHandling.Lock();
-            if (State() == ACTIVATED) {
+            _queryInterfaceLock.Lock();
+            if ((State() == IShell::state::ACTIVATED) || (State() == IShell::state::DEACTIVATION)) { //needed as we only want to send plugin state notifications when the plugin is active or deactivating which is not gueranteed by the lock itself as it comes from the same thread handling the activation and deactivation 
                 if (id == PluginHost::IDispatcher::ID) {
                     if (_jsonrpc != nullptr) {
                         _jsonrpc->AddRef();
                         asIUknown == false ? result = _jsonrpc : result = static_cast<Core::IUnknown*>(_jsonrpc);
                     }
-                }
-                else if (_handler != nullptr) {
+                } else if (_handler != nullptr) {
                     result = _handler->QueryInterface(id, asIUknown);
                 }
             }
-            _pluginHandling.Unlock();
+            _queryInterfaceLock.Unlock();
         }
 
         return (result);
@@ -357,6 +356,8 @@ namespace PluginHost {
 
             _reason = why;
 
+            _queryInterfaceLock.Lock();
+
             // Load the interfaces, If we did not load them yet...
             if (_handler == nullptr) {
                 AcquireInterfaces();
@@ -371,6 +372,8 @@ namespace PluginHost {
                 _reason = reason::INSTANTIATION_FAILED;
                 State(DEACTIVATED);
 
+                _queryInterfaceLock.Unlock();
+
                 Unlock();
 
                 // See if the preconditions have been met..
@@ -380,6 +383,9 @@ namespace PluginHost {
                 State(PRECONDITION);
 
                 if (Thunder::Messaging::LocalLifetimeType<Activity, &Thunder::Core::System::MODULE_NAME, Thunder::Core::Messaging::Metadata::type::TRACING>::IsEnabled() == true) {
+
+                    _queryInterfaceLock.Unlock();
+
                     string feedback;
                     uint8_t index = 1;
                     uint32_t delta(_precondition.Delta(_administrator.SubSystemInfo().Value()));
@@ -437,9 +443,12 @@ namespace PluginHost {
                     State(DEACTIVATED);
                     Unlock();
 
+                    _queryInterfaceLock.Unlock();
+
                     _administrator.Deinitialized(callSign, this);
 
                 } else {
+
                     const Core::EnumerateType<PluginHost::IShell::reason> textReason(why);
                     const string webUI(PluginHost::Service::Configuration().WebUI.Value());
                     if ((PluginHost::Service::Configuration().WebUI.IsSet()) || (webUI.empty() == false)) {
@@ -465,6 +474,9 @@ namespace PluginHost {
                     SYSLOG(Logging::Startup, (_T("Activated plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
                     Lock();
                     State(ACTIVATED);
+
+                    _queryInterfaceLock.Unlock();
+
                     _administrator.Activated(callSign, this);
 
                     _stateControl = _handler->QueryInterface<PluginHost::IStateControl>();
@@ -599,6 +611,8 @@ namespace PluginHost {
                     DisableWebServer();
                 }
 
+                _queryInterfaceLock.Lock();
+
                 REPORT_DURATION_WARNING( { _handler->Deinitialize(this); }, WarningReporting::TooLongPluginState, WarningReporting::TooLongPluginState::StateChange::DEACTIVATION, callSign.c_str());
 
                 Lock();
@@ -633,6 +647,10 @@ namespace PluginHost {
             // We have no need for his module anymore..
             ReleaseInterfaces();
             Unlock();
+
+            if ((currentState == IShell::ACTIVATION) || (currentState == IShell::ACTIVATED)) {
+                _queryInterfaceLock.Unlock();
+            }
 
             _administrator.Deinitialized(callSign, this);
         } else {

@@ -831,6 +831,7 @@ namespace PluginHost {
             Service(const PluginHost::Config& server, const Plugin::Config& plugin, ServiceMap& administrator, const mode type, const Core::ProxyType<RPC::InvokeServer>& handler)
                 : PluginHost::Service(plugin, server.WebPrefix(), server.PersistentPath(), server.DataPath(), server.VolatilePath())
                 , _pluginHandling()
+                , _queryInterfaceLock()
                 , _handler(nullptr)
                 , _extended(nullptr)
                 , _webRequest(nullptr)
@@ -1689,6 +1690,8 @@ namespace PluginHost {
 
         private:
             mutable Core::CriticalSection _pluginHandling;
+            mutable Core::CriticalSection _queryInterfaceLock; // a little shortcut to protect both the QueryInterface from Plugin deinitializing which could make the QueryInterface to the OOP part of a plugin crash (and to facilitate sending the Plugin Deactivated notifications while still allow QueryInterface to be called)
+                                                             // the whole plugin state handling including locking needs a redesign...
 
             // The handlers that implement the actual logic behind the service
             IPlugin* _handler;
@@ -2484,7 +2487,8 @@ namespace PluginHost {
                 {
                     _notificationLock.Lock();
 
-                    for (auto it = _notifiers.begin(); it != _notifiers.end(); ++it) {
+                    auto it = _notifiers.begin();
+                    while (it != _notifiers.end()) {
                         if (it->second.SendNotification(callsign, entry) == true) {
                             Core::hresult result = (it->first->*notificatonmethod)(callsign, entry);
                             if (result == Core::ERROR_CANCEL) {
@@ -2492,6 +2496,9 @@ namespace PluginHost {
                                 it = _notifiers.erase(it);
                                 foundnotification->Release();
                                 foundnotification = nullptr;
+                            }
+                            if (it != _notifiers.end()) {
+                                ++it;
                             }
                         }
                     }
