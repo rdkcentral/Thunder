@@ -1,0 +1,14 @@
+--- a/Source/extensions/processcontainers/implementations/LXCImplementation/LXCImplementation.cpp
++++ b/Source/extensions/processcontainers/implementations/LXCImplementation/LXCImplementation.cpp
+@@
+-            sprintf(buf, "lxc.net.%d.type", netnr);
++            snprintf(buf, sizeof(buf), "lxc.net.%d.type", netnr);
+@@
+-                sprintf(buf, "lxc.net.%d.name", netnr);
++                snprintf(buf, sizeof(buf), "lxc.net.%d.name", netnr);
+@@
+-                sprintf(buf, "lxc.net.%d.link", netnr);
++                snprintf(buf, sizeof(buf), "lxc.net.%d.link", netnr);
+@@
+-                int32_t scanned = ::sscanf(buffer + position, "%s %llu%n", name, &value, &charsRead);
++                int32_t scanned = ::sscanf(buffer + position, "%127s %llu%n", name, &value, &charsRead);

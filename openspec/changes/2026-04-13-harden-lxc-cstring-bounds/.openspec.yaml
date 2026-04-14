@@ -1,0 +1,17 @@
+name: harden-lxc-cstring-bounds
+description: >
+  Harden C-string handling in LXCImplementation by replacing unbounded sprintf
+  with bounded snprintf and constraining sscanf string parsing width to avoid
+  stack-buffer overflow risks.
+status: proposed
+created: "2026-04-13"
+artifacts:
+  proposal.md:
+    type: proposal
+    status: done
+  design.md:
+    type: design
+    status: done
+  tasks.md:
+    type: tasks
+    status: done
