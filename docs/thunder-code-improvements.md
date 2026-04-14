@@ -57,5 +57,4 @@ PrivilegedRequest race-hardening review update (2026-04-14):
 	- Scope: server-side bind retries + attempt-indexed retry diagnostics only.
 
 TODO backlog:
-- Investigate and document the newly identified issue in a different Thunder branch (details pending).
 - Future hardening enhancement: reduce/eliminate pathname race window around UNIX domain socket `unlink` -> `bind` in privileged request flow (evaluate private 0700 runtime dir, Linux abstract namespace sockets, or descriptor-only alternatives).
