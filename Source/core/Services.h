@@ -403,8 +403,9 @@ static Thunder::Core::PublishedServiceType<ACTUALCLASS> ServiceMetadata_##ACTUAL
     else if (interfaceNumber == TYPE::ID)                                              \
     {                                                                                  \
         if (AGGREGATE != nullptr) {                                                    \
-            result = AGGREGATE->QueryInterface(TYPE::ID, asIUnknown);                  \
+            return AGGREGATE->QueryInterface(TYPE::ID, asIUnknown);                    \
         }                                                                              \
+        return nullptr;                                                                \
     }
 
 
