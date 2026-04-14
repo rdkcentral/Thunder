@@ -382,7 +382,7 @@ static Thunder::Core::PublishedServiceType<ACTUALCLASS> ServiceMetadata_##ACTUAL
 #endif
 
 #define BEGIN_INTERFACE_MAP(ACTUALCLASS)                                                                \
-    void* QueryInterface(const uint32_t interfaceNumber, const bool asIUnknown = false) override        \
+    void* QueryInterface(const uint32_t interfaceNumber, const bool asIUnknown = false VARIABLE_IS_NOT_USED) override        \
     {                                                                                                   \
         if (interfaceNumber == Thunder::Core::IUnknown::ID) {                                           \
             AddRef();                                                                                   \
@@ -396,7 +396,7 @@ static Thunder::Core::PublishedServiceType<ACTUALCLASS> ServiceMetadata_##ACTUAL
         if(asIUnknown == false)                                                                                                                         \
             return static_cast<void*>(static_cast<TYPE*>(this));                                                                                        \
         else                                                                                                                                            \
-            return static_cast<void*>(static_cast<Core::IUnknown*>(this));                                                                              \
+            return static_cast<void*>(static_cast<Thunder::Core::IUnknown*>(this));                                                                              \
     }
 
 #define INTERFACE_AGGREGATE(TYPE, AGGREGATE)                                           \
@@ -416,7 +416,7 @@ static Thunder::Core::PublishedServiceType<ACTUALCLASS> ServiceMetadata_##ACTUAL
            if (asIUnknown == false)                                                                                                                       \
                return static_cast<void*>(static_cast<TYPE*>(this));                                                                                       \
            else                                                                                                                                           \
-               return static_cast<void*>(static_cast<Core::IUnknown*>(this));                                                                             \
+               return static_cast<void*>(static_cast<Thunder::Core::IUnknown*>(this));                                                                             \
         }                                                                                                                                                 \
         return nullptr;                                                                                                                                   \
     }
