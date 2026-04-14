@@ -34,6 +34,14 @@ Status update (2026-04-13):
 - Item 5 (test_networkinfo hardening): proposal prepared and stored as review patch.
 	- Proposal: openspec/changes/2026-04-13-harden-test-networkinfo/
 	- Review patch (not applied): openspec/changes/2026-04-13-harden-test-networkinfo/fix.patch
+- Item 6 (LXC C-string bounds hardening): proposal prepared and stored as review patch.
+	- Proposal: openspec/changes/2026-04-13-harden-lxc-cstring-bounds/
+	- Review patch (not applied): openspec/changes/2026-04-13-harden-lxc-cstring-bounds/fix.patch
+
+Administration update (2026-04-14):
+- LXC Item 3 (null guard) remains patch-only and is delegated for colleague review.
+- LXC Item 6 (C-string bounds hardening) remains patch-only and is delegated for colleague review.
+- Source file `Source/extensions/processcontainers/implementations/LXCImplementation/LXCImplementation.cpp` is kept unchanged for both LXC items pending external review.
 
 TODO backlog:
 - Investigate and document the newly identified issue in a different Thunder branch (details pending).
