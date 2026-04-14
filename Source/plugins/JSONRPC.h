@@ -46,24 +46,6 @@ namespace {
         }
     }
 
-  namespace {
-    
-        template<typename JSONRPCERRORASSESSORTYPE>
-        uint32_t InvokeOnHandler(const Core::JSONRPC::Context& context, const string& method, const string& parameters, string& response, Core::JSONRPC::Handler& handler, JSONRPCERRORASSESSORTYPE errorhandler) 
-        {
-            uint32_t result = handler.Invoke(context, method, parameters, response);
-            if(result != Core::ERROR_NONE) {
-                result = errorhandler(context, method, parameters, result, response);
-            }
-            return result;
-        }
-        template<>
-        uint32_t InvokeOnHandler<void*>(const Core::JSONRPC::Context& context, const string& method, const string& parameters, string& response, Core::JSONRPC::Handler& handler, void*)
-        {
-            return handler.Invoke(context, method, parameters, response);
-        }
-    }
-
     struct EXTERNAL ILocalDispatcher : public IDispatcher {
         virtual ~ILocalDispatcher() override = default;
 

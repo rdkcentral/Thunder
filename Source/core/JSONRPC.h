@@ -137,18 +137,6 @@ namespace Core {
                     case Core::ERROR_FIRMWAREUPDATE_UPTODATE:
                         Code = -32004; // Firmware upto date
                         break;
-                    case Core::ERROR_INVALID_DEVICENAME:
-                        Code = -32001; // Invalid device name
-                        break;
-                    case Core::ERROR_INVALID_MOUNTPOINT:
-                        Code = -32002; // Invalid mount path
-                        break;
-                    case Core::ERROR_FIRMWAREUPDATE_INPROGRESS:
-                        Code = -32003; // Firmware update inprogress
-                        break;
-                    case Core::ERROR_FIRMWAREUPDATE_UPTODATE:
-                        Code = -32004; // Firmware upto date
-                        break;
                     default:
                         if ((frameworkError & 0x80000000) == 0) {
 
@@ -176,23 +164,6 @@ namespace Core {
                             Text = Core::ErrorToStringExtended(frameworkError);
                         }
 #else
-                        if ((frameworkError & 0x80000000) == 0) {
-
-                            // Heras solution to enable the possibility to override the json rpc errorcode and make it fall into
-                            // the -32000 to -32099 range (as desired by some externally defined interfaces). The 1000 offset and -31000 base are chosen to on
-                            // one hand keep the current Thunder error codes used in 4.4 backwards compatible (so the numbers as reported in
-                            // json rpc will not change) while at the same time making sure that code used in dynamic json rpc override will behave
-                            // as in Thunder 5 (so if the error code is changed to 1000 there it will result in a -32000 error code reported for json rpc)
-                            // New range > 2000 is added for pass through for a temporary fix for ContentProtection range
-
-                            if( frameworkError <= 999  || frameworkError > 2000 ) {
-                                Code = static_cast<int32_t>(frameworkError);
-                            } else {
-                                Code = -31000 - static_cast<int32_t>(frameworkError);
-                            }
-                        } else {
-                            Code = static_cast<int32_t>(frameworkError & 0x7FFFFFFF) + 500;
-                        }
                         if ((frameworkError & 0x80000000) == 0) {
 
                             // Heras solution to enable the possibility to override the json rpc errorcode and make it fall into
