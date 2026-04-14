@@ -78,7 +78,7 @@ Prefer `#pragma once` for new header files. Existing files that use classic `#if
 ### Type Safety
 
 - **Always use C++-style casts** — `static_cast<>`, `reinterpret_cast<>`, `const_cast<>`. Never C-style casts `(Type)x`. C++-style casts are statically checked and grep-searchable.
-- **Always use explicit integer widths** — `uint8_t`, `uint16_t`, `uint32_t`, `uint64_t`, `int32_t`. Never `int`, `char`, `short`, or `long` for any value whose bit-width matters (protocol fields, message sizes, counts).
+- **Use explicit integer widths** — `uint8_t`, `uint16_t`, `uint32_t`, `uint64_t`, `int32_t` for: protocol fields, message sizes, shared memory fields, timing values, counts used in arithmetic, API parameters, and any value stored or passed across a compilation unit. Platform-native types (`int`, `size_t`, `ptrdiff_t`) are permitted only when directly interfacing with OS/C APIs that mandate them (e.g. `poll()` timeout, `syscall()` return, iterator arithmetic with STL).
 - **Use `const` everywhere valid** — `const` parameters, `const` methods, `const` local variables. Immutable values are easier to reason about and caught at compile time.
 - **Prefer references over pointers** — use a reference when the value cannot be null and does not need re-seating. Use a pointer only when null is a valid state or the pointee may change.
 
