@@ -1261,7 +1261,7 @@ namespace PluginHost {
             uint32_t Submit(const uint32_t id, const Core::ProxyType<Core::JSON::IElement>& response) override;
             ISubSystem* SubSystems() override;
             void Notify(const string& event, const string& message) override;
-            void* QueryInterface(const uint32_t id, const bool asIUknown = false) override;
+            void* QueryInterface(const uint32_t id, const bool asIUnknown = false) override;
             void* QueryInterfaceByCallsign(const uint32_t id, const string& name) override;
             template <typename REQUESTEDINTERFACE>
             REQUESTEDINTERFACE* QueryInterface()
@@ -2695,30 +2695,35 @@ namespace PluginHost {
                     _notificationLock.Lock();
 
                     auto range = _notifiers.equal_range(const_cast<PluginHost::IPlugin::INotification*>(notification));
-                    for (auto it = range.first; it != range.second; ++it) {
+                    auto it = range.first;
+                    while (it != range.second) {
                         PluginHost::IPlugin::INotification* foundnotification = it->first;
                         it = _notifiers.erase(it);
                         foundnotification->Release();
                         foundnotification = nullptr;
                     }
+
                     _notificationLock.Unlock();
                 }
                 void RemoveAll(const Core::IUnknown* const notification)
                 {
                     _notificationLock.Lock();
 
-                    for (auto it = _notifiers.begin(); it != _notifiers.end(); ++it) {
+                    auto it = _notifiers.begin();
+                    while (it != _notifiers.end()) {
                         if (static_cast<const Core::IUnknown*>(it->first) == notification) {
                             PluginHost::IPlugin::INotification* foundnotification = it->first;
                             it = _notifiers.erase(it);
                             foundnotification->Release();
                             foundnotification = nullptr;
+                        } else {
+                            ++it;
                         }
                     }
 
                     _notificationLock.Unlock();
                 }
-                void Notify(const string& callsign, PluginHost::IShell* entry, Core::hresult (PluginHost::IPlugin::INotification::*notificatonmethod)(const string& callsign, IShell* plugin)) 
+                void Notify(const string& callsign, PluginHost::IShell* entry, Core::hresult (PluginHost::IPlugin::INotification::*notificatonmethod)(const string& callsign, IShell* plugin))
                 {
                     _notificationLock.Lock();
 
@@ -2731,10 +2736,11 @@ namespace PluginHost {
                                 it = _notifiers.erase(it);
                                 foundnotification->Release();
                                 foundnotification = nullptr;
-                            }
-                            if (it != _notifiers.end()) {
+                            } else {
                                 ++it;
                             }
+                        } else {
+                            ++it;
                         }
                     }
 

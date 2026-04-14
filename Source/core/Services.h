@@ -382,7 +382,7 @@ static Thunder::Core::PublishedServiceType<ACTUALCLASS> ServiceMetadata_##ACTUAL
 #endif
 
 #define BEGIN_INTERFACE_MAP(ACTUALCLASS)                                                                \
-    void* QueryInterface(const uint32_t interfaceNumber, const bool asIUknown = false) override         \
+    void* QueryInterface(const uint32_t interfaceNumber, const bool asIUnknown = false) override         \
     {                                                                                                   \
         void* result = nullptr;                                                                         \
         if (interfaceNumber == Thunder::Core::IUnknown::ID) {                                           \
@@ -394,14 +394,14 @@ static Thunder::Core::PublishedServiceType<ACTUALCLASS> ServiceMetadata_##ACTUAL
     else if (interfaceNumber == TYPE::ID)                                                                                                               \
     {                                                                                                                                                   \
         AddRef();                                                                                                                                       \
-        asIUknown == false ? result =  static_cast<void*>(static_cast<TYPE*>(this)) : result = static_cast<void*>(static_cast<Core::IUnknown*>(this));  \
+        asIUnknown == false ? result =  static_cast<void*>(static_cast<TYPE*>(this)) : result = static_cast<void*>(static_cast<Core::IUnknown*>(this));  \
     }
 
 #define INTERFACE_AGGREGATE(TYPE, AGGREGATE)                           \
     else if (interfaceNumber == TYPE::ID)                              \
     {                                                                  \
         if (AGGREGATE != nullptr) {                                    \
-            result = AGGREGATE->QueryInterface(TYPE::ID, asIUknown);   \
+            result = AGGREGATE->QueryInterface(TYPE::ID, asIUnknown);   \
         }                                                              \
     }
 
@@ -410,12 +410,12 @@ static Thunder::Core::PublishedServiceType<ACTUALCLASS> ServiceMetadata_##ACTUAL
     else if (interfaceNumber == TYPE::ID) {                                                                                                               \
         if (RELAY != nullptr) {                                                                                                                           \
            AddRef();                                                                                                                                      \
-           asIUknown == false ? result = static_cast<void*>(static_cast<TYPE*>(this)) : result = static_cast<void*>(static_cast<Core::IUnknown*>(this));  \
+           asIUnknown == false ? result = static_cast<void*>(static_cast<TYPE*>(this)) : result = static_cast<void*>(static_cast<Core::IUnknown*>(this));  \
         }                                                                                                                                                 \
     }
 
 #define NEXT_INTERFACE_MAP(BASECLASS)                                          \
-        result = BASECLASS::QueryInterface(interfaceNumber, asIUknown);        \
+        result = BASECLASS::QueryInterface(interfaceNumber, asIUnknown);        \
     }
 
 #define END_INTERFACE_MAP                                      \

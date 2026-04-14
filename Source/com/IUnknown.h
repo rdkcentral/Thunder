@@ -281,7 +281,7 @@ namespace ProxyStub {
 
             return (result);
         }
-        inline void* RemoteInterface(const uint32_t id, const bool asIUknown) const
+        inline void* RemoteInterface(const uint32_t id, const bool asIUnknown) const
         {
             void* result = nullptr;
             Core::ProxyType<RPC::InvokeMessage> message(RPC::Administrator::Instance().Message());
@@ -304,7 +304,7 @@ namespace ProxyStub {
                     // From what is returned, we need to create a proxy
                     ProxyStub::UnknownProxy* iuProxy = RPC::Administrator::Instance().ProxyInstance(_channel, impl, true, id, result);
                     ASSERT((iuProxy == nullptr && result == nullptr) || (iuProxy != nullptr && result != nullptr));
-                    if ((asIUknown == true) && (iuProxy != nullptr)) {
+                    if ((asIUnknown == true) && (iuProxy != nullptr)) {
                         result = iuProxy->Parent();
                     }
                 } else {
@@ -550,20 +550,20 @@ namespace ProxyStub {
 
             return (result);
         }
-        void* QueryInterface(const uint32_t interfaceNumber, const bool asIUknown) override
+        void* QueryInterface(const uint32_t interfaceNumber, const bool asIUnknown) override
         {
             void* result = nullptr;
 
             if (interfaceNumber == INTERFACE::ID) {
                 // Just AddRef and return..
                 _unknown.AddRef();
-                asIUknown == false ? result = static_cast<INTERFACE*>(this) : result = static_cast<Core::IUnknown*>(this);
+                asIUnknown == false ? result = static_cast<INTERFACE*>(this) : result = static_cast<Core::IUnknown*>(this);
             } else if (interfaceNumber == Core::IUnknown::ID) {
                 // Just AddRef and return..
                 _unknown.AddRef();
                 result = static_cast<Core::IUnknown*>(this);
             } else {
-                result = _unknown.RemoteInterface(interfaceNumber, asIUknown);
+                result = _unknown.RemoteInterface(interfaceNumber, asIUnknown);
             }
 
             return (result);

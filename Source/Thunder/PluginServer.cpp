@@ -274,7 +274,7 @@ namespace PluginHost {
         _processAdministrator.Destroy();
     }
 
-    void* Server::Service::QueryInterface(const uint32_t id, const bool asIUknown) /* override */
+    void* Server::Service::QueryInterface(const uint32_t id, const bool asIUnknown) /* override */
     {
         void* result = nullptr;
         if (id == Core::IUnknown::ID) {
@@ -283,15 +283,15 @@ namespace PluginHost {
         }
         else if (id == PluginHost::IShell::ID) {
             AddRef();
-            asIUknown == false ? result = static_cast<PluginHost::IShell*>(this) : result = static_cast<Core::IUnknown*>(this);
+            asIUnknown == false ? result = static_cast<PluginHost::IShell*>(this) : result = static_cast<Core::IUnknown*>(this);
         }
         else if (id == PluginHost::IShell::ICOMLink::ID) {
             AddRef();
-            asIUknown == false ? result = static_cast<PluginHost::IShell::ICOMLink*>(this) : result = static_cast<Core::IUnknown*>(this);
+            asIUnknown == false ? result = static_cast<PluginHost::IShell::ICOMLink*>(this) : result = static_cast<Core::IUnknown*>(this);
         }
         else if (id == PluginHost::IShell::IConnectionServer::ID) {
             AddRef();
-            asIUknown == false ? result = static_cast<PluginHost::IShell::IConnectionServer*>(this) : result = static_cast<Core::IUnknown*>(this);
+            asIUnknown == false ? result = static_cast<PluginHost::IShell::IConnectionServer*>(this) : result = static_cast<Core::IUnknown*>(this);
         }
         else {
             _queryInterfaceLock.Lock();
@@ -299,10 +299,10 @@ namespace PluginHost {
                 if (id == PluginHost::IDispatcher::ID) {
                     if (_jsonrpc != nullptr) {
                         _jsonrpc->AddRef();
-                        asIUknown == false ? result = _jsonrpc : result = static_cast<Core::IUnknown*>(_jsonrpc);
+                        asIUnknown == false ? result = _jsonrpc : result = static_cast<Core::IUnknown*>(_jsonrpc);
                     }
                 } else if (_handler != nullptr) {
-                    result = _handler->QueryInterface(id, asIUknown);
+                    result = _handler->QueryInterface(id, asIUnknown);
                 }
             }
             _queryInterfaceLock.Unlock();
