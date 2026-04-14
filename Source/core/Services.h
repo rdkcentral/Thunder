@@ -382,27 +382,30 @@ static Thunder::Core::PublishedServiceType<ACTUALCLASS> ServiceMetadata_##ACTUAL
 #endif
 
 #define BEGIN_INTERFACE_MAP(ACTUALCLASS)                                                                \
-    void* QueryInterface(const uint32_t interfaceNumber, const bool asIUnknown = false) override         \
+    void* QueryInterface(const uint32_t interfaceNumber, const bool asIUnknown = false) override        \
     {                                                                                                   \
         void* result = nullptr;                                                                         \
         if (interfaceNumber == Thunder::Core::IUnknown::ID) {                                           \
             AddRef();                                                                                   \
-            result = static_cast<void*>(static_cast<Thunder::Core::IUnknown*>(this));                   \
+            return static_cast<void*>(static_cast<Thunder::Core::IUnknown*>(this));                     \
         }
 
 #define INTERFACE_ENTRY(TYPE)                                                                                                                           \
     else if (interfaceNumber == TYPE::ID)                                                                                                               \
     {                                                                                                                                                   \
         AddRef();                                                                                                                                       \
-        asIUnknown == false ? result =  static_cast<void*>(static_cast<TYPE*>(this)) : result = static_cast<void*>(static_cast<Core::IUnknown*>(this));  \
+        if(asIUnknown == false)                                                                                                                         \
+            return static_cast<void*>(static_cast<TYPE*>(this));                                                                                        \
+        else                                                                                                                                            \
+            return static_cast<void*>(static_cast<Core::IUnknown*>(this));                                                                              \
     }
 
-#define INTERFACE_AGGREGATE(TYPE, AGGREGATE)                           \
-    else if (interfaceNumber == TYPE::ID)                              \
-    {                                                                  \
-        if (AGGREGATE != nullptr) {                                    \
-            result = AGGREGATE->QueryInterface(TYPE::ID, asIUnknown);   \
-        }                                                              \
+#define INTERFACE_AGGREGATE(TYPE, AGGREGATE)                                           \
+    else if (interfaceNumber == TYPE::ID)                                              \
+    {                                                                                  \
+        if (AGGREGATE != nullptr) {                                                    \
+            result = AGGREGATE->QueryInterface(TYPE::ID, asIUnknown);                  \
+        }                                                                              \
     }
 
 
@@ -410,16 +413,20 @@ static Thunder::Core::PublishedServiceType<ACTUALCLASS> ServiceMetadata_##ACTUAL
     else if (interfaceNumber == TYPE::ID) {                                                                                                               \
         if (RELAY != nullptr) {                                                                                                                           \
            AddRef();                                                                                                                                      \
-           asIUnknown == false ? result = static_cast<void*>(static_cast<TYPE*>(this)) : result = static_cast<void*>(static_cast<Core::IUnknown*>(this));  \
+           if (asIUnknown == false)                                                                                                                       \
+               return static_cast<void*>(static_cast<TYPE*>(this));                                                                                       \
+           else                                                                                                                                           \
+               return static_cast<void*>(static_cast<Core::IUnknown*>(this));                                                                             \
         }                                                                                                                                                 \
+        return nullptr;                                                                                                                                   \
     }
 
 #define NEXT_INTERFACE_MAP(BASECLASS)                                          \
-        result = BASECLASS::QueryInterface(interfaceNumber, asIUnknown);        \
+        return BASECLASS::QueryInterface(interfaceNumber, asIUnknown);        \
     }
 
 #define END_INTERFACE_MAP                                      \
-        return result;                                         \
+        return nullptr;                                         \
     }
 
 }
