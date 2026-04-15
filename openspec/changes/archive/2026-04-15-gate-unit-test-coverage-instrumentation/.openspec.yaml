@@ -1,0 +1,17 @@
+name: gate-unit-test-coverage-instrumentation
+description: >
+  Gate unit test coverage instrumentation behind ENABLE_CODE_COVERAGE CMake toggle.
+  Prevents unconditional libgcov instrumentation when coverage is disabled, eliminating
+  spurious profiling warnings in fork-heavy test environments.
+status: completed
+created: "2026-04-14"
+artifacts:
+  proposal.md:
+    type: proposal
+    status: done
+  design.md:
+    type: design
+    status: done
+  tasks.md:
+    type: tasks
+    status: done
