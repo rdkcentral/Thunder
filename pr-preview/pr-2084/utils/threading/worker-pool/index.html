@@ -3568,7 +3568,7 @@ the next section. Additionally, it was mentioned that the job can be submitted, 
 </code></pre></div>
 <p>As you could have guessed, you simply substitute <code>className</code> with the name of a class that will be used inside a plugin to submit a job, and that is almost it. After declaring the member variable <code>_job</code>, we have yet to initialize it with some value. If you predicated that the value was simply going to be a <em>pointer to our class</em>, you were right. The easiest way to do that would be inside every constructor of the class, and an example of this can be found below:</p>
 <div class="highlight"><pre><span></span><code><span class="n">FileObserver</span><span class="p">()</span>
-<span class="w">    </span><span class="o">:</span><span class="w"> </span><span class="n">_callback</span><span class="p">(</span><span class="k">nullptr</span><span class="p">)</span>
+<span class="w">    </span><span class="o">:</span><span class="w"> </span><span class="n">_callback</span><span class="p">(</span><span class="nb">nullptr</span><span class="p">)</span>
 <span class="w">    </span><span class="p">,</span><span class="w"> </span><span class="n">_position</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
 <span class="w">    </span><span class="p">,</span><span class="w"> </span><span class="n">_path</span><span class="p">()</span>
 <span class="w">    </span><span class="p">,</span><span class="w"> </span><span class="n">_job</span><span class="p">(</span><span class="o">*</span><span class="k">this</span><span class="p">)</span>
@@ -3584,7 +3584,7 @@ the next section. Additionally, it was mentioned that the job can be submitted, 
 <span class="w">        </span><span class="n">file</span><span class="p">.</span><span class="n">seekg</span><span class="p">(</span><span class="n">_position</span><span class="p">,</span><span class="w"> </span><span class="n">file</span><span class="p">.</span><span class="n">beg</span><span class="p">);</span>
 <span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">str</span><span class="p">;</span>
 <span class="w">        </span><span class="k">while</span><span class="w"> </span><span class="p">((</span><span class="n">std</span><span class="o">::</span><span class="n">getline</span><span class="p">(</span><span class="n">file</span><span class="p">,</span><span class="w"> </span><span class="n">str</span><span class="p">))</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="p">(</span><span class="n">str</span><span class="p">.</span><span class="n">size</span><span class="p">()</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">))</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="n">ASSERT</span><span class="p">(</span><span class="n">_callback</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="k">nullptr</span><span class="p">);</span>
+<span class="w">            </span><span class="n">ASSERT</span><span class="p">(</span><span class="n">_callback</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="nb">nullptr</span><span class="p">);</span>
 <span class="w">            </span><span class="n">_callback</span><span class="o">-&gt;</span><span class="n">NewLine</span><span class="p">(</span><span class="n">str</span><span class="p">);</span>
 <span class="w">        </span><span class="p">}</span>
 <span class="w">    </span><span class="p">}</span>
@@ -3604,8 +3604,8 @@ the next section. Additionally, it was mentioned that the job can be submitted, 
 <div class="highlight"><pre><span></span><code><span class="o">~</span><span class="n">FileObserver</span><span class="p">()</span>
 <span class="p">{</span>
 <span class="w">    </span><span class="n">_job</span><span class="p">.</span><span class="n">Revoke</span><span class="p">();</span>
-<span class="w">    </span><span class="n">ASSERT</span><span class="p">(</span><span class="n">_callback</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="k">nullptr</span><span class="p">);</span>
-<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">_callback</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="k">nullptr</span><span class="p">)</span>
+<span class="w">    </span><span class="n">ASSERT</span><span class="p">(</span><span class="n">_callback</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nb">nullptr</span><span class="p">);</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">_callback</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="nb">nullptr</span><span class="p">)</span>
 <span class="w">    </span><span class="p">{</span>
 <span class="w">        </span><span class="n">Unregister</span><span class="p">();</span>
 <span class="w">    </span><span class="p">}</span>

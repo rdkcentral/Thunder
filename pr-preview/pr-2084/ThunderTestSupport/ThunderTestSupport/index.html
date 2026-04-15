@@ -3370,10 +3370,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#why-whole-archive" class="md-nav__link">
+  <a href="#why-whole-archive-semantics" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Why --whole-archive?
+        Why whole-archive semantics?
       
     </span>
   </a>
@@ -3479,7 +3479,7 @@
 </tr>
 <tr>
 <td>Install paths</td>
-<td><code>lib/libthunder_test_support.a</code>, <code>include/thunder_test_support/ThunderTestRuntime.h</code></td>
+<td><code>${CMAKE_INSTALL_LIBDIR}/libthunder_test_support.a</code>, <code>${CMAKE_INSTALL_INCLUDEDIR}/thunder_test_support/ThunderTestRuntime.h</code></td>
 </tr>
 </tbody>
 </table>
@@ -3499,11 +3499,12 @@
 │  │  ├── PluginServer             │  │     │  │  │   ├── Controller             │    │
 │  │  ├── SystemInfo               │  │     │  │  │   ├── PluginServer           │    │
 │  │  └── HTTP/WS Listener         │  │     │  │  │   ├── SystemInfo             │    │
-│  │        ↓                      │  │     │  │  │   └── (no HTTP listener)     │    │
+│  │        ↓                      │  │     │  │  │   └── HTTP/WS Listener       │    │
 │  │  Plugin .so (dynamic load)    │  │     │  │  └── Plugin .so (dynamic load)  │    │
 │  └───────────────────────────────┘  │     │  └─────────────────────────────────┘    │
 │                                     │     │                                         │
-│  Communication: HTTP/WS/COMRPC      │     │  Communication: Direct in-process calls │
+│  Communication: HTTP/WS/COMRPC      │     │  Communication: HTTP/WS/COMRPC available,
+│                                     │     │  tests typically use direct in-process calls │
 └─────────────────────────────────────┘     └─────────────────────────────────────────┘
 </code></pre></div>
 <h3 id="how-it-works">How It Works</h3>
@@ -3520,6 +3521,9 @@
 </li>
 <li>
 <p><strong>Generates config on the fly</strong> — instead of reading <code>/etc/Thunder/config.json</code>, the runtime builds a minimal JSON config programmatically and writes it to a temporary directory.</p>
+</li>
+<li>
+<p><strong>Still opens the listener</strong> — <code>PluginHost::Server::Open()</code> still starts the HTTP/WebSocket listener, typically bound to <code>127.0.0.1</code> on an ephemeral port in the test runtime.</p>
 </li>
 <li>
 <p><strong>Plugins load normally</strong> — plugin <code>.so</code> files are still loaded dynamically via <code>dlopen()</code>, exactly as in production. The <code>systempath</code> config entry points to the directory containing plugin shared libraries.</p>
@@ -3560,7 +3564,7 @@
 <li><strong>Public dependencies</strong>: Exposes <code>ThunderCore</code>, <code>ThunderCryptalgo</code>, <code>ThunderCOM</code>, <code>ThunderPlugins</code>, <code>ThunderMessaging</code>, <code>ThunderWebSocket</code>, <code>ThunderCOMProcess</code>, and <code>Threads</code> as PUBLIC link dependencies, so consumers automatically get all required libraries.</li>
 <li><strong>Private dependencies</strong>: <code>CompileSettings</code> is linked PRIVATE to apply Thunder's compile flags without propagating them.</li>
 <li><strong>Conditional features</strong>: Supports <code>WARNING_REPORTING</code>, <code>PROCESSCONTAINERS</code>, and <code>HIBERNATESUPPORT</code> when enabled.</li>
-<li><strong>Install rules</strong>: Installs the <code>.a</code> archive to <code>lib/</code> and the header to <code>include/thunder_test_support/</code>.</li>
+<li><strong>Install rules</strong>: Installs the <code>.a</code> archive to <code>${CMAKE_INSTALL_LIBDIR}</code> and the header to <code>${CMAKE_INSTALL_INCLUDEDIR}/thunder_test_support/</code>.</li>
 </ul>
 <h3 id="3-teststest_supportmodulecpp-new">3. <code>Tests/test_support/Module.cpp</code> (New)</h3>
 <p>Module definition required by Thunder's internal logging/tracing macros. Uses <code>MODULE_NAME_ARCHIVE_DECLARATION</code> instead of <code>MODULE_NAME_DECLARATION</code> because this is a static archive, not a standalone binary. The archive macro only defines the <code>MODULE_NAME</code> string symbol. The full declaration (<code>ModuleBuildRef</code>, <code>GetModuleServices</code>, <code>SetModuleServices</code>) is left to the consumer's own <code>MODULE_NAME_DECLARATION</code>, avoiding duplicate definitions at link time:</p>
@@ -3587,7 +3591,7 @@
 <tbody>
 <tr>
 <td><code>PluginConfig</code> (struct)</td>
-<td>Describes a plugin to load: callsign, locator (.so name), classname, autostart, startuporder, configuration JSON</td>
+<td>Describes a plugin to load: callsign, locator (.so name), classname, startmode, startuporder, configuration JSON. <code>startmode</code> supports Thunder's <code>Activated</code>, <code>Deactivated</code>, and <code>Unavailable</code> states.</td>
 </tr>
 <tr>
 <td><code>Initialize()</code></td>
@@ -3632,6 +3636,7 @@
             ├── Set up security
             ├── ServiceMap::Open()
             ├── Activate Controller plugin
+            ├── Open HTTP/WebSocket listener
             └── Activate auto-start plugins
 
 Deinitialize()
@@ -3651,7 +3656,7 @@ Deinitialize()
     ├── shell-&gt;QueryInterface&lt;IDispatcher&gt;() → dispatcher
     └── dispatcher-&gt;Invoke(0, 0, &quot;&quot;, method, params, response)
 </code></pre></div>
-<p>This calls the plugin's JSON-RPC handler directly in-process, with zero network overhead.</p>
+<p>This calls the plugin's JSON-RPC handler directly in-process, with zero network overhead. The HTTP/WebSocket listener is still started by <code>Server::Open()</code>, but the helper API does not route JSON-RPC through it.</p>
 <h4 id="com-rpc-interface-access">COM-RPC Interface Access</h4>
 <p><code>GetInterface&lt;T&gt;()</code> provides direct COM-RPC access:</p>
 <div class="highlight"><pre><span></span><code>GetInterface&lt;Exchange::IMyInterface&gt;(&quot;&lt;Callsign&gt;&quot;)
@@ -3692,8 +3697,8 @@ Deinitialize()
 cmake<span class="w"> </span>--build<span class="w"> </span>build/Thunder<span class="w"> </span>--target<span class="w"> </span>install<span class="w"> </span>-j<span class="k">$(</span>nproc<span class="k">)</span>
 </code></pre></div>
 <p>After installation, the library and header are available at:
-<div class="highlight"><pre><span></span><code>&lt;install_prefix&gt;/lib/libthunder_test_support.a
-&lt;install_prefix&gt;/include/thunder_test_support/ThunderTestRuntime.h
+<div class="highlight"><pre><span></span><code>&lt;install_prefix&gt;/${CMAKE_INSTALL_LIBDIR}/libthunder_test_support.a
+&lt;install_prefix&gt;/${CMAKE_INSTALL_INCLUDEDIR}/thunder_test_support/ThunderTestRuntime.h
 </code></pre></div></p>
 <hr />
 <h2 id="usage-guide">Usage Guide</h2>
@@ -3722,7 +3727,7 @@ cmake<span class="w"> </span>--build<span class="w"> </span>build/Thunder<span c
 <span class="p">)</span>
 </code></pre></div>
 <blockquote>
-<p><strong>Note</strong>: The <code>thunder_test_support</code> target carries <code>INTERFACE</code> link options that automatically apply <code>--whole-archive</code> scoped to its own archive. This ensures Thunder's static initializers (<code>MODULE_NAME_DECLARATION</code>, <code>SERVICE_REGISTRATION</code>) are preserved without the consumer needing to specify linker flags manually. This works when linking against the CMake target directly. When linking against the <code>.a</code> file by path (e.g. in external repos), manual <code>--whole-archive</code> / <code>--no-whole-archive</code> flags are still required.</p>
+<p><strong>Note</strong>: The <code>thunder_test_support</code> target carries <code>INTERFACE</code> link options that automatically enforce whole-archive semantics for its own archive. On Apple this uses <code>-Wl,-force_load,...</code>; on Linux/Android with GNU/Clang-family toolchains it uses <code>--whole-archive</code> / <code>--no-whole-archive</code>. This ensures Thunder's static initializers (<code>MODULE_NAME_DECLARATION</code>, <code>SERVICE_REGISTRATION</code>) are preserved without the consumer needing to specify linker flags manually when linking against the CMake target. Consumers linking against the <code>.a</code> file by path (for example in external repos) still need to apply the appropriate platform-specific whole-archive/force-load flags themselves.</p>
 </blockquote>
 <h4 id="2-test-fixture">2. Test fixture</h4>
 <div class="highlight"><pre><span></span><code><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;gtest/gtest.h&gt;</span>
@@ -3742,7 +3747,7 @@ cmake<span class="w"> </span>--build<span class="w"> </span>build/Thunder<span c
 <span class="w">        </span><span class="n">cfg</span><span class="p">.</span><span class="n">callsign</span><span class="w">     </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;MyPlugin&quot;</span><span class="p">;</span>
 <span class="w">        </span><span class="n">cfg</span><span class="p">.</span><span class="n">locator</span><span class="w">       </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;libThunderMyPluginImpl.so&quot;</span><span class="p">;</span>
 <span class="w">        </span><span class="n">cfg</span><span class="p">.</span><span class="n">classname</span><span class="w">     </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;MyPlugin&quot;</span><span class="p">;</span>
-<span class="w">        </span><span class="n">cfg</span><span class="p">.</span><span class="n">autostart</span><span class="w">     </span><span class="o">=</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span>
+<span class="w">        </span><span class="n">cfg</span><span class="p">.</span><span class="n">startmode</span><span class="w">     </span><span class="o">=</span><span class="w"> </span><span class="n">TestCore</span><span class="o">::</span><span class="n">ThunderTestRuntime</span><span class="o">::</span><span class="n">PluginConfig</span><span class="o">::</span><span class="n">StartMode</span><span class="o">::</span><span class="n">Activated</span><span class="p">;</span>
 <span class="w">        </span><span class="n">cfg</span><span class="p">.</span><span class="n">startuporder</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="mi">50</span><span class="p">;</span>
 <span class="w">        </span><span class="n">cfg</span><span class="p">.</span><span class="n">configuration</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="sa">R</span><span class="s">&quot;</span><span class="dl">(</span><span class="s">{&quot;root&quot;:{&quot;mode&quot;:&quot;Off&quot;,&quot;locator&quot;:&quot;libThunderMyPluginImpl.so&quot;}}</span><span class="dl">)</span><span class="s">&quot;</span><span class="p">;</span>
 <span class="w">        </span><span class="n">plugins</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="n">cfg</span><span class="p">);</span>
@@ -3771,7 +3776,7 @@ cmake<span class="w"> </span>--build<span class="w"> </span>build/Thunder<span c
 <span class="c1">// COM-RPC test</span>
 <span class="n">TEST_F</span><span class="p">(</span><span class="n">MyPluginTest</span><span class="p">,</span><span class="w"> </span><span class="n">ComRpcCall</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">Exchange</span><span class="o">::</span><span class="n">IMyInterface</span><span class="o">*</span><span class="w"> </span><span class="n">iface</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_runtime</span><span class="p">.</span><span class="n">GetInterface</span><span class="o">&lt;</span><span class="n">Exchange</span><span class="o">::</span><span class="n">IMyInterface</span><span class="o">&gt;</span><span class="p">(</span><span class="s">&quot;MyPlugin&quot;</span><span class="p">);</span>
-<span class="w">    </span><span class="n">ASSERT_NE</span><span class="p">(</span><span class="n">iface</span><span class="p">,</span><span class="w"> </span><span class="k">nullptr</span><span class="p">);</span>
+<span class="w">    </span><span class="n">ASSERT_NE</span><span class="p">(</span><span class="n">iface</span><span class="p">,</span><span class="w"> </span><span class="nb">nullptr</span><span class="p">);</span>
 <span class="w">    </span><span class="c1">// Call interface methods...</span>
 <span class="w">    </span><span class="n">iface</span><span class="o">-&gt;</span><span class="n">Release</span><span class="p">();</span>
 <span class="p">}</span>
@@ -3820,9 +3825,9 @@ cmake<span class="w"> </span>--build<span class="w"> </span>build/Thunder<span c
 <h2 id="design-decisions">Design Decisions</h2>
 <h3 id="why-a-static-library">Why a static library?</h3>
 <p>A static archive ensures that all Thunder server symbols are available to the test binary at link time. Shared libraries would require careful <code>RPATH</code> management and could conflict with the installed Thunder daemon libraries.</p>
-<h3 id="why-whole-archive">Why <code>--whole-archive</code>?</h3>
-<p>Thunder uses static initializers extensively (<code>MODULE_NAME_DECLARATION</code>, <code>SERVICE_REGISTRATION</code>, singletons). Without <code>--whole-archive</code>, the linker would discard these symbols because the test binary doesn't reference them directly. The <code>--whole-archive</code> flag forces all object files from the archive to be included.</p>
-<p>This is enforced automatically via <code>target_link_options(INTERFACE)</code> on the CMake target, scoped to the archive using <code>$&lt;TARGET_FILE:...&gt;</code> so it doesn't affect other libraries on the link line. Consumers linking against the CMake target get this for free. Consumers linking against the <code>.a</code> file by path must add the flags manually.</p>
+<h3 id="why-whole-archive-semantics">Why whole-archive semantics?</h3>
+<p>Thunder uses static initializers extensively (<code>MODULE_NAME_DECLARATION</code>, <code>SERVICE_REGISTRATION</code>, singletons). Without whole-archive semantics, the linker would discard these symbols because the test binary doesn't reference them directly. Whole-archive/force-load style linker options force all object files from the archive to be included.</p>
+<p>This is enforced automatically via <code>target_link_options(INTERFACE)</code> on the CMake target, scoped to the archive using <code>$&lt;TARGET_FILE:...&gt;</code> so it doesn't affect other libraries on the link line. The exact linker option is platform-dependent: Apple uses <code>-Wl,-force_load,...</code>, while Linux/Android with GNU/Clang-family toolchains use <code>--whole-archive</code> / <code>--no-whole-archive</code>. Consumers linking against the CMake target get this automatically; consumers linking against the <code>.a</code> file by path must add the appropriate platform-specific flags manually.</p>
 <h3 id="why-exclude-pluginhostcpp">Why exclude <code>PluginHost.cpp</code>?</h3>
 <p><code>PluginHost.cpp</code> contains:
 - <code>main()</code> — conflicts with GTest's <code>main()</code>
@@ -3837,6 +3842,9 @@ cmake<span class="w"> </span>--build<span class="w"> </span>build/Thunder<span c
 </ul>
 <h3 id="why-port-0">Why port 0?</h3>
 <p>Using port 0 in the config tells the OS to assign an available port, avoiding conflicts when multiple test processes run simultaneously.</p>
+<p>This is convenient for parallel runs, but it has an important caveat in the current implementation: the assigned port is not propagated back into <code>PluginHost::Config</code>, so Thunder's configured accessor/URL can still report port <code>0</code> even though the listener is actually bound to an ephemeral port.</p>
+<p>In practice, this is usually acceptable for <code>thunder_test_support</code> because tests typically invoke JSON-RPC in-process via <code>IDispatcher::Invoke()</code> instead of routing through the HTTP listener. However, it can be confusing when inspecting the reported accessor URL and may break plugins or tests that depend on the configured port being accurate.</p>
+<p>A more complete solution would be to either choose a free port before building the config, or query the bound port after <code>Server::Open()</code> and update the config/binder/accessor state accordingly.</p>
 <hr />
 <h2 id="smoke-test">Smoke Test</h2>
 <p>A self-contained smoke test (<code>Tests/test_support/tests/SmokeTest.cpp</code>) is included with the library. It verifies that the library links, boots, and can exercise JSON-RPC against the built-in Controller plugin — no external plugin <code>.so</code> files needed.</p>
