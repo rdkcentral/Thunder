@@ -1175,7 +1175,7 @@ namespace PluginHost {
         TRACE(Activity, (_T("Destruct a link with ID [%d] to [%s]"), Id(), RemoteId().c_str()));
 
         // If we are still atatched to a service, detach, we are out of scope...
-        if ((_isServiceDetached == false) && (_service.IsValid() == true)) {
+        if ((_service.IsValid() == true) && (_isServiceDetached.exchange(true) == false)) {
             _service->Unsubscribe(*this);
 
             _service.Release();
