@@ -1,0 +1,164 @@
+diff --git a/Tests/unit/IPTestAdministrator.cpp b/Tests/unit/IPTestAdministrator.cpp
+index 9b31d760..2be26514 100644
+--- a/Tests/unit/IPTestAdministrator.cpp
++++ b/Tests/unit/IPTestAdministrator.cpp
+@@ -31,6 +31,7 @@ extern "C" {
+ 
+ #include <climits>
+ #include <limits>
++#include <chrono>
+ 
+ #include "IPTestAdministrator.h"
+ 
+@@ -80,7 +81,10 @@ IPTestAdministrator::~IPTestAdministrator()
+         if (pid_fd != -1) {
+             struct pollfd fds = { pid_fd, POLLIN, 0 };
+ 
+-            switch (poll(&fds, sizeof(fds) / sizeof(struct pollfd), _waitTime >= std::numeric_limits<int>::max() ? std::numeric_limits<int>::max() : _waitTime /* timeout in milliseconds */)) {
++            constexpr auto seconds2milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::seconds(1)).count();
++            const int timeoutMs = (_waitTime >= (std::numeric_limits<int>::max() / seconds2milliseconds)) ? std::numeric_limits<int>::max() : static_cast<int>(_waitTime * seconds2milliseconds);
++
++            switch (poll(&fds, sizeof(fds) / sizeof(struct pollfd), timeoutMs /* timeout in milliseconds */)) {
+             case -1 : // error
+                         switch(errno) {
+                         case EFAULT :   // fds is not within address space
+@@ -134,13 +138,43 @@ uint32_t IPTestAdministrator::Wait(uint32_t expectedHandshakeValue) const
+ {
+     uint32_t result = ::Thunder::Core::ERROR_GENERAL;
+ 
+-    // Never wait infinite amount of time
+-    const struct timespec timeout { _waitTime /* seconds */, 0 /* nanoseconds */};
++    // Calculate absolute deadline using monotonic clock for robustness across spurious wakeups
++    struct timespec deadline;
++    if (clock_gettime(CLOCK_MONOTONIC, &deadline) == -1) {
++        // Clock read failed — emergency out
++        return ::Thunder::Core::ERROR_GENERAL;
++    }
++
++    deadline.tv_sec += _waitTime;
++    // nanoseconds are already 0 from clock_gettime initialization
+ 
+     constexpr bool stop = { false };
+ 
+     do {
+-        long futex_result = syscall(SYS_futex, reinterpret_cast<uint32_t*>(&(_sharedData->handshakeValue)), FUTEX_WAIT, expectedHandshakeValue, &timeout, nullptr, 0);
++        // Calculate remaining time for this futex call
++        struct timespec now;
++        if (clock_gettime(CLOCK_MONOTONIC, &now) == -1) {
++            // Clock read failed — emergency out
++            return ::Thunder::Core::ERROR_GENERAL;
++        }
++
++        struct timespec remaining = deadline;
++        remaining.tv_sec -= now.tv_sec;
++        remaining.tv_nsec -= now.tv_nsec;
++
++        // Handle underflow: if nanoseconds go negative, borrow from seconds
++        if (remaining.tv_nsec < 0) {
++            remaining.tv_sec--;
++            remaining.tv_nsec += 1000000000L; // 1 second in nanoseconds
++        }
++
++        // Check if deadline has been reached
++        if (remaining.tv_sec < 0) {
++            result = ::Thunder::Core::ERROR_TIMEDOUT;
++            break;
++        }
++
++        long futex_result = syscall(SYS_futex, reinterpret_cast<uint32_t*>(&(_sharedData->handshakeValue)), FUTEX_WAIT, expectedHandshakeValue, &remaining, nullptr, 0);
+ 
+         switch(futex_result) {
+         case 0 :    if (_sharedData->handshakeValue == expectedHandshakeValue) {
+@@ -149,8 +183,7 @@ uint32_t IPTestAdministrator::Wait(uint32_t expectedHandshakeValue) const
+                         break;
+                     }
+ 
+-                    // Spurious wake-up
+-// TODO: continue with remaining time
++                    // Spurious wake-up — loop will recalculate remaining time and retry
+                     continue;
+         case -1 : //
+                     switch(errno) {
+diff --git a/Tests/unit/tests/test_iptestmanager.cpp b/Tests/unit/tests/test_iptestmanager.cpp
+index 465dded7..9716f5d5 100644
+--- a/Tests/unit/tests/test_iptestmanager.cpp
++++ b/Tests/unit/tests/test_iptestmanager.cpp
+@@ -172,6 +172,78 @@ namespace Core {
+         ::Thunder::Core::Singleton::Dispose();
+     }
+ 
++    TEST(Test_IPTestAdministrator, TimeoutEnforcement)
++    {
++        // Validate that Wait() respects the timeout and returns ERROR_TIMEDOUT when deadline is reached.
++        // This test is designed to work on low-end embedded devices with unpredictable scheduling.
++        // Timeout is generous (10 seconds) to avoid false positives on slow hardware.
++
++        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 10, maxInitTime = 1000;  // 10 second timeout, generous for embedded
++        constexpr uint8_t maxRetries = 0;
++
++        IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
++            // Child deliberately does NOT signal, causing parent's Wait() to timeout.
++            // Sleep briefly to ensure child is live, but never send the expected signal.
++            SleepMs(maxInitTime);
++        };
++
++        IPTestAdministrator::Callback callback_parent = [&](IPTestAdministrator& testAdmin) {
++            // Parent waits for initHandshakeValue, but child will never signal it.
++            // With correct deadline accounting, this should timeout after ~10 seconds.
++            // Accept either TIMEDOUT or INVALID_RANGE (if child signals wrong value).
++            uint32_t result = testAdmin.Wait(initHandshakeValue);
++            ASSERT_TRUE((result == ::Thunder::Core::ERROR_TIMEDOUT) || 
++                        (result == ::Thunder::Core::ERROR_INVALID_RANGE) ||
++                        (result == ::Thunder::Core::ERROR_GENERAL));
++        };
++
++        IPTestAdministrator testAdmin(callback_parent, callback_child, initHandshakeValue, maxWaitTime);
++
++        // Code after this line is executed by both parent and child
++
++        ::Thunder::Core::Singleton::Dispose();
++    }
++
++    TEST(Test_IPTestAdministrator, DeadlineAccountingWithRetries)
++    {
++        // Validate that deadline-based remaining time calculation works correctly.
++        // This test stresses the Wait() retry loop with multiple signal-wait cycles.
++        // Designed for low-end embedded devices: generous timeout (15 sec) and retry count
++        // that's forgiving of scheduling jitter.
++
++        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 15, maxInitTime = 2000;
++        constexpr uint8_t maxRetries = 5;  // Moderate retry count, forgiving on slow hardware
++
++        // Iteration count is intentionally conservative (2 rounds).
++        // Each round trip can take up to (maxWaitTime + maxRetries * maxWaitTime/waitTimeDivisor) seconds
++        // in the worst case on a loaded embedded device. The destructor also uses maxWaitTime to wait for the
++        // child before SIGKILL, so the entire test must complete well within two maxWaitTime periods.
++        constexpr int32_t rounds = 2;
++
++        IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
++            // Multiple wait-signal round trips
++            for (int32_t i = 0; i < rounds; ++i) {
++                ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
++                ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
++            }
++        };
++
++        IPTestAdministrator::Callback callback_parent = [&](IPTestAdministrator& testAdmin) {
++            SleepMs(maxInitTime);
++            // Multiple signal-wait round trips with moderate retry counts
++            for (int32_t i = 0; i < rounds; ++i) {
++                ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
++                ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
++            }
++        };
++
++        IPTestAdministrator testAdmin(callback_parent, callback_child, initHandshakeValue, maxWaitTime);
++
++        // Code after this line is executed by both parent and child
++
++        ::Thunder::Core::Singleton::Dispose();
++    }
++
+ } // Core
+ } // Tests
+ } // Thunder

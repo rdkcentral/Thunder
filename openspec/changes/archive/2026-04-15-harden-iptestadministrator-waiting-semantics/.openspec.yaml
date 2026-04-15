@@ -1,0 +1,17 @@
+name: harden-iptestadministrator-waiting-semantics
+description: >
+  Harden IPTestAdministrator wait and teardown timing behavior by fixing timeout
+  unit consistency and making futex wait handling deterministic under spurious
+  wakeups.
+status: completed
+created: "2026-04-14"
+artifacts:
+  proposal.md:
+    type: proposal
+    status: done
+  design.md:
+    type: design
+    status: done
+  tasks.md:
+    type: tasks
+    status: done

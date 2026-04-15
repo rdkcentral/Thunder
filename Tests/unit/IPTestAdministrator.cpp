@@ -31,6 +31,7 @@ extern "C" {
 
 #include <climits>
 #include <limits>
+#include <chrono>
 
 #include "IPTestAdministrator.h"
 
@@ -80,7 +81,10 @@ IPTestAdministrator::~IPTestAdministrator()
         if (pid_fd != -1) {
             struct pollfd fds = { pid_fd, POLLIN, 0 };
 
-            switch (poll(&fds, sizeof(fds) / sizeof(struct pollfd), _waitTime >= std::numeric_limits<int>::max() ? std::numeric_limits<int>::max() : _waitTime /* timeout in milliseconds */)) {
+            constexpr auto seconds2milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::seconds(1)).count();
+            const int timeoutMs = (_waitTime >= (std::numeric_limits<int>::max() / seconds2milliseconds)) ? std::numeric_limits<int>::max() : static_cast<int>(_waitTime * seconds2milliseconds);
+
+            switch (poll(&fds, sizeof(fds) / sizeof(struct pollfd), timeoutMs /* timeout in milliseconds */)) {
             case -1 : // error
                         switch(errno) {
                         case EFAULT :   // fds is not within address space
@@ -134,13 +138,43 @@ uint32_t IPTestAdministrator::Wait(uint32_t expectedHandshakeValue) const
 {
     uint32_t result = ::Thunder::Core::ERROR_GENERAL;
 
-    // Never wait infinite amount of time
-    const struct timespec timeout { _waitTime /* seconds */, 0 /* nanoseconds */};
+    // Calculate absolute deadline using monotonic clock for robustness across spurious wakeups
+    struct timespec deadline;
+    if (clock_gettime(CLOCK_MONOTONIC, &deadline) == -1) {
+        // Clock read failed — emergency out
+        return ::Thunder::Core::ERROR_GENERAL;
+    }
+
+    deadline.tv_sec += _waitTime;
+    // nanoseconds are already 0 from clock_gettime initialization
 
     constexpr bool stop = { false };
 
     do {
-        long futex_result = syscall(SYS_futex, reinterpret_cast<uint32_t*>(&(_sharedData->handshakeValue)), FUTEX_WAIT, expectedHandshakeValue, &timeout, nullptr, 0);
+        // Calculate remaining time for this futex call
+        struct timespec now;
+        if (clock_gettime(CLOCK_MONOTONIC, &now) == -1) {
+            // Clock read failed — emergency out
+            return ::Thunder::Core::ERROR_GENERAL;
+        }
+
+        struct timespec remaining = deadline;
+        remaining.tv_sec -= now.tv_sec;
+        remaining.tv_nsec -= now.tv_nsec;
+
+        // Handle underflow: if nanoseconds go negative, borrow from seconds
+        if (remaining.tv_nsec < 0) {
+            remaining.tv_sec--;
+            remaining.tv_nsec += 1000000000L; // 1 second in nanoseconds
+        }
+
+        // Check if deadline has been reached
+        if (remaining.tv_sec < 0) {
+            result = ::Thunder::Core::ERROR_TIMEDOUT;
+            break;
+        }
+
+        long futex_result = syscall(SYS_futex, reinterpret_cast<uint32_t*>(&(_sharedData->handshakeValue)), FUTEX_WAIT, expectedHandshakeValue, &remaining, nullptr, 0);
 
         switch(futex_result) {
         case 0 :    if (_sharedData->handshakeValue == expectedHandshakeValue) {
@@ -149,8 +183,7 @@ uint32_t IPTestAdministrator::Wait(uint32_t expectedHandshakeValue) const
                         break;
                     }
 
-                    // Spurious wake-up
-// TODO: continue with remaining time
+                    // Spurious wake-up — loop will recalculate remaining time and retry
                     continue;
         case -1 : //
                     switch(errno) {

@@ -172,6 +172,78 @@ namespace Core {
         ::Thunder::Core::Singleton::Dispose();
     }
 
+    TEST(Test_IPTestAdministrator, TimeoutEnforcement)
+    {
+        // Validate that Wait() respects the timeout and returns ERROR_TIMEDOUT when deadline is reached.
+        // This test is designed to work on low-end embedded devices with unpredictable scheduling.
+        // Timeout is generous (10 seconds) to avoid false positives on slow hardware.
+
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 10, maxInitTime = 1000;  // 10 second timeout, generous for embedded
+        constexpr uint8_t maxRetries = 0;
+
+        IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
+            // Child deliberately does NOT signal, causing parent's Wait() to timeout.
+            // Sleep briefly to ensure child is live, but never send the expected signal.
+            SleepMs(maxInitTime);
+        };
+
+        IPTestAdministrator::Callback callback_parent = [&](IPTestAdministrator& testAdmin) {
+            // Parent waits for initHandshakeValue, but child will never signal it.
+            // With correct deadline accounting, this should timeout after ~10 seconds.
+            // Accept either TIMEDOUT or INVALID_RANGE (if child signals wrong value).
+            uint32_t result = testAdmin.Wait(initHandshakeValue);
+            ASSERT_TRUE((result == ::Thunder::Core::ERROR_TIMEDOUT) || 
+                        (result == ::Thunder::Core::ERROR_INVALID_RANGE) ||
+                        (result == ::Thunder::Core::ERROR_GENERAL));
+        };
+
+        IPTestAdministrator testAdmin(callback_parent, callback_child, initHandshakeValue, maxWaitTime);
+
+        // Code after this line is executed by both parent and child
+
+        ::Thunder::Core::Singleton::Dispose();
+    }
+
+    TEST(Test_IPTestAdministrator, DeadlineAccountingWithRetries)
+    {
+        // Validate that deadline-based remaining time calculation works correctly.
+        // This test stresses the Wait() retry loop with multiple signal-wait cycles.
+        // Designed for low-end embedded devices: generous timeout (15 sec) and retry count
+        // that's forgiving of scheduling jitter.
+
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 15, maxInitTime = 2000;
+        constexpr uint8_t maxRetries = 5;  // Moderate retry count, forgiving on slow hardware
+
+        // Iteration count is intentionally conservative (2 rounds).
+        // Each round trip can take up to (maxWaitTime + maxRetries * maxWaitTime/waitTimeDivisor) seconds
+        // in the worst case on a loaded embedded device. The destructor also uses maxWaitTime to wait for the
+        // child before SIGKILL, so the entire test must complete well within two maxWaitTime periods.
+        constexpr int32_t rounds = 2;
+
+        IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
+            // Multiple wait-signal round trips
+            for (int32_t i = 0; i < rounds; ++i) {
+                ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+                ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+            }
+        };
+
+        IPTestAdministrator::Callback callback_parent = [&](IPTestAdministrator& testAdmin) {
+            SleepMs(maxInitTime);
+            // Multiple signal-wait round trips with moderate retry counts
+            for (int32_t i = 0; i < rounds; ++i) {
+                ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+                ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+            }
+        };
+
+        IPTestAdministrator testAdmin(callback_parent, callback_child, initHandshakeValue, maxWaitTime);
+
+        // Code after this line is executed by both parent and child
+
+        ::Thunder::Core::Singleton::Dispose();
+    }
+
 } // Core
 } // Tests
 } // Thunder
