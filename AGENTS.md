@@ -11,8 +11,6 @@ Thunder is a **plugin-based device abstraction framework** for embedded platform
 3. **No exceptions, no STL across ABI boundaries** — Thunder is built with `-fno-exceptions`. RTTI is available but avoid `dynamic_cast` and typeid-dependent patterns across dylib boundaries. COM ref-counting (`AddRef`/`Release`/`Core::ProxyType`) replaces smart pointers at interface boundaries.
 4. **Interfaces are contracts** — a published COM interface is a binary ABI. Design every interface as if the implementation will be replaced and the binary will be deployed independently. It cannot change after publication.
 
----
-
 ## Instruction Files
 
 All model-steering rules live in `.github/instructions/`. Four files are applied automatically by path scope; three apply to all files.
@@ -26,8 +24,6 @@ All model-steering rules live in `.github/instructions/`. Four files are applied
 | `com.instructions.md` | `Source/com/` rules: proxy/stub, Administrator, Communicator, IPC message dispatch | `Source/com/**` (auto-applied) |
 | `plugins.instructions.md` | `Source/plugins/` rules: IPlugin, IShell, JSONRPC, ISubSystem, Channel | `Source/plugins/**` (auto-applied) |
 | `thunder-runtime.instructions.md` | `Source/Thunder/` rules: ServiceMap, Controller, Config, PostMortem, OOP launch | `Source/Thunder/**` (auto-applied) |
-
----
 
 ## Non-Negotiable Cross-Cutting Rules
 
@@ -49,8 +45,6 @@ These rules apply to **every file** in every repo. No exceptions.
 14. **Use `SYSLOG()` / `TRACE()` for all logging** — never call `printf()`, `fprintf()`, or `syslog()` directly. Bypassing the macros breaks log routing.
 15. **`ASSERT()` for invariants, not runtime errors** — use `ASSERT()` to document impossible states; use error codes for recoverable errors. Never use `assert()` from `<cassert>`.
 
----
-
 ## Prohibited Patterns
 
 The model must **never** generate the following, regardless of context:
@@ -68,9 +62,9 @@ The model must **never** generate the following, regardless of context:
 - Modifying the signature, return type, or parameter list of an existing published COM interface method — always extend via a new versioned interface
 - Process-global mutable state outside of `Core::Singleton<T>`
 
----
+## Coding Style Conventions
 
-> For coding style and naming conventions, see the **Coding Style and Conventions** section in `constraints.md`.
+For coding style and naming conventions, see the **Coding Style and Conventions** section in `constraints.md`.
 
 ## When to Ask
 
@@ -81,8 +75,6 @@ Pause and request clarification rather than guessing when:
 - A new feature requires choosing between in-process, split-library, or out-of-process execution mode — the right answer depends on isolation, stability, and deployment constraints
 - The plugin coupling strategy is unclear — whether to use a one-shot `QueryInterfaceByCallsign<T>()` or the persistent `PluginSmartInterfaceType<T>` pattern depends on whether the target can deactivate independently
 - Which thread context a callback, `Initialize()`, or `Deinitialize()` runs on is not evident from the snippet — getting this wrong causes deadlocks
-
----
 
 ## Quick Navigation by Task
 
@@ -97,8 +89,6 @@ For documentation links and source pointers by topic, see `navigation.md`.
 | Work in `Source/com/` | `com.instructions.md` (auto-applied) |
 | Work in `Source/plugins/` | `plugins.instructions.md` (auto-applied) |
 | Work in `Source/Thunder/` | `thunder-runtime.instructions.md` (auto-applied) |
-
----
 
 ## Architecture-First development
 
@@ -137,3 +127,7 @@ Invoke skill '/architecture-brief'.
 -----------------------------------------------------------
 | Thunder | [Thunder](docs/thunder-architecture-brief.md) |
 -----------------------------------------------------------
+
+## Tests
+
+Run tests for any change or update.
