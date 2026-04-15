@@ -7,13 +7,17 @@
 # standalone Thunder daemon.
 #
 # Usage:
-#   1. Link your test executable against thunder_test_support.
+#   1. Link your test executable against thunder_test_support when the test is
+#      built in the same CMake build as Thunder.
 #   2. Use ThunderTestRuntime::Initialize() to start the embedded server.
 #   3. Call JSON-RPC or COM-RPC methods directly against loaded plugins.
 #   4. Call ThunderTestRuntime::Deinitialize() when done.
 #
 # NOTE: PluginHost.cpp is deliberately excluded — it contains main().
 #       The test binary provides its own main() via GTest.
+# NOTE: The install rules below publish only the archive and public header.
+#       They do not export a CMake package target for external find_package()
+#       consumers.
 # ============================================================================
 
 find_package(Threads REQUIRED)

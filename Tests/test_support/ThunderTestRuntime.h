@@ -30,7 +30,8 @@
 //   }
 // ==========================================================================
 
-#include <core/core.h>
+#include <core/Portability.h>
+#include <core/Proxy.h>
 #include <plugins/IShell.h>
 #include <string>
 #include <vector>

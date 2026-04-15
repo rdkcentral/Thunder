@@ -44,5 +44,13 @@ if(UNRAVELLER)
 endif()
 
 if(ENABLE_TEST_RUNTIME)
-    add_subdirectory(test_support)
+    if(UNIX)
+        add_subdirectory(test_support)
+    else()
+        message(FATAL_ERROR
+            "ENABLE_TEST_RUNTIME is supported only on POSIX platforms. "
+            "Tests/test_support currently depends on POSIX-specific temporary "
+            "directory handling."
+        )
+    endif()
 endif()
