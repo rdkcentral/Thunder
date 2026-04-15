@@ -3080,6 +3080,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#why-this-exists" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why This Exists
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#architecture" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3293,10 +3304,21 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#1-cmakeliststxt-for-the-test" class="md-nav__link">
+  <a href="#1-cmakeliststxt-for-the-test-built-in-the-same-thunder-build" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. CMakeLists.txt for the test
+        1. CMakeLists.txt for the test built in the same Thunder build
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#1a-external-consumer-linking-against-the-installed-archive" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1a. External consumer linking against the installed archive
       
     </span>
   </a>
@@ -3467,7 +3489,7 @@
 </tr>
 <tr>
 <td>CMake option</td>
-<td><code>ENABLE_TEST_RUNTIME=ON</code></td>
+<td><code>ENABLE_TEST_RUNTIME=ON</code> (POSIX platforms only)</td>
 </tr>
 <tr>
 <td>Location</td>
@@ -3481,8 +3503,24 @@
 <td>Install paths</td>
 <td><code>${CMAKE_INSTALL_LIBDIR}/libthunder_test_support.a</code>, <code>${CMAKE_INSTALL_INCLUDEDIR}/thunder_test_support/ThunderTestRuntime.h</code></td>
 </tr>
+<tr>
+<td>Installed CMake package</td>
+<td>Not exported; installation publishes the archive and header only</td>
+</tr>
 </tbody>
 </table>
+<hr />
+<h2 id="why-this-exists">Why This Exists</h2>
+<p>This library was added to eliminate the need for repo-local Thunder mock layers in tests.</p>
+<p>Without a reusable embedded Thunder runtime, repositories typically end up recreating enough Thunder behavior locally to get code under test running at all. That usually means carrying custom mocks or shims for host services, COM link behavior, worker-pool setup, factories, module plumbing, JSON-RPC wiring, and other framework-owned pieces.</p>
+<p><code>thunder_test_support</code> replaces that Thunder-specific scaffolding with a reusable in-process Thunder runtime:</p>
+<ul>
+<li>tests link one reusable library instead of maintaining local Thunder mocks</li>
+<li>code under test runs against a real embedded <code>PluginHost::Server</code></li>
+<li>JSON-RPC and COM-RPC calls use real Thunder plumbing rather than hand-built host/service stubs</li>
+<li>consumers no longer need to recreate Thunder host behavior just to exercise their code</li>
+</ul>
+<p>The goal is to stop faking Thunder itself. Tests may still keep mocks for their own non-Thunder dependencies, but the Thunder runtime layer should be provided by this library rather than rebuilt in each repository.</p>
 <hr />
 <h2 id="architecture">Architecture</h2>
 <h3 id="production-thunder-vs-test-support">Production Thunder vs Test Support</h3>
@@ -3555,30 +3593,31 @@
 <span class="nb">endif</span><span class="p">()</span>
 </code></pre></div>
 <p>This follows the same pattern used by other test options (<code>LOADER_TEST</code>, <code>WORKERPOOL_TEST</code>, etc.) — off by default, enabled explicitly.</p>
+<p><code>ENABLE_TEST_RUNTIME</code> is currently supported only on POSIX platforms. CMake rejects it on non-POSIX platforms instead of attempting a partial Windows build.</p>
 <h3 id="2-teststest_supportcmakeliststxt-new">2. <code>Tests/test_support/CMakeLists.txt</code> (New)</h3>
 <p>Builds the <code>thunder_test_support</code> static library. Key design decisions:</p>
 <ul>
 <li><strong>Source files</strong>: Compiles <code>ThunderTestRuntime.cpp</code>, <code>Module.cpp</code>, plus Thunder server sources directly from <code>Source/Thunder/</code> (PluginServer, Controller, SystemInfo, PostMortem, Probe).</li>
 <li><strong>Excludes <code>PluginHost.cpp</code></strong>: This contains <code>main()</code> and would conflict with the test binary's entry point.</li>
-<li><strong>Compile definitions</strong>: Sets <code>APPLICATION_NAME=ThunderTestRuntime</code> and <code>THREADPOOL_COUNT=4</code>.</li>
+<li><strong>Compile definitions</strong>: Sets <code>APPLICATION_NAME=ThunderTestRuntime</code>, <code>MODULE_NAME=ThunderTestRuntime</code>, and <code>THREADPOOL_COUNT=4</code>.</li>
 <li><strong>Public dependencies</strong>: Exposes <code>ThunderCore</code>, <code>ThunderCryptalgo</code>, <code>ThunderCOM</code>, <code>ThunderPlugins</code>, <code>ThunderMessaging</code>, <code>ThunderWebSocket</code>, <code>ThunderCOMProcess</code>, and <code>Threads</code> as PUBLIC link dependencies, so consumers automatically get all required libraries.</li>
 <li><strong>Private dependencies</strong>: <code>CompileSettings</code> is linked PRIVATE to apply Thunder's compile flags without propagating them.</li>
 <li><strong>Conditional features</strong>: Supports <code>WARNING_REPORTING</code>, <code>PROCESSCONTAINERS</code>, and <code>HIBERNATESUPPORT</code> when enabled.</li>
-<li><strong>Install rules</strong>: Installs the <code>.a</code> archive to <code>${CMAKE_INSTALL_LIBDIR}</code> and the header to <code>${CMAKE_INSTALL_INCLUDEDIR}/thunder_test_support/</code>.</li>
+<li><strong>Install rules</strong>: Installs the <code>.a</code> archive to <code>${CMAKE_INSTALL_LIBDIR}</code> and the header to <code>${CMAKE_INSTALL_INCLUDEDIR}/thunder_test_support/</code>. It does not export a <code>thunder_test_support</code> CMake package/target for <code>find_package()</code> consumers.</li>
 </ul>
 <h3 id="3-teststest_supportmodulecpp-new">3. <code>Tests/test_support/Module.cpp</code> (New)</h3>
-<p>Module definition required by Thunder's internal logging/tracing macros. Uses <code>MODULE_NAME_ARCHIVE_DECLARATION</code> instead of <code>MODULE_NAME_DECLARATION</code> because this is a static archive, not a standalone binary. The archive macro only defines the <code>MODULE_NAME</code> string symbol. The full declaration (<code>ModuleBuildRef</code>, <code>GetModuleServices</code>, <code>SetModuleServices</code>) is left to the consumer's own <code>MODULE_NAME_DECLARATION</code>, avoiding duplicate definitions at link time:</p>
-<div class="highlight"><pre><span></span><code><span class="cp">#define MODULE_NAME ThunderTestRuntime</span>
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;core/core.h&gt;</span>
+<p>Module definition required by Thunder's internal logging/tracing macros. Uses <code>MODULE_NAME_ARCHIVE_DECLARATION</code> instead of <code>MODULE_NAME_DECLARATION</code> because this is a static archive, not a standalone binary. The archive macro only defines the <code>MODULE_NAME</code> string symbol. The full declaration (<code>ModuleBuildRef</code>, <code>GetModuleServices</code>, <code>SetModuleServices</code>) is left to the consumer's own <code>MODULE_NAME_DECLARATION</code>, avoiding duplicate definitions at link time. The <code>thunder_test_support</code> target supplies <code>MODULE_NAME=ThunderTestRuntime</code> through target compile definitions, and this translation unit emits the archive-level symbol for that module name:</p>
+<div class="highlight"><pre><span></span><code><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;core/core.h&gt;</span>
 
 <span class="n">MODULE_NAME_ARCHIVE_DECLARATION</span>
 </code></pre></div>
-<p>Consumer binaries (test executables) must provide their own <code>Module.cpp</code> with the full declaration:</p>
+<p>Each final consumer binary (for example, each test executable) must provide exactly one dedicated <code>Module.cpp</code> with the full declaration:</p>
 <div class="highlight"><pre><span></span><code><span class="cp">#define MODULE_NAME MyTestName</span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;core/core.h&gt;</span>
 
 <span class="n">MODULE_NAME_DECLARATION</span><span class="p">(</span><span class="n">BUILD_REFERENCE</span><span class="p">)</span>
 </code></pre></div>
+<p>This is a per-binary requirement, not a per-source-file requirement. Test sources that include <code>ThunderTestRuntime.h</code> do not need to define <code>MODULE_NAME</code> themselves as long as the executable includes one such <code>Module.cpp</code>.</p>
 <h3 id="4-teststest_supportthundertestruntimeh-new">4. <code>Tests/test_support/ThunderTestRuntime.h</code> (New)</h3>
 <p>Public API header. Defines the <code>Thunder::TestCore::ThunderTestRuntime</code> class:</p>
 <table>
@@ -3679,7 +3718,7 @@ Deinitialize()
 <tr>
 <td><code>ENABLE_TEST_RUNTIME</code></td>
 <td><code>OFF</code></td>
-<td>Build the thunder_test_support static library</td>
+<td>Build the thunder_test_support static library on POSIX platforms</td>
 </tr>
 <tr>
 <td><code>BUILD_TESTS</code></td>
@@ -3700,10 +3739,11 @@ cmake<span class="w"> </span>--build<span class="w"> </span>build/Thunder<span c
 <div class="highlight"><pre><span></span><code>&lt;install_prefix&gt;/${CMAKE_INSTALL_LIBDIR}/libthunder_test_support.a
 &lt;install_prefix&gt;/${CMAKE_INSTALL_INCLUDEDIR}/thunder_test_support/ThunderTestRuntime.h
 </code></pre></div></p>
+<p>No <code>thunder_test_support</code> CMake package config or exported target is installed today. External consumers should treat this as an archive-plus-header install and add any required whole-archive/force-load flags themselves.</p>
 <hr />
 <h2 id="usage-guide">Usage Guide</h2>
 <h3 id="writing-a-plugin-integration-test">Writing a Plugin Integration Test</h3>
-<h4 id="1-cmakeliststxt-for-the-test">1. CMakeLists.txt for the test</h4>
+<h4 id="1-cmakeliststxt-for-the-test-built-in-the-same-thunder-build">1. CMakeLists.txt for the test built in the same Thunder build</h4>
 <div class="highlight"><pre><span></span><code><span class="nb">find_package</span><span class="p">(</span><span class="s">Thunder</span><span class="w"> </span><span class="s">REQUIRED</span><span class="p">)</span>
 <span class="nb">find_package</span><span class="p">(</span><span class="s">ThunderDefinitions</span><span class="w"> </span><span class="s">REQUIRED</span><span class="p">)</span>
 
@@ -3718,17 +3758,45 @@ cmake<span class="w"> </span>--build<span class="w"> </span>build/Thunder<span c
 <span class="w">    </span><span class="o">${</span><span class="nv">NAMESPACE</span><span class="o">}</span><span class="s">Definitions::</span><span class="o">${</span><span class="nv">NAMESPACE</span><span class="o">}</span><span class="s">Definitions</span>
 <span class="p">)</span>
 
-<span class="c"># Build the test executable</span>
-<span class="nb">add_executable</span><span class="p">(</span><span class="s">my_plugin_test</span><span class="w"> </span><span class="s">MyPluginTest.cpp</span><span class="p">)</span>
+<span class="c"># Build the test executable. Include one dedicated Module.cpp for this binary.</span>
+<span class="nb">add_executable</span><span class="p">(</span><span class="s">my_plugin_test</span>
+<span class="w">    </span><span class="s">MyPluginTest.cpp</span>
+<span class="w">    </span><span class="s">tests/Module.cpp</span>
+<span class="p">)</span>
 <span class="nb">target_link_libraries</span><span class="p">(</span><span class="s">my_plugin_test</span><span class="w"> </span><span class="s">PRIVATE</span>
 <span class="w">    </span><span class="s">thunder_test_support</span>
 <span class="w">    </span><span class="s">gmock_main</span>
 <span class="w">    </span><span class="o">${</span><span class="nv">NAMESPACE</span><span class="o">}</span><span class="s">Definitions::</span><span class="o">${</span><span class="nv">NAMESPACE</span><span class="o">}</span><span class="s">Definitions</span>
 <span class="p">)</span>
 </code></pre></div>
+<p>Example <code>tests/Module.cpp</code> for the test executable:</p>
+<div class="highlight"><pre><span></span><code><span class="cp">#define MODULE_NAME MyPluginTest</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;core/core.h&gt;</span>
+
+<span class="n">MODULE_NAME_DECLARATION</span><span class="p">(</span><span class="n">BUILD_REFERENCE</span><span class="p">)</span>
+</code></pre></div>
 <blockquote>
-<p><strong>Note</strong>: The <code>thunder_test_support</code> target carries <code>INTERFACE</code> link options that automatically enforce whole-archive semantics for its own archive. On Apple this uses <code>-Wl,-force_load,...</code>; on Linux/Android with GNU/Clang-family toolchains it uses <code>--whole-archive</code> / <code>--no-whole-archive</code>. This ensures Thunder's static initializers (<code>MODULE_NAME_DECLARATION</code>, <code>SERVICE_REGISTRATION</code>) are preserved without the consumer needing to specify linker flags manually when linking against the CMake target. Consumers linking against the <code>.a</code> file by path (for example in external repos) still need to apply the appropriate platform-specific whole-archive/force-load flags themselves.</p>
+<p><strong>Note</strong>: The <code>thunder_test_support</code> target and its <code>INTERFACE</code> whole-archive link options are available only to targets built in the same CMake project as Thunder with <code>ENABLE_TEST_RUNTIME=ON</code>. They are not exported by the install rules. External repositories that consume the installed archive must link the <code>.a</code> file explicitly and apply the appropriate platform-specific whole-archive/force-load flags themselves.</p>
 </blockquote>
+<h4 id="1a-external-consumer-linking-against-the-installed-archive">1a. External consumer linking against the installed archive</h4>
+<div class="highlight"><pre><span></span><code><span class="nb">find_package</span><span class="p">(</span><span class="s">Thunder</span><span class="w"> </span><span class="s">REQUIRED</span><span class="p">)</span>
+<span class="nb">find_package</span><span class="p">(</span><span class="s">ThunderDefinitions</span><span class="w"> </span><span class="s">REQUIRED</span><span class="p">)</span>
+
+<span class="nb">add_executable</span><span class="p">(</span><span class="s">my_plugin_test</span><span class="w"> </span><span class="s">MyPluginTest.cpp</span><span class="p">)</span>
+
+<span class="nb">target_include_directories</span><span class="p">(</span><span class="s">my_plugin_test</span><span class="w"> </span><span class="s">PRIVATE</span>
+<span class="w">    </span><span class="s">/path/to/install/</span><span class="o">${</span><span class="nv">CMAKE_INSTALL_INCLUDEDIR</span><span class="o">}</span><span class="s">/thunder_test_support</span>
+<span class="p">)</span>
+
+<span class="nb">target_link_libraries</span><span class="p">(</span><span class="s">my_plugin_test</span><span class="w"> </span><span class="s">PRIVATE</span>
+<span class="w">    </span><span class="s">/path/to/install/</span><span class="o">${</span><span class="nv">CMAKE_INSTALL_LIBDIR</span><span class="o">}</span><span class="s">/libthunder_test_support.a</span>
+<span class="w">    </span><span class="s">gmock_main</span>
+<span class="w">    </span><span class="o">${</span><span class="nv">NAMESPACE</span><span class="o">}</span><span class="s">Definitions::</span><span class="o">${</span><span class="nv">NAMESPACE</span><span class="o">}</span><span class="s">Definitions</span>
+<span class="p">)</span>
+
+<span class="c"># Add the platform-specific whole-archive / force-load option for</span>
+<span class="c"># libthunder_test_support.a here when linking from an external project.</span>
+</code></pre></div>
 <h4 id="2-test-fixture">2. Test fixture</h4>
 <div class="highlight"><pre><span></span><code><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;gtest/gtest.h&gt;</span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;ThunderTestRuntime.h&quot;</span>
@@ -3827,7 +3895,7 @@ cmake<span class="w"> </span>--build<span class="w"> </span>build/Thunder<span c
 <p>A static archive ensures that all Thunder server symbols are available to the test binary at link time. Shared libraries would require careful <code>RPATH</code> management and could conflict with the installed Thunder daemon libraries.</p>
 <h3 id="why-whole-archive-semantics">Why whole-archive semantics?</h3>
 <p>Thunder uses static initializers extensively (<code>MODULE_NAME_DECLARATION</code>, <code>SERVICE_REGISTRATION</code>, singletons). Without whole-archive semantics, the linker would discard these symbols because the test binary doesn't reference them directly. Whole-archive/force-load style linker options force all object files from the archive to be included.</p>
-<p>This is enforced automatically via <code>target_link_options(INTERFACE)</code> on the CMake target, scoped to the archive using <code>$&lt;TARGET_FILE:...&gt;</code> so it doesn't affect other libraries on the link line. The exact linker option is platform-dependent: Apple uses <code>-Wl,-force_load,...</code>, while Linux/Android with GNU/Clang-family toolchains use <code>--whole-archive</code> / <code>--no-whole-archive</code>. Consumers linking against the CMake target get this automatically; consumers linking against the <code>.a</code> file by path must add the appropriate platform-specific flags manually.</p>
+<p>For in-tree Thunder builds, this is enforced automatically via <code>target_link_options(INTERFACE)</code> on the local CMake target, scoped to the archive using <code>$&lt;TARGET_FILE:...&gt;</code> so it doesn't affect other libraries on the link line. The exact linker option is platform-dependent: Apple uses <code>-Wl,-force_load,...</code>, while Linux/Android with GNU/Clang-family toolchains use <code>--whole-archive</code> / <code>--no-whole-archive</code>. Because the install rules do not export a <code>thunder_test_support</code> CMake target, external consumers of the installed <code>.a</code> file must add the appropriate platform-specific flags manually.</p>
 <h3 id="why-exclude-pluginhostcpp">Why exclude <code>PluginHost.cpp</code>?</h3>
 <p><code>PluginHost.cpp</code> contains:
 - <code>main()</code> — conflicts with GTest's <code>main()</code>
@@ -3848,7 +3916,7 @@ cmake<span class="w"> </span>--build<span class="w"> </span>build/Thunder<span c
 <hr />
 <h2 id="smoke-test">Smoke Test</h2>
 <p>A self-contained smoke test (<code>Tests/test_support/tests/SmokeTest.cpp</code>) is included with the library. It verifies that the library links, boots, and can exercise JSON-RPC against the built-in Controller plugin — no external plugin <code>.so</code> files needed.</p>
-<p>The smoke test is built automatically when <code>ENABLE_TEST_RUNTIME=ON</code> and GTest is available. It includes a <code>Module.cpp</code> with <code>MODULE_NAME_DECLARATION(BUILD_REFERENCE)</code> — required because the library uses <code>MODULE_NAME_ARCHIVE_DECLARATION</code>. It covers:</p>
+<p>The smoke test is built automatically when <code>ENABLE_TEST_RUNTIME=ON</code> and GTest is available. The smoke-test executable includes one dedicated <code>Module.cpp</code> with <code>MODULE_NAME_DECLARATION(BUILD_REFERENCE)</code> — required because the library uses <code>MODULE_NAME_ARCHIVE_DECLARATION</code>. <code>SmokeTest.cpp</code> itself does not need to define <code>MODULE_NAME</code>. It covers:</p>
 <ul>
 <li><strong>ControllerStatus</strong> — calls <code>Controller.1.status</code> and verifies a non-empty response containing "Controller"</li>
 <li><strong>ControllerSubsystems</strong> — calls <code>Controller.1.subsystems</code> and verifies a non-empty response</li>
