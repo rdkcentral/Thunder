@@ -3,14 +3,13 @@
         {
             "name": "Linux",
             "includePath": [
-                "${workspaceFolder}/**",
-                "${config:thunder.installPath}/usr/include/**"
+                "${workspaceFolder}/**"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/gcc",
             "cStandard": "c11",
-            "cppStandard": "gnu++14",
-            "intelliSenseMode": "clang-x64",
+            "cppStandard": "c++11",
+            "intelliSenseMode": "linux-gcc-arm64",
             "configurationProvider": "ms-vscode.cmake-tools"
         }
     ],
