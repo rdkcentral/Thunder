@@ -6,6 +6,8 @@
 // No external plugin .so files are needed.
 // ============================================================================
 
+#define MODULE_NAME SmokeTest
+
 #include <gtest/gtest.h>
 #include "ThunderTestRuntime.h"
 

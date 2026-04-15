@@ -26,60 +26,129 @@ namespace TestCore {
         Deinitialize();
     }
 
-    void ThunderTestRuntime::CreateDirectories() const
+    bool ThunderTestRuntime::CreateDirectories() const
     {
-        Core::Directory(_tempDir.c_str()).Create();
-        Core::Directory((_tempDir + "persistent/").c_str()).Create();
-        Core::Directory((_tempDir + "volatile/").c_str()).Create();
-        Core::Directory((_tempDir + "data/").c_str()).Create();
+        const string persistentPath = _tempDir + "persistent/";
+        const string volatilePath = _tempDir + "volatile/";
+        const string dataPath = _tempDir + "data/";
+
+        const bool created =
+            Core::Directory(persistentPath.c_str()).Create() &&
+            Core::Directory(volatilePath.c_str()).Create() &&
+            Core::Directory(dataPath.c_str()).Create();
+
+        if (created == false) {
+            TRACE_L1("ThunderTestRuntime: Failed to create temp directory tree at '%s'", _tempDir.c_str());
+        }
+
+        return created;
     }
 
     void ThunderTestRuntime::CleanupDirectories() const
     {
         if (!_tempDir.empty()) {
             Core::Directory(_tempDir.c_str()).Destroy();
+
+            // Core::Directory::Destroy() does not remove the directory if the path
+            // ends with a trailing separator. Normalize the path before calling it.
+            string path = _tempDir;
+            while (!path.empty() && (path.back() == '/' || path.back() == '\\')) {
+                path.pop_back();
+            }
+            if (!path.empty()) {
+                Core::Directory(path.c_str()).Destroy();
+            }
         }
     }
 
-    // Build a minimal Thunder JSON config from the plugin list.
-    // Uses port 0 (OS-assigned) and binds to localhost only.
-    // Helper: JSON-escape a string value and return it quoted (e.g. "foo\"bar" → "\"foo\\\"bar\"")
-    // Uses Core::JSON::String serialization to handle escaping correctly.
-    static string JsonEscape(const string& value)
+    // Helper to escape a string for safe inclusion as a JSON string value.
+    // It escapes quotes, backslashes, and control characters (< 0x20).
+    static std::string JsonEscape(const std::string& input)
     {
-        Core::JSON::String json;
-        json = value;
-        string result;
-        json.ToString(result);
-        return result;
+        std::string output;
+        output.reserve(input.size());
+        const char* hex = "0123456789abcdef";
+
+        for (unsigned char c : input) {
+            switch (c) {
+            case '"':
+                output += "\\\"";
+                break;
+            case '\\':
+                output += "\\\\";
+                break;
+            case '\b':
+                output += "\\b";
+                break;
+            case '\f':
+                output += "\\f";
+                break;
+            case '\n':
+                output += "\\n";
+                break;
+            case '\r':
+                output += "\\r";
+                break;
+            case '\t':
+                output += "\\t";
+                break;
+            default:
+                if (c < 0x20) {
+                    output += "\\u00";
+                    output += hex[(c >> 4) & 0x0F];
+                    output += hex[c & 0x0F];
+                } else {
+                    output += static_cast<char>(c);
+                }
+                break;
+            }
+        }
+
+        return output;
+    }
+
+    static const char* ToStartModeString(const ThunderTestRuntime::PluginConfig::StartMode startMode)
+    {
+        switch (startMode) {
+        case ThunderTestRuntime::PluginConfig::StartMode::Activated:
+            return "Activated";
+        case ThunderTestRuntime::PluginConfig::StartMode::Deactivated:
+            return "Deactivated";
+        case ThunderTestRuntime::PluginConfig::StartMode::Unavailable:
+            return "Unavailable";
+        default:
+            return "Activated";
+        }
     }
 
     string ThunderTestRuntime::BuildConfigJSON(const std::vector<PluginConfig>& plugins,
                                                 const string& systemPath,
                                                 const string& proxyStubPath) const
     {
+                const string communicatorPath = _tempDir + "communicator|0777";
+
         std::ostringstream json;
         json << "{"
              << "\"port\":0,"
              << "\"binding\":\"127.0.0.1\","
              << "\"idletime\":180,"
-             << "\"persistentpath\":" << JsonEscape(_tempDir + "persistent/") << ","
-             << "\"volatilepath\":" << JsonEscape(_tempDir + "volatile/") << ","
-             << "\"datapath\":" << JsonEscape(_tempDir + "data/") << ","
-             << "\"systempath\":" << JsonEscape(systemPath) << ","
-             << "\"proxystubpath\":" << JsonEscape(proxyStubPath) << ","
-             << "\"communicator\":" << JsonEscape(_tempDir + "communicator") << ","
+               << "\"persistentpath\":\"" << JsonEscape(_tempDir + "persistent/") << "\","
+               << "\"volatilepath\":\"" << JsonEscape(_tempDir + "volatile/") << "\","
+               << "\"datapath\":\"" << JsonEscape(_tempDir + "data/") << "\","
+               << "\"systempath\":\"" << JsonEscape(systemPath) << "\","
+               << "\"proxystubpath\":\"" << JsonEscape(proxyStubPath) << "\","
+                             << "\"communicator\":\"" << JsonEscape(communicatorPath) << "\","
              << "\"plugins\":[";
 
         for (size_t i = 0; i < plugins.size(); ++i) {
             const auto& p = plugins[i];
             if (i > 0) json << ",";
             json << "{"
-                 << "\"callsign\":" << JsonEscape(p.callsign) << ","
-                 << "\"locator\":" << JsonEscape(p.locator) << ","
-                 << "\"classname\":" << JsonEscape(p.classname) << ","
+                  << "\"callsign\":\"" << JsonEscape(p.callsign) << "\","
+                  << "\"locator\":\"" << JsonEscape(p.locator) << "\","
+                  << "\"classname\":\"" << JsonEscape(p.classname) << "\","
                  << "\"startuporder\":" << p.startuporder << ","
-                 << "\"autostart\":" << (p.autostart ? "true" : "false");
+                 << "\"startmode\":\"" << ToStartModeString(p.startmode) << "\"";
 
             if (!p.configuration.empty()) {
                 json << ",\"configuration\":" << p.configuration;
@@ -108,7 +177,11 @@ namespace TestCore {
         }
         _tempDir = string(tempResult) + "/";
 
-        CreateDirectories();
+        if (CreateDirectories() == false) {
+            CleanupDirectories();
+            _tempDir.clear();
+            return Core::ERROR_OPENING_FAILED;
+        }
 
         // Determine system path for plugin .so files
         string sysPath = systemPath;

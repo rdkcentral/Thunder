@@ -100,21 +100,37 @@ if(HIBERNATESUPPORT)
         HIBERNATE_SUPPORT_ENABLED=1)
 endif()
 
-# Enforce --whole-archive for this target so consumers automatically pull in
+# Enforce whole-archive semantics for this target so consumers automatically pull in
 # Thunder's static initializers (MODULE_NAME_DECLARATION, SERVICE_REGISTRATION).
-# Scoped to this archive only via $<TARGET_FILE:...> — won't affect other libs.
-target_link_options(thunder_test_support
-    INTERFACE
-        -Wl,--whole-archive $<TARGET_FILE:thunder_test_support> -Wl,--no-whole-archive
-)
+# Use linker-specific flags only on supported platforms/toolchains.
+if(APPLE)
+    target_link_options(thunder_test_support
+        INTERFACE
+            "-Wl,-force_load,$<TARGET_FILE:thunder_test_support>"
+    )
+elseif((CMAKE_SYSTEM_NAME STREQUAL "Linux" OR CMAKE_SYSTEM_NAME STREQUAL "Android") AND
+       (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang"))
+    # Scoped to this archive only via $<TARGET_FILE:...> — won't affect other libs.
+    target_link_options(thunder_test_support
+        INTERFACE
+            -Wl,--whole-archive $<TARGET_FILE:thunder_test_support> -Wl,--no-whole-archive
+    )
+else()
+    message(WARNING
+        "Automatic whole-archive linking for thunder_test_support is not configured for "
+        "${CMAKE_SYSTEM_NAME} with ${CMAKE_CXX_COMPILER_ID}. Consumers may need to link "
+        "the archive with platform-specific whole-archive/force-load options to ensure "
+        "Thunder static initializers are included."
+    )
+endif()
 
 # --- Install rules ---
 install(TARGETS thunder_test_support
-    ARCHIVE DESTINATION lib
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
 
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/ThunderTestRuntime.h
-    DESTINATION include/thunder_test_support
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/thunder_test_support
 )
 
 add_subdirectory(tests)

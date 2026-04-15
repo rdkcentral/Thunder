@@ -30,10 +30,6 @@
 //   }
 // ==========================================================================
 
-#ifndef MODULE_NAME
-#define MODULE_NAME Application
-#endif
-
 #include <core/core.h>
 #include <plugins/IShell.h>
 #include <string>
@@ -53,10 +49,16 @@ namespace TestCore {
         // Describes a plugin to be loaded by the test runtime.
         // Maps directly to a Thunder plugin JSON config entry.
         struct PluginConfig {
+            enum class StartMode {
+                Activated,
+                Deactivated,
+                Unavailable
+            };
+
             string callsign;        // Plugin callsign (e.g. "Counter")
             string locator;         // Shared library name (e.g. "libThunderCounterImplementation.so")
             string classname;       // Class name registered via SERVICE_REGISTRATION
-            bool autostart = true;  // Whether to auto-activate on startup
+            StartMode startmode = StartMode::Activated; // Thunder plugin start mode
             int startuporder = 50;  // Activation priority (lower = earlier)
             string configuration;   // Optional JSON object for plugin-specific config
         };
@@ -106,7 +108,7 @@ namespace TestCore {
 
     private:
         string BuildConfigJSON(const std::vector<PluginConfig>& plugins, const string& systemPath, const string& proxyStubPath) const;
-        void CreateDirectories() const;
+        bool CreateDirectories() const;
         void CleanupDirectories() const;
 
         PluginHost::Config* _config = nullptr;

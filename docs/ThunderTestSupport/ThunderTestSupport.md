@@ -12,7 +12,7 @@ The **thunder_test_support** library enables in-process integration testing of T
 | CMake option | `ENABLE_TEST_RUNTIME=ON` |
 | Location | `Tests/test_support/` |
 | Public header | `ThunderTestRuntime.h` |
-| Install paths | `lib/libthunder_test_support.a`, `include/thunder_test_support/ThunderTestRuntime.h` |
+| Install paths | `${CMAKE_INSTALL_LIBDIR}/libthunder_test_support.a`, `${CMAKE_INSTALL_INCLUDEDIR}/thunder_test_support/ThunderTestRuntime.h` |
 
 ---
 
@@ -34,11 +34,12 @@ The **thunder_test_support** library enables in-process integration testing of T
 │  │  ├── PluginServer             │  │     │  │  │   ├── Controller             │    │
 │  │  ├── SystemInfo               │  │     │  │  │   ├── PluginServer           │    │
 │  │  └── HTTP/WS Listener         │  │     │  │  │   ├── SystemInfo             │    │
-│  │        ↓                      │  │     │  │  │   └── (no HTTP listener)     │    │
+│  │        ↓                      │  │     │  │  │   └── HTTP/WS Listener       │    │
 │  │  Plugin .so (dynamic load)    │  │     │  │  └── Plugin .so (dynamic load)  │    │
 │  └───────────────────────────────┘  │     │  └─────────────────────────────────┘    │
 │                                     │     │                                         │
-│  Communication: HTTP/WS/COMRPC      │     │  Communication: Direct in-process calls │
+│  Communication: HTTP/WS/COMRPC      │     │  Communication: HTTP/WS/COMRPC available,
+│                                     │     │  tests typically use direct in-process calls │
 └─────────────────────────────────────┘     └─────────────────────────────────────────┘
 ```
 
@@ -54,7 +55,9 @@ In production, Thunder runs as a standalone daemon (`PluginHost.cpp` → `main()
 
 4. **Generates config on the fly** — instead of reading `/etc/Thunder/config.json`, the runtime builds a minimal JSON config programmatically and writes it to a temporary directory.
 
-5. **Plugins load normally** — plugin `.so` files are still loaded dynamically via `dlopen()`, exactly as in production. The `systempath` config entry points to the directory containing plugin shared libraries.
+5. **Still opens the listener** — `PluginHost::Server::Open()` still starts the HTTP/WebSocket listener, typically bound to `127.0.0.1` on an ephemeral port in the test runtime.
+
+6. **Plugins load normally** — plugin `.so` files are still loaded dynamically via `dlopen()`, exactly as in production. The `systempath` config entry points to the directory containing plugin shared libraries.
 
 ---
 
@@ -102,7 +105,7 @@ Builds the `thunder_test_support` static library. Key design decisions:
 - **Public dependencies**: Exposes `ThunderCore`, `ThunderCryptalgo`, `ThunderCOM`, `ThunderPlugins`, `ThunderMessaging`, `ThunderWebSocket`, `ThunderCOMProcess`, and `Threads` as PUBLIC link dependencies, so consumers automatically get all required libraries.
 - **Private dependencies**: `CompileSettings` is linked PRIVATE to apply Thunder's compile flags without propagating them.
 - **Conditional features**: Supports `WARNING_REPORTING`, `PROCESSCONTAINERS`, and `HIBERNATESUPPORT` when enabled.
-- **Install rules**: Installs the `.a` archive to `lib/` and the header to `include/thunder_test_support/`.
+- **Install rules**: Installs the `.a` archive to `${CMAKE_INSTALL_LIBDIR}` and the header to `${CMAKE_INSTALL_INCLUDEDIR}/thunder_test_support/`.
 
 ### 3. `Tests/test_support/Module.cpp` (New)
 
@@ -130,7 +133,7 @@ Public API header. Defines the `Thunder::TestCore::ThunderTestRuntime` class:
 
 | Member | Description |
 |--------|-------------|
-| `PluginConfig` (struct) | Describes a plugin to load: callsign, locator (.so name), classname, autostart, startuporder, configuration JSON |
+| `PluginConfig` (struct) | Describes a plugin to load: callsign, locator (.so name), classname, startmode, startuporder, configuration JSON. `startmode` supports Thunder's `Activated`, `Deactivated`, and `Unavailable` states. |
 | `Initialize()` | Boots the embedded server with given plugins, system path, and proxy stub path |
 | `InvokeJSONRPC()` | Calls a JSON-RPC method synchronously via in-process `IDispatcher::Invoke()`. Callsign is derived from the method string. |
 | `GetInterface<T>()` | Template: obtains a COM-RPC interface from a plugin via `QueryInterface<T>()` |
@@ -155,6 +158,7 @@ Initialize()
             ├── Set up security
             ├── ServiceMap::Open()
             ├── Activate Controller plugin
+            ├── Open HTTP/WebSocket listener
             └── Activate auto-start plugins
 
 Deinitialize()
@@ -179,7 +183,7 @@ InvokeJSONRPC("<Callsign>.1.<method>", params, response)
     └── dispatcher->Invoke(0, 0, "", method, params, response)
 ```
 
-This calls the plugin's JSON-RPC handler directly in-process, with zero network overhead.
+This calls the plugin's JSON-RPC handler directly in-process, with zero network overhead. The HTTP/WebSocket listener is still started by `Server::Open()`, but the helper API does not route JSON-RPC through it.
 
 #### COM-RPC Interface Access
 
@@ -217,8 +221,8 @@ cmake --build build/Thunder --target install -j$(nproc)
 
 After installation, the library and header are available at:
 ```
-<install_prefix>/lib/libthunder_test_support.a
-<install_prefix>/include/thunder_test_support/ThunderTestRuntime.h
+<install_prefix>/${CMAKE_INSTALL_LIBDIR}/libthunder_test_support.a
+<install_prefix>/${CMAKE_INSTALL_INCLUDEDIR}/thunder_test_support/ThunderTestRuntime.h
 ```
 
 ---
@@ -253,7 +257,7 @@ target_link_libraries(my_plugin_test PRIVATE
 )
 ```
 
-> **Note**: The `thunder_test_support` target carries `INTERFACE` link options that automatically apply `--whole-archive` scoped to its own archive. This ensures Thunder's static initializers (`MODULE_NAME_DECLARATION`, `SERVICE_REGISTRATION`) are preserved without the consumer needing to specify linker flags manually. This works when linking against the CMake target directly. When linking against the `.a` file by path (e.g. in external repos), manual `--whole-archive` / `--no-whole-archive` flags are still required.
+> **Note**: The `thunder_test_support` target carries `INTERFACE` link options that automatically enforce whole-archive semantics for its own archive. On Apple this uses `-Wl,-force_load,...`; on Linux/Android with GNU/Clang-family toolchains it uses `--whole-archive` / `--no-whole-archive`. This ensures Thunder's static initializers (`MODULE_NAME_DECLARATION`, `SERVICE_REGISTRATION`) are preserved without the consumer needing to specify linker flags manually when linking against the CMake target. Consumers linking against the `.a` file by path (for example in external repos) still need to apply the appropriate platform-specific whole-archive/force-load flags themselves.
 
 #### 2. Test fixture
 
@@ -275,7 +279,7 @@ protected:
         cfg.callsign     = "MyPlugin";
         cfg.locator       = "libThunderMyPluginImpl.so";
         cfg.classname     = "MyPlugin";
-        cfg.autostart     = true;
+        cfg.startmode     = TestCore::ThunderTestRuntime::PluginConfig::StartMode::Activated;
         cfg.startuporder  = 50;
         cfg.configuration = R"({"root":{"mode":"Off","locator":"libThunderMyPluginImpl.so"}})";
         plugins.push_back(cfg);
@@ -366,11 +370,11 @@ The library is designed for use in GitHub Actions workflows. A typical workflow:
 
 A static archive ensures that all Thunder server symbols are available to the test binary at link time. Shared libraries would require careful `RPATH` management and could conflict with the installed Thunder daemon libraries.
 
-### Why `--whole-archive`?
+### Why whole-archive semantics?
 
-Thunder uses static initializers extensively (`MODULE_NAME_DECLARATION`, `SERVICE_REGISTRATION`, singletons). Without `--whole-archive`, the linker would discard these symbols because the test binary doesn't reference them directly. The `--whole-archive` flag forces all object files from the archive to be included.
+Thunder uses static initializers extensively (`MODULE_NAME_DECLARATION`, `SERVICE_REGISTRATION`, singletons). Without whole-archive semantics, the linker would discard these symbols because the test binary doesn't reference them directly. Whole-archive/force-load style linker options force all object files from the archive to be included.
 
-This is enforced automatically via `target_link_options(INTERFACE)` on the CMake target, scoped to the archive using `$<TARGET_FILE:...>` so it doesn't affect other libraries on the link line. Consumers linking against the CMake target get this for free. Consumers linking against the `.a` file by path must add the flags manually.
+This is enforced automatically via `target_link_options(INTERFACE)` on the CMake target, scoped to the archive using `$<TARGET_FILE:...>` so it doesn't affect other libraries on the link line. The exact linker option is platform-dependent: Apple uses `-Wl,-force_load,...`, while Linux/Android with GNU/Clang-family toolchains use `--whole-archive` / `--no-whole-archive`. Consumers linking against the CMake target get this automatically; consumers linking against the `.a` file by path must add the appropriate platform-specific flags manually.
 
 ### Why exclude `PluginHost.cpp`?
 
@@ -389,6 +393,12 @@ This is enforced automatically via `target_link_options(INTERFACE)` on the CMake
 ### Why port 0?
 
 Using port 0 in the config tells the OS to assign an available port, avoiding conflicts when multiple test processes run simultaneously.
+
+This is convenient for parallel runs, but it has an important caveat in the current implementation: the assigned port is not propagated back into `PluginHost::Config`, so Thunder's configured accessor/URL can still report port `0` even though the listener is actually bound to an ephemeral port.
+
+In practice, this is usually acceptable for `thunder_test_support` because tests typically invoke JSON-RPC in-process via `IDispatcher::Invoke()` instead of routing through the HTTP listener. However, it can be confusing when inspecting the reported accessor URL and may break plugins or tests that depend on the configured port being accurate.
+
+A more complete solution would be to either choose a free port before building the config, or query the bound port after `Server::Open()` and update the config/binder/accessor state accordingly.
 
 ---
 
