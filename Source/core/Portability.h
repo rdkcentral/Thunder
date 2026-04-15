@@ -880,7 +880,7 @@ namespace Thunder {
 
             ~IUnknown() override = default;
 
-            virtual void* QueryInterface(const uint32_t interfaceNumber) = 0;
+            virtual void* QueryInterface(const uint32_t interfaceNumber, const bool asIUnknown = false) = 0;
 
             template <typename REQUESTEDINTERFACE>
             REQUESTEDINTERFACE* QueryInterface()

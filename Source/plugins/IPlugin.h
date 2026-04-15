@@ -52,9 +52,40 @@ namespace PluginHost {
             //! Whenever a plugin changes state, this is reported to an observer so proper actions could be taken
             //! on this state change.
             //! @}
-            virtual void Activated(const string& callsign, IShell* plugin) = 0;
-            virtual void Deactivated(const string& callsign, IShell* plugin) = 0;
-            virtual void Unavailable(const string& callsign, IShell* plugin) = 0;
+            //! 
+  
+            // @stubgen:omit
+            virtual void Activated(const string&, IShell*) 
+            {
+                ASSERT(false);
+            }
+            // @stubgen:omit
+            virtual void Deactivated(const string&, IShell*)
+            {
+                ASSERT(false);
+            }
+            // @stubgen:omit
+            virtual void Unavailable(const string&, IShell*)
+            {
+                ASSERT(false);
+            }
+
+            virtual Core::hresult CancelableActivated(const string& callsign, IShell* plugin)
+            {
+                Activated(callsign, plugin);
+                return Core::ERROR_NONE; 
+            }
+            virtual Core::hresult CancelableDeactivated(const string& callsign, IShell* plugin)
+            {
+                Deactivated(callsign, plugin);
+                return Core::ERROR_NONE;
+            }
+            virtual Core::hresult CancelableUnavailable(const string& callsign, IShell* plugin)
+            {
+                Unavailable(callsign, plugin);
+                return Core::ERROR_NONE;
+            }
+
         };
 
         struct ILifeTime : virtual public Core::IUnknown {

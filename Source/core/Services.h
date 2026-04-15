@@ -381,46 +381,52 @@ static Thunder::Core::PublishedServiceType<ACTUALCLASS> ServiceMetadata_##ACTUAL
 #undef END_INTERFACE_MAP
 #endif
 
-#define BEGIN_INTERFACE_MAP(ACTUALCLASS)                                     \
-    void* QueryInterface(const uint32_t interfaceNumber) override            \
-    {                                                                        \
-        if (interfaceNumber == Thunder::Core::IUnknown::ID) {                         \
-            AddRef();                                                        \
-            return (static_cast<void*>(static_cast<Thunder::Core::IUnknown*>(this))); \
+#define BEGIN_INTERFACE_MAP(ACTUALCLASS)                                                                \
+    void* QueryInterface(const uint32_t interfaceNumber, const bool asIUnknown VARIABLE_IS_NOT_USED = false) override        \
+    {                                                                                                   \
+        if (interfaceNumber == Thunder::Core::IUnknown::ID) {                                           \
+            AddRef();                                                                                   \
+            return static_cast<void*>(static_cast<Thunder::Core::IUnknown*>(this));                     \
         }
 
-#define INTERFACE_ENTRY(TYPE)                                  \
-    else if (interfaceNumber == TYPE::ID)                      \
-    {                                                          \
-        AddRef();                                              \
-        return (static_cast<void*>(static_cast<TYPE*>(this))); \
+#define INTERFACE_ENTRY(TYPE)                                                                                                                           \
+    else if (interfaceNumber == TYPE::ID)                                                                                                               \
+    {                                                                                                                                                   \
+        AddRef();                                                                                                                                       \
+        if(asIUnknown == false)                                                                                                                         \
+            return static_cast<void*>(static_cast<TYPE*>(this));                                                                                        \
+        else                                                                                                                                            \
+            return static_cast<void*>(static_cast<Thunder::Core::IUnknown*>(this));                                                                              \
     }
 
-#define INTERFACE_AGGREGATE(TYPE, AGGREGATE)              \
-    else if (interfaceNumber == TYPE::ID)                 \
-    {                                                     \
-        if (AGGREGATE != nullptr) {                       \
-            return (AGGREGATE->QueryInterface(TYPE::ID)); \
-        }                                                 \
-        return (nullptr);                                 \
+#define INTERFACE_AGGREGATE(TYPE, AGGREGATE)                                           \
+    else if (interfaceNumber == TYPE::ID)                                              \
+    {                                                                                  \
+        if (AGGREGATE != nullptr) {                                                    \
+            return AGGREGATE->QueryInterface(TYPE::ID, asIUnknown);                    \
+        }                                                                              \
+        return nullptr;                                                                \
     }
 
 
-#define INTERFACE_RELAY(TYPE, RELAY)                               \
-    else if (interfaceNumber == TYPE::ID) {                        \
-        if (RELAY != nullptr) {                                    \
-           AddRef();                                               \
-           return (static_cast<void*>(static_cast<TYPE*>(this)));  \
-        }                                                          \
-        return (nullptr);                                          \
+#define INTERFACE_RELAY(TYPE, RELAY)                                                                                                                      \
+    else if (interfaceNumber == TYPE::ID) {                                                                                                               \
+        if (RELAY != nullptr) {                                                                                                                           \
+           AddRef();                                                                                                                                      \
+           if (asIUnknown == false)                                                                                                                       \
+               return static_cast<void*>(static_cast<TYPE*>(this));                                                                                       \
+           else                                                                                                                                           \
+               return static_cast<void*>(static_cast<Thunder::Core::IUnknown*>(this));                                                                             \
+        }                                                                                                                                                 \
+        return nullptr;                                                                                                                                   \
     }
 
-#define NEXT_INTERFACE_MAP(BASECLASS)                             \
-        return (BASECLASS::QueryInterface(interfaceNumber));      \
+#define NEXT_INTERFACE_MAP(BASECLASS)                                          \
+        return BASECLASS::QueryInterface(interfaceNumber, asIUnknown);        \
     }
 
-#define END_INTERFACE_MAP                                         \
-        return (nullptr);                                         \
+#define END_INTERFACE_MAP                                      \
+        return nullptr;                                         \
     }
 
 }
