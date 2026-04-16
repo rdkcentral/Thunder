@@ -191,8 +191,8 @@ namespace Thunder {
             std::list<Thunder::Core::callstack_info> __entries__;                                                          \
             DumpCallStack(0, __entries__);                                                                                 \
             std::string __callstack__;                                                                                     \
-            for (const Thunder::Core::callstack_info& entry : __entries__) {                                               \
-                __callstack__ += "[" + entry.module + "]:[" + entry.function + "]:[" + std::to_string(entry.line) + "]\n"; \
+            for (const Thunder::Core::callstack_info& __entry__ : __entries__) {                                               \
+                __callstack__ += "[" + __entry__.module + "]:[" + __entry__.function + "]:[" + std::to_string(__entry__.line) + "]\n"; \
             }                                                                                                              \
             Thunder::Core::Messaging::IStore::Assert __assertMetadata__(                                                   \
                 __messageInfo__,                                                                                           \
