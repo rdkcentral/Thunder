@@ -71,7 +71,7 @@ In production, Thunder runs as a standalone daemon (`PluginHost.cpp` → `main()
 
 3. **Wraps server lifecycle** — `ThunderTestRuntime` provides `Initialize()` and `Deinitialize()` to manage the server, replacing the daemon's startup/shutdown sequence.
 
-4. **Generates config on the fly** — instead of reading `/etc/Thunder/config.json`, the runtime builds a minimal JSON config programmatically and writes it to a temporary directory.
+4. **Generates config on the fly** — instead of reading `/etc/Thunder/config.json`, the runtime builds a minimal JSON config using `Core::JSON` containers (`JsonObject`, `JsonArray`) and `Plugin::Config` serialization, then writes it to a temporary directory.
 
 5. **Still opens the listener** — `PluginHost::Server::Open()` still starts the HTTP/WebSocket listener, typically bound to `127.0.0.1` on an ephemeral port in the test runtime.
 
@@ -121,7 +121,7 @@ Builds the `thunder_test_support` static library. Key design decisions:
 
 - **Source files**: Compiles `ThunderTestRuntime.cpp`, `Module.cpp`, plus Thunder server sources directly from `Source/Thunder/` (PluginServer, Controller, SystemInfo, PostMortem, Probe).
 - **Excludes `PluginHost.cpp`**: This contains `main()` and would conflict with the test binary's entry point.
-- **Compile definitions**: Sets `APPLICATION_NAME=ThunderTestRuntime`, `MODULE_NAME=ThunderTestRuntime`, and `THREADPOOL_COUNT=4`.
+- **Compile definitions**: Sets `APPLICATION_NAME=ThunderTestRuntime`, `MODULE_NAME=ThunderTestRuntime`, `THREADPOOL_COUNT=4`, `DEFAULT_SYSTEM_PATH`, and `DEFAULT_PROXYSTUB_PATH` (derived from Thunder's `SYSTEM_PATH` and `PROXYSTUB_PATH` CMake variables).
 - **Public dependencies**: Exposes `ThunderCore`, `ThunderCryptalgo`, `ThunderCOM`, `ThunderPlugins`, `ThunderMessaging`, `ThunderWebSocket`, `ThunderCOMProcess`, and `Threads` as PUBLIC link dependencies, so consumers automatically get all required libraries.
 - **Private dependencies**: `CompileSettings` is linked PRIVATE to apply Thunder's compile flags without propagating them.
 - **Conditional features**: Supports `WARNING_REPORTING`, `PROCESSCONTAINERS`, and `HIBERNATESUPPORT` when enabled.
@@ -154,14 +154,14 @@ Public API header. Defines the `Thunder::TestCore::ThunderTestRuntime` class:
 
 | Member | Description |
 |--------|-------------|
-| `PluginConfig` (struct) | Describes a plugin to load: callsign, locator (.so name), classname, startmode, startuporder, configuration JSON. `startmode` supports Thunder's `Activated`, `Deactivated`, and `Unavailable` states. |
-| `Initialize()` | Boots the embedded server with given plugins, system path, and proxy stub path |
-| `InvokeJSONRPC()` | Calls a JSON-RPC method synchronously via in-process `IDispatcher::Invoke()`. Callsign is derived from the method string. |
+| `PluginConfig` | Type alias for `Plugin::Config`. Reuses Thunder's own plugin configuration container — no custom struct needed. Key fields: `Callsign`, `Locator`, `ClassName`, `StartupOrder`, `StartMode`, `Configuration`. |
+| `Initialize()` | Boots the embedded server with given plugins, system path, and proxy stub path. Initializes the messaging subsystem before server creation. |
+| `Invoke()` | Calls a JSON-RPC method synchronously via in-process `IDispatcher::Invoke()`. Callsign and method are parsed using `Core::JSONRPC::Message` helpers. Checks method availability via the built-in `exists` endpoint before dispatch. |
 | `GetInterface<T>()` | Template: obtains a COM-RPC interface from a plugin via `QueryInterface<T>()` |
 | `GetShell()` | Returns the `IShell` proxy for a plugin (for activation/deactivation control) |
 | `Server()` | Direct access to the underlying `PluginHost::Server` |
 | `CommunicatorPath()` | Returns the UNIX domain socket path |
-| `Deinitialize()` | Stops the server, releases config, cleans up temp directories |
+| `Deinitialize()` | Stops the server, closes messaging, releases config, cleans up temp directories |
 
 ### 5. `Tests/test_support/ThunderTestRuntime.cpp` (New)
 
@@ -169,11 +169,13 @@ Implementation with the following lifecycle:
 
 ```
 Initialize()
-    ├── Create temp dir: /tmp/thunder_test_XXXXXX/
+    ├── Create unique temp dir via Core helpers (process ID + ticks)
     ├── Create subdirs: persistent/, volatile/, data/
-    ├── Build JSON config string from PluginConfig list
+    ├── Resolve system/proxystub paths from CMake defaults or caller args
+    ├── Build JSON config using Core::JSON + Plugin::Config serialization
     ├── Write config to temp dir
     ├── Parse config into PluginHost::Config
+    ├── Open Messaging::MessageUnit (before server creation)
     ├── Construct PluginHost::Server
     └── Call Server::Open()
             ├── Set up security
@@ -188,21 +190,26 @@ Deinitialize()
     │       └── Close connections
     ├── Delete Server
     ├── Delete Config
+    ├── Close Messaging::MessageUnit
     ├── Remove config file
     └── Remove temp directories
 ```
 
 #### JSON-RPC Invocation Path
 
-`InvokeJSONRPC()` bypasses HTTP/WebSocket entirely:
+`Invoke()` bypasses HTTP/WebSocket entirely:
 
 ```
-InvokeJSONRPC("<Callsign>.1.<method>", params, response)
-    ├── Extract callsign from method string (text before first '.')
+Invoke("<Callsign>.<method>", params, response)
+    ├── Core::JSONRPC::Message::Callsign(method) → callsign
+    ├── Core::JSONRPC::Message::Method(method) → methodName
     ├── Services().FromIdentifier(callsign) → IShell proxy
     ├── shell->QueryInterface<IDispatcher>() → dispatcher
+    ├── MethodExists(dispatcher, callsign, methodName) via built-in "exists"
     └── dispatcher->Invoke(0, 0, "", method, params, response)
 ```
+
+The method string uses unversioned format: `"Callsign.method"` (e.g. `"Controller.status"`). Callsign and method name are parsed using Thunder's `Core::JSONRPC::Message` helpers. Before dispatch, the built-in `exists` endpoint is queried to verify the method is registered — returns `Core::ERROR_UNKNOWN_KEY` if not found.
 
 This calls the plugin's JSON-RPC handler directly in-process, with zero network overhead. The HTTP/WebSocket listener is still started by `Server::Open()`, but the helper API does not route JSON-RPC through it.
 
@@ -333,12 +340,12 @@ protected:
         std::vector<TestCore::ThunderTestRuntime::PluginConfig> plugins;
 
         TestCore::ThunderTestRuntime::PluginConfig cfg;
-        cfg.callsign     = "MyPlugin";
-        cfg.locator       = "libThunderMyPluginImpl.so";
-        cfg.classname     = "MyPlugin";
-        cfg.startmode     = TestCore::ThunderTestRuntime::PluginConfig::StartMode::Activated;
-        cfg.startuporder  = 50;
-        cfg.configuration = R"({"root":{"mode":"Off","locator":"libThunderMyPluginImpl.so"}})";
+        cfg.Callsign     = "MyPlugin";
+        cfg.Locator       = "libThunderMyPluginImpl.so";
+        cfg.ClassName     = "MyPlugin";
+        cfg.StartMode     = PluginHost::IShell::startmode::ACTIVATED;
+        cfg.StartupOrder  = 50;
+        cfg.Configuration = R"({"root":{"mode":"Off","locator":"libThunderMyPluginImpl.so"}})";
         plugins.push_back(cfg);
 
         uint32_t result = _runtime.Initialize(plugins,
@@ -358,7 +365,7 @@ TestCore::ThunderTestRuntime MyPluginTest::_runtime;
 TEST_F(MyPluginTest, JsonRpcCall) {
     string response;
     EXPECT_EQ(Core::ERROR_NONE,
-        _runtime.InvokeJSONRPC("MyPlugin.1.someMethod", R"({"param":1})", response));
+        _runtime.Invoke("MyPlugin.someMethod", R"({"param":1})", response));
     // Validate response...
 }
 
@@ -465,8 +472,8 @@ A self-contained smoke test (`Tests/test_support/tests/SmokeTest.cpp`) is includ
 
 The smoke test is built automatically when `ENABLE_TEST_RUNTIME=ON` and GTest is available. The smoke-test executable includes one dedicated `Module.cpp` with `MODULE_NAME_DECLARATION(BUILD_REFERENCE)` — required because the library uses `MODULE_NAME_ARCHIVE_DECLARATION`. `SmokeTest.cpp` itself does not need to define `MODULE_NAME`. It covers:
 
-- **ControllerStatus** — calls `Controller.1.status` and verifies a non-empty response containing "Controller"
-- **ControllerSubsystems** — calls `Controller.1.subsystems` and verifies a non-empty response
+- **ControllerStatus** — calls `Controller.status` and verifies a non-empty response containing "Controller"
+- **ControllerSubsystems** — calls `Controller.subsystems` and verifies a non-empty response
 - **GetControllerShell** — obtains the Controller's `IShell` and verifies it is in `ACTIVATED` state
 
 Running:

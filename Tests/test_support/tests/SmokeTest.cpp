@@ -32,7 +32,7 @@ TestCore::ThunderTestRuntime SmokeTest::_runtime;
 // Verify the server booted and we can query Controller status
 TEST_F(SmokeTest, ControllerStatus) {
     string response;
-    uint32_t result = _runtime.InvokeJSONRPC("Controller.1.status", "", response);
+    uint32_t result = _runtime.Invoke("Controller.status", "", response);
     EXPECT_EQ(result, Core::ERROR_NONE);
     EXPECT_FALSE(response.empty());
     // Response should contain Controller's own entry
@@ -42,7 +42,7 @@ TEST_F(SmokeTest, ControllerStatus) {
 // Verify we can query subsystems
 TEST_F(SmokeTest, ControllerSubsystems) {
     string response;
-    uint32_t result = _runtime.InvokeJSONRPC("Controller.1.subsystems", "", response);
+    uint32_t result = _runtime.Invoke("Controller.subsystems", "", response);
     EXPECT_EQ(result, Core::ERROR_NONE);
     EXPECT_FALSE(response.empty());
 }

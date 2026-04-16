@@ -45,6 +45,8 @@ target_compile_definitions(thunder_test_support
         APPLICATION_NAME=ThunderTestRuntime
         MODULE_NAME=ThunderTestRuntime
         THREADPOOL_COUNT=${THREADPOOL_COUNT}
+        DEFAULT_SYSTEM_PATH="${SYSTEM_PATH}"
+        DEFAULT_PROXYSTUB_PATH="${PROXYSTUB_PATH}"
 )
 
 target_compile_options(thunder_test_support PRIVATE -Wno-psabi)

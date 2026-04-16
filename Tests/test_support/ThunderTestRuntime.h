@@ -22,7 +22,7 @@
 //
 //   TEST_F(MyTest, JsonRpc) {
 //       string resp;
-//       _runtime.InvokeJSONRPC("Callsign.1.method", params, resp);
+//       _runtime.Invoke("Callsign.method", params, resp);
 //   }
 //
 //   TEST_F(MyTest, ComRpc) {
@@ -33,6 +33,7 @@
 #include <core/Portability.h>
 #include <core/Proxy.h>
 #include <plugins/IShell.h>
+#include <plugins/Configuration.h>
 #include <string>
 #include <vector>
 
@@ -47,22 +48,9 @@ namespace TestCore {
 
     class ThunderTestRuntime {
     public:
-        // Describes a plugin to be loaded by the test runtime.
-        // Maps directly to a Thunder plugin JSON config entry.
-        struct PluginConfig {
-            enum class StartMode {
-                Activated,
-                Deactivated,
-                Unavailable
-            };
-
-            string callsign;        // Plugin callsign (e.g. "Counter")
-            string locator;         // Shared library name (e.g. "libThunderCounterImplementation.so")
-            string classname;       // Class name registered via SERVICE_REGISTRATION
-            StartMode startmode = StartMode::Activated; // Thunder plugin start mode
-            int startuporder = 50;  // Activation priority (lower = earlier)
-            string configuration;   // Optional JSON object for plugin-specific config
-        };
+        // Reuse the real Thunder plugin configuration type.
+        // Key fields: Callsign, Locator, ClassName, StartupOrder, StartMode, Configuration.
+        using PluginConfig = Plugin::Config;
 
         ThunderTestRuntime() = default;
         ~ThunderTestRuntime();
@@ -79,8 +67,9 @@ namespace TestCore {
 
         // Invoke a JSON-RPC method on a loaded plugin.
         // The callsign is derived from the method string (text before the first '.').
-        // Method format: "Callsign.Version.method" (e.g. "MyPlugin.1.doSomething")
-        uint32_t InvokeJSONRPC(const string& method, const string& params, string& response);
+        // Method format: "Callsign.method" (e.g. "MyPlugin.doSomething")
+        // Returns Core::ERROR_UNAVAILABLE if the JSON-RPC endpoint is not available.
+        uint32_t Invoke(const string& method, const string& params, string& response);
 
         // Obtain a COM-RPC interface from a loaded plugin.
         // Caller must Release() the returned pointer when done.
@@ -109,6 +98,7 @@ namespace TestCore {
 
     private:
         string BuildConfigJSON(const std::vector<PluginConfig>& plugins, const string& systemPath, const string& proxyStubPath) const;
+        bool MethodExists(PluginHost::IDispatcher* dispatcher, const string& callsign, const string& methodName) const;
         bool CreateDirectories() const;
         void CleanupDirectories() const;
 
