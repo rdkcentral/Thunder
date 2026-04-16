@@ -34,6 +34,7 @@
 #include <core/Proxy.h>
 #include <plugins/IShell.h>
 #include <plugins/Configuration.h>
+#include <plugins/IDispatcher.h>
 #include <string>
 #include <vector>
 
