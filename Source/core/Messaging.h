@@ -253,6 +253,19 @@ namespace Core {
                 return (_numericValue._double);
             }
 
+            const void* RawValue() const
+            {
+                const void* result = nullptr;
+
+                if (_type == ValueType::TEXT) {
+                    result = _text.c_str();
+                } else {
+                    result = &_numericValue;
+                }
+
+                return (result);
+            }
+
         private:
             template<size_t N>
             static constexpr ValueType SignedTag()
@@ -275,15 +288,6 @@ namespace Core {
                      : (N == 4) ? ValueType::UINT32
                      :            ValueType::UINT64;
             }
-
-            template<typename T>
-            uint16_t SerializeNumeric(uint8_t buffer[], uint16_t bufferSize, T value) const;
-
-            template<typename T>
-            uint16_t DeserializeIntegral(const uint8_t buffer[], uint16_t offset, uint16_t bufferSize);
-
-            template<typename T>
-            uint16_t DeserializeFloat(const uint8_t buffer[], uint16_t offset, uint16_t bufferSize);
 
             ValueType _type;
             string _text;
