@@ -36,8 +36,6 @@ else()
     message(FATAL_ERROR "CXX_STD is not set")
 endif()
 
-
-
 target_include_directories(CompileSettings INTERFACE
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Source>)
 
