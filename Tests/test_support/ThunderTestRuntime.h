@@ -92,7 +92,7 @@ namespace TestCore {
             const string& Callsign() const { return _callsign; }
 
             // IDispatcher::ICallback
-            void AddRef() const override {}
+            uint32_t AddRef() const override { return Core::ERROR_NONE; }
             uint32_t Release() const override { return Core::ERROR_NONE; }
 
         private:
@@ -129,7 +129,7 @@ namespace TestCore {
 
         // Create a callsign-bound JSON-RPC link for invoke and event operations.
         // Caller owns the returned object.
-        JSONRPCLink* JSONRPCLink(const string& callsign);
+        class JSONRPCLink* CreateJSONRPCLink(const string& callsign);
 
         // Invoke a JSON-RPC method on a loaded plugin (full designator form).
         // Method format: "Callsign.method" (e.g. "MyPlugin.doSomething")

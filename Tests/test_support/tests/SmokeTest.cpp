@@ -63,7 +63,7 @@ namespace Tests {
     // ------------------------------------------------------------------
     TEST_F(SmokeTest, ControllerStatusViaJSONRPCLink)
     {
-        auto* controller = _runtime.JSONRPCLink("Controller");
+        auto* controller = _runtime.CreateJSONRPCLink("Controller");
         ASSERT_NE(controller, nullptr);
 
         string response;
@@ -98,7 +98,7 @@ namespace Tests {
     // ------------------------------------------------------------------
     TEST_F(SmokeTest, UnknownMethodViaJSONRPCLinkReturnsError)
     {
-        auto* controller = _runtime.JSONRPCLink("Controller");
+        auto* controller = _runtime.CreateJSONRPCLink("Controller");
         ASSERT_NE(controller, nullptr);
 
         string response;

@@ -334,7 +334,7 @@ namespace TestCore {
         return Core::ERROR_NONE;
     }
 
-    ThunderTestRuntime::JSONRPCLink* ThunderTestRuntime::JSONRPCLink(const string& callsign)
+    ThunderTestRuntime::JSONRPCLink* ThunderTestRuntime::CreateJSONRPCLink(const string& callsign)
     {
         return new class JSONRPCLink(*this, callsign);
     }
