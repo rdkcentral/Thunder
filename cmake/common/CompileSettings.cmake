@@ -29,12 +29,14 @@ add_library(CompileSettings::CompileSettings ALIAS CompileSettings)
 #
 # Global options
 #
-if(NOT CXX_STD)
-    set(CXX_STD 11)
+if(CXX_STD)
+    set_target_properties(CompileSettings PROPERTIES
+        INTERFACE_COMPILE_FEATURES "cxx_std_${CXX_STD}")
+else()
+    message(FATAL_ERROR "CXX_STD is not set")
 endif()
 
-set_target_properties(CompileSettings PROPERTIES
-    INTERFACE_COMPILE_FEATURES "cxx_std_${CXX_STD}")
+
 
 target_include_directories(CompileSettings INTERFACE
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Source>)
