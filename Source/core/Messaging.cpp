@@ -54,7 +54,7 @@ namespace Core {
             writer.Number(_type);
 
             switch (_type) {
-            case ValueType::TEXT:    writer.NullTerminatedText(_text, bufferSize - writer.Offset()); break;
+            case ValueType::TEXT:    writer.NullTerminatedText(_text); break;
             case ValueType::INT8:    writer.Number(static_cast<int8_t>(_numericValue._signed));      break;
             case ValueType::UINT8:   writer.Number(static_cast<uint8_t>(_numericValue._unsigned));   break;
             case ValueType::INT16:   writer.Number(static_cast<int16_t>(_numericValue._signed));     break;
@@ -91,49 +91,49 @@ namespace Core {
                 case ValueType::INT8: {
                     auto v = reader.Number<int8_t>();
                     _numericValue._signed = static_cast<int64_t>(v);
-                    _text = std::to_string(v);
+                    _text = Core::NumberType<int8_t>(v).Text();
                     break;
                 }
                 case ValueType::UINT8: {
                     auto v = reader.Number<uint8_t>();
                     _numericValue._unsigned = static_cast<uint64_t>(v);
-                    _text = std::to_string(v);
+                    _text = Core::NumberType<uint8_t>(v).Text();
                     break;
                 }
                 case ValueType::INT16: {
                     auto v = reader.Number<int16_t>();
                     _numericValue._signed = static_cast<int64_t>(v);
-                    _text = std::to_string(v);
+                    _text = Core::NumberType<int16_t>(v).Text();
                     break;
                 }
                 case ValueType::UINT16: {
                     auto v = reader.Number<uint16_t>();
                     _numericValue._unsigned = static_cast<uint64_t>(v);
-                    _text = std::to_string(v);
+                    _text = Core::NumberType<uint16_t>(v).Text();
                     break;
                 }
                 case ValueType::INT32: {
                     auto v = reader.Number<int32_t>();
                     _numericValue._signed = static_cast<int64_t>(v);
-                    _text = std::to_string(v);
+                    _text = Core::NumberType<int32_t>(v).Text();
                     break;
                 }
                 case ValueType::UINT32: {
                     auto v = reader.Number<uint32_t>();
                     _numericValue._unsigned = static_cast<uint64_t>(v);
-                    _text = std::to_string(v);
+                    _text = Core::NumberType<uint32_t>(v).Text();
                     break;
                 }
                 case ValueType::INT64: {
                     auto v = reader.Number<int64_t>();
                     _numericValue._signed = v;
-                    _text = std::to_string(v);
+                    _text = Core::NumberType<int64_t>(v).Text();
                     break;
                 }
                 case ValueType::UINT64: {
                     auto v = reader.Number<uint64_t>();
                     _numericValue._unsigned = v;
-                    _text = std::to_string(v);
+                    _text = Core::NumberType<uint64_t>(v).Text();
                     break;
                 }
                 case ValueType::FLOAT32: {
