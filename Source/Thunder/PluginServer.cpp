@@ -262,17 +262,19 @@ namespace PluginHost {
         // Now deactivate controller plugin, once other plugins are deactivated
         controller->Deactivate(PluginHost::IShell::SHUTDOWN);
 
-        TRACE_L1("Pending notifiers are %zu", _notifiers.size());
-        for (VARIABLE_IS_NOT_USED auto& notifier : _notifiers) {
-            TRACE_L1("   -->  %s", Core::ClassNameOnly(typeid(*notifier.first).name()).Text().c_str());
-        }
-
+#ifdef __DEBUG__
+        TRACE_L1("Pending notifiers are %u", _notifiers.Size());
+        _notifiers.Visit([](const PluginHost::IPlugin::INotification* notification) {
+            ASSERT(notification != nullptr);
+            TRACE_L1("   -->  %s", Core::ClassNameOnly(typeid(*notification).name()).Text().c_str());
+        });
+#endif
         _processAdministrator.Close(Core::infinite);
 
         _processAdministrator.Destroy();
     }
 
-    void* Server::Service::QueryInterface(const uint32_t id) /* override */
+    void* Server::Service::QueryInterface(const uint32_t id, const bool asIUnknown) /* override */
     {
         void* result = nullptr;
         if (id == Core::IUnknown::ID) {
@@ -281,30 +283,29 @@ namespace PluginHost {
         }
         else if (id == PluginHost::IShell::ID) {
             AddRef();
-            result = static_cast<PluginHost::IShell*>(this);
+            asIUnknown == false ? result = static_cast<PluginHost::IShell*>(this) : result = static_cast<Core::IUnknown*>(this);
         }
         else if (id == PluginHost::IShell::ICOMLink::ID) {
             AddRef();
-            result = static_cast<PluginHost::IShell::ICOMLink*>(this);
+            asIUnknown == false ? result = static_cast<PluginHost::IShell::ICOMLink*>(this) : result = static_cast<Core::IUnknown*>(this);
         }
         else if (id == PluginHost::IShell::IConnectionServer::ID) {
             AddRef();
-            result = static_cast<PluginHost::IShell::IConnectionServer*>(this);
+            asIUnknown == false ? result = static_cast<PluginHost::IShell::IConnectionServer*>(this) : result = static_cast<Core::IUnknown*>(this);
         }
         else {
-            _pluginHandling.Lock();
-            if (State() == ACTIVATED) {
+            _queryInterfaceLock.Lock();
+            if ((State() == IShell::state::ACTIVATED) || (State() == IShell::state::DEACTIVATION)) { //needed as we only want to send plugin state notifications when the plugin is active or deactivating which is not guaranteed by the lock itself as it comes from the same thread handling the activation and deactivation
                 if (id == PluginHost::IDispatcher::ID) {
                     if (_jsonrpc != nullptr) {
                         _jsonrpc->AddRef();
-                        result = _jsonrpc;
+                        asIUnknown == false ? result = _jsonrpc : result = static_cast<Core::IUnknown*>(_jsonrpc);
                     }
-                }
-                else if (_handler != nullptr) {
-                    result = _handler->QueryInterface(id);
+                } else if (_handler != nullptr) {
+                    result = _handler->QueryInterface(id, asIUnknown);
                 }
             }
-            _pluginHandling.Unlock();
+            _queryInterfaceLock.Unlock();
         }
 
         return (result);
@@ -323,6 +324,15 @@ namespace PluginHost {
     void Server::Service::Unregister(IPlugin::INotification * sink, const Core::OptionalType<string>& callsign) /* override */
     {
         _administrator.Unregister(sink, callsign);
+    }
+
+    void Server::Service::Register(IPlugin::INotification * sink, const uint32_t interface_id)
+    {
+        _administrator.Register(sink, interface_id);
+    }
+    void Server::Service::Unregister(IPlugin::INotification * sink, const uint32_t interface_id)
+    {
+        _administrator.Unregister(sink, interface_id);
     }
 
     // Methods to stop/start/update the service.
@@ -348,6 +358,8 @@ namespace PluginHost {
 
             _reason = why;
 
+            _queryInterfaceLock.Lock();
+
             // Load the interfaces, If we did not load them yet...
             if (_handler == nullptr) {
                 AcquireInterfaces();
@@ -362,6 +374,8 @@ namespace PluginHost {
                 _reason = reason::INSTANTIATION_FAILED;
                 State(DEACTIVATED);
 
+                _queryInterfaceLock.Unlock();
+
                 Unlock();
 
                 // See if the preconditions have been met..
@@ -370,7 +384,10 @@ namespace PluginHost {
                 result = Core::ERROR_PENDING_CONDITIONS;
                 State(PRECONDITION);
 
+                _queryInterfaceLock.Unlock();
+
                 if (Thunder::Messaging::LocalLifetimeType<Activity, &Thunder::Core::System::MODULE_NAME, Thunder::Core::Messaging::Metadata::type::TRACING>::IsEnabled() == true) {
+
                     string feedback;
                     uint8_t index = 1;
                     uint32_t delta(_precondition.Delta(_administrator.SubSystemInfo().Value()));
@@ -428,9 +445,12 @@ namespace PluginHost {
                     State(DEACTIVATED);
                     Unlock();
 
+                    _queryInterfaceLock.Unlock();
+
                     _administrator.Deinitialized(callSign, this);
 
                 } else {
+
                     const Core::EnumerateType<PluginHost::IShell::reason> textReason(why);
                     const string webUI(PluginHost::Service::Configuration().WebUI.Value());
                     if ((PluginHost::Service::Configuration().WebUI.IsSet()) || (webUI.empty() == false)) {
@@ -456,6 +476,9 @@ namespace PluginHost {
                     SYSLOG(Logging::Startup, (_T("Activated plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
                     Lock();
                     State(ACTIVATED);
+
+                    _queryInterfaceLock.Unlock();
+
                     _administrator.Activated(callSign, this);
 
                     _stateControl = _handler->QueryInterface<PluginHost::IStateControl>();
@@ -590,6 +613,8 @@ namespace PluginHost {
                     DisableWebServer();
                 }
 
+                _queryInterfaceLock.Lock();
+
                 REPORT_DURATION_WARNING( { _handler->Deinitialize(this); }, WarningReporting::TooLongPluginState, WarningReporting::TooLongPluginState::StateChange::DEACTIVATION, callSign.c_str());
 
                 Lock();
@@ -624,6 +649,10 @@ namespace PluginHost {
             // We have no need for his module anymore..
             ReleaseInterfaces();
             Unlock();
+
+            if ((currentState == IShell::ACTIVATION) || (currentState == IShell::ACTIVATED)) {
+                _queryInterfaceLock.Unlock();
+            }
 
             _administrator.Deinitialized(callSign, this);
         } else {
@@ -1030,10 +1059,13 @@ namespace PluginHost {
         // Now deactivate controller plugin, once other plugins are deactivated
         controller->Deactivate(PluginHost::IShell::SHUTDOWN);
 
-        TRACE_L1("Pending notifiers are %zu", _notifiers.size());
-        for (VARIABLE_IS_NOT_USED auto& notifier : _notifiers) {
-            TRACE_L1("   -->  %s", Core::ClassNameOnly(typeid(*notifier.first).name()).Text().c_str());
-        }
+#ifdef __DEBUG__
+        TRACE_L1("Pending notifiers are %u", _notifiers.Size());
+        _notifiers.Visit([](const PluginHost::IPlugin::INotification* notification) {
+            ASSERT(notification != nullptr);
+            TRACE_L1("   -->  %s", Core::ClassNameOnly(typeid(*notification).name()).Text().c_str());
+        });
+#endif
 
         _processAdministrator.Close(Core::infinite);
 

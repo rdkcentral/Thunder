@@ -830,6 +830,7 @@ namespace PluginHost {
             Service(const PluginHost::Config& server, const Plugin::Config& plugin, ServiceMap& administrator, const mode type, const Core::ProxyType<RPC::InvokeServer>& handler)
                 : PluginHost::Service(plugin, server.WebPrefix(), server.PersistentPath(), server.DataPath(), server.VolatilePath())
                 , _pluginHandling()
+                , _queryInterfaceLock()
                 , _handler(nullptr)
                 , _extended(nullptr)
                 , _webRequest(nullptr)
@@ -1260,7 +1261,7 @@ namespace PluginHost {
             uint32_t Submit(const uint32_t id, const Core::ProxyType<Core::JSON::IElement>& response) override;
             ISubSystem* SubSystems() override;
             void Notify(const string& event, const string& message) override;
-            void* QueryInterface(const uint32_t id) override;
+            void* QueryInterface(const uint32_t id, const bool asIUnknown = false) override;
             void* QueryInterfaceByCallsign(const uint32_t id, const string& name) override;
             template <typename REQUESTEDINTERFACE>
             REQUESTEDINTERFACE* QueryInterface()
@@ -1287,6 +1288,8 @@ namespace PluginHost {
  
             void Register(IPlugin::INotification* sink, const Core::OptionalType<string>& callsign) override;
             void Unregister(IPlugin::INotification* sink, const Core::OptionalType<string>& callsign) override;
+            void Register(IPlugin::INotification* sink, const uint32_t interface_id) override;
+            void Unregister(IPlugin::INotification* sink, const uint32_t interface_id) override;
 
             string Model() const override {
                 return (_administrator.Configuration().Model());
@@ -1687,6 +1690,8 @@ namespace PluginHost {
 
         private:
             mutable Core::CriticalSection _pluginHandling;
+            mutable Core::CriticalSection _queryInterfaceLock; // a little shortcut to protect both the QueryInterface from Plugin deinitializing which could make the QueryInterface to the OOP part of a plugin crash (and to facilitate sending the Plugin Deactivated notifications while still allow QueryInterface to be called)
+                                                             // the whole plugin state handling including locking needs a redesign...
 
             // The handlers that implement the actual logic behind the service
             IPlugin* _handler;
@@ -2356,22 +2361,503 @@ namespace PluginHost {
             }; 
 
         private:
+            class Notifier {
+            private:
+                class AllNotifier {
+                public:
+                    AllNotifier() = default;
+                    ~AllNotifier() = default;
+
+                    bool SendNotification(const string&, PluginHost::IShell*) const
+                    {
+                        return true;
+                    }
+
+                    template <typename... Args>
+                    bool ConsideredDuplicate(Args&&...) const
+                    {
+                        return true;
+                    }
+
+                    bool operator==(const AllNotifier&) const
+                    {
+                        return true;
+                    }
+
+                    bool operator!=(const AllNotifier& other) const
+                    {
+                        return !(*this == other);
+                    }
+
+                };
+                class CallsignNotifier {
+                public:
+                    CallsignNotifier(const string& callsign)
+                        : _callsign(callsign) 
+                    {
+                        ASSERT(callsign.empty() == false);
+                    }
+                    CallsignNotifier(string&& callsign)
+                        : _callsign(std::move(callsign))
+                    {
+                    }
+                    ~CallsignNotifier() = default;
+
+                    bool SendNotification(const string& callsign, PluginHost::IShell*) const
+                    {
+                        return (_callsign == callsign);
+                    }
+
+                    bool ConsideredDuplicate() const
+                    {
+                        return true;
+                    }
+
+                    bool ConsideredDuplicate(const string& callsign) const
+                    {
+                        return (_callsign == callsign);
+                    }
+
+                    bool ConsideredDuplicate(const uint32_t) const
+                    {
+                        return true;
+                    }
+
+                    bool operator==(const CallsignNotifier& other) const
+                    {
+                        return _callsign == other._callsign;
+                    }
+
+                    bool operator!=(const CallsignNotifier& other) const
+                    {
+                        return !(*this == other);
+                    }
+
+                private:
+                    string _callsign;
+                };
+                class InterfaceNotifier {
+                public:
+                    InterfaceNotifier(const uint32_t interface_id)
+                        : _interface_id(interface_id)
+                    {
+                    }
+                    ~InterfaceNotifier() = default;
+
+                    bool SendNotification(const string&, PluginHost::IShell* shell) const
+                    {
+                        ASSERT(shell != nullptr);
+
+                        return shell->IsInterfaceSupported(_interface_id);
+                    }
+
+                    bool ConsideredDuplicate() const
+                    {
+                        return true;
+                    }
+                    bool ConsideredDuplicate(const string&) const
+                    {
+                        return true;
+                    }
+                    bool ConsideredDuplicate(const uint32_t interface_id) const
+                    {
+                        return (_interface_id == interface_id);
+                    }
+
+                    bool operator==(const InterfaceNotifier& other) const
+                    {
+                        return _interface_id == other._interface_id;
+                    }
+
+                    bool operator!=(const InterfaceNotifier& other) const
+                    {
+                        return !(*this == other);
+                    }
+
+                private:
+                    uint32_t _interface_id;
+                };
+
+            public:
+                Notifier()
+                    : _type(Type::ALL)
+                    , _allnotifier()
+                {
+                }
+                Notifier(const string& callsign) 
+                    : _type(Type::CALLSIGN)
+                    , _callsignnotifier(callsign)
+                {
+                }
+                Notifier(string&& callsign)
+                    : _type(Type::CALLSIGN)
+                    , _callsignnotifier(std::move(callsign))
+                {
+                }
+                Notifier(const uint32_t interface_id)
+                    : _type(Type::INTERFACE)
+                    , _interfacenotifier(interface_id)
+                {
+                }
+                ~Notifier()
+                {
+                    switch (_type) 
+                    {
+                        case Type::ALL:
+                            _allnotifier.~AllNotifier();
+                            break;
+                        case Type::CALLSIGN:
+                            _callsignnotifier.~CallsignNotifier();
+                            break;
+                        case Type::INTERFACE:
+                            _interfacenotifier.~InterfaceNotifier();
+                            break;
+                        default:
+                            ASSERT(false);
+                        }
+                }
+
+                Notifier(Notifier&& other) 
+                    : _type(other._type)
+                {
+                    switch (_type) {
+                    case Type::ALL:
+                        _allnotifier = std::move(other._allnotifier);
+                        break;
+                    case Type::CALLSIGN:
+                        _callsignnotifier = std::move(other._callsignnotifier);
+                        break;
+                    case Type::INTERFACE:
+                        _interfacenotifier = std::move(other._interfacenotifier);
+                        break;
+                    default:
+                        ASSERT(false);
+                    }
+                }
+                Notifier& operator=(Notifier&& other) 
+                {
+                    if (this != &other) {
+                        _type = other._type;
+                        switch (_type) {
+                        case Type::ALL:
+                            _allnotifier = std::move(other._allnotifier);
+                            break;
+                        case Type::CALLSIGN:
+                            _callsignnotifier = std::move(other._callsignnotifier);
+                            break;
+                        case Type::INTERFACE:
+                            _interfacenotifier = std::move(other._interfacenotifier);
+                            break;
+                        default:
+                            ASSERT(false);
+                        }
+                    }
+                    return *this;
+                }
+                Notifier(const Notifier&) = delete;
+                Notifier& operator=(const Notifier&) = delete;
+
+            public:
+                bool SendNotification(const string& callsign, PluginHost::IShell* entry) const
+                {
+                    bool send = false;
+                    switch (_type) {
+                    case Type::ALL:
+                        send = _allnotifier.SendNotification(callsign, entry);
+                        break;
+                    case Type::CALLSIGN:
+                        send = _callsignnotifier.SendNotification(callsign, entry);
+                        break;
+                    case Type::INTERFACE:
+                        send = _interfacenotifier.SendNotification(callsign, entry);
+                        break;
+                    default:
+                        ASSERT(false);
+                    }
+                    return send;
+                }
+
+                // checks duplicate for new callsign notifier
+                template <typename... Args>
+                bool ConsideredDuplicate(Args&&... args) const
+                {
+                    bool duplicate = true;
+                    switch (_type) {
+                    case Type::ALL:
+                        duplicate = _allnotifier.ConsideredDuplicate(std::forward<Args>(args)...);
+                        break;
+                    case Type::CALLSIGN:
+                        duplicate = _callsignnotifier.ConsideredDuplicate(std::forward<Args>(args)...);
+                        break;
+                    case Type::INTERFACE:
+                        duplicate = _interfacenotifier.ConsideredDuplicate(std::forward<Args>(args)...);
+                        break;
+                    default:
+                        ASSERT(false);
+                    }
+                    return duplicate;
+                }
+
+                bool IsEqual() const
+                {
+                    bool same = true;
+                    switch (_type) {
+                    case Type::ALL:
+                        same = true;
+                        break;
+                    case Type::CALLSIGN:
+                    case Type::INTERFACE:
+                        same = false;
+                        break;
+                    default:
+                        ASSERT(false);
+                    }
+                    return same;
+                }
+
+                bool IsEqual(const string& callsign) const
+                {
+                    bool same = true;
+                    switch (_type) {
+                    case Type::ALL:
+                    case Type::INTERFACE:
+                        same = false;
+                        break;
+                    case Type::CALLSIGN:
+                        same = (_callsignnotifier == CallsignNotifier(callsign));
+                        break;
+                    default:
+                        ASSERT(false);
+                    }
+                    return same;
+                }
+
+                bool IsEqual(const uint32_t interface_id) const
+                {
+                    bool same = true;
+                    switch (_type) {
+                    case Type::ALL:
+                    case Type::CALLSIGN:
+                        same = false;
+                        break;
+                    case Type::INTERFACE:
+                        same = (_interfacenotifier == InterfaceNotifier(interface_id));
+                        break;
+                    default:
+                        ASSERT(false);
+                    }
+                    return same;
+                }
+
+
+            private:
+                enum class Type : uint8_t { ALL, CALLSIGN, INTERFACE };
+
+                Type _type;
+
+                union {
+                    AllNotifier _allnotifier;
+                    CallsignNotifier _callsignnotifier;
+                    InterfaceNotifier _interfacenotifier;
+                };
+            };
+
+            class Notifiers
+            {
+            public:
+                Notifiers()
+                    : _notifiers()
+                    , _notificationLock()
+                {
+                }
+                ~Notifiers() = default;
+
+                Notifiers(Notifiers&&) = delete;
+                Notifiers(const Notifiers&) = delete;
+                Notifiers& operator=(Notifiers&&) = delete;
+                Notifiers& operator=(const Notifiers&) = delete;
+
+                uint32_t Size() const
+                {
+                    _notificationLock.Lock();
+                    uint32_t size = static_cast<uint32_t>(_notifiers.size());
+                    _notificationLock.Unlock();
+                    return size;
+                }
+
+                //return true when added 
+                template <typename... Args>
+                bool Add(PluginHost::IPlugin::INotification* notification, Args&&... args)
+                {
+                    _notificationLock.Lock();
+
+                    bool allowed = RegistrationAllowed(notification, std::forward<Args>(args)...);
+
+                    ASSERT(allowed == true);
+
+                    if (allowed == true) {
+                        notification->AddRef();
+                        _notifiers.emplace(std::piecewise_construct,
+                            std::forward_as_tuple(notification),
+                            std::forward_as_tuple(std::forward<Args>(args)...));
+                    }
+
+                    _notificationLock.Unlock();
+
+                    return allowed;
+                }
+
+                // return true when removed
+                template <typename... Args>
+                bool Remove(const PluginHost::IPlugin::INotification* const notification, Args&&... args)
+                {
+                    bool found = false;
+
+                    _notificationLock.Lock();
+
+                    auto range = _notifiers.equal_range(const_cast<PluginHost::IPlugin::INotification*>(notification));
+                    for (auto it = range.first; it != range.second; ++it) {
+                        if (it->second.IsEqual(std::forward<Args>(args)...) == true) {
+                            PluginHost::IPlugin::INotification* foundnotification = it->first;
+                            _notifiers.erase(it);
+                            foundnotification->Release();
+                            foundnotification = nullptr;
+                            found = true;
+                            break; // there can only be one equal..
+                        }
+                    }
+                    _notificationLock.Unlock();
+
+                    return found;
+                }
+                void RemoveAll(const PluginHost::IPlugin::INotification* const notification)
+                {
+                    _notificationLock.Lock();
+
+                    auto range = _notifiers.equal_range(const_cast<PluginHost::IPlugin::INotification*>(notification));
+                    auto it = range.first;
+                    while (it != range.second) {
+                        PluginHost::IPlugin::INotification* foundnotification = it->first;
+                        it = _notifiers.erase(it);
+                        foundnotification->Release();
+                        foundnotification = nullptr;
+                    }
+
+                    _notificationLock.Unlock();
+                }
+                void RemoveAll(const Core::IUnknown* const notification)
+                {
+                    _notificationLock.Lock();
+
+                    auto it = _notifiers.begin();
+                    while (it != _notifiers.end()) {
+                        if (static_cast<const Core::IUnknown*>(it->first) == notification) {
+                            PluginHost::IPlugin::INotification* foundnotification = it->first;
+                            it = _notifiers.erase(it);
+                            foundnotification->Release();
+                            foundnotification = nullptr;
+                        } else {
+                            ++it;
+                        }
+                    }
+
+                    _notificationLock.Unlock();
+                }
+                void Notify(const string& callsign, PluginHost::IShell* entry, Core::hresult (PluginHost::IPlugin::INotification::*notificatonmethod)(const string& callsign, IShell* plugin))
+                {
+                    _notificationLock.Lock();
+
+                    auto it = _notifiers.begin();
+                    while (it != _notifiers.end()) {
+                        if (it->second.SendNotification(callsign, entry) == true) {
+                            Core::hresult result = (it->first->*notificatonmethod)(callsign, entry);
+                            if (result == Core::ERROR_CANCEL) {
+                                PluginHost::IPlugin::INotification* foundnotification = it->first;
+                                it = _notifiers.erase(it);
+                                foundnotification->Release();
+                                foundnotification = nullptr;
+                            } else {
+                                ++it;
+                            }
+                        } else {
+                            ++it;
+                        }
+                    }
+
+                    _notificationLock.Unlock();
+                }
+
+                void Notify(const string& callsign, PluginHost::IShell* entry, void (PluginHost::IPlugin::ILifeTime::*notificatonmethod)(const string& callsign, IShell* plugin)) const
+                {
+                    _notificationLock.Lock();
+
+                    for (const auto& notifier : _notifiers) {
+                        if (notifier.second.SendNotification(callsign, entry) == true) {
+                            PluginHost::IPlugin::ILifeTime* lifeTime = notifier.first->QueryInterface<PluginHost::IPlugin::ILifeTime>();
+                            if (lifeTime != nullptr) {
+                                (lifeTime->*notificatonmethod)(callsign, entry);
+                                lifeTime->Release();
+                            }
+                        }
+                    }
+
+                    _notificationLock.Unlock();
+                }
+
+                template<typename FUNCTION>
+                void Visit(FUNCTION function) const
+                {
+                    _notificationLock.Lock();
+
+                    for (const auto& notifier : _notifiers) {
+                        function(notifier.first);
+                    }
+
+                    _notificationLock.Unlock();
+                }
+
+            private:
+                template <typename... Args>
+                bool RegistrationAllowed(PluginHost::IPlugin::INotification* notification, Args&&... args) const 
+                {
+                    bool notallowed = false; 
+                    auto range = _notifiers.equal_range(notification);
+                    for (auto it = range.first; it != range.second; ++it) {
+                        notallowed = it->second.ConsideredDuplicate(std::forward<Args>(args)...);
+                        if (notallowed == true) {
+                            break;
+                        }
+                    }
+                    return (notallowed == false);
+                }
+
+            private:
+                std::unordered_multimap<PluginHost::IPlugin::INotification*, Notifier> _notifiers;
+                mutable Core::CriticalSection _notificationLock;
+            };
+
+
             using Plugins = std::unordered_map<string, Core::ProxyType<Service>>;
-            using Notifier = std::pair<PluginHost::IPlugin::INotification*, Core::OptionalType<string>>;
-            using Notifiers = std::vector<Notifier>;
             using RemoteInstantiators = std::unordered_map<string, IRemoteInstantiation*>;
             using ShellNotifiers = std::vector<Exchange::Controller::IShells::INotification*>;
             using ChannelObservers = std::vector<IShell::IConnectionServer::INotification*>;
 
-            void Snapshot(const Notifier& entry)
+            // returns false if wants to be unregistered again (quite unexpected) 
+            bool Snapshot(PluginHost::IPlugin::INotification* sink, const Core::OptionalType<string>& callsign)
             {
-                if (entry.second.IsSet() == true) {
+                bool keepregistered = true;
+
+                ASSERT(sink != nullptr);
+
+                if (callsign.IsSet() == true) {
                     Core::ProxyType<IShell> shell;
 
-                    if (FromIdentifier(entry.second.Value(), shell) == Core::ERROR_NONE) {
+                    if (FromIdentifier(callsign.Value(), shell) == Core::ERROR_NONE) {
 
                         if (shell->State() == IShell::ACTIVATED) {
-                            entry.first->Activated(shell->Callsign(), shell.operator->());
+                            if (sink->CancelableActivated(shell->Callsign(), shell.operator->()) == Core::ERROR_CANCEL) {
+                                keepregistered = false;
+                            }
                         }
                     }
                 }
@@ -2386,18 +2872,75 @@ namespace PluginHost {
                         ASSERT(service.IsValid());
 
                         if ((service.IsValid() == true) && (service->State() == IShell::ACTIVATED)) {
-                            entry.first->Activated(service->Callsign(), service.operator->());
+                            if( sink->CancelableActivated(service->Callsign(), service.operator->()) == Core::ERROR_CANCEL) {
+                                keepregistered = false;
+                                break;
+                            }   
 
                             // Report any composite plugins that are active..
                             service->Composits().Visit([&](const string& callsign, IShell* proxy) {
                                 if (proxy->State() == IShell::ACTIVATED) {
-                                    entry.first->Activated(callsign, proxy);
+                                    if ((keepregistered == true) && (sink->CancelableActivated(callsign, proxy) == Core::ERROR_CANCEL)) {
+                                        keepregistered = false;
+                                    }   
                                 }
                             });
+
+                            if (keepregistered == false) {
+                                break;
+                            }
                         }
                     }
                     _adminLock.Unlock();
                 }
+                return keepregistered;  
+            }
+
+            // returns false if wants to be unregistered again (quite unexpected) 
+            bool Snapshot(PluginHost::IPlugin::INotification* sink, const uint32_t interface_id)
+            {
+                ASSERT(sink != nullptr);
+
+                bool keepregistered = true;
+
+                _adminLock.Lock();
+
+                for (auto& index : _services) {
+                    ASSERT(index.second.IsValid());
+
+                    Core::ProxyType<Service> service(index.second);
+
+                    ASSERT(service.IsValid());
+
+                    if ((service.IsValid() == true) && (service->State() == IShell::ACTIVATED)) {
+
+                        if (service.operator->()->IsInterfaceSupported(interface_id) == true) {
+                            if (sink->CancelableActivated(service->Callsign(), service.operator->()) == Core::ERROR_CANCEL) {
+                                keepregistered = false;
+                                break;
+                            }
+                        }
+
+                        // Report any composite plugins that are active..
+                        service->Composits().Visit([&](const string& callsign, IShell* proxy) {
+                            if ((keepregistered == true) && (proxy->State() == IShell::ACTIVATED)) {
+
+                                if (proxy->IsInterfaceSupported(interface_id) == true) {
+                                    if (sink->CancelableActivated(callsign, proxy) == Core::ERROR_CANCEL) {
+                                        keepregistered = false;
+                                    }
+                                }
+                            }
+                        });
+
+                        if (keepregistered == false) {
+                            break;
+                        }   
+                    }
+                }
+                _adminLock.Unlock();
+
+                return keepregistered;
             }
 
             class CommunicatorServer : public RPC::Communicator {
@@ -3254,68 +3797,23 @@ namespace PluginHost {
             }
             void Initialize(const string& callsign, PluginHost::IShell* entry)
             {
-                _notificationLock.Lock();
-
-                for (auto& n : _notifiers) {
-                    if ((n.second.IsSet() == false) || (n.second.Value() == callsign)) {
-                        PluginHost::IPlugin::ILifeTime* lifetime = n.first->QueryInterface<PluginHost::IPlugin::ILifeTime>();
-                        if (lifetime != nullptr) {
-                            lifetime->Initialize(callsign, entry);
-                            lifetime->Release();
-                        }
-                    }
-                }
-
-                _notificationLock.Unlock();
+                _notifiers.Notify(callsign, entry, &PluginHost::IPlugin::ILifeTime::Initialize);
             }
             void Deinitialized(const string& callsign, PluginHost::IShell* entry)
             {
-                _notificationLock.Lock();
-
-                for (auto& n : _notifiers) {
-                    if ((n.second.IsSet() == false) || (n.second.Value() == callsign)) {
-                        PluginHost::IPlugin::ILifeTime* lifetime = n.first->QueryInterface<PluginHost::IPlugin::ILifeTime>();
-                        if (lifetime != nullptr) {
-                            lifetime->Deinitialized(callsign, entry);
-                            lifetime->Release();
-                        }
-                    }
-                }
-
-                _notificationLock.Unlock();
+                _notifiers.Notify(callsign, entry, &PluginHost::IPlugin::ILifeTime::Deinitialized);
             }
             void Activated(const string& callsign, PluginHost::IShell* entry)
             {
-                _notificationLock.Lock();
-
-                for (auto& n : _notifiers) {
-                    if ((n.second.IsSet() == false) || (n.second.Value() == callsign)) {
-                        n.first->Activated(callsign, entry);
-                    }
-                }
-                _notificationLock.Unlock();
+                _notifiers.Notify(callsign, entry, &PluginHost::IPlugin::INotification::CancelableActivated);
             }
             void Deactivated(const string& callsign, PluginHost::IShell* entry)
             {
-                _notificationLock.Lock();
-
-                for (auto& n : _notifiers) {
-                    if ((n.second.IsSet() == false) || (n.second.Value() == callsign)) {
-                        n.first->Deactivated(callsign, entry);
-                    }
-                }
-                _notificationLock.Unlock();
+                _notifiers.Notify(callsign, entry, &PluginHost::IPlugin::INotification::CancelableDeactivated);
             }
             void Unavailable(const string& callsign, PluginHost::IShell* entry)
             {
-                _notificationLock.Lock();
-
-                for (auto& n : _notifiers) {
-                    if ((n.second.IsSet() == false) || (n.second.Value() == callsign)) {
-                        n.first->Unavailable(callsign, entry);
-                    }
-                }
-                _notificationLock.Unlock();
+                _notifiers.Notify(callsign, entry, &PluginHost::IPlugin::INotification::CancelableUnavailable);
             }
             void StateControlStateChange(const string& callsign, const IStateControl::state state)
             {
@@ -3338,61 +3836,44 @@ namespace PluginHost {
             }
             void Register(PluginHost::IPlugin::INotification* sink, const Core::OptionalType<string>& callsign = {})
             {
-                _notificationLock.Lock();
+                bool registered = false;
 
-                bool conflict = false;
+                if (callsign.IsSet() == true) {
+                    registered = _notifiers.Add(sink, callsign.Value());
+                }
+                else {
+                    registered = _notifiers.Add(sink);
+                }
 
-                for (const auto& entry : _notifiers) {
-
-                    if (entry.first == sink) {
-
-                        if (entry.second.IsSet() == false) {
-                            // Already registered for all
-                            conflict = true;
-                            break;
-                        }
-                        if (callsign.IsSet() == false) {
-                            // Can't register for all, because at least one specific callsign is already registered
-                            conflict = true;
-                            break;
-                        }
-                        if (entry.second.Value() == callsign.Value()) {
-                            // Duplicate registration for a specific callsign is not allowed
-                            conflict = true;
-                            break;
+                if (registered == true) {
+                    if (Snapshot(sink, callsign) == false) {
+                        if (callsign.IsSet() == true) {
+                            _notifiers.Remove(sink, callsign.Value());
+                        } else {
+                            _notifiers.Remove(sink);
                         }
                     }
                 }
-                ASSERT(conflict == false);
-
-                if (conflict == false) {
-                    sink->AddRef();
-                    _notifiers.emplace_back(sink, callsign);
-                    Snapshot(_notifiers.back());
-                }
-
-                _notificationLock.Unlock();
             }
             void Unregister(const PluginHost::IPlugin::INotification* sink, const Core::OptionalType<string>& callsign = {})
             {
-                _notificationLock.Lock();
-
-                auto match = [&](const Notifier& entry) -> bool {
-                    return ((entry.first == sink) &&
-                            ((callsign.IsSet() == false) ?
-                                (entry.second.IsSet() == false) :
-                                ((entry.second.IsSet() == true) && (entry.second.Value() == callsign.Value()))));
-                };
-
-                for (auto it = _notifiers.begin(); it != _notifiers.end(); ++it) {
-                    if (match(*it) == true) {
-                        it->first->Release();
-                        _notifiers.erase(it);
-                        break;
-                    }
+                if (callsign.IsSet() == true) {
+                    _notifiers.Remove(sink, callsign.Value());
+                } else {
+                    _notifiers.Remove(sink);
                 }
-
-                _notificationLock.Unlock();
+            }
+            void Register(IPlugin::INotification* sink, const uint32_t interface_id)
+            {
+                if( _notifiers.Add(sink, interface_id)  == true) {
+                    if( Snapshot(sink, interface_id) == false) {
+                        _notifiers.Remove(sink, interface_id);
+                    }   
+                }
+            }
+            void Unregister(IPlugin::INotification* sink, const uint32_t interface_id)
+            {
+                _notifiers.Remove(sink, interface_id);
             }
             inline void* QueryInterfaceByCallsign(const uint32_t id, const string& name)
             {
@@ -3745,7 +4226,19 @@ namespace PluginHost {
 
                 _adminLock.Lock();
 
-                auto it = _services.find(callsign);
+                Plugins::const_iterator it;
+
+#ifdef __ACCEPT_VERSION_IN_CALLSIGN__
+                // JSON-RPC version number has no meaning here, but such syntax was previously accidentally allowed.
+                const uint16_t length = static_cast<uint16_t>(callsign.length());
+                if ((length > 2) && (callsign[length - 2] == TCHAR('.')) && (::isdigit(callsign[length - 1])) != 0) {
+                    TRACE_L1("Ignoring version number in callsign '%s'", callsign.c_str());
+                    SYSLOG(Logging::Notification, (_T("Version number not expected in a callsign ('%s'), ignored!"), callsign.c_str()));
+                    it = _services.find(string(callsign.data(), (length - 2)));
+                } else
+#endif // __ACCEPT_VERSION_IN_CALLSIGN__
+
+                it = _services.find(callsign);
 
                 if (it != _services.end()) {
                     ASSERT(it->second != nullptr);
@@ -3809,19 +4302,7 @@ namespace PluginHost {
                 Core::IUnknown* result = nullptr;
 
                 if (interfaceId == PluginHost::IPlugin::INotification::ID) {
-                    _notificationLock.Lock();
-
-                    for (auto it = _notifiers.begin(); it != _notifiers.end();) {
-
-                        if (static_cast<const Core::IUnknown*>(it->first) == remote) {
-                            it->first->Release();
-                            it = _notifiers.erase(it);
-                        } else {
-                            ++it;
-                        }
-                    }
-
-                    _notificationLock.Unlock();
+                    _notifiers.RemoveAll(remote);
                 }
                 else if (interfaceId == IShell::IConnectionServer::INotification::ID) {
 
