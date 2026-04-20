@@ -69,29 +69,52 @@ namespace PluginHost
                 all_paths->Release();
             }
         } else {
-            ICOMLink* handler(QueryInterface<ICOMLink>());
 
-            if (handler != nullptr) {
-                string locator(rootConfig.Locator.Value());
-                if (locator.empty() == true) {
-                    locator = Locator();
+            bool allowed = true;
+            switch (rootConfig.Mode) {
+                case Plugin::Config::RootConfig::ModeType::OFF:
+                    ASSERT(false);
+                    break;
+                case Plugin::Config::RootConfig::ModeType::LOCAL:
+                    allowed = AllowedLocal();
+                    break;
+                case Plugin::Config::RootConfig::ModeType::CONTAINER:
+                    allowed = AllowedContainer();
+                    break;
+                case Plugin::Config::RootConfig::ModeType::DISTRIBUTED:
+                    allowed = AllowedDistributed();
+                    break;
+                default:
+                    ASSERT(false);
+                    break;
                 }
-                RPC::Object definition(locator,
-                    className,
-                    Callsign(),
-                    interface,
-                    version,
-                    rootConfig.User.Value(),
-                    rootConfig.Group.Value(),
-                    rootConfig.Threads.Value(),
-                    rootConfig.Priority.Value(),
-                    rootConfig.HostType(),
-                    SystemRootPath(),
-                    rootConfig.RemoteAddress.Value(),
-                    rootConfig.Configuration.Value(),
-                    rootConfig.Environment());
 
-                result = handler->Instantiate(definition, waitTime, pid);
+            if (allowed == true) {
+
+                ICOMLink* handler(QueryInterface<ICOMLink>());
+
+                if (handler != nullptr) {
+                    string locator(rootConfig.Locator.Value());
+                    if (locator.empty() == true) {
+                        locator = Locator();
+                    }
+                    RPC::Object definition(locator,
+                        className,
+                        Callsign(),
+                        interface,
+                        version,
+                        rootConfig.User.Value(),
+                        rootConfig.Group.Value(),
+                        rootConfig.Threads.Value(),
+                        rootConfig.Priority.Value(),
+                        rootConfig.HostType(),
+                        SystemRootPath(),
+                        rootConfig.RemoteAddress.Value(),
+                        rootConfig.Configuration.Value(),
+                        rootConfig.Environment());
+
+                    result = handler->Instantiate(definition, waitTime, pid);
+                }
             }
         }
 

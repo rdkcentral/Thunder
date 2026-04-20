@@ -131,9 +131,9 @@ namespace Core {
         }
         ~SinkType()
         {
-            REPORT_OUTOFBOUNDS_WARNING(WarningReporting::SinkStillHasReference, _referenceCount);
+            REPORT_OUTOFBOUNDS_WARNING(WarningReporting::SinkStillHasReference, _referenceCount.load(std::memory_order_relaxed));
 
-            if (_referenceCount != 0) {
+            if (_referenceCount.load(std::memory_order_relaxed) != 0) {
                 // Since this is a Composit of a larger object, it could be that the reference count has
                 // not reached 0. This can happen if a process that has a reference to this SinkType (e.g. 
                 // a registered notification) crashed before it could unregister this notification. Due to
@@ -150,13 +150,13 @@ namespace Core {
     public:
         virtual uint32_t AddRef() const
         {
-            Core::InterlockedIncrement(_referenceCount);
+            ++_referenceCount;
             return (Core::ERROR_COMPOSIT_OBJECT);
         }
         virtual uint32_t Release() const
         {
-            ASSERT (_referenceCount > 0);
-            Core::InterlockedDecrement(_referenceCount);
+            VARIABLE_IS_NOT_USED uint32_t newvalue = --_referenceCount;
+            ASSERT (newvalue != std::numeric_limits<uint32_t>::max());
             return (Core::ERROR_COMPOSIT_OBJECT);
         }
 
@@ -165,7 +165,7 @@ namespace Core {
             uint32_t result = Core::ERROR_NONE;
             uint64_t now = Core::Time::Now().Ticks() / Core::Time::TicksPerMillisecond;
             uint8_t count = 0;
-            while (_referenceCount > 0) {
+            while (_referenceCount.load(std::memory_order_relaxed) > 0) {
                     Core::Thread::Yield(count, 100);
                     if (( timeout != Core::infinite ) && ( (Core::Time::Now().Ticks() / Core::Time::TicksPerMillisecond) - now > timeout )) {
                         result = Core::ERROR_TIMEDOUT;
@@ -177,7 +177,7 @@ namespace Core {
         }
 
     private:
-        mutable uint32_t _referenceCount;
+        mutable std::atomic<uint32_t> _referenceCount;
     };
 
     template <typename ACTUALSERVICE>
@@ -381,46 +381,52 @@ static Thunder::Core::PublishedServiceType<ACTUALCLASS> ServiceMetadata_##ACTUAL
 #undef END_INTERFACE_MAP
 #endif
 
-#define BEGIN_INTERFACE_MAP(ACTUALCLASS)                                     \
-    void* QueryInterface(const uint32_t interfaceNumber) override            \
-    {                                                                        \
-        if (interfaceNumber == Thunder::Core::IUnknown::ID) {                         \
-            AddRef();                                                        \
-            return (static_cast<void*>(static_cast<Thunder::Core::IUnknown*>(this))); \
+#define BEGIN_INTERFACE_MAP(ACTUALCLASS)                                                                \
+    void* QueryInterface(const uint32_t interfaceNumber, const bool asIUnknown VARIABLE_IS_NOT_USED = false) override        \
+    {                                                                                                   \
+        if (interfaceNumber == Thunder::Core::IUnknown::ID) {                                           \
+            AddRef();                                                                                   \
+            return static_cast<void*>(static_cast<Thunder::Core::IUnknown*>(this));                     \
         }
 
-#define INTERFACE_ENTRY(TYPE)                                  \
-    else if (interfaceNumber == TYPE::ID)                      \
-    {                                                          \
-        AddRef();                                              \
-        return (static_cast<void*>(static_cast<TYPE*>(this))); \
+#define INTERFACE_ENTRY(TYPE)                                                                                                                           \
+    else if (interfaceNumber == TYPE::ID)                                                                                                               \
+    {                                                                                                                                                   \
+        AddRef();                                                                                                                                       \
+        if(asIUnknown == false)                                                                                                                         \
+            return static_cast<void*>(static_cast<TYPE*>(this));                                                                                        \
+        else                                                                                                                                            \
+            return static_cast<void*>(static_cast<Thunder::Core::IUnknown*>(this));                                                                              \
     }
 
-#define INTERFACE_AGGREGATE(TYPE, AGGREGATE)              \
-    else if (interfaceNumber == TYPE::ID)                 \
-    {                                                     \
-        if (AGGREGATE != nullptr) {                       \
-            return (AGGREGATE->QueryInterface(TYPE::ID)); \
-        }                                                 \
-        return (nullptr);                                 \
+#define INTERFACE_AGGREGATE(TYPE, AGGREGATE)                                           \
+    else if (interfaceNumber == TYPE::ID)                                              \
+    {                                                                                  \
+        if (AGGREGATE != nullptr) {                                                    \
+            return AGGREGATE->QueryInterface(TYPE::ID, asIUnknown);                    \
+        }                                                                              \
+        return nullptr;                                                                \
     }
 
 
-#define INTERFACE_RELAY(TYPE, RELAY)                               \
-    else if (interfaceNumber == TYPE::ID) {                        \
-        if (RELAY != nullptr) {                                    \
-           AddRef();                                               \
-           return (static_cast<void*>(static_cast<TYPE*>(this)));  \
-        }                                                          \
-        return (nullptr);                                          \
+#define INTERFACE_RELAY(TYPE, RELAY)                                                                                                                      \
+    else if (interfaceNumber == TYPE::ID) {                                                                                                               \
+        if (RELAY != nullptr) {                                                                                                                           \
+           AddRef();                                                                                                                                      \
+           if (asIUnknown == false)                                                                                                                       \
+               return static_cast<void*>(static_cast<TYPE*>(this));                                                                                       \
+           else                                                                                                                                           \
+               return static_cast<void*>(static_cast<Thunder::Core::IUnknown*>(this));                                                                             \
+        }                                                                                                                                                 \
+        return nullptr;                                                                                                                                   \
     }
 
-#define NEXT_INTERFACE_MAP(BASECLASS)                             \
-        return (BASECLASS::QueryInterface(interfaceNumber));      \
+#define NEXT_INTERFACE_MAP(BASECLASS)                                          \
+        return BASECLASS::QueryInterface(interfaceNumber, asIUnknown);        \
     }
 
-#define END_INTERFACE_MAP                                         \
-        return (nullptr);                                         \
+#define END_INTERFACE_MAP                                      \
+        return nullptr;                                         \
     }
 
 }

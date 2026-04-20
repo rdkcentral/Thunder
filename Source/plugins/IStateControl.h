@@ -24,6 +24,8 @@
 
 #include <com/ICOM.h>
 
+// @insert "IShell.h"
+
 namespace Thunder {
 namespace PluginHost {
 

@@ -96,7 +96,8 @@ namespace Core {
         ERROR_CODE(ERROR_INTERNAL_JSONRPC, 55) \
         ERROR_CODE(ERROR_PARSING_ENVELOPPE, 56) \
         ERROR_CODE(ERROR_COMPOSIT_OBJECT, 57) \
-        ERROR_CODE(ERROR_ABORTED, 58)
+        ERROR_CODE(ERROR_ABORTED, 58) \
+        ERROR_CODE(ERROR_CANCEL, 59)
 
     #define ERROR_CODE(CODE, VALUE) CODE = VALUE,
 
@@ -113,12 +114,12 @@ namespace Core {
     inline const TCHAR* _Err2Str()
     {
         return _T("");
-    };
+    }
 
     #define ERROR_CODE(CODE, VALUE) \
         template<> inline const TCHAR* _Err2Str<VALUE>() { return _T(#CODE); }
 
-    ERROR_CODES;
+    ERROR_CODES
 
     #undef ERROR_CODE
 
@@ -126,13 +127,13 @@ namespace Core {
     inline const TCHAR* _bogus_ErrorToString(uint32_t code)
     {
         return (code == N? _Err2Str<N>() : _bogus_ErrorToString<N-1>(code));
-    };
+    }
 
     template<>
     inline const TCHAR* _bogus_ErrorToString<0u>(uint32_t code)
     {
         return (code == 0? _Err2Str<0u>() : _Err2Str<~0u>());
-    };
+    }
 
     EXTERNAL const TCHAR* ErrorToString(const Core::hresult code);
     EXTERNAL string ErrorToStringExtended(const Core::hresult code);

@@ -395,6 +395,7 @@ namespace RPC {
             const string& hostApplication,
             const string& persistentPath,
             const string& systemPath,
+            const string& extensionPath,
             const string& dataPath,
             const string& volatilePath,
             const string& applicationPath,
@@ -405,6 +406,7 @@ namespace RPC {
             , _hostApplication(hostApplication)
             , _persistent(persistentPath)
             , _system(systemPath)
+            , _extension(extensionPath)
             , _data(dataPath)
             , _volatile(volatilePath)
             , _application(applicationPath)
@@ -418,6 +420,7 @@ namespace RPC {
             , _hostApplication(copy._hostApplication)
             , _persistent(copy._persistent)
             , _system(copy._system)
+            , _extension(copy._extension)
             , _data(copy._data)
             , _volatile(copy._volatile)
             , _application(copy._application)
@@ -431,6 +434,7 @@ namespace RPC {
             , _hostApplication(std::move(move._hostApplication))
             , _persistent(std::move(move._persistent))
             , _system(std::move(move._system))
+            , _extension(std::move(move._extension))
             , _data(std::move(move._data))
             , _volatile(std::move(move._volatile))
             , _application(std::move(move._application))
@@ -459,6 +463,10 @@ namespace RPC {
         inline const string& SystemPath() const
         {
             return (_system);
+        }
+        inline const string& ExtensionPath() const
+        {
+            return (_extension);
         }
         inline const string& DataPath() const
         {
@@ -490,6 +498,7 @@ namespace RPC {
         string _hostApplication;
         string _persistent;
         string _system;
+        string _extension;
         string _data;
         string _volatile;
         string _application;
@@ -621,6 +630,9 @@ namespace RPC {
                 }
                 if (config.SystemPath().empty() == false) {
                     _options.Add(_T("-s")).Add('"' + config.SystemPath() + '"');
+                }
+                if (config.ExtensionPath().empty() == false) {
+                    _options.Add(_T("-X")).Add('"' + config.ExtensionPath() + '"');
                 }
                 if (config.DataPath().empty() == false) {
                     _options.Add(_T("-d")).Add('"' + config.DataPath() + '"');

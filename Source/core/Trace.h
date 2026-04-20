@@ -191,8 +191,8 @@ namespace Thunder {
             std::list<Thunder::Core::callstack_info> __entries__;                                                          \
             DumpCallStack(0, __entries__);                                                                                 \
             std::string __callstack__;                                                                                     \
-            for (const Thunder::Core::callstack_info& entry : __entries__) {                                               \
-                __callstack__ += "[" + entry.module + "]:[" + entry.function + "]:[" + std::to_string(entry.line) + "]\n"; \
+            for (const Thunder::Core::callstack_info& __entry__ : __entries__) {                                               \
+                __callstack__ += "[" + __entry__.module + "]:[" + __entry__.function + "]:[" + std::to_string(__entry__.line) + "]\n"; \
             }                                                                                                              \
             Thunder::Core::Messaging::IStore::Assert __assertMetadata__(                                                   \
                 __messageInfo__,                                                                                           \
@@ -284,6 +284,22 @@ namespace Thunder {
             stamp, LEVEL, Core::ToString(typeid(*this).name()),                     \
             Core::LogMessage(Core::ToString(__FILE__).c_str(), __LINE__, MESSAGE)); \
     }
+
+#define CC_SYSLOG_COMMON(format, ...)                                       \
+    do {                                                                    \
+        fprintf(stderr, "CRITICAL CONDITION! " format "\n", ##__VA_ARGS__); \
+        fflush(stderr);                                                     \
+    } while(0)
+
+#ifdef __WINDOWS__
+    #define CC_SYSLOG(format, ...) CC_SYSLOG_COMMON(format, ##__VA_ARGS__)
+#else
+    #define CC_SYSLOG(format, ...)                                          \
+        do {                                                                \
+            syslog(LOG_ERR, "CRITICAL CONDITION! " format, ##__VA_ARGS__);  \
+            CC_SYSLOG_COMMON(format, ##__VA_ARGS__);                        \
+        } while(0)
+#endif
 
 namespace Thunder {
 namespace Core {

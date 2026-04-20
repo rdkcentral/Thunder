@@ -97,7 +97,7 @@ IPTestAdministrator::~IPTestAdministrator()
             case 0  :   // Timeout expired before events are available
                         {
                             // Potential leak of shared memory descriptor
-                            int result = syscall(SYS_kill, _pid, SIGKILL);
+                            VARIABLE_IS_NOT_USED int result = syscall(SYS_kill, _pid, SIGKILL);
 
                             ASSERT(result == 0);
                         }

@@ -481,6 +481,7 @@ POP_WARNING()
                 , _callback(nullptr)
                 , _factory()
                 , _handlers()
+                , _abort(false)
             {
             }
             inline void Factory(Core::ProxyType<FactoryType<IIPC, uint32_t>>& factory)
@@ -503,6 +504,7 @@ POP_WARNING()
                 , _callback(nullptr)
                 , _factory(factory)
                 , _handlers()
+                , _abort(false)
             {
                 // Only creat the IPCFactory with a valid base factory
                 ASSERT(factory.IsValid());
@@ -591,22 +593,49 @@ POP_WARNING()
                 return (result);
             }
 
-            void Flush()
+            inline void Flush()
             {
-                _lock.Lock();
-
                 TRACE_L1("Flushing the IPC mechanims. %d", __LINE__);
+
+                _lock.Lock();
 
                 _callback = nullptr;
 
                 if (_outbound.IsValid() == true) {
                     _outbound.Release();
                 }
+
                 if (_inbound.IsValid() == true) {
                     _inbound.Release();
                 }
 
                 _lock.Unlock();
+            }
+
+            inline uint32_t Finalize(const uint32_t status)
+            {
+                uint32_t result = status;
+
+                _lock.Lock();
+
+                if (_abort == true) {
+                    Flush();
+                    _abort = false;
+                    result = Core::ERROR_ASYNC_FAILED;
+                }
+                else if (_outbound.IsValid() == true) {
+                    ASSERT(status != Core::ERROR_NONE);
+                    ASSERT(_callback != nullptr);
+                    _callback = nullptr;
+                    _outbound.Release();
+                }
+                else {
+                    ASSERT(_callback == nullptr);
+                }
+
+                _lock.Unlock();
+
+                return (result);
             }
 
             inline ProxyType<IIPCServer> ReceivedMessage(const Core::ProxyType<IMessage>& rhs, Core::ProxyType<IIPC>& inbound)
@@ -662,29 +691,17 @@ POP_WARNING()
                 _lock.Unlock();
             }
 
-            bool AbortOutbound()
+            inline void Abort()
             {
-                bool result = false;
-
                 _lock.Lock();
 
-                if (_outbound.IsValid() == true) {
-
-                    result = true;
-
-                    if (_callback != nullptr) {
-                        _callback->Dispatch(*_outbound);
-                        _callback = nullptr;
-                    }
-
-                    _outbound.Release();
-                } else {
-                    ASSERT(_callback == nullptr);
+                if (_callback != nullptr) {
+                    _abort = true;
+                    _callback->Dispatch(*_outbound);
+                    _callback = nullptr;
                 }
 
                 _lock.Unlock();
-
-                return (result);
             }
 
         private:
@@ -694,6 +711,7 @@ POP_WARNING()
             IDispatchType<IIPC>* _callback;
             Core::ProxyType<FactoryType<IIPC, uint32_t>> _factory;
             Servers _handlers;
+            bool _abort;
         };
 
     protected:
@@ -732,10 +750,6 @@ POP_WARNING()
             _administration.Unregister(id);
         }
 
-        void Abort()
-        {
-            _administration.AbortOutbound();
-        }
         template <typename ACTUALELEMENT>
         inline uint32_t Invoke(const ProxyType<ACTUALELEMENT>& command, IDispatchType<IIPC>* completed)
         {
@@ -770,6 +784,8 @@ POP_WARNING()
         virtual uint32_t Id() const = 0;
         virtual string Origin() const = 0;
         virtual uint32_t ReportResponse(Core::ProxyType<IIPC>& inbound) = 0;
+        virtual bool IsOpen() const = 0;
+        virtual bool IsClosed() const = 0;
 
     private:
         virtual uint32_t Execute(const ProxyType<IIPC>& command, IDispatchType<IIPC>* completed) = 0;
@@ -835,8 +851,7 @@ POP_WARNING()
             {
                 if (_parent.Source().IsOpen() == false) {
                     // Whatever s hapening, Flush what we were doing..
-                    _parent.Abort();
-                    _factory.Flush();
+                    _factory.Abort();
                 }
 
                 _parent.StateChange();
@@ -862,18 +877,8 @@ POP_WARNING()
         public:
             uint32_t Wait(const uint32_t waitTime)
             {
-                uint32_t result = Core::ERROR_NONE;
-
                 // Now we wait for ever, to get a signal that we are done :-)
-                if (_signal.Lock(waitTime) != Core::ERROR_NONE) {
-                    _administration.AbortOutbound();
-
-                    result = Core::ERROR_TIMEDOUT;
-                } else if (_administration.AbortOutbound() == true) {
-                    result = Core::ERROR_ASYNC_FAILED;
-                }
-
-                return (result);
+                return (_administration.Finalize(_signal.Lock(waitTime)));
             }
             void Dispatch(IIPC& /* element */) override
             {
@@ -942,6 +947,14 @@ POP_WARNING()
 
             return (Core::ERROR_NONE);
         }
+        bool IsOpen() const override
+        {
+            return _link.IsOpen();
+        }
+        bool IsClosed() const override
+        {
+            return _link.IsClosed();
+        }
         virtual void StateChange()
         {
             __StateChange();
@@ -999,21 +1012,26 @@ POP_WARNING()
 
         uint32_t Execute(const ProxyType<IIPC>& command, IDispatchType<IIPC>* completed) override
         {
-            uint32_t success = Core::ERROR_UNAVAILABLE;
+            uint32_t success = Core::ERROR_NONE;
 
             _serialize.Lock();
 
             if (_administration.InProgress() == true) {
                 success = Core::ERROR_INPROGRESS;
-            } else if (_link.IsOpen() == true) {
+            }
+            else {
                 // We need to accept a CONST object to avoid an additional object creation
                 // proxy casted objects.
                 _administration.SetOutbound(command, completed);
 
-                // Send out the
-                _link.Submit(command->IParameters());
+                if (_link.IsOpen() == true) {
+                    _link.Submit(command->IParameters());
+                }
+                else {
+                    _administration.Flush();
 
-                success = Core::ERROR_NONE;
+                    success = Core::ERROR_CONNECTION_CLOSED;
+                }
             }
 
             _serialize.Unlock();
@@ -1026,17 +1044,19 @@ POP_WARNING()
 
             _serialize.Lock();
 
+            IPCTrigger sink(_administration);
+
+            // We need to accept a CONST object to avoid an additional object creation
+            // proxy casted objects.
+            _administration.SetOutbound(command, &sink);
+
             if (_link.IsOpen() == true) {
-                IPCTrigger sink(_administration);
-
-                // We need to accept a CONST object to avoid an additional object creation
-                // proxy casted objects.
-                _administration.SetOutbound(command, &sink);
-
-                // Send out the
                 _link.Submit(command->IParameters());
 
                 success = sink.Wait(waitTime);
+            }
+            else {
+                _administration.Flush();
             }
 
             _serialize.Unlock();

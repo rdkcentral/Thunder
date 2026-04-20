@@ -1,4 +1,4 @@
-Thunder plugins are built around the concept of interfaces. An interface acts as a contract between the plugin and the outside world (this could be external client applications or other plugins). 
+Thunder plugins are built around the concept of interfaces. An interface acts as a contract between the plugin and the outside world (this could be external client applications or other plugins).
 
 In Thunder, plugins can expose their interfaces over two communication channels:
 
@@ -231,7 +231,7 @@ For example suppose we would have this interface:
 
             enum { ID = RPC::ID_TEST_NOTIFICATION };
 
-            virtual void StateChange(const string& callsign, const bool test2) = 0;
+            virtual void StateChange(const string& callsign, const bool test) = 0;
         };
 
         virtual Core::hresult Register(INotification* const sink) = 0;
@@ -270,7 +270,7 @@ Suppose we have this interface:
 
             enum { ID = RPC::ID_TEST_NOTIFICATION };
 
-            virtual void StateChange(const string& callsign, const bool test2) = 0;
+            virtual void StateChange(const string& callsign, const bool test) = 0;
         };
 
         virtual Core::hresult Register(INotification* const sink, const string& callsign /* index */) = 0;
@@ -306,7 +306,7 @@ The notification sent will then be like this:
   "jsonrpc": "2.0",
   "method": "myid.stateChange@<callsign>",
   "params": {
-    "marcel": false
+    "test": false
   }
 }
 ```
@@ -319,7 +319,7 @@ Again static helpers are created in the J< interface >.h file that allow one to 
         Exchange::JTest::Event::StateChange(*this, "test", true);
 ```
 
-This will only sent a notification to the clients whom registered for the stateChange event with client "test" by adding @test to the registration designator.
+This will only sent a notification to the clients who registered for the stateChange event with client "test" by adding @test to the registration designator.
 
 This generated static helper uses a lambda internally which will send the notification to all clients who registered for the index passed to the helper function. It is also possible to pass a lambda yourself as last parameter to the static helper function when you want different behaviour.
 
@@ -336,7 +336,7 @@ It is also possible to use Core::OptionalType to indicate the index is not manda
 
             enum { ID = RPC::ID_TEST_NOTIFICATION };
 
-            virtual void StateChange(const string& callsign, const bool test2) = 0;
+            virtual void StateChange(const string& callsign, const bool test) = 0;
         };
 
         virtual Core::hresult Register(INotification* sink, const Core::OptionalType<string>& callsign /* @index */) = 0;
@@ -384,7 +384,7 @@ The notification is now a little different however:
   "method": "myid.stateChange@abc",
   "params": {
     "callsign": "...",
-    "marcel": false
+    "test": false
   }
 }
 ```
@@ -393,6 +393,9 @@ It will now always include the callsign as parameter (as if the event was for a 
 As always these examples will also be included in the generated documentation for this interface
 
 And again static helper functions will be included in the generated J< interface >.h file for sending the notifications.
+
+Please note putting the @index tag on the Register method (if desired in combination with putting it on the parameter in the event method itself) is the preferred way to indicate a parameter is used as an index. 
+As it is not mandatory for JSON-RPC events to work to have a COM-RPC Register method perse (as JSON-RPC is in the functional domain the Register function is always there and provided by Thunder, not the interface) it is supported to only have the @index on the parameter in the event method. In case the code generator does find a Register for the event class with the same index parameter it will however put out a warning as it is desired for consistency to put the @index with the Register method in that case.
 
 ##### statuslisteners
 

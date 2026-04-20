@@ -26,6 +26,17 @@ namespace Thunder {
 
 namespace Core {
 
+#if defined(__APPLE__)
+// std::hash<string> is not guaranteed stable across platforms or compiler versions,
+// but since producer and consumer are always built from the same binary this is safe.
+static string HashedSemName(const string& name, const char* suffix) {
+    size_t h = std::hash<string>{}(name);
+    char buf[32];
+    snprintf(buf, sizeof(buf), "/%013zx%s", h, suffix);
+    return buf;
+}
+#endif
+
     SharedBuffer::SharedBuffer(const TCHAR name[])
         : DataElementFile(name, File::USER_READ | File::USER_WRITE | File::SHAREABLE, 0)
         , _administrationBuffer((string(name) + ".admin"), File::USER_READ | File::USER_WRITE | File::SHAREABLE, 0)
@@ -33,6 +44,13 @@ namespace Core {
     #ifdef __WINDOWS__
         , _producer((string(name) + ".producer").c_str())
         , _consumer((string(name) + ".consumer").c_str())
+    #elif defined(__APPLE__)
+        /* 
+           macOS limits POSIX named semaphore names to 31 characters. Hash the buffer name
+           to produce a compact, collision-resistant identifier that always fits. 
+        */
+        , _producer(HashedSemName(name, ".producer").c_str())
+        , _consumer(HashedSemName(name, ".consumer").c_str())
     #else
         , _producer(reinterpret_cast<uint8_t*>(_administration) + sizeof(Administration))
         , _consumer(reinterpret_cast<uint8_t*>(_administration) + sizeof(Administration) + SharedSemaphore::Size())
@@ -50,10 +68,17 @@ namespace Core {
     #ifdef __WINDOWS__
         , _producer((string(name) + ".producer").c_str(), 1, 1)
         , _consumer((string(name) + ".consumer").c_str(), 0, 1)
+    #elif defined(__APPLE__)
+        /*
+            macOS limits POSIX named semaphore names to 31 characters. Hash the buffer name
+            to produce a compact, collision-resistant identifier that always fits. 
+        */
+        , _producer(HashedSemName(name, ".producer").c_str(), 1, 1)
+        , _consumer(HashedSemName(name, ".consumer").c_str(), 0, 1)
     #else
         , _producer(reinterpret_cast<uint8_t*>(_administration) + sizeof(Administration), 1, 1)
         , _consumer(reinterpret_cast<uint8_t*>(_administration) + sizeof(Administration) + SharedSemaphore::Size(), 0, 1)
-#   endif
+    #endif
         , _customerAdministration(PointerAlign(&(reinterpret_cast<uint8_t*>(_administration)[sizeof(Administration) + (SharedSemaphore::Size() * 2)])))
     {
         _administration->_bytesWritten = 0;

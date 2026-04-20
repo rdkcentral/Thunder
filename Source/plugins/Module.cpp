@@ -20,4 +20,8 @@
 #include "Module.h"
 #include "IController.h"
 
+#ifdef BUILD_SHARED_LIBS
 MODULE_NAME_DECLARATION(BUILD_REFERENCE)
+#else
+MODULE_NAME_ARCHIVE_DECLARATION
+#endif

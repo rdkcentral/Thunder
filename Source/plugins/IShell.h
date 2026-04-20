@@ -20,12 +20,15 @@
 #ifndef __ISHELL_H__
 #define __ISHELL_H__
 
+// coverity[PW.INCLUDE_RECURSION] - Mutual include with IPlugin.h is intentional and safe;
+// both files are guarded by include guards (__IPLUGIN_H__ / __ISHELL_H__).
 #include "IPlugin.h"
 #include "ISubSystem.h"
 
 #include <com/ICOM.h>
 
 // @insert <com/ICOM.h>
+// @insert "ISubSystem.h"
 
 namespace Thunder {
 
@@ -261,6 +264,8 @@ namespace PluginHost {
         // on the controller.
         virtual void Register(IPlugin::INotification* sink, const Core::OptionalType<string>& callsign = {}) = 0;
         virtual void Unregister(IPlugin::INotification* sink, const Core::OptionalType<string>& callsign = {}) = 0;
+        virtual void Register(IPlugin::INotification* sink, const uint32_t interface_id) = 0;
+        virtual void Unregister(IPlugin::INotification* sink, const uint32_t interface_id) = 0;
         virtual state State() const = 0;
         virtual void* /* @interface:id */ QueryInterfaceByCallsign(const uint32_t id, const string& name) = 0;
 
@@ -412,6 +417,36 @@ namespace PluginHost {
             return (nullptr);
         }
 
+        bool IsInterfaceSupported(const uint32_t interface_id) const
+        {
+            bool hasinterface = false;
+
+            if (interface_id != PluginHost::IShell::ID) {
+
+                void* interface = const_cast<IShell*>(this)->QueryInterface(interface_id, true);
+
+                if (interface != nullptr) {
+                    hasinterface = true;
+                    Core::IUnknown* piu = static_cast<Core::IUnknown*>(interface);
+                    piu->Release();
+                }
+            } else {
+                hasinterface = true;
+            }
+            return hasinterface;
+        }
+
+        template <typename REQUESTEDINTERFACE>
+        void Register(IPlugin::INotification* sink)
+        {
+            Register(sink, REQUESTEDINTERFACE::ID);
+        }
+        template <typename REQUESTEDINTERFACE>
+        void Unregister(IPlugin::INotification* sink)
+        {
+            Unregister(sink, REQUESTEDINTERFACE::ID);
+        }
+
         virtual RPC::IStringIterator* GetLibrarySearchPaths(const string&) const = 0;
 
     private:
@@ -443,6 +478,22 @@ namespace PluginHost {
         }
 
         void* Root(uint32_t& pid, const uint32_t waitTime, const string className, const uint32_t interface, const uint32_t version = ~0);
+
+        // @stubgen:omit
+        virtual bool AllowedLocal() const
+        {
+            return true;
+        }
+        // @stubgen:omit
+        virtual bool AllowedDistributed() const
+        {
+            return true;
+        }
+        // @stubgen:omit
+        virtual bool AllowedContainer() const
+        {
+            return true;
+        }
 
     };
 
