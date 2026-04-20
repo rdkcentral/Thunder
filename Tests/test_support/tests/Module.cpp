@@ -1,5 +1,3 @@
-#define MODULE_NAME SmokeTest
-
-#include <core/core.h>
+#include "Module.h"
 
 MODULE_NAME_DECLARATION(BUILD_REFERENCE)

@@ -76,6 +76,58 @@ jobs:
         repository: rdkcentral/ThunderTools
         ref: ${{steps.tools.outputs.first_match}}
 
+    - name: Checkout ThunderInterfaces - default
+      if: ${{ !contains(github.event.pull_request.body, '[DependsOn=ThunderInterfaces:') }}
+      uses: actions/checkout@v4
+      with:
+        path: ThunderInterfaces
+        repository: rdkcentral/ThunderInterfaces
+        # TODO: Remove ref once qa_interfaces changes are merged to master
+        ref: development/test-support
+
+    - name: Regex ThunderInterfaces
+      if: ${{ contains(github.event.pull_request.body, '[DependsOn=ThunderInterfaces:') }}
+      id: interfaces
+      uses: AsasInnab/regex-action@v1
+      with:
+        regex_pattern: '(?<=\[DependsOn=ThunderInterfaces:).*(?=\])'
+        regex_flags: 'gim'
+        search_string: ${{github.event.pull_request.body}}
+
+    - name: Checkout ThunderInterfaces - ${{steps.interfaces.outputs.first_match}}
+      if: ${{ contains(github.event.pull_request.body, '[DependsOn=ThunderInterfaces:') }}
+      uses: actions/checkout@v4
+      with:
+        path: ThunderInterfaces
+        repository: rdkcentral/ThunderInterfaces
+        ref: ${{steps.interfaces.outputs.first_match}}
+
+    - name: Checkout ThunderNanoServices - default
+      if: ${{ !contains(github.event.pull_request.body, '[DependsOn=ThunderNanoServices:') }}
+      uses: actions/checkout@v4
+      with:
+        path: ThunderNanoServices
+        repository: rdkcentral/ThunderNanoServices
+        # TODO: Remove ref once TestPlugin changes are merged to master
+        ref: development/test-support
+
+    - name: Regex ThunderNanoServices
+      if: ${{ contains(github.event.pull_request.body, '[DependsOn=ThunderNanoServices:') }}
+      id: nanoservices
+      uses: AsasInnab/regex-action@v1
+      with:
+        regex_pattern: '(?<=\[DependsOn=ThunderNanoServices:).*(?=\])'
+        regex_flags: 'gim'
+        search_string: ${{github.event.pull_request.body}}
+
+    - name: Checkout ThunderNanoServices - ${{steps.nanoservices.outputs.first_match}}
+      if: ${{ contains(github.event.pull_request.body, '[DependsOn=ThunderNanoServices:') }}
+      uses: actions/checkout@v4
+      with:
+        path: ThunderNanoServices
+        repository: rdkcentral/ThunderNanoServices
+        ref: ${{steps.nanoservices.outputs.first_match}}
+
 # ----- Build -----
     - name: Build ThunderTools
       run: |
@@ -91,10 +143,31 @@ jobs:
           -DBINDING="127.0.0.1" \
           -DCMAKE_BUILD_TYPE=${{matrix.build_type}} \
           -DCMAKE_INSTALL_PREFIX="${{matrix.build_type}}/install/usr" \
-          -DCMAKE_MODULE_PATH="${PWD}/${{matrix.build_type}}/install/usr/include/WPEFramework/Modules" \
+          -DCMAKE_MODULE_PATH="${PWD}/${{matrix.build_type}}/install/usr/include/Thunder/Modules" \
           -DPORT="0" \
-          -DENABLE_TEST_RUNTIME=ON
+          -DENABLE_CXX17=OFF \
+          -DENABLE_TEST_RUNTIME=ON \
+          -DTEST_PLUGIN_PATH="${PWD}/${{matrix.build_type}}/install/usr/lib/thunder/plugins"
         cmake --build ${{matrix.build_type}}/build/Thunder --target install
+
+    - name: Build ThunderInterfaces
+      run: |
+        source venv/bin/activate
+        cmake -G Ninja -S ThunderInterfaces -B ${{matrix.build_type}}/build/ThunderInterfaces \
+          -DCMAKE_BUILD_TYPE=${{matrix.build_type}} \
+          -DCMAKE_INSTALL_PREFIX="${{matrix.build_type}}/install/usr" \
+          -DCMAKE_MODULE_PATH="${PWD}/${{matrix.build_type}}/install/usr/include/Thunder/Modules"
+        cmake --build ${{matrix.build_type}}/build/ThunderInterfaces --target install
+
+    - name: Build ThunderNanoServices TestPlugin
+      run: |
+        source venv/bin/activate
+        cmake -G Ninja -S ThunderNanoServices/tests -B ${{matrix.build_type}}/build/ThunderNanoServicesTests \
+          -DCMAKE_BUILD_TYPE=${{matrix.build_type}} \
+          -DCMAKE_INSTALL_PREFIX="${{matrix.build_type}}/install/usr" \
+          -DCMAKE_MODULE_PATH="${PWD}/${{matrix.build_type}}/install/usr/include/Thunder/Modules" \
+          -DPLUGIN_TESTPLUGIN=ON
+        cmake --build ${{matrix.build_type}}/build/ThunderNanoServicesTests --target install
 
 # ----- Run smoke test -----
     - name: Run smoke test
@@ -104,8 +177,18 @@ jobs:
           --gtest_output="xml:smoke-test-results.xml" \
           --gtest_color=yes
 
+# ----- Run plugin test -----
+    - name: Run plugin test (COM-RPC + JSON-RPC)
+      run: |
+        LD_LIBRARY_PATH="${{matrix.build_type}}/install/usr/lib:${PWD}/${{matrix.build_type}}/install/usr/lib/thunder/plugins:$LD_LIBRARY_PATH" \
+        ${{matrix.build_type}}/build/Thunder/Tests/test_support/tests/thunder_test_runtime_plugin \
+          --gtest_output="xml:plugin-test-results.xml" \
+          --gtest_color=yes
+
     - name: Upload test results
       uses: actions/upload-artifact@v4
       with:
-        name: smoke-test-results-${{matrix.build_type}}
-        path: smoke-test-results.xml
+        name: test-results-${{matrix.build_type}}
+        path: |
+          smoke-test-results.xml
+          plugin-test-results.xml

@@ -1,7 +1,7 @@
+#include "Module.h"
 #include "ThunderTestRuntime.h"
 
 #include <PluginServer.h>
-#include <core/core.h>
 #include <fstream>
 #include <plugins/Configuration.h>
 

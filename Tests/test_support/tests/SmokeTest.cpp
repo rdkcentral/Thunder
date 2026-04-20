@@ -7,9 +7,9 @@
 //   3. GetShell() COM-RPC path
 // ==========================================================================
 
+#include "Module.h"
 #include "ThunderTestRuntime.h"
 #include <gtest/gtest.h>
-#include <core/core.h>
 #include <string>
 
 namespace Thunder {
