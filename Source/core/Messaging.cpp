@@ -82,7 +82,7 @@ namespace Core {
             writer.Number(_type);
 
             switch (_type) {
-            case ValueType::TEXT:    writer.NullTerminatedText(_text); break;
+            case ValueType::TEXT:    writer.NullTerminatedText(_text, bufferSize - writer.Offset()); break;
             case ValueType::INT8:    writer.Number(static_cast<int8_t>(_numericValue._signed));      break;
             case ValueType::UINT8:   writer.Number(static_cast<uint8_t>(_numericValue._unsigned));   break;
             case ValueType::INT16:   writer.Number(static_cast<int16_t>(_numericValue._signed));     break;
