@@ -171,20 +171,26 @@ namespace Core {
             template<typename T, std::enable_if_t<std::is_integral_v<std::decay_t<T>> && std::is_signed_v<std::decay_t<T>> && !std::is_same_v<std::decay_t<T>, bool>, int> = 0>
             explicit TelemetryMessage(T value)
                 : _type(SignedTag<sizeof(T)>())
-                , _text(std::to_string(static_cast<int64_t>(value)))
+                , _text()
                 , _numericValue{}
             {
                 _numericValue._signed = static_cast<int64_t>(value);
+                TCHAR buf[32];
+                _stnprintf(buf, sizeof(buf) / sizeof(TCHAR), _T("%" PRId64), static_cast<int64_t>(value));
+                _text = buf;
             }
 
             // Unsigned integral types
             template<typename T, std::enable_if_t<std::is_integral_v<std::decay_t<T>> && std::is_unsigned_v<std::decay_t<T>> && !std::is_same_v<std::decay_t<T>, bool>, int> = 0>
             explicit TelemetryMessage(T value)
                 : _type(UnsignedTag<sizeof(T)>())
-                , _text(std::to_string(static_cast<uint64_t>(value)))
+                , _text()
                 , _numericValue{}
             {
                 _numericValue._unsigned = static_cast<uint64_t>(value);
+                TCHAR buf[32];
+                _stnprintf(buf, sizeof(buf) / sizeof(TCHAR), _T("%" PRIu64), static_cast<uint64_t>(value));
+                _text = buf;
             }
 
             explicit TelemetryMessage(float value)
@@ -193,8 +199,8 @@ namespace Core {
                 , _numericValue{}
             {
                 _numericValue._float = value;
-                char buf[64];
-                snprintf(buf, sizeof(buf), "%g", static_cast<double>(value));
+                TCHAR buf[64];
+                _stnprintf(buf, sizeof(buf) / sizeof(TCHAR), _T("%g"), static_cast<double>(value));
                 _text = buf;
             }
 
@@ -204,8 +210,8 @@ namespace Core {
                 , _numericValue{}
             {
                 _numericValue._double = value;
-                char buf[64];
-                snprintf(buf, sizeof(buf), "%g", value);
+                TCHAR buf[64];
+                _stnprintf(buf, sizeof(buf) / sizeof(TCHAR), _T("%g"), value);
                 _text = buf;
             }
 

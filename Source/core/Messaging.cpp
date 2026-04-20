@@ -139,16 +139,16 @@ namespace Core {
                 case ValueType::FLOAT32: {
                     float v = reader.Number<float>();
                     _numericValue._float = v;
-                    char buf[64];
-                    snprintf(buf, sizeof(buf), "%g", static_cast<double>(v));
+                    TCHAR buf[64];
+                    _stnprintf(buf, sizeof(buf) / sizeof(TCHAR), _T("%g"), static_cast<double>(v));
                     _text = buf;
                     break;
                 }
                 case ValueType::FLOAT64: {
                     double v = reader.Number<double>();
                     _numericValue._double = v;
-                    char buf[64];
-                    snprintf(buf, sizeof(buf), "%g", v);
+                    TCHAR buf[64];
+                    _stnprintf(buf, sizeof(buf) / sizeof(TCHAR), _T("%g"), v);
                     _text = buf;
                     break;
                 }
