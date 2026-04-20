@@ -6,10 +6,10 @@ permissions:
 on:
   workflow_dispatch:
   push:
-    branches: ["R5.3", "development/test-support"]
+    branches: ["R5.3"]
     
   pull_request:
-    branches: ["R5.3"]
+    branches: ["R5.3", "development/test-support"]
 
 jobs:
   SmokeTest:
