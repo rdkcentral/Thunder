@@ -46,6 +46,11 @@ target_compile_definitions(${PLUGIN_TEST_TARGET}
         TEST_PLUGIN_PATH="${TEST_PLUGIN_PATH}"
 )
 
+target_include_directories(${PLUGIN_TEST_TARGET}
+    PRIVATE
+        ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}
+)
+
 target_link_libraries(${PLUGIN_TEST_TARGET}
     PRIVATE
         thunder_test_support

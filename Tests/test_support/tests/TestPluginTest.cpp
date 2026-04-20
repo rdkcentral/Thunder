@@ -12,7 +12,7 @@
 
 #include "Module.h"
 #include "ThunderTestRuntime.h"
-#include <interfaces/ITestPlugin.h>
+#include <qa_interfaces/ITestPlugin.h>
 #include <gtest/gtest.h>
 #include <string>
 
