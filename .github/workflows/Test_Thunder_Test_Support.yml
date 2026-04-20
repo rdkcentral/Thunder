@@ -144,7 +144,8 @@ jobs:
         cmake -G Ninja -S ThunderInterfaces -B ${{matrix.build_type}}/build/ThunderInterfaces \
           -DCMAKE_BUILD_TYPE=${{matrix.build_type}} \
           -DCMAKE_INSTALL_PREFIX="${{matrix.build_type}}/install/usr" \
-          -DCMAKE_MODULE_PATH="${PWD}/${{matrix.build_type}}/install/usr/include/Thunder/Modules"
+          -DCMAKE_MODULE_PATH="${PWD}/${{matrix.build_type}}/install/usr/include/Thunder/Modules" \
+          -DCMAKE_PREFIX_PATH="${PWD}/${{matrix.build_type}}/install/usr"
         cmake --build ${{matrix.build_type}}/build/ThunderInterfaces --target install
 
     - name: Build ThunderNanoServices TestPlugin
@@ -154,6 +155,7 @@ jobs:
           -DCMAKE_BUILD_TYPE=${{matrix.build_type}} \
           -DCMAKE_INSTALL_PREFIX="${{matrix.build_type}}/install/usr" \
           -DCMAKE_MODULE_PATH="${PWD}/${{matrix.build_type}}/install/usr/include/Thunder/Modules" \
+          -DCMAKE_PREFIX_PATH="${PWD}/${{matrix.build_type}}/install/usr" \
           -DPLUGIN_TESTPLUGIN=ON
         cmake --build ${{matrix.build_type}}/build/ThunderNanoServicesTests --target install
 
