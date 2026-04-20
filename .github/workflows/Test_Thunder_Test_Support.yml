@@ -6,7 +6,7 @@ permissions:
 on:
   workflow_dispatch:
   push:
-    branches: ["R5.3"]
+    branches: ["R5.3", "development/test-support"]
     
   pull_request:
     branches: ["R5.3", "development/test-support"]
