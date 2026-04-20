@@ -175,9 +175,7 @@ namespace Core {
                 , _numericValue{}
             {
                 _numericValue._signed = static_cast<int64_t>(value);
-                TCHAR buf[32];
-                _stnprintf(buf, sizeof(buf) / sizeof(TCHAR), _T("%" PRId64), static_cast<int64_t>(value));
-                _text = buf;
+                Stringify(_numericValue._signed);
             }
 
             // Unsigned integral types
@@ -188,32 +186,11 @@ namespace Core {
                 , _numericValue{}
             {
                 _numericValue._unsigned = static_cast<uint64_t>(value);
-                TCHAR buf[32];
-                _stnprintf(buf, sizeof(buf) / sizeof(TCHAR), _T("%" PRIu64), static_cast<uint64_t>(value));
-                _text = buf;
+                Stringify(_numericValue._unsigned);
             }
 
-            explicit TelemetryMessage(float value)
-                : _type(ValueType::FLOAT32)
-                , _text()
-                , _numericValue{}
-            {
-                _numericValue._float = value;
-                TCHAR buf[64];
-                _stnprintf(buf, sizeof(buf) / sizeof(TCHAR), _T("%g"), static_cast<double>(value));
-                _text = buf;
-            }
-
-            explicit TelemetryMessage(double value)
-                : _type(ValueType::FLOAT64)
-                , _text()
-                , _numericValue{}
-            {
-                _numericValue._double = value;
-                TCHAR buf[64];
-                _stnprintf(buf, sizeof(buf) / sizeof(TCHAR), _T("%g"), value);
-                _text = buf;
-            }
+            explicit TelemetryMessage(float value);
+            explicit TelemetryMessage(double value);
 
             TelemetryMessage(const TelemetryMessage&) = delete;
             TelemetryMessage& operator=(const TelemetryMessage&) = delete;
@@ -294,6 +271,9 @@ namespace Core {
                      : (N == 4) ? ValueType::UINT32
                      :            ValueType::UINT64;
             }
+
+            void Stringify(int64_t value);
+            void Stringify(uint64_t value);
 
             ValueType _type;
             string _text;

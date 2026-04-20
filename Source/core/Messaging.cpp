@@ -46,6 +46,34 @@ namespace Core {
             return (static_cast<uint16_t>(_text.size() + 1));
         }
 
+        TelemetryMessage::TelemetryMessage(float value)
+            : _type(ValueType::FLOAT32)
+            , _text()
+            , _numericValue{}
+        {
+            _numericValue._float = value;
+            _text = Core::Format(_T("%g"), static_cast<double>(value));
+        }
+
+        TelemetryMessage::TelemetryMessage(double value)
+            : _type(ValueType::FLOAT64)
+            , _text()
+            , _numericValue{}
+        {
+            _numericValue._double = value;
+            _text = Core::Format(_T("%g"), value);
+        }
+
+        void TelemetryMessage::Stringify(int64_t value)
+        {
+            _text = Core::NumberType<int64_t>(value).Text();
+        }
+
+        void TelemetryMessage::Stringify(uint64_t value)
+        {
+            _text = Core::NumberType<uint64_t>(value).Text();
+        }
+
         uint16_t TelemetryMessage::Serialize(uint8_t buffer[], const uint16_t bufferSize) const
         {
             Core::FrameType<0> frame(buffer, bufferSize, bufferSize);
@@ -139,17 +167,13 @@ namespace Core {
                 case ValueType::FLOAT32: {
                     float v = reader.Number<float>();
                     _numericValue._float = v;
-                    TCHAR buf[64];
-                    _stnprintf(buf, sizeof(buf) / sizeof(TCHAR), _T("%g"), static_cast<double>(v));
-                    _text = buf;
+                    _text = Core::Format(_T("%g"), static_cast<double>(v));
                     break;
                 }
                 case ValueType::FLOAT64: {
                     double v = reader.Number<double>();
                     _numericValue._double = v;
-                    TCHAR buf[64];
-                    _stnprintf(buf, sizeof(buf) / sizeof(TCHAR), _T("%g"), v);
-                    _text = buf;
+                    _text = Core::Format(_T("%g"), v);
                     break;
                 }
                 default:
