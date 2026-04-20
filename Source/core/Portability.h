@@ -290,6 +290,8 @@ PUSH_WARNING( \
 #define AF_NETLINK 16
 #define AF_PACKET  17
 
+#define _stnprintf _sntprintf
+
 // template class __declspec(dllexport) std::basic_string<char>;
 
 inline void SleepS(const uint32_t time)
