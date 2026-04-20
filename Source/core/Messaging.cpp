@@ -46,7 +46,7 @@ namespace Core {
             return (static_cast<uint16_t>(_text.size() + 1));
         }
 
-        TelemetryMessage::TelemetryMessage(float value)
+        TelemetryMessage::TelemetryMessage(const float value)
             : _type(ValueType::FLOAT32)
             , _text()
             , _numericValue{}
@@ -55,7 +55,7 @@ namespace Core {
             _text = Core::Format(_T("%g"), static_cast<double>(value));
         }
 
-        TelemetryMessage::TelemetryMessage(double value)
+        TelemetryMessage::TelemetryMessage(const double value)
             : _type(ValueType::FLOAT64)
             , _text()
             , _numericValue{}
@@ -64,12 +64,12 @@ namespace Core {
             _text = Core::Format(_T("%g"), value);
         }
 
-        void TelemetryMessage::Stringify(int64_t value)
+        void TelemetryMessage::Stringify(const int64_t value)
         {
             _text = Core::NumberType<int64_t>(value).Text();
         }
 
-        void TelemetryMessage::Stringify(uint64_t value)
+        void TelemetryMessage::Stringify(const uint64_t value)
         {
             _text = Core::NumberType<uint64_t>(value).Text();
         }

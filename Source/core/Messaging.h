@@ -169,7 +169,7 @@ namespace Core {
 
             // Signed integral types
             template<typename T, std::enable_if_t<std::is_integral_v<std::decay_t<T>> && std::is_signed_v<std::decay_t<T>> && !std::is_same_v<std::decay_t<T>, bool>, int> = 0>
-            explicit TelemetryMessage(T value)
+            explicit TelemetryMessage(const T value)
                 : _type(SignedTag<sizeof(T)>())
                 , _text()
                 , _numericValue{}
@@ -180,7 +180,7 @@ namespace Core {
 
             // Unsigned integral types
             template<typename T, std::enable_if_t<std::is_integral_v<std::decay_t<T>> && std::is_unsigned_v<std::decay_t<T>> && !std::is_same_v<std::decay_t<T>, bool>, int> = 0>
-            explicit TelemetryMessage(T value)
+            explicit TelemetryMessage(const T value)
                 : _type(UnsignedTag<sizeof(T)>())
                 , _text()
                 , _numericValue{}
@@ -189,8 +189,8 @@ namespace Core {
                 Stringify(_numericValue._unsigned);
             }
 
-            explicit TelemetryMessage(float value);
-            explicit TelemetryMessage(double value);
+            explicit TelemetryMessage(const float value);
+            explicit TelemetryMessage(const double value);
 
             TelemetryMessage(const TelemetryMessage&) = delete;
             TelemetryMessage& operator=(const TelemetryMessage&) = delete;
