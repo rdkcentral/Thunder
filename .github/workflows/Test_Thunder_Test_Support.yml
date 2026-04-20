@@ -7,18 +7,9 @@ on:
   workflow_dispatch:
   push:
     branches: ["R5.3", "development/test-support"]
-    paths:
-      - 'Tests/test_support/**'
-      - 'Source/Thunder/**'
-      - 'Source/core/**'
-      - 'Source/plugins/**'
+    
   pull_request:
     branches: ["R5.3"]
-    paths:
-      - 'Tests/test_support/**'
-      - 'Source/Thunder/**'
-      - 'Source/core/**'
-      - 'Source/plugins/**'
 
 jobs:
   SmokeTest:
