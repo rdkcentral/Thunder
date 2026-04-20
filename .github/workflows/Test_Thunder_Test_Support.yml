@@ -47,6 +47,7 @@ jobs:
       with:
         path: ThunderTools
         repository: rdkcentral/ThunderTools
+        ref: R5.3.0
 
     - name: Regex ThunderTools
       if: ${{ contains(github.event.pull_request.body, '[DependsOn=ThunderTools:') }}
