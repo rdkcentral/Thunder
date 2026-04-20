@@ -5,9 +5,7 @@ permissions:
 
 on:
   workflow_dispatch:
-  push:
-    branches: ["R5_3", "development/test-support"]
-    
+
   pull_request:
     branches: ["R5_3", "development/test-support"]
 
@@ -137,8 +135,7 @@ jobs:
           -DCMAKE_MODULE_PATH="${PWD}/${{matrix.build_type}}/install/usr/include/Thunder/Modules" \
           -DPORT="0" \
           -DENABLE_CXX17=OFF \
-          -DENABLE_TEST_RUNTIME=ON \
-          -DTEST_PLUGIN_PATH="${PWD}/${{matrix.build_type}}/install/usr/lib/thunder/plugins"
+          -DENABLE_TEST_RUNTIME=ON
         cmake --build ${{matrix.build_type}}/build/Thunder --target install
 
     - name: Build ThunderInterfaces
@@ -159,6 +156,13 @@ jobs:
           -DCMAKE_MODULE_PATH="${PWD}/${{matrix.build_type}}/install/usr/include/Thunder/Modules" \
           -DPLUGIN_TESTPLUGIN=ON
         cmake --build ${{matrix.build_type}}/build/ThunderNanoServicesTests --target install
+
+    - name: Build Thunder plugin test
+      run: |
+        source venv/bin/activate
+        cmake -G Ninja -S Thunder -B ${{matrix.build_type}}/build/Thunder \
+          -DTEST_PLUGIN_PATH="${PWD}/${{matrix.build_type}}/install/usr/lib/thunder/plugins"
+        cmake --build ${{matrix.build_type}}/build/Thunder --target thunder_test_runtime_plugin
 
 # ----- Run smoke test -----
     - name: Run smoke test
