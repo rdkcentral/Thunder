@@ -80,14 +80,16 @@ target_compile_definitions(${TARGET} PRIVATE HOSTING_COMPROCESS=ThunderPlugin)
 # ------------------------------------------------------------------
 # Whole-archive link.  Ensures that the MODULE_NAME_DECLARATION
 # constructors from the Server objects are not discarded.
+# BUILD_INTERFACE only — installed consumers get this via the
+# custom Config.cmake.in template instead.
 # ------------------------------------------------------------------
 if(APPLE)
     target_link_options(${TARGET} INTERFACE
-        "SHELL:-Wl,-force_load,$<TARGET_FILE:${TARGET}>"
+        "$<BUILD_INTERFACE:SHELL:-Wl,-force_load,$<TARGET_FILE:${TARGET}>>"
     )
 else()
     target_link_options(${TARGET} INTERFACE
-        "SHELL:-Wl,--whole-archive $<TARGET_FILE:${TARGET}> -Wl,--no-whole-archive"
+        "$<BUILD_INTERFACE:SHELL:-Wl,--whole-archive $<TARGET_FILE:${TARGET}> -Wl,--no-whole-archive>"
     )
 endif()
 
@@ -139,7 +141,10 @@ install(
     INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}
 )
 
-InstallCMakeConfig(TARGETS ${TARGET})
+InstallCMakeConfig(
+    TARGETS ${TARGET}
+    TEMPLATE ${CMAKE_CURRENT_SOURCE_DIR}/thunder_test_supportConfig.cmake.in
+)
 
 # ------------------------------------------------------------------
 # Smoke test sub-directory
