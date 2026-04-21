@@ -120,6 +120,24 @@ if(HIBERNATESUPPORT)
 endif()
 
 # ------------------------------------------------------------------
+# Install the library and header so external projects can use it
+# via find_package(thunder_test_support)
+# ------------------------------------------------------------------
+install(
+    FILES ThunderTestRuntime.h
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}/test_support
+    COMPONENT ${NAMESPACE}_Development
+)
+
+install(
+    TARGETS ${TARGET} EXPORT ${TARGET}Targets
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT ${NAMESPACE}_Development
+    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}
+)
+
+InstallCMakeConfig(TARGETS ${TARGET})
+
+# ------------------------------------------------------------------
 # Smoke test sub-directory
 # ------------------------------------------------------------------
 add_subdirectory(tests)

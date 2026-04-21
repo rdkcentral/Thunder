@@ -149,7 +149,7 @@ jobs:
           -DCMAKE_PREFIX_PATH="${PWD}/${{matrix.build_type}}/install/usr"
         cmake --build ${{matrix.build_type}}/build/ThunderInterfaces --target install
 
-    - name: Build ThunderNanoServices TestPlugin
+    - name: Build ThunderNanoServices TestPlugin + test
       run: |
         source venv/bin/activate
         cmake -G Ninja -S ThunderNanoServices/tests -B ${{matrix.build_type}}/build/ThunderNanoServicesTests \
@@ -157,15 +157,9 @@ jobs:
           -DCMAKE_INSTALL_PREFIX="${{matrix.build_type}}/install/usr" \
           -DCMAKE_MODULE_PATH="${PWD}/${{matrix.build_type}}/install/usr/include/Thunder/Modules" \
           -DCMAKE_PREFIX_PATH="${PWD}/${{matrix.build_type}}/install/usr" \
-          -DPLUGIN_TESTPLUGIN=ON
-        cmake --build ${{matrix.build_type}}/build/ThunderNanoServicesTests --target install
-
-    - name: Build Thunder plugin test
-      run: |
-        source venv/bin/activate
-        cmake -G Ninja -S Thunder -B ${{matrix.build_type}}/build/Thunder \
+          -DPLUGIN_TESTPLUGIN=ON \
           -DTEST_PLUGIN_PATH="${PWD}/${{matrix.build_type}}/install/usr/lib/thunder/plugins"
-        cmake --build ${{matrix.build_type}}/build/Thunder --target thunder_test_runtime_plugin
+        cmake --build ${{matrix.build_type}}/build/ThunderNanoServicesTests --target install
 
 # ----- Run smoke test -----
     - name: Run smoke test
@@ -176,10 +170,10 @@ jobs:
           --gtest_color=yes
 
 # ----- Run plugin test -----
-    - name: Run plugin test (COM-RPC + JSON-RPC)
+    - name: Run plugin test (COM-RPC + JSON-RPC + events)
       run: |
         LD_LIBRARY_PATH="${{matrix.build_type}}/install/usr/lib:${PWD}/${{matrix.build_type}}/install/usr/lib/thunder/plugins:$LD_LIBRARY_PATH" \
-        ${{matrix.build_type}}/build/Thunder/Tests/test_support/tests/thunder_test_runtime_plugin \
+        ${{matrix.build_type}}/build/ThunderNanoServicesTests/TestPlugin/test/thunder_testplugin_test \
           --gtest_output="xml:plugin-test-results.xml" \
           --gtest_color=yes
 
