@@ -173,6 +173,7 @@ namespace TestCore {
 
         PluginHost::Config* _config = nullptr;
         PluginHost::Server* _server = nullptr;
+        bool _initialized = false;
         string _tempDir;
         string _configFilePath;
         string _proxyStubPath;

@@ -331,6 +331,8 @@ namespace TestCore {
         _server = new PluginHost::Server(*_config, false);
         _server->Open();
 
+        _initialized = true;
+
         return Core::ERROR_NONE;
     }
 
@@ -440,7 +442,10 @@ namespace TestCore {
             _config = nullptr;
         }
 
-        Messaging::MessageUnit::Instance().Close();
+        if (_initialized == true) {
+            Messaging::MessageUnit::Instance().Close();
+            _initialized = false;
+        }
 
         if (_configFilePath.empty() == false) {
             Core::File(_configFilePath).Destroy();
