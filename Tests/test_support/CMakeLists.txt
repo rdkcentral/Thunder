@@ -27,7 +27,8 @@ add_library(${TARGET} STATIC
 
 target_include_directories(${TARGET}
     PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}>
     PRIVATE
         ${THUNDER_SOURCE_DIR}
         $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/Source/plugins/generated/jsonrpc>
@@ -69,8 +70,9 @@ target_link_libraries(${TARGET}
         ${NAMESPACE}Messaging::${NAMESPACE}Messaging
         ${NAMESPACE}WebSocket::${NAMESPACE}WebSocket
         ${NAMESPACE}Plugins::${NAMESPACE}Plugins
-        ${NAMESPACE}COMProcess::${NAMESPACE}COMProcess
         Threads::Threads
+    PRIVATE
+        ${NAMESPACE}COMProcess::${NAMESPACE}COMProcess
 )
 
 # ------------------------------------------------------------------
