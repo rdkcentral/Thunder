@@ -129,7 +129,7 @@ namespace Core {
 
                 realObject.Clear();
 
-                while ( (handled < size) && (error.IsSet() == false) ) {
+                while (handled < size) {
 
                     uint16_t payload = static_cast<uint16_t>(std::min((size - handled) + 1, static_cast<uint32_t>(0xFFFF)));
 
@@ -506,7 +506,7 @@ namespace Core {
             }
             ~NumberType() override = default;
 
-            NumberType<TYPE, SIGNED, BASETYPE>& operator=(NumberType<TYPE, SIGNED, BASETYPE>&& move) noexcept
+            NumberType<TYPE, SIGNED, BASETYPE>& operator=(NumberType<TYPE, SIGNED, BASETYPE>&& move)
             {
                 _value = std::move(move._value);
                 _set = std::move(move._set);
@@ -528,18 +528,6 @@ namespace Core {
             {
                 _value = RHS;
                 _set = SET;
-
-                return (*this);
-            }
-
-            NumberType<TYPE, SIGNED, BASETYPE>& operator=(const Core::OptionalType<TYPE>& RHS)
-            {
-                if (RHS.IsSet() == true) {
-                    operator=(RHS.Value());
-                }
-                else {
-                    Clear();
-                }
 
                 return (*this);
             }
@@ -747,29 +735,13 @@ namespace Core {
                 bool completed = ((_set & (ERROR|UNDEFINED)) != 0);
 
                 while ((loaded < maxLength) && (completed == false)) {
-#ifdef __WINDOWS__
-                    TYPE previous = _value;
-                    TYPE current = _value;
-#else
-                    bool overflow = false;
-#endif
                     if (isdigit(stream[loaded])) {
-#ifdef __WINDOWS__
                         _value *= (_set & 0x1F);
                         _value += (stream[loaded] - '0');
-                        current = _value / (_set & 0x1F);
-#else
-                        overflow = __builtin_mul_overflow(_value, (_set & 0x1F), &_value) || __builtin_add_overflow(stream[loaded] - '0', _value, &_value);
-#endif
                         loaded++;
                     } else if (isxdigit(stream[loaded])) {
-#ifdef __WINDOWS__
                         _value *= 16;
                         _value += (::toupper(stream[loaded]) - 'A') + 10;
-                        current = _value / 16;
-#else
-                        overflow = __builtin_mul_overflow(_value, 16, &_value) || __builtin_add_overflow((::toupper(stream[loaded]) - 'A') + 10, _value, &_value);
-#endif
                         loaded++;
                     } else if (((_set & QUOTED) != 0) && (stream[loaded] == '\"')) {
                         completed = true;
@@ -780,16 +752,6 @@ namespace Core {
                         // Oopsie daisy, error, computer says *NO*
                         error = Error{ "Unsupported character \"" + std::string(1, stream[loaded]) + "\" in a number" };
                         ++loaded;
-                        _set |= ERROR;
-                        completed = true;
-                    }
-
-#ifdef __WINDOWS__
-                    if (previous != current) {
-#else
-                    if (overflow == true) {
-#endif
-                        error = Error{ "Integer overflow, it should be in the integer type range" };
                         _set |= ERROR;
                         completed = true;
                     }
@@ -1018,7 +980,7 @@ namespace Core {
         typedef NumberType<int32_t, true, BASE_OCTAL> OctSInt32;
         typedef NumberType<uint64_t, false, BASE_OCTAL> OctUInt64;
         typedef NumberType<int64_t, true, BASE_OCTAL> OctSInt64;
-        
+
         typedef NumberType<Core::instance_id, false, BASE_HEXADECIMAL> InstanceId;
         typedef InstanceId Pointer;
 
@@ -1088,18 +1050,6 @@ namespace Core {
             {
                 _value = RHS;
                 _set = SET;
-
-                return (*this);
-            }
-
-            FloatType<TYPE>& operator=(const Core::OptionalType<TYPE>& RHS)
-            {
-                if (RHS.IsSet() == true) {
-                    operator=(RHS.Value());
-                }
-                else {
-                    Clear();
-                }
 
                 return (*this);
             }
@@ -1312,7 +1262,7 @@ namespace Core {
 
                 if (_strValue.empty() == true) {
                     char str[16];
-                    std::snprintf(str, sizeof(str), "%g", _value);
+                    std::sprintf(str, "%g", _value);
                     const_cast<FloatType*>(this)->_strValue = str;
                 }
 
@@ -1393,18 +1343,6 @@ namespace Core {
             {
                 // Do not overwrite the default
                 _value = (RHS ? (SetBit | ValueBit) : SetBit) | (_value & DefaultBit);
-
-                return (*this);
-            }
-
-            Boolean& operator=(const Core::OptionalType<bool>& RHS)
-            {
-                if (RHS.IsSet() == true) {
-                    operator=(RHS.Value());
-                }
-                else {
-                    Clear();
-                }
 
                 return (*this);
             }
@@ -1644,18 +1582,6 @@ namespace Core {
                 return (*this);
             }
 
-            String& operator=(const Core::OptionalType<string>& RHS)
-            {
-                if (RHS.IsSet() == true) {
-                    operator=(RHS.Value());
-                }
-                else {
-                    Clear();
-                }
-
-                return (*this);
-            }
-
             String& operator=(const char RHS[])
             {
                 Core::ToString(RHS, _value);
@@ -1834,11 +1760,7 @@ namespace Core {
                         const uint16_t current = static_cast<uint16_t>((_value[offset - 1]) & 0xFF);
 
                         // See if this is a printable character
-                        if ((isQuoted == false) || ((::isprint(static_cast<uint8_t>(current))) && (current != '\"') && (current != '\\')
-                    #ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
-                            && (current != '/')
-                    #endif
-                        )) {
+                        if ((isQuoted == false) || ((::isprint(static_cast<uint8_t>(current))) && (current != '\"') && (current != '\\') && (current != '/')) ) {
                             stream[result++] = static_cast<TCHAR>(current);
                             length--;
                             offset++;
@@ -1857,9 +1779,7 @@ namespace Core {
                             case 0x0c: stream[result++] = 'f'; break;
                             case 0x0d: stream[result++] = 'r'; break;
                             case '\\': stream[result++] = '\\'; break;
-                        #ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
                             case '/': stream[result++] = '/'; break;
-                        #endif
                             case '"': stream[result++] = '"'; break;
                             default: {
                                 uint16_t lowPart, highPart;
@@ -2021,7 +1941,7 @@ namespace Core {
                             // We are assumed to be opaque, but all quoted string stuff is enclosed between quotes
                             // and should be considered for scope counting.
                             // Check if we are entering or leaving a quoted area in the opaque object
-                            if ((current == '\"') && (IsEscaped(_value) == false)) {
+                            if ((current == '\"') && ((_value.empty() == true) || (_value[_value.length() - 2] != '\\'))) {
                                 // This is not an "escaped" quote, so it should be considered a real quote. It means
                                 // we are now entering or leaving a quoted area within the opaque struct...
                                 _flagsAndCounters ^= QuotedAreaBit;
@@ -2219,30 +2139,6 @@ namespace Core {
             }
 
         private:
-            bool IsEscaped(const string& value) const {
-                bool escaped(false);
-
-                if (_value.empty() == false) {
-                    // This code determines if a lot of back slashes to esscape the backslash
-                    // Is odd or even, so does it escape the last character..
-                    // e.g. 'Test \\\\\\\\\\"' is not the escaping of the quote (")
-                    //      'Test \\\\\\\\\" continued"'  is the escaping of th quote..
-                    //      'Test \" and \" and than \\\"' are all escaped quotes
-                    // Subtracting 2 here, because the length is always counted by
-                    // starting @1, so to a zero based buffer, i need to substract 1
-                    // however that will give us the last character. This is the character
-                    // for which we would like to know if is is escaped, so I need to go
-                    // even one position before that one, hence -2
-                    uint32_t index = static_cast<uint32_t>(value.length() - 2);
-                    uint32_t count = 0;
-                    while ((index != static_cast<uint32_t>(~0)) && (value[index] == '\\')) {
-                        index--;
-                        count++;
-                    }
-                    escaped =  ((count % 2) != 0);
-                }
-                return (escaped);
-            }
             bool InScope(const ScopeBracket mode) {
                 bool added = false;
                 uint8_t depth = (_flagsAndCounters & 0x1F);
@@ -2383,7 +2279,7 @@ namespace Core {
                 return ((_length > 0) && ((_state & SET) != 0));
             }
 
-            bool IsNull() const override
+            bool IsNull() const
             {
                 return ((_state & UNDEFINED) != 0);
             }
@@ -2709,7 +2605,7 @@ namespace Core {
 
             ~EnumType() override = default;
 
-            EnumType<ENUMERATE>& operator=(EnumType<ENUMERATE>&& move) noexcept
+            EnumType<ENUMERATE>& operator=(EnumType<ENUMERATE>&& move)
             {
                 _value = std::move(move._value);
                 _state = std::move(move._state);
@@ -2734,18 +2630,6 @@ namespace Core {
             {
                 _value = RHS;
                 _state = SET;
-
-                return (*this);
-            }
-
-            EnumType<ENUMERATE>& operator=(const Core::OptionalType<ENUMERATE>& RHS)
-            {
-                if (RHS.IsSet() == true) {
-                    operator=(RHS.Value());
-                }
-                else {
-                    Clear();
-                }
 
                 return (*this);
             }
@@ -3197,7 +3081,7 @@ namespace Core {
 
             ~ArrayType() override = default;
 
-            ArrayType<ELEMENT>& operator=(ArrayType<ELEMENT>&& move) noexcept
+            ArrayType<ELEMENT>& operator=(ArrayType<ELEMENT>&& move)
             {
                 _state = std::move(move._state);
                 _data = std::move(move._data);
@@ -3226,17 +3110,8 @@ namespace Core {
 
             bool IsNull() const override
             {
+                //TODO: Implement null for Arrays
                 return ((_state & UNDEFINED) != 0);
-            }
-
-            void Null(const bool enabled)
-            {
-                if (enabled == true) {
-                    _state |= (UNDEFINED | SET);
-                }
-                else {
-                    _state &= ~(UNDEFINED | SET);
-                }
             }
 
             void Set(const bool enabled)
@@ -3372,19 +3247,6 @@ namespace Core {
                 return (*this);
             }
 
-            template<typename ENUM>
-            ArrayType<ELEMENT>& operator=(const Core::OptionalType<ENUM>& RHS)
-            {
-                if (RHS.IsSet() == true) {
-                    operator=(RHS.Value());
-                }
-                else {
-                    Clear();
-                }
-
-                return (*this);
-            }
-
             template<typename ENUM, typename std::enable_if<std::is_same<ELEMENT, EnumType<ENUM>>::value, int>::type = 0>
             inline operator const ENUM() const
             {
@@ -3408,40 +3270,33 @@ namespace Core {
             {
                 uint16_t loaded = 0;
 
-                if ((_state & modus::UNDEFINED) != 0) {
-                    ASSERT(offset < (sizeof(IElement::NullTag) - 1));
-                    loaded = std::min(static_cast<uint16_t>((sizeof(IElement::NullTag) - 1) - offset), maxLength);
-                    ::memcpy(stream, &(IElement::NullTag[offset]), loaded);
+                if (offset == FIND_MARKER) {
+                    _iterator.Reset();
+                    if (((_state & modus::EXTRACT) == 0) || (_data.size() != 1)) {
+                        stream[loaded++] = '[';
+                    }
+                    offset = (_iterator.Next() == false ? ~0 : PARSE);
+                } else if (offset == END_MARKER) {
+                    offset = ~0;
                 }
-                else {
-                    if (offset == FIND_MARKER) {
-                        _iterator.Reset();
+                while ((loaded < maxLength) && (offset != static_cast<uint32_t>(~0))) {
+                    if (offset >= PARSE) {
+                        offset -= PARSE;
+                        loaded += static_cast<const IElement&>(_iterator.Current()).Serialize(&(stream[loaded]), maxLength - loaded, offset);
+                        offset = (offset != FIND_MARKER ? offset + PARSE : (_iterator.Next() == true ? BEGIN_MARKER : ~0));
+                    } else if (offset == BEGIN_MARKER) {
+                        stream[loaded++] = ',';
+                        offset = PARSE;
+                    }
+                }
+                if (offset == static_cast<uint32_t>(~0)) {
+                    if (loaded < maxLength) {
                         if (((_state & modus::EXTRACT) == 0) || (_data.size() != 1)) {
-                            stream[loaded++] = '[';
+                            stream[loaded++] = ']';
                         }
-                        offset = (_iterator.Next() == false ? ~0 : PARSE);
-                    } else if (offset == END_MARKER) {
-                        offset = ~0;
-                    }
-                    while ((loaded < maxLength) && (offset != static_cast<uint32_t>(~0))) {
-                        if (offset >= PARSE) {
-                            offset -= PARSE;
-                            loaded += static_cast<const IElement&>(_iterator.Current()).Serialize(&(stream[loaded]), maxLength - loaded, offset);
-                            offset = (offset != FIND_MARKER ? offset + PARSE : (_iterator.Next() == true ? BEGIN_MARKER : ~0));
-                        } else if (offset == BEGIN_MARKER) {
-                            stream[loaded++] = ',';
-                            offset = PARSE;
-                        }
-                    }
-                    if (offset == static_cast<uint32_t>(~0)) {
-                        if (loaded < maxLength) {
-                            if (((_state & modus::EXTRACT) == 0) || (_data.size() != 1)) {
-                                stream[loaded++] = ']';
-                            }
-                            offset = FIND_MARKER;
-                        } else {
-                            offset = END_MARKER;
-                        }
+                        offset = FIND_MARKER;
+                    } else {
+                        offset = END_MARKER;
                     }
                 }
 
@@ -3537,42 +3392,34 @@ namespace Core {
             {
                 uint16_t loaded = 0;
 
-                if ((_state & modus::UNDEFINED) != 0) {
-                    if (offset == 0) {
-                        stream[0] = IMessagePack::NullValue;
-                        loaded = 1;
-                    }
-                }
-                else {
-                    if (offset == 0) {
-                        _iterator.Reset();
-                        if (_data.size() <= 15) {
-                            stream[loaded++] = (0x90 | static_cast<uint8_t>(_data.size()));
-                            if (_data.size() > 0) {
-                                offset = PARSE;
-                            }
-                        } else {
-                            stream[loaded++] = 0xDC;
-                            offset = 1;
-                        }
-                        _iterator.Next();
-                    }
-                    while ((loaded < maxLength) && (offset > 0) && (offset < PARSE)) {
-                        if (offset == 1) {
-                            stream[loaded++] = (_data.size() >> 8) & 0xFF;
-                            offset = 2;
-                        } else if (offset == 2) {
-                            stream[loaded++] = _data.size() & 0xFF;
+                if (offset == 0) {
+                    _iterator.Reset();
+                    if (_data.size() <= 15) {
+                        stream[loaded++] = (0x90 | static_cast<uint8_t>(_data.size()));
+                        if (_data.size() > 0) {
                             offset = PARSE;
                         }
+                    } else {
+                        stream[loaded++] = 0xDC;
+                        offset = 1;
                     }
-                    while ((loaded < maxLength) && (offset >= PARSE)) {
-                        offset -= PARSE;
-                        loaded += static_cast<const IMessagePack&>(_iterator.Current()).Serialize(&(stream[loaded]), maxLength - loaded, offset);
-                        offset += PARSE;
-                        if ((offset == PARSE) && (_iterator.Next() != true)) {
-                            offset = 0;
-                        }
+                    _iterator.Next();
+                }
+                while ((loaded < maxLength) && (offset > 0) && (offset < PARSE)) {
+                    if (offset == 1) {
+                        stream[loaded++] = (_data.size() >> 8) & 0xFF;
+                        offset = 2;
+                    } else if (offset == 2) {
+                        stream[loaded++] = _data.size() & 0xFF;
+                        offset = PARSE;
+                    }
+                }
+                while ((loaded < maxLength) && (offset >= PARSE)) {
+                    offset -= PARSE;
+                    loaded += static_cast<const IMessagePack&>(_iterator.Current()).Serialize(&(stream[loaded]), maxLength - loaded, offset);
+                    offset += PARSE;
+                    if ((offset == PARSE) && (_iterator.Next() != true)) {
+                        offset = 0;
                     }
                 }
 
@@ -3637,8 +3484,7 @@ namespace Core {
             enum modus : uint8_t {
                 ERROR = 0x80,
                 UNDEFINED = 0x40,
-                COMPLETE = 0x20,
-                SET = 0x10
+                COMPLETE = 0x20
             };
 
             static constexpr uint16_t FIND_MARKER = 0;
@@ -3755,44 +3601,19 @@ namespace Core {
             // IElement and IMessagePack iface:
             bool IsSet() const override
             {
-                bool set = ((_state & SET) != 0);
-
-                if (set == false) {
-                    JSONElementList::const_iterator index = _data.begin();
-                    // As long as we did not find a set element, continue..
-                    while ((index != _data.end()) && (index->second->IsSet() == false)) {
-                        index++;
-                    }
-
-                    set = (index != _data.end());
+                JSONElementList::const_iterator index = _data.begin();
+                // As long as we did not find a set element, continue..
+                while ((index != _data.end()) && (index->second->IsSet() == false)) {
+                    index++;
                 }
 
-                return (set);
-            }
-
-            void Null(const bool enabled)
-            {
-                if (enabled == true) {
-                    _state |= UNDEFINED;
-                }
-                else {
-                    _state &= ~UNDEFINED;
-                }
+                return (index != _data.end());
             }
 
             bool IsNull() const override
             {
+                // TODO: Implement null for conrtainers
                 return ((_state & UNDEFINED) != 0);
-            }
-
-            void Set(const bool enabled)
-            {
-                if (enabled == true) {
-                    _state |= SET;
-                }
-                else {
-                    _state &= ~SET;
-                }
             }
 
             void Clear() override
@@ -3816,7 +3637,7 @@ namespace Core {
             {
                 JSONElementList::iterator index(_data.begin());
 
-                while (index != _data.end() && (strlen(index->first) != strlen(label) || strcmp(index->first, label) != 0)) {
+                while ((index != _data.end()) && (index->first != label)) {
                     index++;
                 }
 
@@ -3830,56 +3651,49 @@ namespace Core {
             {
                 uint16_t loaded = 0;
 
-                if ((_state & UNDEFINED) != 0) {
-                    ASSERT(offset < (sizeof(IElement::NullTag) - 1));
-                    loaded = std::min(static_cast<uint16_t>((sizeof(IElement::NullTag) - 1) - offset), maxLength);
-                    ::memcpy(stream, &(IElement::NullTag[offset]), loaded);
-                }
-                else {
-                    if (offset == FIND_MARKER) {
-                        _iterator = _data.begin();
-                        stream[loaded++] = '{';
+                if (offset == FIND_MARKER) {
+                    _iterator = _data.begin();
+                    stream[loaded++] = '{';
 
-                        offset = (_iterator == _data.end() ? ~0 : ((_iterator->second->IsSet() == false) && (FindNext() == false)) ? ~0 : BEGIN_MARKER);
-                        if (offset == BEGIN_MARKER) {
-                            _fieldName = string(_iterator->first);
-                            _current.json = &_fieldName;
-                            offset = PARSE;
-                        }
-                    } else if (offset == END_MARKER) {
-                        offset = ~0;
+                    offset = (_iterator == _data.end() ? ~0 : ((_iterator->second->IsSet() == false) && (FindNext() == false)) ? ~0 : BEGIN_MARKER);
+                    if (offset == BEGIN_MARKER) {
+                        _fieldName = string(_iterator->first);
+                        _current.json = &_fieldName;
+                        offset = PARSE;
                     }
+                } else if (offset == END_MARKER) {
+                    offset = ~0;
+                }
 
-                    while ((loaded < maxLength) && (offset != static_cast<uint32_t>(~0))) {
-                        if (offset >= PARSE) {
-                            offset -= PARSE;
-                            loaded += _current.json->Serialize(&(stream[loaded]), maxLength - loaded, offset);
-                            offset = (offset == FIND_MARKER ? BEGIN_MARKER : offset + PARSE);
-                        } else if (offset == BEGIN_MARKER) {
-                            if (_current.json == &_fieldName) {
-                                stream[loaded++] = ':';
-                                _current.json = _iterator->second;
+                while ((loaded < maxLength) && (offset != static_cast<uint32_t>(~0))) {
+                    if (offset >= PARSE) {
+                        offset -= PARSE;
+                        loaded += _current.json->Serialize(&(stream[loaded]), maxLength - loaded, offset);
+                        offset = (offset == FIND_MARKER ? BEGIN_MARKER : offset + PARSE);
+                    } else if (offset == BEGIN_MARKER) {
+                        if (_current.json == &_fieldName) {
+                            stream[loaded++] = ':';
+                            _current.json = _iterator->second;
+                            offset = PARSE;
+                        } else {
+                            if (FindNext() != false) {
+                                stream[loaded++] = ',';
+                                _fieldName = string(_iterator->first);
+                                _current.json = &_fieldName;
                                 offset = PARSE;
                             } else {
-                                if (FindNext() != false) {
-                                    stream[loaded++] = ',';
-                                    _fieldName = string(_iterator->first);
-                                    _current.json = &_fieldName;
-                                    offset = PARSE;
-                                } else {
-                                    offset = ~0;
-                                }
+                                offset = ~0;
                             }
                         }
                     }
-                    if (offset == static_cast<uint32_t>(~0)) {
-                        if (loaded < maxLength) {
-                            stream[loaded++] = '}';
-                            offset = FIND_MARKER;
-                            _fieldName.Clear();
-                        } else {
-                            offset = END_MARKER;
-                        }
+                }
+                if (offset == static_cast<uint32_t>(~0)) {
+                    if (loaded < maxLength) {
+                        stream[loaded++] = '}';
+                        offset = FIND_MARKER;
+                        _fieldName.Clear();
+                    } else {
+                        offset = END_MARKER;
                     }
                 }
 
@@ -4019,11 +3833,9 @@ namespace Core {
                             skip = SKIP_AFTER_KEY;
                         } else {
                             loaded += _current.json->Deserialize(&(stream[loaded]), maxLength - loaded, offset, error);
-                            if (offset == FIND_MARKER) {
-                                // It could be that the field name was used, as we are not interested in this field, if so,
-                                // do not forget to reset the field name..
-                                _fieldName.Clear();
-                            }
+                            // It could be that the field name was used, as we are not interested in this field, if so,
+                            // do not forget to reset the field name..
+                            _fieldName.Clear();
                         }
                         offset = (offset == FIND_MARKER ? skip : offset + PARSE);
                     }
@@ -4048,68 +3860,60 @@ namespace Core {
             {
                 uint16_t loaded = 0;
 
-                if ((_state & UNDEFINED) != 0) {
-                    if (offset == 0) {
-                        stream[0] = IMessagePack::NullValue;
-                        loaded = 1;
-                    }
-                }
-                else {
-                    uint16_t elementSize = Size();
-                    if (offset == 0) {
-                        _iterator = _data.begin();
-                        if (elementSize <= 15) {
-                            stream[loaded++] = (0x80 | static_cast<uint8_t>(Size()));
-                            if (_iterator != _data.end()) {
-                                offset = PARSE;
-                            }
-                        } else {
-                            stream[loaded++] = 0xDE;
-                            offset = 1;
-                        }
-                        if (offset != 0) {
-                            if ((_iterator->second->IsSet() == false) && (FindNext() == false)) {
-                                offset = 0;
-                            } else {
-                                _fieldName = string(_iterator->first);
-                            }
-                        }
-                    }
-                    while ((loaded < maxLength) && (offset > 0) && (offset < PARSE)) {
-                        if (offset == 1) {
-                            stream[loaded++] = (elementSize >> 8) & 0xFF;
-                            offset = 2;
-                        } else if (offset == 2) {
-                            stream[loaded++] = elementSize & 0xFF;
+                uint16_t elementSize = Size();
+                if (offset == 0) {
+                    _iterator = _data.begin();
+                    if (elementSize <= 15) {
+                        stream[loaded++] = (0x80 | static_cast<uint8_t>(Size()));
+                        if (_iterator != _data.end()) {
                             offset = PARSE;
                         }
+                    } else {
+                        stream[loaded++] = 0xDE;
+                        offset = 1;
                     }
-                    while ((loaded < maxLength) && (offset >= PARSE)) {
-                        offset -= PARSE;
-                        if (_fieldName.IsSet() == true) {
-                            loaded += static_cast<const IMessagePack&>(_fieldName).Serialize(&(stream[loaded]), maxLength - loaded, offset);
+                    if (offset != 0) {
+                        if ((_iterator->second->IsSet() == false) && (FindNext() == false)) {
+                            offset = 0;
+                        } else {
+                            _fieldName = string(_iterator->first);
+                        }
+                    }
+                }
+                while ((loaded < maxLength) && (offset > 0) && (offset < PARSE)) {
+                    if (offset == 1) {
+                        stream[loaded++] = (elementSize >> 8) & 0xFF;
+                        offset = 2;
+                    } else if (offset == 2) {
+                        stream[loaded++] = elementSize & 0xFF;
+                        offset = PARSE;
+                    }
+                }
+                while ((loaded < maxLength) && (offset >= PARSE)) {
+                    offset -= PARSE;
+                    if (_fieldName.IsSet() == true) {
+                        loaded += static_cast<const IMessagePack&>(_fieldName).Serialize(&(stream[loaded]), maxLength - loaded, offset);
+                        if (offset == 0) {
+                            _fieldName.Clear();
+                        }
+                        offset += PARSE;
+                    } else {
+                        const IMessagePack* element = dynamic_cast<const IMessagePack*>(_iterator->second);
+                        if (element != nullptr) {
+                            loaded += element->Serialize(&(stream[loaded]), maxLength - loaded, offset);
                             if (offset == 0) {
                                 _fieldName.Clear();
                             }
-                            offset += PARSE;
                         } else {
-                            const IMessagePack* element = dynamic_cast<const IMessagePack*>(_iterator->second);
-                            if (element != nullptr) {
-                                loaded += element->Serialize(&(stream[loaded]), maxLength - loaded, offset);
-                                if (offset == 0) {
-                                    _fieldName.Clear();
-                                }
+                            stream[loaded++] = IMessagePack::NullValue;
+                        }
+                        offset += PARSE;
+                        if (offset == PARSE) {
+                            if (FindNext() != false) {
+                                _fieldName = string(_iterator->first);
                             } else {
-                                stream[loaded++] = IMessagePack::NullValue;
-                            }
-                            offset += PARSE;
-                            if (offset == PARSE) {
-                                if (FindNext() != false) {
-                                    _fieldName = string(_iterator->first);
-                                } else {
-                                offset = 0;
-                                _fieldName.Clear();
-                                }
+                               offset = 0;
+                               _fieldName.Clear();
                             }
                         }
                     }
@@ -4249,8 +4053,6 @@ namespace Core {
             mutable String _fieldName;
         };
 
-#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
-
         class VariantContainer;
 
         class EXTERNAL Variant : public JSON::String {
@@ -4352,6 +4154,7 @@ namespace Core {
             {
             }
 
+
             Variant(const VariantContainer& object);
 
             ~Variant() override = default;
@@ -4371,8 +4174,6 @@ namespace Core {
             }
 
         public:
-            inline bool IsValid() const;
-
             type Content() const
             {
                 return _type;
@@ -4788,7 +4589,7 @@ namespace Core {
                 return (*this);
             }
 
-            VariantContainer& operator=(VariantContainer&& move) noexcept
+            VariantContainer& operator=(VariantContainer&& move)
             {
                 if (this != &move) {
                     _elements = std::move(move._elements);
@@ -4843,14 +4644,7 @@ namespace Core {
 
                 return (index->second);
             }
-            bool IsValid() const {
-                Elements::const_iterator index(_elements.begin());
 
-                while ((index != _elements.end()) && (index->second.IsValid() == true)) {
-                    index++;
-                }
-                return (index == _elements.end());
-            }
             const JSON::Variant& operator[](const TCHAR fieldName[]) const
             {
                 static const JSON::Variant emptyVariant;
@@ -4862,8 +4656,7 @@ namespace Core {
 
             bool HasLabel(const TCHAR labelName[]) const
             {
-                return (Find(labelName) != _elements.end()
-                        && Container::HasLabel(labelName) != false);
+                return (Find(labelName) != _elements.end());
             }
 
             Iterator Variants() const
@@ -4871,22 +4664,12 @@ namespace Core {
                 return (Iterator(_elements));
             }
 
-            void Clear() override
+            void Clear()
             {
                 Reset();
                 _elements.clear();
             }
             string GetDebugString(int indent = 0) const;
-
-            void Remove(const TCHAR label[])
-            {
-                Elements::iterator index = Find(label);
-                if (index != _elements.end()) {
-                    _elements.erase(index);
-                }
-
-                Container::Remove(label);
-            }
 
         private:
             Elements::iterator Find(const TCHAR fieldName[])
@@ -4941,94 +4724,41 @@ namespace Core {
             return (result);
         }
 
-        inline bool Variant::IsValid() const {
-            bool result = false;
-            switch (_type)
-            {
-            case type::EMPTY:
-            case type::STRING: {
-                result = true;
-                break;
-            }
-            case type::BOOLEAN: {
-                Core::OptionalType<JSON::Error> error;
-                JSON::Boolean stacked;
-                stacked.FromString(Value(), error);
-                result = (error.IsSet() == false);
-                break;
-            }
-            case type::NUMBER: {
-                Core::OptionalType<JSON::Error> error;
-                JSON::DecUInt64 stacked;
-                stacked.FromString(Value(), error);
-                result = (error.IsSet() == false);
-                break;
-            }
-            case type::DOUBLE:
-            case type::FLOAT: {
-                Core::OptionalType<JSON::Error> error;
-                JSON::Double stacked;
-                stacked.FromString(Value(), error);
-                result = (error.IsSet() == false);
-                break;
-            }
-            case type::ARRAY: {
-                Core::OptionalType<JSON::Error> error;
-                Core::JSON::ArrayType<JSON::Variant> stacked;
-                stacked.FromString(Value(), error);
-                result = (error.IsSet() == false);
-                Core::JSON::ArrayType<JSON::Variant>::ConstIterator index = static_cast<const Core::JSON::ArrayType<JSON::Variant>&>(stacked).Elements();
-                if ((result == true) && (index.Next() == true) && index.Current().IsValid()) {
-                    Variant::type type = index.Current().Content();
-                    while ((index.Next() == true) && (index.Current().Content() == type) && (index.Current().IsValid())) {
-                        // Intentionally left empty
-                    }
-                }
-                result = result && (index.IsValid() == false);
-                break;
-            }
-            case type::OBJECT: {
-                Core::OptionalType<JSON::Error> error;
-                VariantContainer stacked;
-                stacked.FromString(Value(), error);
-                result = ((error.IsSet() == false) && (stacked.IsValid() == true));
-                break;
-            }
-            default:
-                break;
-            }
-            return (result);
-        }
-
         inline uint16_t Variant::Deserialize(const char stream[], const uint16_t maxLength, uint32_t& offset, Core::OptionalType<Error>& error)
         {
-            uint16_t result = String::Deserialize(stream, maxLength, offset, error);
-
-            // If we are complete, try to guess what it was that we received...
-            if (offset == 0) {
-                if (IsQuoted() == false) {
-                    const string base = JSON::String::Value();
-                    if (IsNull() == true) {
-                        _type = type::EMPTY;
-                    }
-                    else if (base[0] == '{') {
+            uint16_t result = 0;
+            if (stream[0] == '{' || stream[0] == '[') {
+                uint16_t endIndex = FindEndOfScope(stream, maxLength);
+                if (endIndex > 0 && endIndex < maxLength) {
+                    result = endIndex + 1;
+                    SetQuoted(false);
+                    string str(stream, endIndex + 1);
+                    if (stream[0] == '{') {
                         _type = type::OBJECT;
-                    }
-                    else if (base[0] == '[') {
+                        String::operator=(str);
+                    } else {
                         _type = type::ARRAY;
-                    }
-                    else if ((base == _T("true")) || (base == _T("false"))) {
-                        _type = type::BOOLEAN;
-                    }
-                    else if (base.find('.') != std::string::npos) {
-                        _type = type::DOUBLE;
-                    }
-                    else {
-                        _type = type::NUMBER;
+                        String::operator=(str);
                     }
                 }
-                else {
-                    _type = type::STRING;
+            }
+            if (result == 0) {
+                result = String::Deserialize(stream, maxLength, offset, error);
+
+                _type = type::STRING;
+
+                // If we are complete, try to guess what it was that we received...
+                if (offset == 0) {
+                    bool quoted = IsQuoted();
+                    SetQuoted(quoted);
+                    // If it is not quoted, it can be a boolean or a number...
+                    if (quoted == false) {
+                        if ((Value() == _T("true")) || (Value() == _T("false"))) {
+                            _type = type::BOOLEAN;
+                        } else if (IsNull() == false) {
+                            _type = type::NUMBER;
+                        }
+                    }
                 }
             }
             return (result);
@@ -5159,18 +4889,12 @@ namespace Core {
             }
         };
 
-#endif // __DISABLE_USE_COMPLEMENTARY_CODE_SET__
-
     } // namespace JSON
 } // namespace Core
 } // namespace WPEFramework
 
-#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
-
 using JsonObject = WPEFramework::Core::JSON::VariantContainer;
 using JsonValue = WPEFramework::Core::JSON::Variant;
 using JsonArray = WPEFramework::Core::JSON::ArrayType<JsonValue>;
-
-#endif // __DISABLE_USE_COMPLEMENTARY_CODE_SET__
 
 #endif // __JSON_H
