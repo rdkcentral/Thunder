@@ -1213,6 +1213,7 @@ namespace PluginHost {
     {
         TRACE(Activity, (_T("Destruct a link with ID [%d] to [%s]"), Id(), RemoteId().c_str()));
 
+        // If we are still atatched to a service, detach, we are out of scope...
         CleanupService();
 
         if (_security != nullptr) {
