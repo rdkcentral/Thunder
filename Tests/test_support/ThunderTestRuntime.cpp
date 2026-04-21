@@ -122,7 +122,9 @@ namespace TestCore {
 
     ThunderTestRuntime::~ThunderTestRuntime()
     {
+        fprintf(stderr, "[TestRuntime] ~ThunderTestRuntime() - begin\n"); fflush(stderr);
         Deinitialize();
+        fprintf(stderr, "[TestRuntime] ~ThunderTestRuntime() - done\n"); fflush(stderr);
     }
 
     bool ThunderTestRuntime::CreateDirectories() const
@@ -431,20 +433,29 @@ namespace TestCore {
 
     void ThunderTestRuntime::Deinitialize()
     {
+        fprintf(stderr, "[TestRuntime] Deinitialize - begin\n"); fflush(stderr);
+
         if (_server != nullptr) {
+            fprintf(stderr, "[TestRuntime] Server::Close() - begin\n"); fflush(stderr);
             _server->Close();
+            fprintf(stderr, "[TestRuntime] Server::Close() - done\n"); fflush(stderr);
             delete _server;
+            fprintf(stderr, "[TestRuntime] delete _server - done\n"); fflush(stderr);
             _server = nullptr;
         }
 
         if (_config != nullptr) {
             delete _config;
+            fprintf(stderr, "[TestRuntime] delete _config - done\n"); fflush(stderr);
             _config = nullptr;
         }
 
         if (_initialized == true) {
+            fprintf(stderr, "[TestRuntime] MessageUnit::Close() - begin\n"); fflush(stderr);
             Messaging::MessageUnit::Instance().Close();
+            fprintf(stderr, "[TestRuntime] Singleton::Dispose() - begin\n"); fflush(stderr);
             Core::Singleton::Dispose();
+            fprintf(stderr, "[TestRuntime] Singleton::Dispose() - done\n"); fflush(stderr);
             _initialized = false;
         }
 
@@ -455,6 +466,7 @@ namespace TestCore {
 
         CleanupDirectories();
         _tempDir.clear();
+        fprintf(stderr, "[TestRuntime] Deinitialize - done\n"); fflush(stderr);
     }
 
 } // namespace TestCore
