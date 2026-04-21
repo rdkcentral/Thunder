@@ -71,9 +71,11 @@ target_link_libraries(${TARGET}
         ${NAMESPACE}WebSocket::${NAMESPACE}WebSocket
         ${NAMESPACE}Plugins::${NAMESPACE}Plugins
         Threads::Threads
-    PRIVATE
-        ${NAMESPACE}COMProcess::${NAMESPACE}COMProcess
 )
+
+# COMProcess is an INTERFACE library carrying only a compile definition.
+# It is not in any export set, so we absorb its effect directly.
+target_compile_definitions(${TARGET} PRIVATE HOSTING_COMPROCESS=ThunderPlugin)
 
 # ------------------------------------------------------------------
 # Whole-archive link.  Ensures that the MODULE_NAME_DECLARATION
