@@ -1203,6 +1203,7 @@ namespace PluginHost {
         , _service()
         , _requestClose(false)
         , _jobs()
+        , _serviceCleanedUp(false)
     {
         TRACE(Activity, (_T("Construct a link with ID: [%d] to [%s]"), Id(), remoteId.QualifiedName().c_str()));
 
