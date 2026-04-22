@@ -4973,7 +4973,7 @@ namespace PluginHost {
             Core::ProxyType<Service> _service;
             bool _requestClose;
             Jobs _jobs;
-            std::atomic<bool> _serviceCleanedUp{false};
+            std::atomic<bool> _serviceCleanedUp;
 
             // Factories for creating jobs that can be placed on the PluginHost Worker pool.
             static Core::ProxyPoolType<WebRequestJob> _webJobs;
