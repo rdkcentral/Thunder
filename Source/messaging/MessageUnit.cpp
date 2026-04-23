@@ -22,6 +22,12 @@
 
 namespace Thunder {
 
+ENUM_CONVERSION_BEGIN(Thunder::Messaging::MessageUnit::OutputMode)
+    { Thunder::Messaging::MessageUnit::PLUGIN, _TXT("plugin") },
+    { Thunder::Messaging::MessageUnit::DIRECT, _TXT("direct") },
+    { Thunder::Messaging::MessageUnit::BOTH,   _TXT("both")   },
+ENUM_CONVERSION_END(Thunder::Messaging::MessageUnit::OutputMode)
+
     namespace Messaging {
 
         uint16_t MessageUnit::Serialize(uint8_t* buffer, const uint16_t length, const string& module)
@@ -359,11 +365,16 @@ namespace Thunder {
         */
         /* virtual */ void MessageUnit::Push(const Core::Messaging::MessageInfo& messageInfo, const Core::Messaging::IEvent* message)
         {
-            //logging messages can happen in Core, meaning, otherside plugin can be not started yet
-            //those should be just printed
-            if (_dataBuffer == nullptr) {
+            const MessageUnit::OutputMode outputMode = _settings.EffectiveOutput(messageInfo);
+
+            const bool sendDirect   = (outputMode == MessageUnit::DIRECT) || (outputMode == MessageUnit::BOTH);
+            const bool sendToPlugin = (outputMode == MessageUnit::PLUGIN) || (outputMode == MessageUnit::BOTH);
+
+            if (sendDirect == true) {
                 _direct.Output(messageInfo, message);
-            } else {
+            }
+
+            if (sendToPlugin == true && _dataBuffer != nullptr) {
                 const uint16_t messageSize = _settings.MessageSize();
                 ASSERT(messageSize != 0);
                 uint8_t* serializationBuffer = static_cast<uint8_t*>(ALLOCA(messageSize));
@@ -383,6 +394,13 @@ namespace Thunder {
                 }
                 else {
                     TRACE_L1("Unable to push data, buffer is too small!");
+                }
+            }
+            else {
+                // Buffer unavailable (early startup or DirectOutput mode without plugin overrides):
+                // fall back to direct output if we haven't already sent it directly.
+                if (sendDirect == false) {
+                    _direct.Output(messageInfo, message);
                 }
             }
         }
