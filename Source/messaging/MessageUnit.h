@@ -70,9 +70,11 @@ namespace Thunder {
             };
 
             // Determines where a message type/category/module is routed.
-            // PLUGIN  - sent to the data buffer (MessageControl plugin), default
+            // PLUGIN  - sent to the data buffer (MessageControl plugin)
             // DIRECT  - printed immediately via DirectOutput (console/syslog)
             // BOTH    - sent to both destinations
+            // The default when no explicit override is configured is PLUGIN in normal mode
+            // and DIRECT in DirectOutput mode (when starting Thunder with -f).
             enum OutputMode : uint8_t {
                 PLUGIN = 0,
                 DIRECT = 1,
