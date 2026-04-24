@@ -375,32 +375,34 @@ ENUM_CONVERSION_END(Thunder::Messaging::MessageUnit::OutputMode)
             }
 
             if (sendToPlugin == true) {
+
                 if (_dataBuffer != nullptr) {
                     const uint16_t messageSize = _settings.MessageSize();
                     ASSERT(messageSize != 0);
                     uint8_t* serializationBuffer = static_cast<uint8_t*>(ALLOCA(messageSize));
                     uint16_t length = 0;
 
-                ASSERT(messageInfo.Type() != Core::Messaging::Metadata::type::INVALID);
+                    ASSERT(messageInfo.Type() != Core::Messaging::Metadata::type::INVALID);
 
-                length = messageInfo.Serialize(serializationBuffer, messageSize);
+                    length = messageInfo.Serialize(serializationBuffer, messageSize);
 
-                //only serialize message if the information could fit
-                if (length != 0) {
-                    length += message->Serialize(serializationBuffer + length, messageSize - length);
+                    //only serialize message if the information could fit
+                    if (length != 0) {
+                        length += message->Serialize(serializationBuffer + length, messageSize - length);
 
-                    if (_dataBuffer->PushData(length, serializationBuffer) != Core::ERROR_NONE) {
-                        TRACE_L1("Unable to push message data!");
+                        if (_dataBuffer->PushData(length, serializationBuffer) != Core::ERROR_NONE) {
+                            TRACE_L1("Unable to push message data!");
+                        }
+                    }
+                    else {
+                        TRACE_L1("Unable to push data, buffer is too small!");
                     }
                 }
-                else {
-                    TRACE_L1("Unable to push data, buffer is too small!");
+                else if (sendDirect == false) {
+                    // Buffer unavailable (early startup or DirectOutput mode without plugin overrides):
+                    // fall back to direct output if we haven't already sent it directly.
+                    _direct.Output(messageInfo, message);
                 }
-            }
-            else if (sendDirect == false) {
-                // Buffer unavailable (early startup or DirectOutput mode without plugin overrides):
-                // fall back to direct output if we haven't already sent it directly.
-                _direct.Output(messageInfo, message);
             }
         }
     } // namespace Messaging
