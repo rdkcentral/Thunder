@@ -768,6 +768,7 @@ namespace Thunder {
                     _metadataSize = 0;
                     _messageSize = 0;
                     _settings.clear();
+                    _outputRouting.clear();
 
                     if (iterator.Next() == true) {
                         _path = iterator.Current().Text();
@@ -830,7 +831,7 @@ namespace Thunder {
                                         _settings.emplace_back(Core::Messaging::Metadata(static_cast<Core::Messaging::Metadata::type>(type), category, module), (enabled[0] == '1'));
                                     }
                                 }
-            }
+                            }
                         }
                     }
                 }
