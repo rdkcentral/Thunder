@@ -697,8 +697,10 @@ namespace Thunder {
                     return (found);
                 }
 
-                // Resolves the effective OutputMode for a given message via at most three
+                // Resolves the effective OutputMode for a given message via exactly three
                 // hash lookups in priority order: type wildcard, then category, then module.
+                // Note: per-entry config overrides are stored with either category OR module
+                // set (never both simultaneously), so these three lookups cover all cases.
                 OutputMode EffectiveOutput(const Core::Messaging::Metadata& metaData) const
                 {
                     OutputMode result = IsDirect() ? MessageUnit::DIRECT : MessageUnit::PLUGIN;
