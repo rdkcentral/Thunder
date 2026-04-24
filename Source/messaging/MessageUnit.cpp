@@ -374,11 +374,12 @@ ENUM_CONVERSION_END(Thunder::Messaging::MessageUnit::OutputMode)
                 _direct.Output(messageInfo, message);
             }
 
-            if (sendToPlugin == true && _dataBuffer != nullptr) {
-                const uint16_t messageSize = _settings.MessageSize();
-                ASSERT(messageSize != 0);
-                uint8_t* serializationBuffer = static_cast<uint8_t*>(ALLOCA(messageSize));
-                uint16_t length = 0;
+            if (sendToPlugin == true) {
+                if (_dataBuffer != nullptr) {
+                    const uint16_t messageSize = _settings.MessageSize();
+                    ASSERT(messageSize != 0);
+                    uint8_t* serializationBuffer = static_cast<uint8_t*>(ALLOCA(messageSize));
+                    uint16_t length = 0;
 
                 ASSERT(messageInfo.Type() != Core::Messaging::Metadata::type::INVALID);
 
@@ -396,12 +397,10 @@ ENUM_CONVERSION_END(Thunder::Messaging::MessageUnit::OutputMode)
                     TRACE_L1("Unable to push data, buffer is too small!");
                 }
             }
-            else {
+            else if (sendDirect == false) {
                 // Buffer unavailable (early startup or DirectOutput mode without plugin overrides):
                 // fall back to direct output if we haven't already sent it directly.
-                if (sendDirect == false) {
-                    _direct.Output(messageInfo, message);
-                }
+                _direct.Output(messageInfo, message);
             }
         }
     } // namespace Messaging
