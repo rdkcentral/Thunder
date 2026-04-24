@@ -844,7 +844,7 @@ namespace Thunder {
                     string module;
 
                     bool operator==(const RoutingKey& rhs) const {
-                        return (type == rhs.type) && (category == rhs.category) && (module == rhs.module);
+                        return ((type == rhs.type) && (category == rhs.category) && (module == rhs.module));
                     }
                 };
 
