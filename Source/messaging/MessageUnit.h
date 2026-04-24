@@ -810,7 +810,7 @@ namespace Thunder {
                                             uint8_t routeMode = Core::NumberType<uint8_t>(iterator.Current()).Value();
                                             if ((type >= Core::Messaging::Metadata::type::TRACING) && (type <= Core::Messaging::Metadata::type::TELEMETRY) &&
                                                 (routeMode <= static_cast<uint8_t>(MessageUnit::BOTH))) {
-                                                _outputRouting[{static_cast<Core::Messaging::Metadata::type>(type), category, module}] = static_cast<OutputMode>(routeMode);
+                                                _outputRouting[{static_cast<Core::Messaging::Metadata::type>(type), std::move(category), std::move(module)}] = static_cast<OutputMode>(routeMode);
                                             }
                                         }
                                     }
