@@ -5029,6 +5029,7 @@ namespace Core {
                 }
                 else {
                     _type = type::STRING;
+                    SetQuoted(true);
                 }
             }
             return (result);
