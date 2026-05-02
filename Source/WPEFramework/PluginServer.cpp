@@ -1092,7 +1092,6 @@ POP_WARNING()
         _config.Security(securityProvider);
 
         std::vector<PluginHost::ISubSystem::subsystem> externallyControlled;
-        _services.Open();
         ServiceMap::Iterator iterator(_services.Services());
 
 #if 0
@@ -1166,6 +1165,11 @@ POP_WARNING()
                 }
             }
         }
+
+        // Open the RPC communicator AFTER extension plugins have been activated,
+        // so async registration jobs submitted by extensions (e.g. PluginInitializerService)
+        // do not race against communicator readiness and subsequent plugin activations.
+        _services.Open();
 
 #if 0
         for (auto service : configured_services)
