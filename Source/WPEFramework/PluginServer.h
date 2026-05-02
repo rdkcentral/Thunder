@@ -2987,11 +2987,17 @@ POP_WARNING()
                 Notifiers::iterator index(_notifiers.begin());
 
                 while (index != _notifiers.end()) {
-                    PluginHost::IPlugin::ILifeTime* lifetime = (*index)->QueryInterface<PluginHost::IPlugin::ILifeTime>();
+                    PluginHost::IPlugin::INotification* notifier = *index;
+                    // AddRef the notifier before calling through it so that
+                    // SinkType::WaitReleased() on the owner side waits until
+                    // this call completes before destroying the composite object.
+                    notifier->AddRef();
+                    PluginHost::IPlugin::ILifeTime* lifetime = notifier->QueryInterface<PluginHost::IPlugin::ILifeTime>();
                     if (lifetime != nullptr) {
                         lifetime->Initialize(callsign, entry);
                         lifetime->Release();
                     }
+                    notifier->Release();
                     index++;
                 }
 
@@ -3030,11 +3036,14 @@ POP_WARNING()
                 Notifiers::iterator index(_notifiers.begin());
 
                 while (index != _notifiers.end()) {
-                    PluginHost::IPlugin::ILifeTime* lifetime = (*index)->QueryInterface<PluginHost::IPlugin::ILifeTime>();
+                    PluginHost::IPlugin::INotification* notifier = *index;
+                    notifier->AddRef();
+                    PluginHost::IPlugin::ILifeTime* lifetime = notifier->QueryInterface<PluginHost::IPlugin::ILifeTime>();
                     if (lifetime != nullptr) {
                         lifetime->Deinitialized(callsign, entry);
                         lifetime->Release();
                     }
+                    notifier->Release();
                     index++;
                 }
 
