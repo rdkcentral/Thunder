@@ -23,9 +23,9 @@
 namespace Thunder {
 
 ENUM_CONVERSION_BEGIN(Thunder::Core::Messaging::OutputMode)
-    { Thunder::Core::Messaging::OutputMode::PLUGIN, _TXT("plugin") },
-    { Thunder::Core::Messaging::OutputMode::DIRECT, _TXT("direct") },
-    { Thunder::Core::Messaging::OutputMode::BOTH,   _TXT("both")   },
+    { Thunder::Core::Messaging::OutputMode::HANDLER, _TXT("handler") },
+    { Thunder::Core::Messaging::OutputMode::DIRECT,  _TXT("direct")  },
+    { Thunder::Core::Messaging::OutputMode::ALL,     _TXT("all")     },
 ENUM_CONVERSION_END(Thunder::Core::Messaging::OutputMode)
 
     namespace Messaging {
@@ -371,14 +371,14 @@ ENUM_CONVERSION_END(Thunder::Core::Messaging::OutputMode)
         */
         /* virtual */ void MessageUnit::Push(const Core::Messaging::MessageInfo& messageInfo, const Core::Messaging::IEvent* message, Core::Messaging::OutputMode outputMode)
         {
-            const bool sendDirect   = (outputMode == Core::Messaging::OutputMode::DIRECT) || (outputMode == Core::Messaging::OutputMode::BOTH);
-            const bool sendToPlugin = (outputMode == Core::Messaging::OutputMode::PLUGIN) || (outputMode == Core::Messaging::OutputMode::BOTH);
+            const bool sendDirect    = (outputMode == Core::Messaging::OutputMode::DIRECT) || (outputMode == Core::Messaging::OutputMode::ALL);
+            const bool sendToHandler = (outputMode == Core::Messaging::OutputMode::HANDLER) || (outputMode == Core::Messaging::OutputMode::ALL);
 
             if (sendDirect == true) {
                 _direct.Output(messageInfo, message);
             }
 
-            if (sendToPlugin == true) {
+            if (sendToHandler == true) {
 
                 if (_dataBuffer != nullptr) {
                     const uint16_t messageSize = _settings.MessageSize();

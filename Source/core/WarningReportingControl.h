@@ -396,7 +396,7 @@ namespace WarningReporting {
             WarningReportingControl()
                 : _categoryName(CallCategoryName())
                 , _enabled(0x03)
-                , _outputMode(Thunder::Core::Messaging::OutputMode::PLUGIN)
+                , _outputMode(Thunder::Core::Messaging::OutputMode::HANDLER)
                 , _metadata(Thunder::Core::Messaging::Metadata::type::REPORTING, _categoryName, Thunder::Core::Messaging::MODULE_REPORTING)
             {
                 // Register Our control unit, so it can be influenced from the outside

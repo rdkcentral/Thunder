@@ -70,10 +70,10 @@ namespace Thunder {
             };
 
             // Determines where a message type/category/module is routed.
-            // PLUGIN  - sent to the data buffer (MessageControl plugin)
+            // HANDLER - sent to the data buffer (handler, e.g. MessageControl)
             // DIRECT  - printed immediately via DirectOutput (console/syslog)
-            // BOTH    - sent to both destinations
-            // The default when no explicit override is configured is PLUGIN in normal mode
+            // ALL     - sent to all destinations
+            // The default when no explicit override is configured is HANDLER in normal mode
             // and DIRECT in DirectOutput mode (when starting Thunder with -f).
             using OutputMode = Core::Messaging::OutputMode;
 
@@ -105,7 +105,7 @@ namespace Thunder {
                     , _hasEnabled(false)
                     , _enabled(false)
                     , _hasRouting(false)
-                    , _routing(Core::Messaging::OutputMode::PLUGIN)
+                    , _routing(Core::Messaging::OutputMode::HANDLER)
                 {
                 }
                 // Construct with metadata only (neither enabled nor routing is overridden yet).
@@ -114,7 +114,7 @@ namespace Thunder {
                     , _hasEnabled(false)
                     , _enabled(false)
                     , _hasRouting(false)
-                    , _routing(Core::Messaging::OutputMode::PLUGIN)
+                    , _routing(Core::Messaging::OutputMode::HANDLER)
                 {
                 }
                 // Construct with only an enabled override (routing stays default).
@@ -123,7 +123,7 @@ namespace Thunder {
                     , _hasEnabled(true)
                     , _enabled(enabled)
                     , _hasRouting(false)
-                    , _routing(Core::Messaging::OutputMode::PLUGIN)
+                    , _routing(Core::Messaging::OutputMode::HANDLER)
                 {
                 }
                 // Construct with only a routing override (enabled stays default).
@@ -370,7 +370,7 @@ namespace Thunder {
                                 , Module()
                                 , Category()
                                 , Enabled(false)
-                                , Output(Core::Messaging::OutputMode::PLUGIN)
+                                , Output(Core::Messaging::OutputMode::HANDLER)
                             {
                                 Add(_T("module"), &Module);
                                 Add(_T("category"), &Category);
@@ -451,7 +451,7 @@ namespace Thunder {
                             : Core::JSON::Container()
                             , Settings()
                             , Abbreviated(true)
-                            , Output(Core::Messaging::OutputMode::PLUGIN) {
+                            , Output(Core::Messaging::OutputMode::HANDLER) {
                             Add(_T("settings"), &Settings);
                             Add(_T("abbreviated"), &Abbreviated);
                             Add(_T("output"), &Output);
@@ -680,7 +680,7 @@ namespace Thunder {
                 void Update(const Core::Messaging::Metadata& metaData, const bool isEnabled)
                 {
                     bool enabled = metaData.Default();
-                    Core::Messaging::OutputMode routing = Core::Messaging::OutputMode::PLUGIN;
+                    Core::Messaging::OutputMode routing = Core::Messaging::OutputMode::HANDLER;
                     bool hasRouting = false;
 
                     TRACE_L1("Updating settings(s): '%s':'%s'->%u\n", metaData.Category().c_str(), metaData.Module().c_str(), isEnabled);
@@ -777,7 +777,7 @@ namespace Thunder {
                         if (entry.HasRouting() == true) {
                             const OutputMode mode = entry.Routing();
 
-                            if ((mode == Core::Messaging::OutputMode::PLUGIN) || (mode == Core::Messaging::OutputMode::BOTH)) {
+                            if ((mode == Core::Messaging::OutputMode::HANDLER) || (mode == Core::Messaging::OutputMode::ALL)) {
                                 found = true;
                                 break;
                             }
@@ -795,7 +795,7 @@ namespace Thunder {
                 OutputMode EffectiveOutput(const Core::Messaging::Metadata& metaData) const
                 {
                     bool done = false;
-                    OutputMode result = IsDirect() ? Core::Messaging::OutputMode::DIRECT : Core::Messaging::OutputMode::PLUGIN;
+                    OutputMode result = IsDirect() ? Core::Messaging::OutputMode::DIRECT : Core::Messaging::OutputMode::HANDLER;
 
                     _adminLock.Lock();
 
@@ -910,7 +910,7 @@ namespace Thunder {
                                                 if ((type >= Core::Messaging::Metadata::type::TRACING) && (type <= Core::Messaging::Metadata::type::TELEMETRY)) {
                                                     Core::Messaging::Metadata info(static_cast<Core::Messaging::Metadata::type>(type), category, module);
                                                     const bool hasE = (hasEnabled != 0);
-                                                    const bool hasR = (hasRouting != 0) && (routeMode <= static_cast<uint8_t>(Core::Messaging::OutputMode::BOTH));
+                                                    const bool hasR = (hasRouting != 0) && (routeMode <= static_cast<uint8_t>(Core::Messaging::OutputMode::ALL));
                                                     if ((hasE == true) && (hasR == true)) {
                                                         _settings.emplace_back(info, (enabled != 0), static_cast<OutputMode>(routeMode));
                                                     } else if (hasE == true) {

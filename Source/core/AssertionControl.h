@@ -69,7 +69,7 @@ namespace Assertion {
             AssertionControl()
                 : _categoryName(EXPAND_AND_QUOTE(ASSERT_CATEGORY))
                 , _enabled(0x03)
-                , _outputMode(Core::Messaging::OutputMode::PLUGIN)
+                , _outputMode(Core::Messaging::OutputMode::HANDLER)
                 , _metadata(Core::Messaging::Metadata::type::ASSERT, _categoryName, Core::Messaging::MODULE_ASSERT)
             {
                 Core::Messaging::IControl::Announce(this);

@@ -36,7 +36,7 @@ namespace Messaging {
 
         ControlType(const bool enabled)
             : _enabled(0x02 | (enabled ? 0x01 : 0x00))
-            , _outputMode(Core::Messaging::OutputMode::PLUGIN)
+            , _outputMode(Core::Messaging::OutputMode::HANDLER)
             , _metaData(CONTROLTYPE, Core::ClassNameOnly(typeid(CONTROLCATEGORY).name()).Text(), *CONTROLMODULENAME) {
             // Register Our trace control unit, so it can be influenced from the outside
             // if nessecary..

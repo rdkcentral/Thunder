@@ -124,15 +124,15 @@ namespace Core {
         };
 
         // Determines where a message type/category/module is routed.
-        // PLUGIN  - sent to the data buffer (MessageControl plugin)
+        // HANDLER - sent to the data buffer (handler, e.g. MessageControl)
         // DIRECT  - printed immediately via DirectOutput (console/syslog)
-        // BOTH    - sent to both destinations
-        // The default when no explicit override is configured is PLUGIN in normal
+        // ALL     - sent to all destinations
+        // The default when no explicit override is configured is HANDLER in normal
         // mode and DIRECT in DirectOutput mode (-f / flush flag).
         enum OutputMode : uint8_t {
-            PLUGIN = 0,
-            DIRECT = 1,
-            BOTH   = 2
+            HANDLER = 0,
+            DIRECT  = 1,
+            ALL     = 2
         };
 
         struct EXTERNAL IControl {
