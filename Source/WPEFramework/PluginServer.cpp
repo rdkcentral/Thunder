@@ -1167,6 +1167,11 @@ POP_WARNING()
             }
         }
 
+        // Open the RPC communicator AFTER extension plugins have been activated,
+        // so async registration jobs submitted by extensions (e.g. PluginInitializerService)
+        // do not race against communicator readiness and subsequent plugin activations.
+        _services.Open();
+
 #if 0
         for (auto service : configured_services)
         {
