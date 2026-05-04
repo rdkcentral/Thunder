@@ -5095,6 +5095,9 @@ namespace Core {
 
         inline uint16_t Variant::Deserialize(const char stream[], const uint16_t maxLength, uint32_t& offset, Core::OptionalType<Error>& error)
         {
+            // Reset quoted/serialize flag so IsQuoted() only reflects the current token,
+            // not any quoted state lingering from a previous parse of the same Variant instance.
+            SetQuoted(false);
             uint16_t result = String::Deserialize(stream, maxLength, offset, error);
 
             // If we are complete, try to guess what it was that we received...

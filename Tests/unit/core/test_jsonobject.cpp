@@ -345,6 +345,29 @@ namespace Core {
         EXPECT_TRUE(parsed == constructed);
     }
 
+    TEST(JSONOBJECT, VariantReuseQuotedThenUnquoted)
+    {
+        // Regression test: reusing the same Variant for a second FromString() call must
+        // not carry over the quoted/serialize flag from the first parse.  Without the fix,
+        // parsing an unquoted number after a quoted string left IsQuoted()==true, causing
+        // the number to be misclassified as STRING.
+        ::Thunder::Core::JSON::Variant variant;
+
+        // First parse: quoted string — variant must be STRING.
+        ASSERT_TRUE(variant.FromString("\"hello\""));
+        EXPECT_EQ(variant.Content(), ::Thunder::Core::JSON::Variant::type::STRING);
+        EXPECT_EQ(variant.String(), std::string("hello"));
+
+        // Second parse on the same instance: unquoted integer — variant must be NUMBER.
+        ASSERT_TRUE(variant.FromString("42"));
+        EXPECT_EQ(variant.Content(), ::Thunder::Core::JSON::Variant::type::NUMBER);
+        EXPECT_EQ(variant.Number(), static_cast<int64_t>(42));
+
+        // Third parse on the same instance: unquoted boolean — must be BOOLEAN, not STRING.
+        ASSERT_TRUE(variant.FromString("true"));
+        EXPECT_EQ(variant.Content(), ::Thunder::Core::JSON::Variant::type::BOOLEAN);
+    }
+
 } // Core
 } // Tests
 } // Thunder
