@@ -533,11 +533,6 @@ namespace WarningReporting {
             return _sWarningControl.IsEnabled();
         }
 
-        inline static Core::Messaging::OutputMode Routing()
-        {
-            return _sWarningControl.Routing();
-        }
-
         Core::Messaging::OutputMode Routing() const override
         {
             return _sWarningControl.Routing();

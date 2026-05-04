@@ -69,12 +69,6 @@ namespace Thunder {
                 FLUSH_ABBREVIATED  = 2
             };
 
-            // Determines where a message type/category/module is routed.
-            // HANDLER - sent to the data buffer (handler, e.g. MessageControl)
-            // DIRECT  - printed immediately via DirectOutput (console/syslog)
-            // ALL     - sent to all destinations
-            // The default when no explicit override is configured is HANDLER in normal mode
-            // and DIRECT in DirectOutput mode (when starting Thunder with -f).
             using OutputMode = Core::Messaging::OutputMode;
 
             class EXTERNAL Buffer : public Core::IPC::BufferType<static_cast<uint16_t>(~0)> {
