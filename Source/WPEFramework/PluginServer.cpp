@@ -1092,6 +1092,7 @@ POP_WARNING()
         _config.Security(securityProvider);
 
         std::vector<PluginHost::ISubSystem::subsystem> externallyControlled;
+        _services.Open();
         ServiceMap::Iterator iterator(_services.Services());
 
 #if 0
