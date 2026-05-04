@@ -5006,7 +5006,8 @@ namespace Core {
 
             // If we are complete, try to guess what it was that we received...
             if (offset == 0) {
-                if (IsQuoted() == false) {
+                bool quoted = IsQuoted();
+                if (quoted == false) {
                     const string base = JSON::String::Value();
                     if (IsNull() == true) {
                         _type = type::EMPTY;
@@ -5029,7 +5030,7 @@ namespace Core {
                 }
                 else {
                     _type = type::STRING;
-                    SetQuoted(true);
+                    SetQuoted(quoted);
                 }
             }
             return (result);
