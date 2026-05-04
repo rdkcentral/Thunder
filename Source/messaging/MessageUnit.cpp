@@ -22,11 +22,11 @@
 
 namespace Thunder {
 
-ENUM_CONVERSION_BEGIN(Thunder::Messaging::MessageUnit::OutputMode)
-    { Thunder::Messaging::MessageUnit::PLUGIN, _TXT("plugin") },
-    { Thunder::Messaging::MessageUnit::DIRECT, _TXT("direct") },
-    { Thunder::Messaging::MessageUnit::BOTH,   _TXT("both")   },
-ENUM_CONVERSION_END(Thunder::Messaging::MessageUnit::OutputMode)
+ENUM_CONVERSION_BEGIN(Thunder::Core::Messaging::OutputMode)
+    { Thunder::Core::Messaging::OutputMode::PLUGIN, _TXT("plugin") },
+    { Thunder::Core::Messaging::OutputMode::DIRECT, _TXT("direct") },
+    { Thunder::Core::Messaging::OutputMode::BOTH,   _TXT("both")   },
+ENUM_CONVERSION_END(Thunder::Core::Messaging::OutputMode)
 
     namespace Messaging {
 
@@ -183,6 +183,8 @@ ENUM_CONVERSION_END(Thunder::Messaging::MessageUnit::OutputMode)
                     if (enabled ^ control->Enable()) {
                         control->Enable(enabled);
                     }
+
+                    control->Routing(_settings.EffectiveOutput(control->Metadata()));
                 }
 
             private:
@@ -360,15 +362,17 @@ ENUM_CONVERSION_END(Thunder::Messaging::MessageUnit::OutputMode)
             return (_settings.IsEnabled(control));
         }
 
+        /* virtual */ Core::Messaging::OutputMode MessageUnit::DefaultOutput(const Core::Messaging::Metadata& metadata) const {
+            return (_settings.EffectiveOutput(metadata));
+        }
+
         /**
         * @brief Push a message of any type and its information to a buffer
         */
-        /* virtual */ void MessageUnit::Push(const Core::Messaging::MessageInfo& messageInfo, const Core::Messaging::IEvent* message)
+        /* virtual */ void MessageUnit::Push(const Core::Messaging::MessageInfo& messageInfo, const Core::Messaging::IEvent* message, Core::Messaging::OutputMode outputMode)
         {
-            const MessageUnit::OutputMode outputMode = _settings.EffectiveOutput(messageInfo);
-
-            const bool sendDirect   = (outputMode == MessageUnit::DIRECT) || (outputMode == MessageUnit::BOTH);
-            const bool sendToPlugin = (outputMode == MessageUnit::PLUGIN) || (outputMode == MessageUnit::BOTH);
+            const bool sendDirect   = (outputMode == Core::Messaging::OutputMode::DIRECT) || (outputMode == Core::Messaging::OutputMode::BOTH);
+            const bool sendToPlugin = (outputMode == Core::Messaging::OutputMode::PLUGIN) || (outputMode == Core::Messaging::OutputMode::BOTH);
 
             if (sendDirect == true) {
                 _direct.Output(messageInfo, message);

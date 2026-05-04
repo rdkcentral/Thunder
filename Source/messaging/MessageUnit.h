@@ -75,11 +75,7 @@ namespace Thunder {
             // BOTH    - sent to both destinations
             // The default when no explicit override is configured is PLUGIN in normal mode
             // and DIRECT in DirectOutput mode (when starting Thunder with -f).
-            enum OutputMode : uint8_t {
-                PLUGIN = 0,
-                DIRECT = 1,
-                BOTH   = 2
-            };
+            using OutputMode = Core::Messaging::OutputMode;
 
             class EXTERNAL Buffer : public Core::IPC::BufferType<static_cast<uint16_t>(~0)> {
             public:
@@ -304,7 +300,7 @@ namespace Thunder {
                                 , Module()
                                 , Category()
                                 , Enabled(false)
-                                , Output(MessageUnit::PLUGIN)
+                                , Output(Core::Messaging::OutputMode::PLUGIN)
                             {
                                 Add(_T("module"), &Module);
                                 Add(_T("category"), &Category);
@@ -385,7 +381,7 @@ namespace Thunder {
                             : Core::JSON::Container()
                             , Settings()
                             , Abbreviated(true)
-                            , Output(MessageUnit::PLUGIN) {
+                            , Output(Core::Messaging::OutputMode::PLUGIN) {
                             Add(_T("settings"), &Settings);
                             Add(_T("abbreviated"), &Abbreviated);
                             Add(_T("output"), &Output);
@@ -688,7 +684,7 @@ namespace Thunder {
                     _adminLock.Lock();
 
                     for (const auto& [key, mode] : _outputRouting) {
-                        if ((mode == MessageUnit::PLUGIN) || (mode == MessageUnit::BOTH)) {
+                        if ((mode == Core::Messaging::OutputMode::PLUGIN) || (mode == Core::Messaging::OutputMode::BOTH)) {
                             found = true;
                             break;
                         }
@@ -705,7 +701,7 @@ namespace Thunder {
                 // set (never both simultaneously), so these three lookups cover all cases.
                 OutputMode EffectiveOutput(const Core::Messaging::Metadata& metaData) const
                 {
-                    OutputMode result = IsDirect() ? MessageUnit::DIRECT : MessageUnit::PLUGIN;
+                    OutputMode result = IsDirect() ? Core::Messaging::OutputMode::DIRECT : Core::Messaging::OutputMode::PLUGIN;
 
                     _adminLock.Lock();
 
@@ -813,7 +809,7 @@ namespace Thunder {
                                         if (iterator.Next() == true) {
                                             uint8_t routeMode = Core::NumberType<uint8_t>(iterator.Current()).Value();
                                             if ((type >= Core::Messaging::Metadata::type::TRACING) && (type <= Core::Messaging::Metadata::type::TELEMETRY) &&
-                                                (routeMode <= static_cast<uint8_t>(MessageUnit::BOTH))) {
+                                                (routeMode <= static_cast<uint8_t>(Core::Messaging::OutputMode::BOTH))) {
                                                 _outputRouting[{static_cast<Core::Messaging::Metadata::type>(type), std::move(category), std::move(module)}] = static_cast<OutputMode>(routeMode);
                                             }
                                         }
@@ -1319,7 +1315,8 @@ namespace Thunder {
             void Close();
 
             bool Default(const Core::Messaging::Metadata& control) const override;
-            void Push(const Core::Messaging::MessageInfo& messageInfo, const Core::Messaging::IEvent* message) override;
+            Core::Messaging::OutputMode DefaultOutput(const Core::Messaging::Metadata& metadata) const override;
+            void Push(const Core::Messaging::MessageInfo& messageInfo, const Core::Messaging::IEvent* message, Core::Messaging::OutputMode outputMode) override;
 
         private:
             uint16_t Serialize(uint8_t* buffer, const uint16_t length, const string& module);

@@ -123,6 +123,18 @@ namespace Core {
             string _module;
         };
 
+        // Determines where a message type/category/module is routed.
+        // PLUGIN  - sent to the data buffer (MessageControl plugin)
+        // DIRECT  - printed immediately via DirectOutput (console/syslog)
+        // BOTH    - sent to both destinations
+        // The default when no explicit override is configured is PLUGIN in normal
+        // mode and DIRECT in DirectOutput mode (-f / flush flag).
+        enum OutputMode : uint8_t {
+            PLUGIN = 0,
+            DIRECT = 1,
+            BOTH   = 2
+        };
+
         struct EXTERNAL IControl {
 
             struct EXTERNAL IHandler {
@@ -133,6 +145,8 @@ namespace Core {
             virtual ~IControl() = default;
             virtual void Enable(bool enable) = 0;
             virtual bool Enable() const = 0;
+            virtual void Routing(OutputMode routing) = 0;
+            virtual OutputMode Routing() const = 0;
             virtual void Destroy() = 0;
 
             virtual const Core::Messaging::Metadata& Metadata() const = 0;
@@ -418,7 +432,8 @@ namespace Core {
             static void Set(IStore*);
 
             virtual bool Default(const Metadata& metadata) const = 0;
-            virtual void Push(const MessageInfo& messageInfo, const IEvent* message) = 0;
+            virtual OutputMode DefaultOutput(const Metadata& metadata) const = 0;
+            virtual void Push(const MessageInfo& messageInfo, const IEvent* message, OutputMode outputMode) = 0;
         };
 
     } // namespace Messaging

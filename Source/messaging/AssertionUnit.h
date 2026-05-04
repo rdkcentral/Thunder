@@ -41,7 +41,7 @@ namespace Assertion {
     public:
         static AssertionUnit& Instance();
 
-        void AssertionEvent(Core::Messaging::IStore::Assert& metadata, const Core::Messaging::TextMessage& message) override;
+        void AssertionEvent(Core::Messaging::IStore::Assert& metadata, const Core::Messaging::TextMessage& message, Core::Messaging::OutputMode outputMode) override;
     };
 }
 }
