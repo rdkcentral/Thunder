@@ -989,24 +989,28 @@ namespace PluginHost {
         JSONRPCSupportsEventStatus()
             : _adminLock()
             , _observers()
+            , _indexedObservers()
         {
         }
         JSONRPCSupportsEventStatus(const PluginHost::JSONRPC::TokenCheckFunction& validation)
             : JSONRPC(validation)
             , _adminLock()
             , _observers()
+            , _indexedObservers()
         {
         }
         JSONRPCSupportsEventStatus(const std::vector<uint8_t>& versions)
             : JSONRPC(versions)
             , _adminLock()
             , _observers()
+            , _indexedObservers()
         {
         }
         JSONRPCSupportsEventStatus(const std::vector<uint8_t>& versions, const TokenCheckFunction& validation)
             : JSONRPC(versions, validation)
             , _adminLock()
             , _observers()
+            , _indexedObservers()
         {
         }
         ~JSONRPCSupportsEventStatus() override = default;
@@ -1017,14 +1021,32 @@ namespace PluginHost {
         };
 
     public:
-        template<typename METHOD>
-        void RegisterEventStatusListener(const string& event, METHOD method)
+        using EventStatusCallback = std::function<void(const string&, Status status)>;
+        using IndexedEventStatusCallback = std::function<void(const uint32_t, const string&, const string&, Status status)>;
+
+    public:
+        void RegisterEventStatusListener(const string& event, EventStatusCallback method)
+        {
+            // keep non-indexed register for backward compatibility
+
+            _adminLock.Lock();
+
+            ASSERT(_observers.find(event) == _observers.end());
+            ASSERT(_indexedObservers.find(event) == _indexedObservers.end());
+
+            _observers[event] = std::move(method);
+
+            _adminLock.Unlock();
+        }
+
+        void RegisterEventStatusListener(const string& event, IndexedEventStatusCallback method)
         {
             _adminLock.Lock();
 
             ASSERT(_observers.find(event) == _observers.end());
+            ASSERT(_indexedObservers.find(event) == _indexedObservers.end());
 
-            _observers[event] = method;
+            _indexedObservers[event] = std::move(method);
 
             _adminLock.Unlock();
         }
@@ -1033,13 +1055,13 @@ namespace PluginHost {
         {
             _adminLock.Lock();
 
-            ASSERT(_observers.find(event) != _observers.end());
+            ASSERT((_observers.find(event) != _observers.end()) || (_indexedObservers.find(event) != _indexedObservers.end()));
 
             _observers.erase(event);
+            _indexedObservers.erase(event);
 
             _adminLock.Unlock();
         }
-
 
     private:
         uint32_t ProcessSubscribe(const uint32_t channel, const string& event, const string& clientId, const string& index) override
@@ -1070,18 +1092,25 @@ namespace PluginHost {
     private:
         void NotifyObservers(const uint32_t channel, const string event, const string& clientId, const string& index, const Status status) const
         {
-            StatusCallbackMap::const_iterator it = _observers.find(event);
-            if (it != _observers.cend()) {
+            // called interlocked
+            IndexedStatusCallbackMap::const_iterator it = _indexedObservers.find(event);
+            if (it != _indexedObservers.cend()) {
                 it->second(channel, clientId, index, status);
+            }
+
+            StatusCallbackMap::const_iterator it2 = _observers.find(event);
+            if (it2 != _observers.cend()) {
+                it2->second(clientId, status);
             }
         }
 
     private:
-        using EventStatusCallback = std::function<void(const uint32_t, const string&, const string&, Status status)>;
         using StatusCallbackMap = std::map<string, EventStatusCallback>;
+        using IndexedStatusCallbackMap = std::map<string, IndexedEventStatusCallback>;
 
         mutable Core::CriticalSection _adminLock;
         StatusCallbackMap _observers;
+        IndexedStatusCallbackMap _indexedObservers;
     };
 
     namespace JSONRPCErrorAssessorTypes {
