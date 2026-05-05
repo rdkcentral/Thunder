@@ -76,6 +76,7 @@ ENUM_CONVERSION_END(Core::Messaging::Metadata::type)
 
                 if (_storage != nullptr) {
                     control->Enable(_storage->Default(control->Metadata()));
+                    control->Routing(_storage->DefaultOutput(control->Metadata()));
                 }
 
                 _adminLock.Unlock();

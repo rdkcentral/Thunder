@@ -396,6 +396,7 @@ namespace WarningReporting {
             WarningReportingControl()
                 : _categoryName(CallCategoryName())
                 , _enabled(0x03)
+                , _outputMode(Thunder::Core::Messaging::OutputMode::HANDLER)
                 , _metadata(Thunder::Core::Messaging::Metadata::type::REPORTING, _categoryName, Thunder::Core::Messaging::MODULE_REPORTING)
             {
                 // Register Our control unit, so it can be influenced from the outside
@@ -449,6 +450,14 @@ namespace WarningReporting {
             {
                 _enabled = (_enabled & 0xFE) | (enabled ? 0x01 : 0x00);
             }
+            Thunder::Core::Messaging::OutputMode Routing() const override
+            {
+                return (_outputMode);
+            }
+            void Routing(Thunder::Core::Messaging::OutputMode routing) override
+            {
+                _outputMode = routing;
+            }
             void Exclude(const string& toExclude) override
             {
                 WarningReportingUnitProxy::Instance().FillExcludedWarnings(toExclude, _excludedWarnings);
@@ -474,6 +483,7 @@ namespace WarningReporting {
         protected:
             const string _categoryName;
             uint8_t _enabled;
+            Thunder::Core::Messaging::OutputMode _outputMode;
             ExcludedWarnings _excludedWarnings;
             Core::Messaging::Metadata _metadata;
         };
@@ -521,6 +531,11 @@ namespace WarningReporting {
         inline static bool IsEnabled()
         {
             return _sWarningControl.IsEnabled();
+        }
+
+        Core::Messaging::OutputMode Routing() const override
+        {
+            return _sWarningControl.Routing();
         }
 
         inline static void Enable(const bool status)

@@ -22,6 +22,12 @@
 
 namespace Thunder {
 
+ENUM_CONVERSION_BEGIN(Thunder::Core::Messaging::OutputMode)
+    { Thunder::Core::Messaging::OutputMode::HANDLER, _TXT("handler") },
+    { Thunder::Core::Messaging::OutputMode::DIRECT,  _TXT("direct")  },
+    { Thunder::Core::Messaging::OutputMode::ALL,     _TXT("all")     },
+ENUM_CONVERSION_END(Thunder::Core::Messaging::OutputMode)
+
     namespace Messaging {
 
         uint16_t MessageUnit::Serialize(uint8_t* buffer, const uint16_t length, const string& module)
@@ -177,6 +183,8 @@ namespace Thunder {
                     if (enabled ^ control->Enable()) {
                         control->Enable(enabled);
                     }
+
+                    control->Routing(_settings.EffectiveOutput(control->Metadata()));
                 }
 
             private:
@@ -354,35 +362,50 @@ namespace Thunder {
             return (_settings.IsEnabled(control));
         }
 
+        /* virtual */ Core::Messaging::OutputMode MessageUnit::DefaultOutput(const Core::Messaging::Metadata& metadata) const {
+            return (_settings.EffectiveOutput(metadata));
+        }
+
         /**
         * @brief Push a message of any type and its information to a buffer
         */
-        /* virtual */ void MessageUnit::Push(const Core::Messaging::MessageInfo& messageInfo, const Core::Messaging::IEvent* message)
+        /* virtual */ void MessageUnit::Push(const Core::Messaging::MessageInfo& messageInfo, const Core::Messaging::IEvent* message, Core::Messaging::OutputMode outputMode)
         {
-            //logging messages can happen in Core, meaning, otherside plugin can be not started yet
-            //those should be just printed
-            if (_dataBuffer == nullptr) {
+            const bool sendDirect    = (outputMode == Core::Messaging::OutputMode::DIRECT) || (outputMode == Core::Messaging::OutputMode::ALL);
+            const bool sendToHandler = (outputMode == Core::Messaging::OutputMode::HANDLER) || (outputMode == Core::Messaging::OutputMode::ALL);
+
+            if (sendDirect == true) {
                 _direct.Output(messageInfo, message);
-            } else {
-                const uint16_t messageSize = _settings.MessageSize();
-                ASSERT(messageSize != 0);
-                uint8_t* serializationBuffer = static_cast<uint8_t*>(ALLOCA(messageSize));
-                uint16_t length = 0;
+            }
 
-                ASSERT(messageInfo.Type() != Core::Messaging::Metadata::type::INVALID);
+            if (sendToHandler == true) {
 
-                length = messageInfo.Serialize(serializationBuffer, messageSize);
+                if (_dataBuffer != nullptr) {
+                    const uint16_t messageSize = _settings.MessageSize();
+                    ASSERT(messageSize != 0);
+                    uint8_t* serializationBuffer = static_cast<uint8_t*>(ALLOCA(messageSize));
+                    uint16_t length = 0;
 
-                //only serialize message if the information could fit
-                if (length != 0) {
-                    length += message->Serialize(serializationBuffer + length, messageSize - length);
+                    ASSERT(messageInfo.Type() != Core::Messaging::Metadata::type::INVALID);
 
-                    if (_dataBuffer->PushData(length, serializationBuffer) != Core::ERROR_NONE) {
-                        TRACE_L1("Unable to push message data!");
+                    length = messageInfo.Serialize(serializationBuffer, messageSize);
+
+                    //only serialize message if the information could fit
+                    if (length != 0) {
+                        length += message->Serialize(serializationBuffer + length, messageSize - length);
+
+                        if (_dataBuffer->PushData(length, serializationBuffer) != Core::ERROR_NONE) {
+                            TRACE_L1("Unable to push message data!");
+                        }
+                    }
+                    else {
+                        TRACE_L1("Unable to push data, buffer is too small!");
                     }
                 }
-                else {
-                    TRACE_L1("Unable to push data, buffer is too small!");
+                else if (sendDirect == false) {
+                    // Buffer unavailable (early startup or DirectOutput mode without plugin overrides):
+                    // fall back to direct output if we haven't already sent it directly.
+                    _direct.Output(messageInfo, message);
                 }
             }
         }

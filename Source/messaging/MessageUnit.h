@@ -69,6 +69,8 @@ namespace Thunder {
                 FLUSH_ABBREVIATED  = 2
             };
 
+            using OutputMode = Core::Messaging::OutputMode;
+
             class EXTERNAL Buffer : public Core::IPC::BufferType<static_cast<uint16_t>(~0)> {
             public:
                 Buffer()
@@ -94,22 +96,29 @@ namespace Thunder {
 
                 Control()
                     : Core::Messaging::Metadata()
-                    , _enabled(false)
+                    , _enabled()
+                    , _routing()
                 {
                 }
-                Control(const Metadata& info, const bool enabled)
+                // Construct with metadata and optional enabled/routing overrides.
+                explicit Control(const Metadata& info,
+                                 const Core::OptionalType<bool> enabled = {},
+                                 const Core::OptionalType<Core::Messaging::OutputMode> routing = {})
                     : Core::Messaging::Metadata(info)
                     , _enabled(enabled)
+                    , _routing(routing)
                 {
                 }
                 Control(Control&& rhs) noexcept
-                    : Core::Messaging::Metadata(rhs)
-                    , _enabled(rhs._enabled)
+                    : Core::Messaging::Metadata(std::move(rhs))
+                    , _enabled(std::move(rhs._enabled))
+                    , _routing(std::move(rhs._routing))
                 {
                 }
                 Control(const Control& copy)
                     : Core::Messaging::Metadata(copy)
                     , _enabled(copy._enabled)
+                    , _routing(copy._routing)
                 {
                 }
                 ~Control() = default;
@@ -117,16 +126,28 @@ namespace Thunder {
                 Control& operator=(Control&& move) noexcept
                 {
                     if (this != &move) {
-                        Core::Messaging::Metadata::operator=(move);
-                        _enabled = move._enabled;
-                        move._enabled = false;
+                        Core::Messaging::Metadata::operator=(std::move(move));
+                        _enabled = std::move(move._enabled);
+                        _routing = std::move(move._routing);
                     }
                     return (*this);
                 }
 
             public:
-                bool Enabled() const {
+                const Core::OptionalType<bool>& Enabled() const {
                     return (_enabled);
+                }
+
+                const Core::OptionalType<Core::Messaging::OutputMode>& Routing() const {
+                    return (_routing);
+                }
+
+                void SetEnabled(const bool enabled) {
+                    _enabled = enabled;
+                }
+
+                void SetRouting(const Core::Messaging::OutputMode routing) {
+                    _routing = routing;
                 }
                 
                 uint16_t Serialize(uint8_t buffer[], const uint16_t bufferSize) const
@@ -138,7 +159,7 @@ namespace Thunder {
                         length = 0;
                     }
                     else {
-                        buffer[length++] = (_enabled ? 1 : 0);
+                        buffer[length++] = (_enabled.IsSet() && _enabled.Value()) ? 1 : 0;
                     }
 
                     return (length);
@@ -153,14 +174,15 @@ namespace Thunder {
                         length = 0;
                     }
                     else {
-                        _enabled = (buffer[length++] == 0 ? false : true);
+                        _enabled = (buffer[length++] != 0);
                     }
 
                     return (length);
                 }
 
             private:
-                bool _enabled;
+                Core::OptionalType<bool> _enabled;
+                Core::OptionalType<Core::Messaging::OutputMode> _routing;
             };
 
             using ControlList = std::vector<Control>;
@@ -255,7 +277,7 @@ namespace Thunder {
                 {
                     ASSERT(IsValid());
                     
-                    return (_index->Enabled());
+                    return (_index->Enabled().Value());
                 }
 
             private:
@@ -292,10 +314,12 @@ namespace Thunder {
                                 , Module()
                                 , Category()
                                 , Enabled(false)
+                                , Output(Core::Messaging::OutputMode::HANDLER)
                             {
                                 Add(_T("module"), &Module);
                                 Add(_T("category"), &Category);
                                 Add(_T("enabled"), &Enabled);
+                                Add(_T("output"), &Output);
                             }
                             Entry(const string& module, const string& category, const bool enabled)
                                 : Entry()
@@ -309,20 +333,24 @@ namespace Thunder {
                                 , Module(std::move(other.Module))
                                 , Category(std::move(other.Category))
                                 , Enabled(std::move(other.Enabled))
+                                , Output(std::move(other.Output))
                             {
                                 Add(_T("module"), &Module);
                                 Add(_T("category"), &Category);
                                 Add(_T("enabled"), &Enabled);
+                                Add(_T("output"), &Output);
                             }
                             Entry(const Entry& other)
                                 : Core::JSON::Container()
                                 , Module(other.Module)
                                 , Category(other.Category)
                                 , Enabled(other.Enabled)
+                                , Output(other.Output)
                             {
                                 Add(_T("module"), &Module);
                                 Add(_T("category"), &Category);
                                 Add(_T("enabled"), &Enabled);
+                                Add(_T("output"), &Output);
                             }
 
                             Entry& operator=(Entry&& other) noexcept
@@ -331,6 +359,7 @@ namespace Thunder {
                                     Module = std::move(other.Module);
                                     Category = std::move(other.Category);
                                     Enabled = std::move(other.Enabled);
+                                    Output = std::move(other.Output);
                                 }
                                 
                                 return (*this);
@@ -342,6 +371,7 @@ namespace Thunder {
                                     Module = other.Module;
                                     Category = other.Category;
                                     Enabled = other.Enabled;
+                                    Output = other.Output;
                                 }
                                 
                                 return (*this);
@@ -352,6 +382,7 @@ namespace Thunder {
                             Core::JSON::String Module;
                             Core::JSON::String Category;
                             Core::JSON::Boolean Enabled;
+                            Core::JSON::EnumType<MessageUnit::OutputMode> Output;
                         };
 
                     public:
@@ -363,15 +394,18 @@ namespace Thunder {
                         Section()
                             : Core::JSON::Container()
                             , Settings()
-                            , Abbreviated(true) {
+                            , Abbreviated(true)
+                            , Output(Core::Messaging::OutputMode::HANDLER) {
                             Add(_T("settings"), &Settings);
                             Add(_T("abbreviated"), &Abbreviated);
+                            Add(_T("output"), &Output);
                         }
                         ~Section() = default;
 
                     public:
                         Core::JSON::ArrayType<Entry> Settings;
                         Core::JSON::Boolean Abbreviated;
+                        Core::JSON::EnumType<MessageUnit::OutputMode> Output;
                     };
 
                 public:
@@ -561,7 +595,12 @@ namespace Thunder {
                         ASSERT(false);
                     }
 
-                    if (IsDirect() == true) {
+                    // Populate _settings (with routing) first so HasPluginOutput() can be used below.
+                    FromConfig(jsonParsed);
+
+                    // In DirectOutput mode (-f), skip creating the data buffer UNLESS specific
+                    // entries explicitly request plugin or both output.
+                    if ((IsDirect() == true) && (HasPluginOutput() == false)) {
                         _dataSize = 0;
                     }
                     else {
@@ -577,8 +616,6 @@ namespace Thunder {
                             ASSERT(false);
                         }
                     }
-
-                    FromConfig(jsonParsed);
                 }
 
                 /**
@@ -587,6 +624,7 @@ namespace Thunder {
                 void Update(const Core::Messaging::Metadata& metaData, const bool isEnabled)
                 {
                     bool enabled = metaData.Default();
+                    Core::OptionalType<Core::Messaging::OutputMode> routing;
 
                     TRACE_L1("Updating settings(s): '%s':'%s'->%u\n", metaData.Category().c_str(), metaData.Module().c_str(), isEnabled);
 
@@ -597,23 +635,31 @@ namespace Thunder {
                     // First see if we have an exact match..
                     while ((index != _settings.end()) && (*index != metaData)) {
                         if (index->Applicable(metaData) == true) {
-                            enabled = index->Enabled();
+                            if (index->Enabled().IsSet() == true) {
+                                enabled = index->Enabled().Value();
+                            }
                         }
                         index++;
                     }
 
                     if (index != _settings.end()) {
+                        if (index->Routing().IsSet() == true) {
+                            routing = index->Routing().Value();
+                        }
                         index = _settings.erase(index);
+
                         while (index != _settings.end()) {
                             if (index->Applicable(metaData) == true) {
-                                enabled = index->Enabled();
+                                if (index->Enabled().IsSet() == true) {
+                                    enabled = index->Enabled().Value();
+                                }
                             }
                             index++;
                         }
                     }
 
-                    if (enabled != isEnabled) {
-                        _settings.emplace_back(metaData, isEnabled);
+                    if ((enabled != isEnabled) || (routing.IsSet() == true)) {
+                        _settings.emplace_back(metaData, isEnabled, routing);
                     }
 
                     _adminLock.Unlock();
@@ -635,10 +681,76 @@ namespace Thunder {
                     while ((done == false) && (index != _settings.end())) {
                         if (*index == metaData) {
                             done = true;
-                            result = index->Enabled();
+
+                            if (index->Enabled().IsSet() == true) {
+                                result = index->Enabled().Value();
+                            }
                         }
                         else if (index->Applicable(metaData) == true) {
-                            result = index->Enabled();
+                            if (index->Enabled().IsSet() == true) {
+                                result = index->Enabled().Value();
+                            }
+                            index++;
+                        }
+                        else {
+                            index++;
+                        }
+                    }
+
+                    _adminLock.Unlock();
+
+                    return (result);
+                }
+
+                // Returns whether any entry in _settings requires the data buffer (plugin or both).
+                // Used to decide whether the buffer should be created in DirectOutput mode.
+                bool HasPluginOutput() const
+                {
+                    bool found = false;
+
+                    _adminLock.Lock();
+
+                    for (const auto& entry : _settings) {
+                        if (entry.Routing().IsSet() == true) {
+                            const OutputMode mode = entry.Routing().Value();
+
+                            if ((mode == Core::Messaging::OutputMode::HANDLER) || (mode == Core::Messaging::OutputMode::ALL)) {
+                                found = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    _adminLock.Unlock();
+
+                    return (found);
+                }
+
+                // Resolves the effective OutputMode for a given message. Walks _settings with
+                // the same Applicable()/exact-match scan used by IsEnabled(), only considering
+                // entries that carry a routing override (HasRouting() == true).
+                OutputMode EffectiveOutput(const Core::Messaging::Metadata& metaData) const
+                {
+                    bool done = false;
+                    OutputMode result = IsDirect() ? Core::Messaging::OutputMode::DIRECT : Core::Messaging::OutputMode::HANDLER;
+
+                    _adminLock.Lock();
+
+                    ControlList::const_iterator index = _settings.cbegin();
+
+                    while ((done == false) && (index != _settings.end())) {
+                        if (*index == metaData) {
+                            done = true;
+
+                            if (index->Routing().IsSet() == true) {
+                                result = index->Routing().Value();
+                            }
+                        }
+                        else if (index->Applicable(metaData) == true) {
+
+                            if (index->Routing().IsSet() == true) {
+                                result = index->Routing().Value();
+                            }
                             index++;
                         }
                         else {
@@ -662,11 +774,15 @@ namespace Thunder {
                                Core::NumberType<uint16_t>(_metadataSize).Text() + DELIMITER +
                                Core::NumberType<uint16_t>(_messageSize).Text();
 
+                    // type|module|category|hasEnabled|enabled|hasRouting|routeMode
                     for (auto& entry : _settings) {
                         settings += DELIMITER + Core::NumberType<uint8_t>(entry.Type()).Text() +
                                     DELIMITER + entry.Module() +
                                     DELIMITER + entry.Category() +
-                                    DELIMITER + (entry.Enabled() ? '1' : '0');
+                                    DELIMITER + (entry.Enabled().IsSet()  ? '1' : '0') +
+                                    DELIMITER + (entry.Enabled().Value()  ? '1' : '0') +
+                                    DELIMITER + (entry.Routing().IsSet()  ? '1' : '0') +
+                                    DELIMITER + Core::NumberType<uint8_t>(static_cast<uint8_t>(entry.Routing().Value())).Text();
                     }
 
                     Core::SystemInfo::SetEnvironment(MESSAGE_DISPATCHER_CONFIG_ENV, settings, true);
@@ -713,6 +829,7 @@ namespace Thunder {
                         }
                     }
 
+                    // type|module|category|hasEnabled|enabled|hasRouting|routeMode
                     while (iterator.Next()) {
                         uint8_t type = Core::NumberType<uint8_t>(iterator.Current()).Value();
                         if (iterator.Next() == true) {
@@ -720,11 +837,27 @@ namespace Thunder {
                             if (iterator.Next() == true) {
                                 string category = iterator.Current().Text();
                                 if (iterator.Next() == true) {
-                                    string enabled = iterator.Current().Text();
-                                    if ((type >= Core::Messaging::Metadata::type::TRACING) && (type <= Core::Messaging::Metadata::type::TELEMETRY) &&
-                                        (enabled.length() == 1) &&
-                                        ((enabled[0] == '0') || (enabled[0] == '1'))) {
-                                        _settings.emplace_back(Core::Messaging::Metadata(static_cast<Core::Messaging::Metadata::type>(type), category, module), (enabled[0] == '1'));
+                                    const uint8_t hasEnabled = Core::NumberType<uint8_t>(iterator.Current()).Value();
+                                    if (iterator.Next() == true) {
+                                        const uint8_t enabled = Core::NumberType<uint8_t>(iterator.Current()).Value();
+                                        if (iterator.Next() == true) {
+                                            const uint8_t hasRouting = Core::NumberType<uint8_t>(iterator.Current()).Value();
+                                            if (iterator.Next() == true) {
+                                                const uint8_t routeMode = Core::NumberType<uint8_t>(iterator.Current()).Value();
+                                                if ((type >= Core::Messaging::Metadata::type::TRACING) && (type <= Core::Messaging::Metadata::type::TELEMETRY)) {
+                                                    Core::Messaging::Metadata info(static_cast<Core::Messaging::Metadata::type>(type), category, module);
+                                                    const bool hasE = (hasEnabled != 0);
+                                                    const bool hasR = (hasRouting != 0) && (routeMode <= static_cast<uint8_t>(Core::Messaging::OutputMode::ALL));
+                                                    if ((hasE == true) && (hasR == true)) {
+                                                        _settings.emplace_back(info, (enabled != 0), static_cast<OutputMode>(routeMode));
+                                                    } else if (hasE == true) {
+                                                        _settings.emplace_back(info, (enabled != 0));
+                                                    } else if (hasR == true) {
+                                                        _settings.emplace_back(info, Core::OptionalType<bool>{}, static_cast<OutputMode>(routeMode));
+                                                    }
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -735,53 +868,56 @@ namespace Thunder {
             private:
                 void FromConfig(const Config& config)
                 {
+                    // Helper to find an existing entry in _settings by exact metadata match,
+                    // or emplace a new metadata-only entry and return a reference to it.
+                    auto findOrEmplace = [this](const Core::Messaging::Metadata& info) -> Control& {
+                        ControlList::iterator index = _settings.begin();
+
+                        while ((index != _settings.end()) && (static_cast<const Core::Messaging::Metadata&>(*index) != info)) {
+                            index++;
+                        }
+
+                        if (index == _settings.end()) {
+                            _settings.emplace_back(info);
+                            index = std::prev(_settings.end());
+                        }
+
+                        return (*index);
+                    };
+
+                    auto applySection = [&](const Config::Section& section, const Core::Messaging::Metadata::type msgType) {
+                        if (section.Output.IsSet() == true) {
+                            Core::Messaging::Metadata wildcard(msgType, _T(""), _T(""));
+                            Control& entry = findOrEmplace(wildcard);
+                            entry.SetRouting(section.Output.Value());
+                        }
+                        auto it = section.Settings.Elements();
+
+                        while (it.Next() == true) {
+                            Core::Messaging::Metadata info(msgType, it.Current().Category.Value(), it.Current().Module.Value());
+                            const bool addEnabled = it.Current().Enabled.IsSet();
+                            const bool addRouting = it.Current().Output.IsSet();
+
+                            if ((addEnabled == true) || (addRouting == true)) {
+                                Control& entry = findOrEmplace(info);
+
+                                if (addEnabled == true) {
+                                    entry.SetEnabled(it.Current().Enabled.Value());
+                                }
+                                if (addRouting == true) {
+                                    entry.SetRouting(it.Current().Output.Value());
+                                }
+                            }
+                        }
+                    };
+
                     _adminLock.Lock();
 
-                    if (config.Tracing.IsSet() == true) {
-                        auto it = config.Tracing.Settings.Elements();
-                        while (it.Next() == true) {
-                            Core::Messaging::Metadata info(Core::Messaging::Metadata::type::TRACING, it.Current().Category.Value(), it.Current().Module.Value());
-                            if (info.Default() != it.Current().Enabled.Value()) {
-                                _settings.emplace_back(info, it.Current().Enabled.Value());
-                            }
-                        }
-                    }
-
-                    if (config.Logging.IsSet() == true) {
-                        auto it = config.Logging.Settings.Elements();
-                        while (it.Next() == true) {
-                            Core::Messaging::Metadata info(Core::Messaging::Metadata::type::LOGGING, it.Current().Category.Value(), it.Current().Module.Value());
-                            if (info.Default() != it.Current().Enabled.Value()) {
-                                _settings.emplace_back(info, it.Current().Enabled.Value());
-                            }
-                        }
-                    }
-
-                    if (config.Reporting.IsSet() == true) {
-                        auto it = config.Reporting.Settings.Elements();
-                        while (it.Next() == true) {
-                            Core::Messaging::Metadata info(Core::Messaging::Metadata::type::REPORTING, it.Current().Category.Value(), it.Current().Module.Value());
-                            _settings.emplace_back(info, it.Current().Enabled.Value());
-                        }
-                    }
-
-                    if (config.Assertion.IsSet() == true) {
-                        auto it = config.Assertion.Settings.Elements();
-                        while (it.Next() == true) {
-                            Core::Messaging::Metadata info(Core::Messaging::Metadata::type::ASSERT, it.Current().Category.Value(), it.Current().Module.Value());
-                            _settings.emplace_back(info, it.Current().Enabled.Value());
-                        }
-                    }
-
-                    if (config.Telemetry.IsSet() == true) {
-                        auto it = config.Telemetry.Settings.Elements();
-                        while (it.Next() == true) {
-                            Core::Messaging::Metadata info(Core::Messaging::Metadata::type::TELEMETRY, it.Current().Category.Value(), it.Current().Module.Value());
-                            if (info.Default() != it.Current().Enabled.Value()) {
-                                _settings.emplace_back(info, it.Current().Enabled.Value());
-                            }
-                        }
-                    }
+                    if (config.Tracing.IsSet()   == true) { applySection(config.Tracing,   Core::Messaging::Metadata::type::TRACING);   }
+                    if (config.Logging.IsSet()   == true) { applySection(config.Logging,   Core::Messaging::Metadata::type::LOGGING);   }
+                    if (config.Reporting.IsSet() == true) { applySection(config.Reporting, Core::Messaging::Metadata::type::REPORTING); }
+                    if (config.Assertion.IsSet() == true) { applySection(config.Assertion, Core::Messaging::Metadata::type::ASSERT);    }
+                    if (config.Telemetry.IsSet() == true) { applySection(config.Telemetry, Core::Messaging::Metadata::type::TELEMETRY); }
 
                     _adminLock.Unlock();
                 }
@@ -797,20 +933,23 @@ namespace Thunder {
                     _adminLock.Lock();
 
                     for (auto it = _settings.crbegin(); it != _settings.crend(); ++it) {
+                        if (it->Enabled().IsSet() == false) {
+                            continue;  // routing-only entries are not reflected in the config output
+                        }
                         if (it->Type() == Core::Messaging::Metadata::type::TRACING) {
-                            config.Tracing.Settings.Add(Config::Section::Entry(it->Category(), it->Module(), it->Enabled()));
+                            config.Tracing.Settings.Add(Config::Section::Entry(it->Category(), it->Module(), it->Enabled().Value()));
                         }
                         else if (it->Type() == Core::Messaging::Metadata::type::LOGGING) {
-                            config.Logging.Settings.Add(Config::Section::Entry(it->Category(), it->Module(), it->Enabled()));
+                            config.Logging.Settings.Add(Config::Section::Entry(it->Category(), it->Module(), it->Enabled().Value()));
                         }
                         else if (it->Type() == Core::Messaging::Metadata::type::REPORTING) {
-                            config.Reporting.Settings.Add(Config::Section::Entry(it->Category(), it->Module(), it->Enabled()));
+                            config.Reporting.Settings.Add(Config::Section::Entry(it->Category(), it->Module(), it->Enabled().Value()));
                         }
                         else if (it->Type() == Core::Messaging::Metadata::type::ASSERT) {
-                            config.Assertion.Settings.Add(Config::Section::Entry(it->Category(), it->Module(), it->Enabled()));
+                            config.Assertion.Settings.Add(Config::Section::Entry(it->Category(), it->Module(), it->Enabled().Value()));
                         }
                         else if (it->Type() == Core::Messaging::Metadata::type::TELEMETRY) {
-                            config.Telemetry.Settings.Add(Config::Section::Entry(it->Category(), it->Module(), it->Enabled()));
+                            config.Telemetry.Settings.Add(Config::Section::Entry(it->Category(), it->Module(), it->Enabled().Value()));
                         }
                     }
 
@@ -1063,7 +1202,7 @@ namespace Thunder {
                         if (protocol == metadataFrameProtocol::UPDATE) {
                             Control newSettings;
                             newSettings.Deserialize(reader.Data(), reader.Length());
-                            _parent.Update(newSettings, newSettings.Enabled());
+                            _parent.Update(newSettings, newSettings.Enabled().Value());
                             message->Response().Set(0, nullptr);
                         }
                         else if (protocol == metadataFrameProtocol::CONTROLS) {
@@ -1160,7 +1299,8 @@ namespace Thunder {
             void Close();
 
             bool Default(const Core::Messaging::Metadata& control) const override;
-            void Push(const Core::Messaging::MessageInfo& messageInfo, const Core::Messaging::IEvent* message) override;
+            Core::Messaging::OutputMode DefaultOutput(const Core::Messaging::Metadata& metadata) const override;
+            void Push(const Core::Messaging::MessageInfo& messageInfo, const Core::Messaging::IEvent* message, Core::Messaging::OutputMode outputMode) override;
 
         private:
             uint16_t Serialize(uint8_t* buffer, const uint16_t length, const string& module);
