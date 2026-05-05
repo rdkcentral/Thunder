@@ -223,10 +223,6 @@ namespace Core {
         EXPECT_EQ(serialized, std::string("\"scribble\""));
     }
 
-    // Tests for JSON.h fix: SetQuoted(quoted) preserves quoted state after Variant deserialization.
-    // Without the fix, string variants parsed from JSON lose their quoted state and re-serialize
-    // without surrounding quotes, breaking round-trip correctness.
-
     TEST(JSONOBJECT, ParsedStringVariantRoundTrip)
     {
         // Verify that a string variant parsed from JSON and then re-serialized produces
