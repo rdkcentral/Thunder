@@ -937,7 +937,7 @@ namespace PluginHost
         , _security(_parent.Officer())
         , _service()
         , _requestClose(false)
-        ,_serviceCleanedUp(false)
+        , _serviceCleanedUp(false)
     {
         TRACE(Activity, (_T("Construct a link with ID: [%d] to [%s]"), Id(), remoteId.QualifiedName().c_str()));
     }
