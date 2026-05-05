@@ -4298,7 +4298,6 @@ POP_WARNING()
                 if (_serviceCleanedUp.compare_exchange_strong(expected, true, std::memory_order_acq_rel)) {
                     if (_service.IsValid() == true) {
                         _service->Unsubscribe(*this);
-                        _service->Detach(*this);
                         _service.Release();
                     }
                 }
