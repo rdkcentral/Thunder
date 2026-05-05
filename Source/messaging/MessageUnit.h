@@ -134,20 +134,12 @@ namespace Thunder {
                 }
 
             public:
-                bool HasEnabled() const {
-                    return (_enabled.IsSet());
+                const Core::OptionalType<bool>& Enabled() const {
+                    return (_enabled);
                 }
 
-                bool Enabled() const {
-                    return (_enabled.Value());
-                }
-
-                bool HasRouting() const {
-                    return (_routing.IsSet());
-                }
-
-                Core::Messaging::OutputMode Routing() const {
-                    return (_routing.Value());
+                const Core::OptionalType<Core::Messaging::OutputMode>& Routing() const {
+                    return (_routing);
                 }
 
                 void SetEnabled(const bool enabled) {
@@ -285,7 +277,7 @@ namespace Thunder {
                 {
                     ASSERT(IsValid());
                     
-                    return (_index->Enabled());
+                    return (_index->Enabled().Value());
                 }
 
             private:
@@ -632,8 +624,7 @@ namespace Thunder {
                 void Update(const Core::Messaging::Metadata& metaData, const bool isEnabled)
                 {
                     bool enabled = metaData.Default();
-                    Core::Messaging::OutputMode routing = Core::Messaging::OutputMode::HANDLER;
-                    bool hasRouting = false;
+                    Core::OptionalType<Core::Messaging::OutputMode> routing;
 
                     TRACE_L1("Updating settings(s): '%s':'%s'->%u\n", metaData.Category().c_str(), metaData.Module().c_str(), isEnabled);
 
@@ -644,37 +635,31 @@ namespace Thunder {
                     // First see if we have an exact match..
                     while ((index != _settings.end()) && (*index != metaData)) {
                         if (index->Applicable(metaData) == true) {
-                            if (index->HasEnabled() == true) {
-                                enabled = index->Enabled();
+                            if (index->Enabled().IsSet() == true) {
+                                enabled = index->Enabled().Value();
                             }
                         }
                         index++;
                     }
 
                     if (index != _settings.end()) {
-                        if (index->HasRouting() == true) {
-                            hasRouting = true;
-                            routing    = index->Routing();
+                        if (index->Routing().IsSet() == true) {
+                            routing = index->Routing().Value();
                         }
                         index = _settings.erase(index);
 
                         while (index != _settings.end()) {
                             if (index->Applicable(metaData) == true) {
-                                if (index->HasEnabled() == true) {
-                                    enabled = index->Enabled();
+                                if (index->Enabled().IsSet() == true) {
+                                    enabled = index->Enabled().Value();
                                 }
                             }
                             index++;
                         }
                     }
 
-                    if ((enabled != isEnabled) || (hasRouting == true)) {
-                        if (hasRouting == true) {
-                            _settings.emplace_back(metaData, isEnabled, routing);
-                        }
-                        else {
-                            _settings.emplace_back(metaData, isEnabled);
-                        }
+                    if ((enabled != isEnabled) || (routing.IsSet() == true)) {
+                        _settings.emplace_back(metaData, isEnabled, routing);
                     }
 
                     _adminLock.Unlock();
@@ -697,13 +682,13 @@ namespace Thunder {
                         if (*index == metaData) {
                             done = true;
 
-                            if (index->HasEnabled() == true) {
-                                result = index->Enabled();
+                            if (index->Enabled().IsSet() == true) {
+                                result = index->Enabled().Value();
                             }
                         }
                         else if (index->Applicable(metaData) == true) {
-                            if (index->HasEnabled() == true) {
-                                result = index->Enabled();
+                            if (index->Enabled().IsSet() == true) {
+                                result = index->Enabled().Value();
                             }
                             index++;
                         }
@@ -726,8 +711,8 @@ namespace Thunder {
                     _adminLock.Lock();
 
                     for (const auto& entry : _settings) {
-                        if (entry.HasRouting() == true) {
-                            const OutputMode mode = entry.Routing();
+                        if (entry.Routing().IsSet() == true) {
+                            const OutputMode mode = entry.Routing().Value();
 
                             if ((mode == Core::Messaging::OutputMode::HANDLER) || (mode == Core::Messaging::OutputMode::ALL)) {
                                 found = true;
@@ -757,14 +742,14 @@ namespace Thunder {
                         if (*index == metaData) {
                             done = true;
 
-                            if (index->HasRouting() == true) {
-                                result = index->Routing();
+                            if (index->Routing().IsSet() == true) {
+                                result = index->Routing().Value();
                             }
                         }
                         else if (index->Applicable(metaData) == true) {
 
-                            if (index->HasRouting() == true) {
-                                result = index->Routing();
+                            if (index->Routing().IsSet() == true) {
+                                result = index->Routing().Value();
                             }
                             index++;
                         }
@@ -794,10 +779,10 @@ namespace Thunder {
                         settings += DELIMITER + Core::NumberType<uint8_t>(entry.Type()).Text() +
                                     DELIMITER + entry.Module() +
                                     DELIMITER + entry.Category() +
-                                    DELIMITER + (entry.HasEnabled() ? '1' : '0') +
-                                    DELIMITER + (entry.Enabled()    ? '1' : '0') +
-                                    DELIMITER + (entry.HasRouting() ? '1' : '0') +
-                                    DELIMITER + Core::NumberType<uint8_t>(static_cast<uint8_t>(entry.Routing())).Text();
+                                    DELIMITER + (entry.Enabled().IsSet()  ? '1' : '0') +
+                                    DELIMITER + (entry.Enabled().Value()  ? '1' : '0') +
+                                    DELIMITER + (entry.Routing().IsSet()  ? '1' : '0') +
+                                    DELIMITER + Core::NumberType<uint8_t>(static_cast<uint8_t>(entry.Routing().Value())).Text();
                     }
 
                     Core::SystemInfo::SetEnvironment(MESSAGE_DISPATCHER_CONFIG_ENV, settings, true);
@@ -948,23 +933,23 @@ namespace Thunder {
                     _adminLock.Lock();
 
                     for (auto it = _settings.crbegin(); it != _settings.crend(); ++it) {
-                        if (it->HasEnabled() == false) {
+                        if (it->Enabled().IsSet() == false) {
                             continue;  // routing-only entries are not reflected in the config output
                         }
                         if (it->Type() == Core::Messaging::Metadata::type::TRACING) {
-                            config.Tracing.Settings.Add(Config::Section::Entry(it->Category(), it->Module(), it->Enabled()));
+                            config.Tracing.Settings.Add(Config::Section::Entry(it->Category(), it->Module(), it->Enabled().Value()));
                         }
                         else if (it->Type() == Core::Messaging::Metadata::type::LOGGING) {
-                            config.Logging.Settings.Add(Config::Section::Entry(it->Category(), it->Module(), it->Enabled()));
+                            config.Logging.Settings.Add(Config::Section::Entry(it->Category(), it->Module(), it->Enabled().Value()));
                         }
                         else if (it->Type() == Core::Messaging::Metadata::type::REPORTING) {
-                            config.Reporting.Settings.Add(Config::Section::Entry(it->Category(), it->Module(), it->Enabled()));
+                            config.Reporting.Settings.Add(Config::Section::Entry(it->Category(), it->Module(), it->Enabled().Value()));
                         }
                         else if (it->Type() == Core::Messaging::Metadata::type::ASSERT) {
-                            config.Assertion.Settings.Add(Config::Section::Entry(it->Category(), it->Module(), it->Enabled()));
+                            config.Assertion.Settings.Add(Config::Section::Entry(it->Category(), it->Module(), it->Enabled().Value()));
                         }
                         else if (it->Type() == Core::Messaging::Metadata::type::TELEMETRY) {
-                            config.Telemetry.Settings.Add(Config::Section::Entry(it->Category(), it->Module(), it->Enabled()));
+                            config.Telemetry.Settings.Add(Config::Section::Entry(it->Category(), it->Module(), it->Enabled().Value()));
                         }
                     }
 
@@ -1217,7 +1202,7 @@ namespace Thunder {
                         if (protocol == metadataFrameProtocol::UPDATE) {
                             Control newSettings;
                             newSettings.Deserialize(reader.Data(), reader.Length());
-                            _parent.Update(newSettings, newSettings.Enabled());
+                            _parent.Update(newSettings, newSettings.Enabled().Value());
                             message->Response().Set(0, nullptr);
                         }
                         else if (protocol == metadataFrameProtocol::CONTROLS) {
