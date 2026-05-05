@@ -96,61 +96,28 @@ namespace Thunder {
 
                 Control()
                     : Core::Messaging::Metadata()
-                    , _hasEnabled(false)
-                    , _enabled(false)
-                    , _hasRouting(false)
-                    , _routing(Core::Messaging::OutputMode::HANDLER)
+                    , _enabled()
+                    , _routing()
                 {
                 }
-                // Construct with metadata only (neither enabled nor routing is overridden yet).
-                explicit Control(const Metadata& info)
+                // Construct with metadata and optional enabled/routing overrides.
+                explicit Control(const Metadata& info,
+                                 const Core::OptionalType<bool> enabled = {},
+                                 const Core::OptionalType<Core::Messaging::OutputMode> routing = {})
                     : Core::Messaging::Metadata(info)
-                    , _hasEnabled(false)
-                    , _enabled(false)
-                    , _hasRouting(false)
-                    , _routing(Core::Messaging::OutputMode::HANDLER)
-                {
-                }
-                // Construct with only an enabled override (routing stays default).
-                Control(const Metadata& info, const bool enabled)
-                    : Core::Messaging::Metadata(info)
-                    , _hasEnabled(true)
                     , _enabled(enabled)
-                    , _hasRouting(false)
-                    , _routing(Core::Messaging::OutputMode::HANDLER)
-                {
-                }
-                // Construct with only a routing override (enabled stays default).
-                Control(const Metadata& info, const Core::Messaging::OutputMode routing)
-                    : Core::Messaging::Metadata(info)
-                    , _hasEnabled(false)
-                    , _enabled(false)
-                    , _hasRouting(true)
-                    , _routing(routing)
-                {
-                }
-                // Construct with both an enabled override and a routing override.
-                Control(const Metadata& info, const bool enabled, const Core::Messaging::OutputMode routing)
-                    : Core::Messaging::Metadata(info)
-                    , _hasEnabled(true)
-                    , _enabled(enabled)
-                    , _hasRouting(true)
                     , _routing(routing)
                 {
                 }
                 Control(Control&& rhs) noexcept
-                    : Core::Messaging::Metadata(rhs)
-                    , _hasEnabled(rhs._hasEnabled)
-                    , _enabled(rhs._enabled)
-                    , _hasRouting(rhs._hasRouting)
-                    , _routing(rhs._routing)
+                    : Core::Messaging::Metadata(std::move(rhs))
+                    , _enabled(std::move(rhs._enabled))
+                    , _routing(std::move(rhs._routing))
                 {
                 }
                 Control(const Control& copy)
                     : Core::Messaging::Metadata(copy)
-                    , _hasEnabled(copy._hasEnabled)
                     , _enabled(copy._enabled)
-                    , _hasRouting(copy._hasRouting)
                     , _routing(copy._routing)
                 {
                 }
@@ -159,43 +126,36 @@ namespace Thunder {
                 Control& operator=(Control&& move) noexcept
                 {
                     if (this != &move) {
-                        Core::Messaging::Metadata::operator=(move);
-                        _hasEnabled   = move._hasEnabled;
-                        _enabled      = move._enabled;
-                        _hasRouting   = move._hasRouting;
-                        _routing      = move._routing;
-                        move._hasEnabled = false;
-                        move._enabled    = false;
-                        move._hasRouting = false;
+                        Core::Messaging::Metadata::operator=(std::move(move));
+                        _enabled = std::move(move._enabled);
+                        _routing = std::move(move._routing);
                     }
                     return (*this);
                 }
 
             public:
                 bool HasEnabled() const {
-                    return (_hasEnabled);
+                    return (_enabled.IsSet());
                 }
 
                 bool Enabled() const {
-                    return (_enabled);
+                    return (_enabled.Value());
                 }
 
                 bool HasRouting() const {
-                    return (_hasRouting);
+                    return (_routing.IsSet());
                 }
 
                 Core::Messaging::OutputMode Routing() const {
-                    return (_routing);
+                    return (_routing.Value());
                 }
 
                 void SetEnabled(const bool enabled) {
-                    _hasEnabled = true;
-                    _enabled    = enabled;
+                    _enabled = enabled;
                 }
 
                 void SetRouting(const Core::Messaging::OutputMode routing) {
-                    _hasRouting = true;
-                    _routing    = routing;
+                    _routing = routing;
                 }
                 
                 uint16_t Serialize(uint8_t buffer[], const uint16_t bufferSize) const
@@ -207,7 +167,7 @@ namespace Thunder {
                         length = 0;
                     }
                     else {
-                        buffer[length++] = (_enabled ? 1 : 0);
+                        buffer[length++] = (_enabled.IsSet() && _enabled.Value()) ? 1 : 0;
                     }
 
                     return (length);
@@ -222,17 +182,15 @@ namespace Thunder {
                         length = 0;
                     }
                     else {
-                        _enabled = (buffer[length++] == 0 ? false : true);
+                        _enabled = (buffer[length++] != 0);
                     }
 
                     return (length);
                 }
 
             private:
-                bool _hasEnabled;
-                bool _enabled;
-                bool _hasRouting;
-                Core::Messaging::OutputMode _routing;
+                Core::OptionalType<bool> _enabled;
+                Core::OptionalType<Core::Messaging::OutputMode> _routing;
             };
 
             using ControlList = std::vector<Control>;
@@ -910,7 +868,7 @@ namespace Thunder {
                                                     } else if (hasE == true) {
                                                         _settings.emplace_back(info, (enabled != 0));
                                                     } else if (hasR == true) {
-                                                        _settings.emplace_back(info, static_cast<OutputMode>(routeMode));
+                                                        _settings.emplace_back(info, Core::OptionalType<bool>{}, static_cast<OutputMode>(routeMode));
                                                     }
                                                 }
                                             }
