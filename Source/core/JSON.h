@@ -2119,7 +2119,7 @@ namespace Core {
                     offset += static_cast<uint32_t>(_value.length()) ;
                 } else {
                     offset = 0;
-                    flagsAndCounters |= SetBit;
+                    _flagsAndCounters |= SetBit;
 
                     if ((_flagsAndCounters & QuoteFoundBit) == 0) {
                         if (_value == IElement::NullTag) {
