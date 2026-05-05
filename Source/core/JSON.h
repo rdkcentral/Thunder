@@ -4878,7 +4878,7 @@ namespace Core {
             }
             string GetDebugString(int indent = 0) const;
 
-            void Remove(const TCHAR label[])
+           /* void Remove(const TCHAR label[])
             {
                 Elements::iterator index = Find(label);
                 if (index != _elements.end()) {
@@ -4886,7 +4886,7 @@ namespace Core {
                 }
 
                 Container::Remove(label);
-            }
+            }*/
 
         private:
             Elements::iterator Find(const TCHAR fieldName[])
@@ -5006,7 +5006,7 @@ namespace Core {
 
             // If we are complete, try to guess what it was that we received...
             if (offset == 0) {
-                bool quoted = IsQuoted();
+                const bool quoted = IsQuoted();
                 if (quoted == false) {
                     const string base = JSON::String::Value();
                     if (IsNull() == true) {
