@@ -105,13 +105,13 @@ namespace RPC {
         proxy->Complete(response);
     }
 
-    bool Administrator::UnregisterUnknownProxy(const ProxyStub::UnknownProxy& proxy)
+    bool Administrator::UnregisterUnknownProxy(const ProxyStub::UnknownProxy& proxy, uintptr_t channelId)
     {
         bool removed = false;
 
         _adminLock.Lock();
 
-        ChannelMap::iterator index(_channelProxyMap.find(proxy.LinkId()));
+        ChannelMap::iterator index(_channelProxyMap.find(channelId));
 
         if (index != _channelProxyMap.end()) {
             Proxies::iterator entry(index->second.begin());
@@ -124,20 +124,17 @@ namespace RPC {
                 if (index->second.size() == 0) {
                     _channelProxyMap.erase(index);
                 }
-                else {
-                    // If it is not found, check the dangling map
-                    Proxies::iterator index = std::find(_danglingProxies.begin(), _danglingProxies.end(), &proxy);
-
-                    if (index != _danglingProxies.end()) {
-                        _danglingProxies.erase(index);
-                    }
-                    else {
-                        TRACE_L1("Could not find the Proxy entry to be unregistered from a channel perspective.");
-		    }
-		}
             }
         } else {
-            TRACE_L1("Could not find the Proxy entry to be unregistered from a channel perspective.");
+            // Channel has already been deleted (channelId == 0 or DeleteChannel already ran);
+            // search the dangling list for the proxy by pointer.
+            Proxies::iterator dangling = std::find(_danglingProxies.begin(), _danglingProxies.end(), &proxy);
+            if (dangling != _danglingProxies.end()) {
+                _danglingProxies.erase(dangling);
+                removed = true;
+            } else {
+                TRACE_L1("Could not find the Proxy entry to be unregistered from a channel perspective.");
+            }
         }
 
         _adminLock.Unlock();
