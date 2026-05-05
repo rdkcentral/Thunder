@@ -149,7 +149,7 @@ namespace WarningReporting {
         information.ToString(text);
         Thunder::Core::Messaging::TextMessage data(text);
 
-        Thunder::Messaging::MessageUnit::Instance().Push(report, &data);
+        Thunder::Messaging::MessageUnit::Instance().Push(report, &data, information.Routing());
     }
 }
 }

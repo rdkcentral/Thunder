@@ -52,7 +52,7 @@
                 Thunder::Core::ClassNameOnly(typeid(*this).name()).Text()               \
             );                                                                          \
             Thunder::Core::Messaging::TextMessage __message__(__data__.Data());         \
-            Thunder::Messaging::MessageUnit::Instance().Push(__trace__, &__message__);  \
+            Thunder::Messaging::MessageUnit::Instance().Push(__trace__, &__message__, __control__::Routing());  \
         }                                                                               \
     } while(false)
 
@@ -72,7 +72,7 @@
                 __FUNCTION__                                                            \
             );                                                                          \
             Thunder::Core::Messaging::TextMessage __message__(__data__.Data());         \
-            Thunder::Messaging::MessageUnit::Instance().Push(__trace__, &__message__);  \
+            Thunder::Messaging::MessageUnit::Instance().Push(__trace__, &__message__, __control__::Routing());  \
         }                                                                               \
     } while(false)
 

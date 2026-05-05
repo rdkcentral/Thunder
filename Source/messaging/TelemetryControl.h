@@ -52,6 +52,10 @@ namespace Telemetry {
             _control.Enable(enable);
         }
 
+        inline static Core::Messaging::OutputMode Routing() {
+            return (_control.Routing());
+        }
+
         inline static const Core::Messaging::Metadata& Metadata() {
             return (_control.Metadata());
         }
@@ -84,6 +88,6 @@ namespace Telemetry {
             );                                                                                                                                      \
             Thunder::Core::Messaging::IStore::Telemetry __telemetry__(__info__);                                                                    \
             Thunder::Core::Messaging::TelemetryMessage __message__(VALUE);                                                                          \
-            Thunder::Messaging::MessageUnit::Instance().Push(__telemetry__, &__message__);                                                          \
+            Thunder::Messaging::MessageUnit::Instance().Push(__telemetry__, &__message__, CATEGORY::Routing());                                     \
         }                                                                                                                                           \
     } while(false)
