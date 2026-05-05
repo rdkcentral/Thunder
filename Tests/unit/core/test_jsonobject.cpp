@@ -202,7 +202,171 @@ namespace Core {
         EXPECT_TRUE(stringRefCreated.Content() == ::Thunder::Core::JSON::Variant::type::EMPTY);
     }
 
+    TEST(JSONOBJECT, ParsedStringVariantKeepsStringSemantics)
+    {
+        const std::string keyValues = R"({"string":"scribble"})";
 
+        JsonObject container;
+
+        ASSERT_TRUE(container.FromString(keyValues));
+        ASSERT_TRUE(container.HasLabel("string"));
+
+        const ::Thunder::Core::JSON::Variant parsed = container.Get("string");
+        const ::Thunder::Core::JSON::Variant constructed{ "scribble" };
+
+        EXPECT_EQ(parsed.Content(), ::Thunder::Core::JSON::Variant::type::STRING);
+        EXPECT_EQ(parsed.String(), std::string("scribble"));
+        EXPECT_EQ(parsed.Value(), std::string("scribble"));
+        EXPECT_TRUE(parsed == constructed);
+
+        std::string serialized;
+        EXPECT_TRUE(::Thunder::Core::JSON::IElement::ToString(parsed, serialized));
+        EXPECT_EQ(serialized, std::string("\"scribble\""));
+    }
+
+    // Tests for JSON.h fix: SetQuoted(quoted) preserves quoted state after Variant deserialization.
+    // Without the fix, string variants parsed from JSON lose their quoted state and re-serialize
+    // without surrounding quotes, breaking round-trip correctness.
+
+    TEST(JSONOBJECT, ParsedStringVariantRoundTrip)
+    {
+        // Verify that a string variant parsed from JSON and then re-serialized produces
+        // valid JSON with surrounding quotes (round-trip correctness).
+        const std::string original = R"({"key":"hello world"})";
+
+        JsonObject container;
+        ASSERT_TRUE(container.FromString(original));
+
+        std::string roundTripped;
+        ASSERT_TRUE(container.ToString(roundTripped));
+
+        // The re-serialized JSON must still contain the key with quoted value.
+        EXPECT_NE(roundTripped.find("\"hello world\""), std::string::npos);
+    }
+
+    TEST(JSONOBJECT, ParsedStringVariantLooksLikeNumber)
+    {
+        // A quoted value that looks like a number must remain a STRING type, not NUMBER.
+        // SetQuoted(quoted) ensures the type resolves to STRING when the token was quoted.
+        const std::string keyValues = R"({"val":"42"})";
+
+        JsonObject container;
+        ASSERT_TRUE(container.FromString(keyValues));
+
+        const ::Thunder::Core::JSON::Variant parsed = container.Get("val");
+
+        EXPECT_EQ(parsed.Content(), ::Thunder::Core::JSON::Variant::type::STRING);
+        EXPECT_EQ(parsed.String(), std::string("42"));
+
+        std::string serialized;
+        EXPECT_TRUE(::Thunder::Core::JSON::IElement::ToString(parsed, serialized));
+        // Must be serialized with quotes, not as a bare number.
+        EXPECT_EQ(serialized, std::string("\"42\""));
+    }
+
+    TEST(JSONOBJECT, ParsedStringVariantLooksLikeBoolean)
+    {
+        // A quoted "true" must remain a STRING, not BOOLEAN.
+        const std::string keyValues = R"({"flag":"true"})";
+
+        JsonObject container;
+        ASSERT_TRUE(container.FromString(keyValues));
+
+        const ::Thunder::Core::JSON::Variant parsed = container.Get("flag");
+
+        EXPECT_EQ(parsed.Content(), ::Thunder::Core::JSON::Variant::type::STRING);
+        EXPECT_EQ(parsed.String(), std::string("true"));
+
+        std::string serialized;
+        EXPECT_TRUE(::Thunder::Core::JSON::IElement::ToString(parsed, serialized));
+        EXPECT_EQ(serialized, std::string("\"true\""));
+    }
+
+    TEST(JSONOBJECT, ParsedStringVariantLooksLikeNull)
+    {
+        // A quoted "null" must remain a STRING, not EMPTY/null.
+        const std::string keyValues = R"({"nothing":"null"})";
+
+        JsonObject container;
+        ASSERT_TRUE(container.FromString(keyValues));
+
+        const ::Thunder::Core::JSON::Variant parsed = container.Get("nothing");
+
+        EXPECT_EQ(parsed.Content(), ::Thunder::Core::JSON::Variant::type::STRING);
+        EXPECT_EQ(parsed.String(), std::string("null"));
+
+        std::string serialized;
+        EXPECT_TRUE(::Thunder::Core::JSON::IElement::ToString(parsed, serialized));
+        EXPECT_EQ(serialized, std::string("\"null\""));
+    }
+
+    TEST(JSONOBJECT, MultipleStringVariantsAllPreserveQuotedState)
+    {
+        // All string fields in a JSON object must retain their string type and
+        // serialize with quotes after the fix.
+        const std::string keyValues = R"({"a":"alpha","b":"beta","c":"gamma"})";
+
+        JsonObject container;
+        ASSERT_TRUE(container.FromString(keyValues));
+
+        const std::vector<std::pair<std::string, std::string>> expected = {
+            {"a", "alpha"}, {"b", "beta"}, {"c", "gamma"}
+        };
+
+        for (const auto& kv : expected) {
+            const ::Thunder::Core::JSON::Variant parsed = container.Get(kv.first.c_str());
+
+            EXPECT_EQ(parsed.Content(), ::Thunder::Core::JSON::Variant::type::STRING)
+                << "Field '" << kv.first << "' should be STRING";
+            EXPECT_EQ(parsed.String(), kv.second)
+                << "Field '" << kv.first << "' has wrong value";
+
+            std::string serialized;
+            EXPECT_TRUE(::Thunder::Core::JSON::IElement::ToString(parsed, serialized));
+            EXPECT_EQ(serialized, "\"" + kv.second + "\"")
+                << "Field '" << kv.first << "' should serialize with quotes";
+        }
+    }
+
+    TEST(JSONOBJECT, ParsedStringVariantEqualityWithConstructed)
+    {
+        // A Variant parsed from JSON {"key":"value"} must compare equal to
+        // a Variant constructed directly with the same string.
+        const std::string keyValues = R"({"key":"Thunder"})";
+
+        JsonObject container;
+        ASSERT_TRUE(container.FromString(keyValues));
+
+        const ::Thunder::Core::JSON::Variant parsed    = container.Get("key");
+        const ::Thunder::Core::JSON::Variant constructed{ "Thunder" };
+
+        EXPECT_EQ(parsed.Content(), ::Thunder::Core::JSON::Variant::type::STRING);
+        EXPECT_EQ(parsed.Content(), constructed.Content());
+        EXPECT_TRUE(parsed == constructed);
+    }
+
+    TEST(JSONOBJECT, VariantReuseQuotedThenUnquoted)
+    {
+        // Regression test: reusing the same Variant for a second FromString() call must
+        // not carry over the quoted/serialize flag from the first parse.  Without the fix,
+        // parsing an unquoted number after a quoted string left IsQuoted()==true, causing
+        // the number to be misclassified as STRING.
+        ::Thunder::Core::JSON::Variant variant;
+
+        // First parse: quoted string — variant must be STRING.
+        ASSERT_TRUE(variant.FromString("\"hello\""));
+        EXPECT_EQ(variant.Content(), ::Thunder::Core::JSON::Variant::type::STRING);
+        EXPECT_EQ(variant.String(), std::string("hello"));
+
+        // Second parse on the same instance: unquoted integer — variant must be NUMBER.
+        ASSERT_TRUE(variant.FromString("42"));
+        EXPECT_EQ(variant.Content(), ::Thunder::Core::JSON::Variant::type::NUMBER);
+        EXPECT_EQ(variant.Number(), static_cast<int64_t>(42));
+
+        // Third parse on the same instance: unquoted boolean — must be BOOLEAN, not STRING.
+        ASSERT_TRUE(variant.FromString("true"));
+        EXPECT_EQ(variant.Content(), ::Thunder::Core::JSON::Variant::type::BOOLEAN);
+    }
 } // Core
 } // Tests
 } // Thunder
