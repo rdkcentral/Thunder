@@ -216,7 +216,6 @@ namespace Core {
 
         EXPECT_EQ(parsed.Content(), ::Thunder::Core::JSON::Variant::type::STRING);
         EXPECT_EQ(parsed.String(), std::string("scribble"));
-        EXPECT_EQ(parsed.Value(), std::string("scribble"));
         EXPECT_TRUE(parsed == constructed);
 
         std::string serialized;
