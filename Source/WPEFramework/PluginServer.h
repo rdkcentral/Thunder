@@ -26,6 +26,7 @@
 #include "IRemoteInstantiation.h"
 #include "WarningReportingCategories.h"
 #include "PostMortem.h"
+#include <atomic>
 
 #ifdef PROCESSCONTAINERS_ENABLED
 #include "../processcontainers/ProcessContainer.h"
@@ -4269,11 +4270,7 @@ POP_WARNING()
 
                 // If we are closing (or closed) do the clean up
                 if (IsOpen() == false) {
-                    if (_service.IsValid() == true) {
-                        _service->Unsubscribe(*this);
-
-                        _service.Release();
-                    }
+                    CleanupService();
 
                     State(CLOSED, false);
                     _parent.Closed(Id());
@@ -4325,6 +4322,17 @@ POP_WARNING()
                 SetId(id);
             }
 
+            void CleanupService()
+            {
+                bool expected = false;
+                if (_serviceCleanedUp.compare_exchange_strong(expected, true, std::memory_order_acq_rel)) {
+                    if (_service.IsValid() == true) {
+                        _service->Unsubscribe(*this);
+                        _service.Release();
+                    }
+                }
+            }
+
         private:
             inline string SelectSupportedProtocol(const Web::ProtocolsArray& protocols)
             {
@@ -4355,6 +4363,7 @@ POP_WARNING()
             PluginHost::ISecurity* _security;
             Core::ProxyType<Service> _service;
             bool _requestClose;
+            std::atomic<bool> _serviceCleanedUp;
 
             // Factories for creating jobs that can be placed on the PluginHost Worker pool.
             static Core::ProxyPoolType<WebRequestJob> _webJobs;
