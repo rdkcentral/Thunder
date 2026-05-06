@@ -292,7 +292,7 @@ namespace RPC {
 
             _adminLock.Unlock();
         }
-        bool UnregisterUnknownProxy(const ProxyStub::UnknownProxy& proxy);
+        bool UnregisterUnknownProxy(const ProxyStub::UnknownProxy& proxy, uintptr_t channelId);
 
    private:
         // ----------------------------------------------------------------------------------------------------
