@@ -47,6 +47,10 @@ namespace WPEFramework {
             static constexpr uint16_t MaxDataBufferSize = 63 * 1024;
             static constexpr uint16_t MaxMessageSize = 32 * 1024;
 
+            // Backward compatibility: static DataSize constant (equals MaxMessageSize).
+            // Prefer Instance().ConfiguredDataSize() for the runtime-configured value.
+            static constexpr uint16_t DataSize = MaxMessageSize;
+
             static constexpr uint16_t DefaultMetadataBufferSize = (MaxMetadataBufferSize / 4);
             static constexpr uint16_t DefaultMetadataSize = (MaxMetadataSize / 4);
             static constexpr uint16_t DefaultDataBufferSize = (MaxDataBufferSize / 4);
@@ -1286,7 +1290,7 @@ namespace WPEFramework {
                 return (_settings.SocketPort());
             }
 
-            uint16_t DataSize() const {
+            uint16_t ConfiguredDataSize() const {
                 return (_settings.DataSize());
             }
 
