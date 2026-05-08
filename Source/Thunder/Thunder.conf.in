@@ -17,7 +17,8 @@ ethernetcard = '@ETHERNETCARD_NAME@'
 communicator = '@COMMUNICATOR@'
 if boolean('@DISABLEPLUGINAUTOACTIVATION@'):
   disablepluginautoactivation = '@DISABLEPLUGINAUTOACTIVATION@'
-authorizedextensions = '@AUTHORIZEDEXTENSIONS@'
+__authorizedextensions = '@AUTHORIZEDEXTENSIONS@'
+authorizedextensions = __authorizedextensions.split(';')
 
 hibernate = JSON()
 hibernate.add("locator", '@LOCATOR@')
