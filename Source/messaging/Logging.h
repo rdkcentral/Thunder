@@ -80,22 +80,22 @@ namespace Logging {
 #define SYSLOG_ANNOUNCE(CATEGORY) \
     WPEFramework::Logging::BaseLoggingType<CATEGORY>::Instance();
 
-#define SYSLOG(CATEGORY, PARAMETERS)                                                                                                        \
-    do {                                                                                                                                    \
+#define SYSLOG(CATEGORY, PARAMETERS)                                                                                                             \
+    do {                                                                                                                                         \
         static_assert(std::is_base_of<WPEFramework::Logging::BaseLoggingType<CATEGORY>, CATEGORY>::value, "SYSLOG() only for Logging controls"); \
-        if (CATEGORY::IsEnabled() == true) {                                                                                                \
-            CATEGORY __data__ PARAMETERS;                                                                                                   \
+        if (CATEGORY::IsEnabled() == true) {                                                                                                     \
+            CATEGORY __data__ PARAMETERS;                                                                                                        \
             WPEFramework::Core::Messaging::MessageInfo __info__(                                                                                 \
-                CATEGORY::Metadata(),                                                                                                       \
+                CATEGORY::Metadata(),                                                                                                            \
                 WPEFramework::Core::Time::Now().Ticks()                                                                                          \
-            );                                                                                                                              \
+            );                                                                                                                                   \
             WPEFramework::Core::Messaging::IStore::Logging __log__(__info__);                                                                    \
             WPEFramework::Core::Messaging::TextMessage __message__(__data__.Data());                                                             \
             WPEFramework::Messaging::MessageUnit::Instance().Push(__log__, &__message__, CATEGORY::Routing());                                   \
-        }                                                                                                                                   \
+        }                                                                                                                                        \
     } while(false)
 
-#define SYSLOG_GLOBAL(CATEGORY, PARAMETERS)                                                                                                 \
-    _Pragma ("GCC warning \"'SYSLOG_GLOBAL' macro is deprecated, use SYSLOG instead\"")                                                     \
+#define SYSLOG_GLOBAL(CATEGORY, PARAMETERS)                                                                                                      \
+    _Pragma ("GCC warning \"'SYSLOG_GLOBAL' macro is deprecated, use SYSLOG instead\"")                                                          \
     SYSLOG(CATEGORY, PARAMETERS)
 

@@ -78,16 +78,16 @@ namespace Telemetry {
 #define TELEMETRY_ANNOUNCE(CATEGORY) \
     WPEFramework::Telemetry::BaseTelemetryType<CATEGORY>::Announce();
 
-#define TELEMETRY(CATEGORY, VALUE)                                                                                                                  \
-    do {                                                                                                                                            \
+#define TELEMETRY(CATEGORY, VALUE)                                                                                                                       \
+    do {                                                                                                                                                 \
         static_assert(std::is_base_of<WPEFramework::Telemetry::BaseTelemetryType<CATEGORY>, CATEGORY>::value, "TELEMETRY() only for Telemetry controls");\
-        if (CATEGORY::IsEnabled() == true) {                                                                                                        \
+        if (CATEGORY::IsEnabled() == true) {                                                                                                             \
             WPEFramework::Core::Messaging::MessageInfo __info__(                                                                                         \
-                CATEGORY::Metadata(),                                                                                                               \
+                CATEGORY::Metadata(),                                                                                                                    \
                 WPEFramework::Core::Time::Now().Ticks()                                                                                                  \
-            );                                                                                                                                      \
+            );                                                                                                                                           \
             WPEFramework::Core::Messaging::IStore::Telemetry __telemetry__(__info__);                                                                    \
             WPEFramework::Core::Messaging::TelemetryMessage __message__(VALUE);                                                                          \
             WPEFramework::Messaging::MessageUnit::Instance().Push(__telemetry__, &__message__, CATEGORY::Routing());                                     \
-        }                                                                                                                                           \
+        }                                                                                                                                                \
     } while(false)

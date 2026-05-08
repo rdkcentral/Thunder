@@ -167,9 +167,9 @@ namespace WPEFramework {
     #endif
 
     #define DIRECT_ASSERT                                                                                   \
-        std::list<WPEFramework::Core::callstack_info> entries;                                                   \
+        std::list<WPEFramework::Core::callstack_info> entries;                                              \
         DumpCallStack(0, entries);                                                                          \
-        for(const WPEFramework::Core::callstack_info& entry : entries) {                                         \
+        for(const WPEFramework::Core::callstack_info& entry : entries) {                                    \
             fprintf(stderr, "[%s]:[%s]:[%d]\n", entry.module.c_str(), entry.function.c_str(), entry.line);  \
         }                                                                                                   \
         fflush(stderr);                                                                                     \
@@ -185,55 +185,55 @@ namespace WPEFramework {
             #define PROGRAM_NAME program_invocation_short_name
         #endif
 
-        #define ASSERT_METADATA                                                                                            \
-            WPEFramework::Core::Messaging::MessageInfo __messageInfo__(                                                         \
-                WPEFramework::Assertion::BaseAssertType::Metadata());                                                           \
-            std::list<WPEFramework::Core::callstack_info> __entries__;                                                          \
-            DumpCallStack(0, __entries__);                                                                                 \
-            std::string __callstack__;                                                                                     \
-            for (const WPEFramework::Core::callstack_info& __entry__ : __entries__) {                                               \
+        #define ASSERT_METADATA                                                                                                        \
+            WPEFramework::Core::Messaging::MessageInfo __messageInfo__(                                                                \
+                WPEFramework::Assertion::BaseAssertType::Metadata());                                                                  \
+            std::list<WPEFramework::Core::callstack_info> __entries__;                                                                 \
+            DumpCallStack(0, __entries__);                                                                                             \
+            std::string __callstack__;                                                                                                 \
+            for (const WPEFramework::Core::callstack_info& __entry__ : __entries__) {                                                  \
                 __callstack__ += "[" + __entry__.module + "]:[" + __entry__.function + "]:[" + std::to_string(__entry__.line) + "]\n"; \
-            }                                                                                                              \
-            WPEFramework::Core::Messaging::IStore::Assert __assertMetadata__(                                                   \
-                __messageInfo__,                                                                                           \
-                TRACE_PROCESS_ID,                                                                                          \
-                PROGRAM_NAME,                                                                                              \
-                __FILE__,                                                                                                  \
-                __LINE__,                                                                                                  \
+            }                                                                                                                          \
+            WPEFramework::Core::Messaging::IStore::Assert __assertMetadata__(                                                          \
+                __messageInfo__,                                                                                                       \
+                TRACE_PROCESS_ID,                                                                                                      \
+                PROGRAM_NAME,                                                                                                          \
+                __FILE__,                                                                                                              \
+                __LINE__,                                                                                                              \
                 __callstack__);
 
-        #define ASSERT_SENT                                                                                     \
-            WPEFramework::Assertion::AssertionUnitProxy::Instance().AssertionEvent(                                  \
-                __assertMetadata__,                                                                             \
-                __message__,                                                                                    \
+        #define ASSERT_SENT                                                                                             \
+            WPEFramework::Assertion::AssertionUnitProxy::Instance().AssertionEvent(                                     \
+                __assertMetadata__,                                                                                     \
+                __message__,                                                                                            \
                 WPEFramework::Assertion::BaseAssertType::Routing());
 
-        #define ASSERT(expr)                                                                                    \
-            do {                                                                                                \
-                if (!(expr)) {                                                                                  \
+        #define ASSERT(expr)                                                                                            \
+            do {                                                                                                        \
+                if (!(expr)) {                                                                                          \
                     ASSERT_LOGGER("===== $$ [%d]: ASSERT [%s:%d] (%s)\n", TRACE_PROCESS_ID, __FILE__, __LINE__, #expr); \
-                    if (WPEFramework::Assertion::BaseAssertType::IsEnabled()) {                                      \
-                        ASSERT_METADATA                                                                         \
-                        WPEFramework::Core::Messaging::TextMessage __message__(#expr);                               \
-                        ASSERT_SENT                                                                             \
-                    }                                                                                           \
-                    DIRECT_ASSERT                                                                                \
-                }                                                                                               \
+                    if (WPEFramework::Assertion::BaseAssertType::IsEnabled()) {                                         \
+                        ASSERT_METADATA                                                                                 \
+                        WPEFramework::Core::Messaging::TextMessage __message__(#expr);                                  \
+                        ASSERT_SENT                                                                                     \
+                    }                                                                                                   \
+                    DIRECT_ASSERT                                                                                       \
+                }                                                                                                       \
             } while(0)
 
-        #define ASSERT_VERBOSE(expr, format, ...)                                                               \
-            do {                                                                                                \
-                if (!(expr)) {                                                                                  \
+        #define ASSERT_VERBOSE(expr, format, ...)                                                                       \
+            do {                                                                                                        \
+                if (!(expr)) {                                                                                          \
                     ASSERT_LOGGER("===== $$ [%d]: ASSERT [%s:%d] (%s)\n", TRACE_PROCESS_ID, __FILE__, __LINE__, #expr); \
-                    if (WPEFramework::Assertion::BaseAssertType::IsEnabled()) {                                      \
-                        ASSERT_METADATA                                                                         \
-                        char __buffer__[256];                                                                   \
-                        std::snprintf(__buffer__, sizeof(__buffer__), "%s: " #format, #expr, ##__VA_ARGS__);    \
-                        WPEFramework::Core::Messaging::TextMessage __message__(__buffer__);                          \
-                        ASSERT_SENT                                                                             \
-                    }                                                                                           \
-                    DIRECT_ASSERT                                                                                \
-                }                                                                                               \
+                    if (WPEFramework::Assertion::BaseAssertType::IsEnabled()) {                                         \
+                        ASSERT_METADATA                                                                                 \
+                        char __buffer__[256];                                                                           \
+                        std::snprintf(__buffer__, sizeof(__buffer__), "%s: " #format, #expr, ##__VA_ARGS__);            \
+                        WPEFramework::Core::Messaging::TextMessage __message__(__buffer__);                             \
+                        ASSERT_SENT                                                                                     \
+                    }                                                                                                   \
+                    DIRECT_ASSERT                                                                                       \
+                }                                                                                                       \
             } while(0)
 
         #define INTERNAL_ASSERT(expr)                                                                                   \
