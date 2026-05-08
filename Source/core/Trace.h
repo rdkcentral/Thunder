@@ -211,20 +211,18 @@ namespace WPEFramework {
         #define ASSERT(expr)                                                                                            \
             do {                                                                                                        \
                 if (!(expr)) {                                                                                          \
-                    ASSERT_LOGGER("===== $$ [%d]: ASSERT [%s:%d] (%s)\n", TRACE_PROCESS_ID, __FILE__, __LINE__, #expr); \
                     if (WPEFramework::Assertion::BaseAssertType::IsEnabled()) {                                         \
                         ASSERT_METADATA                                                                                 \
                         WPEFramework::Core::Messaging::TextMessage __message__(#expr);                                  \
                         ASSERT_SENT                                                                                     \
                     }                                                                                                   \
-                    DIRECT_ASSERT                                                                                       \
+                    ASSERT_ABORT                                                                                        \
                 }                                                                                                       \
             } while(0)
 
         #define ASSERT_VERBOSE(expr, format, ...)                                                                       \
             do {                                                                                                        \
                 if (!(expr)) {                                                                                          \
-                    ASSERT_LOGGER("===== $$ [%d]: ASSERT [%s:%d] (%s)\n", TRACE_PROCESS_ID, __FILE__, __LINE__, #expr); \
                     if (WPEFramework::Assertion::BaseAssertType::IsEnabled()) {                                         \
                         ASSERT_METADATA                                                                                 \
                         char __buffer__[256];                                                                           \
@@ -232,7 +230,7 @@ namespace WPEFramework {
                         WPEFramework::Core::Messaging::TextMessage __message__(__buffer__);                             \
                         ASSERT_SENT                                                                                     \
                     }                                                                                                   \
-                    DIRECT_ASSERT                                                                                       \
+                    ASSERT_ABORT                                                                                        \
                 }                                                                                                       \
             } while(0)
 
