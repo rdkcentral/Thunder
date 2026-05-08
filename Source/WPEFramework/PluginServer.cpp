@@ -949,6 +949,7 @@ namespace PluginHost
         , _security(_parent.Officer())
         , _service()
         , _requestClose(false)
+        , _serviceCleanedUp(false)
     {
         TRACE(Activity, (_T("Construct a link with ID: [%d] to [%s]"), Id(), remoteId.QualifiedName().c_str()));
     }
@@ -958,11 +959,8 @@ namespace PluginHost
         TRACE(Activity, (_T("Destruct a link with ID [%d] to [%s]"), Id(), RemoteId().c_str()));
 
         // If we are still atatched to a service, detach, we are out of scope...
-        if (_service.IsValid() == true) {
-            _service->Unsubscribe(*this);
+        CleanupService();
 
-            _service.Release();
-        }
         if (_security != nullptr) {
             _security->Release();
             _security = nullptr;
