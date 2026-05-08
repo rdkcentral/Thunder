@@ -54,7 +54,7 @@ ENUM_CONVERSION_END(WPEFramework::Core::Messaging::OutputMode)
                 {
                     const Core::Messaging::Metadata& metadata = control->Metadata();
 
-                    if (_module == metadata.Module()) {
+                    if (_module.empty() || _module == metadata.Module()) {
                         Control info(metadata, control->Enable());
 
                         uint16_t moved = info.Serialize(&(_buffer[_offset]), _length - _offset);
