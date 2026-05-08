@@ -20,30 +20,5 @@
 #pragma once
 
 #ifndef MODULE_NAME
-#define MODULE_NAME Application
+#define MODULE_NAME ThunderUnitTests
 #endif
-
-#include <core/core.h>
-#include <cryptalgo/cryptalgo.h>
-#include <plugins/plugins.h>
-#include <websocket/websocket.h>
-#include <messaging/messaging.h>
-
-#ifdef __CORE_WARNING_REPORTING__
-#include <warningreporting/warningreporting.h>
-#endif
-
-#ifndef TREE_REFERENCE
-#define TREE_REFERENCE engineering_build_for_debug_purpose_only
-#endif
-
-namespace WPEFramework {
-	namespace PluginHost {
-		static constexpr uint8_t Major = 4;
-		static constexpr uint8_t Minor = 4;
-		static constexpr uint8_t Patch = 5;
-	}
-}
-
-#undef EXTERNAL
-#define EXTERNAL

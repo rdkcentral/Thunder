@@ -623,12 +623,10 @@ POP_WARNING()
         }
         PluginHost::IShell* ControllerInterface()
         {
-            _controller->AddRef();
             return _controller;
         }
         const PluginHost::IShell* ControllerInterface() const
         {
-            _controller->AddRef();
             return _controller;
         }
 

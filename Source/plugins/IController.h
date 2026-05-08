@@ -47,8 +47,7 @@ namespace Controller {
         // @property
         // @brief Provides the value of request environment variable.
         // @return Environment value
-        virtual Core::hresult Environment(const string& index /* @index */, string& environment /* @out @opaque */ ) const = 0;
-
+        virtual Core::hresult Environment(const string& index /* @index */, string& environment /* @out */ ) const = 0;       
     };
 
     /* @json */

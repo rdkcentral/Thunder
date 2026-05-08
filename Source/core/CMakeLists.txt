@@ -144,6 +144,7 @@ set(PUBLIC_HEADERS
         CallsignTLS.h
         TokenizedStringList.h
         MessageStore.h
+        ICustomErrorCode.h
         )
 
 target_compile_options (${TARGET} PRIVATE -Wno-psabi)

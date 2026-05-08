@@ -226,14 +226,19 @@ namespace Core {
         SingletonProxyType(const SingletonProxyType<PROXYTYPE>&) = delete;
         SingletonProxyType& operator=(const SingletonProxyType<PROXYTYPE>&) = delete;
 
-        static ProxyType<PROXYTYPE> Instance()
+        static ProxyType<PROXYTYPE>& Instance()
         {
             return (SingletonType<SingletonProxyType<PROXYTYPE>>::Instance()._wrapped);
         }
         template <typename... Args>
-        DEPRECATED static ProxyType<PROXYTYPE> Instance(Args&&... args)
+        DEPRECATED static ProxyType<PROXYTYPE>& Instance(Args&&... args)
         {
             return (SingletonType<SingletonProxyType<PROXYTYPE>>::Instance(std::forward<Args>(args)...)._wrapped);
+        }
+
+        ~SingletonProxyType()
+        {
+            ASSERT(ProxyType<PROXYTYPE>::LastRefAccessor::LastRef(_wrapped) == true);
         }
 
     private:

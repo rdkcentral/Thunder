@@ -365,10 +365,13 @@ POP_WARNING()
             uint32_t report = _threadPool.Revoke(job, waitTime);
 
             if (report == Core::ERROR_UNKNOWN_KEY) {
-                report = _external.Completed(job, waitTime);
-                
-                if ( (report != Core::ERROR_UNKNOWN_KEY) && (result == Core::ERROR_UNKNOWN_KEY) ) {
-                    result = report;
+               if (_joined == Thread::ThreadId()) {
+                    result = Core::ERROR_NONE;
+                } else {
+                    report = _external.Completed(job, waitTime);
+                    if ((report != Core::ERROR_UNKNOWN_KEY) && (result == Core::ERROR_UNKNOWN_KEY)) {
+                        result = report;
+                    }
                 }
             }
 
