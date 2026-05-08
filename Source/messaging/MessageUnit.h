@@ -423,8 +423,8 @@ namespace WPEFramework {
                         , Port(0)
                         , Path(_T("MessageDispatcher"))
                         , Flush(false)
-                        , Out(true)
-                        , Error(true)
+                        , Out(false)
+                        , Error(false)
                         , DataSize(MessageUnit::DefaultDataBufferSize)
                         , MetadataBufferSize(MessageUnit::DefaultMetadataBufferSize)
                         , MetadataSize(MessageUnit::DefaultMetadataSize)
@@ -561,7 +561,7 @@ namespace WPEFramework {
                             (((flushMode != flush::OFF) || (jsonParsed.Flush.Value())) ? mode::DIRECT : 0) | 
                             (flushMode == flush::FLUSH_ABBREVIATED ? mode::ABBREVIATED : 0) |
                             (jsonParsed.Error.Value() ? mode::REDIRECT_ERROR : 0) |
-                            (jsonParsed.Out.IsSet() ? (jsonParsed.Out.Value() ? mode::REDIRECT_OUT : 0) : (background ? mode::REDIRECT_OUT : 0));
+                            (jsonParsed.Out.Value() ? mode::REDIRECT_OUT : 0);
 
                     _metadataBufferSize = jsonParsed.MetadataBufferSize.Value();
                     if (_metadataBufferSize > MessageUnit::MaxMetadataBufferSize) {
