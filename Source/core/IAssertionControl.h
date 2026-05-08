@@ -1,4 +1,4 @@
-/*
+ /*
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
@@ -19,15 +19,16 @@
 
 #pragma once
 
-#ifndef MODULE_NAME
-#error "Please define a MODULE_NAME that describes the binary/library you are building."
-#endif
+#include "Module.h"
+#include "Messaging.h"
 
-#include "IWarningReportingMedia.h"
-#include "WarningReportingUnit.h"
+namespace WPEFramework {
+namespace Assertion {
 
-#ifdef __WINDOWS__
-#pragma comment(lib, "warningreporting.lib")
-#endif
+    struct EXTERNAL IAssertionUnit {
+        virtual ~IAssertionUnit() = default;
+        virtual void AssertionEvent(Core::Messaging::IStore::Assert& metadata, const Core::Messaging::TextMessage& message, Core::Messaging::OutputMode outputMode) = 0;
+    };
 
-WPEFRAMEWORK_NESTEDNAMESPACE_COMPATIBILIY(WarningReporting)
+}
+}

@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 Metrological
+ * Copyright 2022 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,17 +17,28 @@
  * limitations under the License.
  */
 
-#pragma once
+#include "OperationalCategories.h"
 
-#ifndef MODULE_NAME
-#error "Please define a MODULE_NAME that describes the binary/library you are building."
-#endif
+namespace WPEFramework {
 
-#include "IWarningReportingMedia.h"
-#include "WarningReportingUnit.h"
+namespace OperationalStream {
 
-#ifdef __WINDOWS__
-#pragma comment(lib, "warningreporting.lib")
-#endif
+    // -----------------------------------------------------------------
+    // REGISTRATION
+    // -----------------------------------------------------------------
 
-WPEFRAMEWORK_NESTEDNAMESPACE_COMPATIBILIY(WarningReporting)
+    namespace {
+
+        static class Instantiation {
+        public:
+            Instantiation()
+            {
+                OPERATIONAL_STREAM_ANNOUNCE(StandardOut)
+                OPERATIONAL_STREAM_ANNOUNCE(StandardError)
+            }
+        } ControlsRegistration;
+
+    }
+
+}
+}
