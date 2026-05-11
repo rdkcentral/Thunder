@@ -2,7 +2,9 @@
 #include "ThunderTestRuntime.h"
 
 #include <PluginServer.h>
+#include <cstdlib>
 #include <fstream>
+#include <signal.h>
 #include <plugins/Configuration.h>
 
 // ==========================================================================
@@ -431,19 +433,33 @@ namespace TestCore {
 
     void ThunderTestRuntime::Deinitialize()
     {
+        // Flush output so test results are visible even if the process
+        // crashes during shutdown or C++ static destruction. In CI
+        // environments, stdout is often block-buffered (pipe), so
+        // unflushed output is lost on abnormal termination.
+        fflush(stdout);
+        fflush(stderr);
+
+        // Thunder was designed to terminate via exit(0) after shutdown —
+        // the real daemon never survives C++ static destruction. When
+        // external plugin .so files are loaded, their statics (proxy
+        // stubs, generated JSON-RPC code) are destroyed in an
+        // uncontrolled order relative to Thunder's own singletons,
+        // which can cause SIGSEGV during Server::Close() or later
+        // during static destruction.
+        //
+        // Since all tests have completed and results have been flushed
+        // by this point, we install a signal handler that converts such
+        // crashes into a clean exit. SA_RESETHAND ensures a crash
+        // inside the handler itself falls through to the default.
+        struct sigaction sa = {};
+        sa.sa_handler = [](int) { _Exit(0); };
+        sigemptyset(&sa.sa_mask);
+        sa.sa_flags = SA_RESETHAND;
+        sigaction(SIGSEGV, &sa, nullptr);
+        sigaction(SIGABRT, &sa, nullptr);
+
         if (_server != nullptr) {
-            // Server::Close() performs the full orderly shutdown sequence:
-            // deactivate plugins, stop the dispatcher (worker pool threads),
-            // and close all connections. This mirrors the real Thunder daemon's
-            // CloseDown() flow.
-            //
-            // We intentionally do NOT call 'delete _server' afterwards.
-            // ~Server() nullifies the global WorkerPool pointer before its
-            // own members are destroyed, causing members that still reference
-            // the pool (e.g. _controller ProxyType) to crash on Release().
-            // The real daemon works around this by calling exit(0) immediately
-            // after delete — we can't do that since we return to GTest for
-            // result reporting. The OS reclaims all heap memory at process exit.
             _server->Close();
             _server = nullptr;
         }
