@@ -432,8 +432,19 @@ namespace TestCore {
     void ThunderTestRuntime::Deinitialize()
     {
         if (_server != nullptr) {
+            // Server::Close() performs the full orderly shutdown sequence:
+            // deactivate plugins, stop the dispatcher (worker pool threads),
+            // and close all connections. This mirrors the real Thunder daemon's
+            // CloseDown() flow.
+            //
+            // We intentionally do NOT call 'delete _server' afterwards.
+            // ~Server() nullifies the global WorkerPool pointer before its
+            // own members are destroyed, causing members that still reference
+            // the pool (e.g. _controller ProxyType) to crash on Release().
+            // The real daemon works around this by calling exit(0) immediately
+            // after delete — we can't do that since we return to GTest for
+            // result reporting. The OS reclaims all heap memory at process exit.
             _server->Close();
-            delete _server;
             _server = nullptr;
         }
 
@@ -444,7 +455,6 @@ namespace TestCore {
 
         if (_initialized == true) {
             Messaging::MessageUnit::Instance().Close();
-            Core::Singleton::Dispose();
             _initialized = false;
         }
 
