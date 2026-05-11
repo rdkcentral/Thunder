@@ -141,41 +141,9 @@ install(
     INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}
 )
 
-# ------------------------------------------------------------------
-# thunder_test_main — GTest main() that calls _Exit() after
-# RUN_ALL_TESTS() to avoid static destruction order crashes when
-# external plugin .so files are loaded.
-#
-# Plugin tests link this instead of GTest::Main.
-# ------------------------------------------------------------------
-set(MAIN_TARGET thunder_test_main)
-
-add_library(${MAIN_TARGET} STATIC
-    ThunderTestMain.cpp
-)
-
-target_link_libraries(${MAIN_TARGET}
-    PUBLIC
-        GTest::GTest
-)
-
-set_target_properties(${MAIN_TARGET} PROPERTIES
-    CXX_STANDARD 11
-    CXX_STANDARD_REQUIRED YES
-)
-
-install(
-    TARGETS ${MAIN_TARGET} EXPORT ${MAIN_TARGET}Targets
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT ${NAMESPACE}_Development
-)
-
 InstallCMakeConfig(
     TARGETS ${TARGET}
     TEMPLATE ${CMAKE_CURRENT_SOURCE_DIR}/thunder_test_supportConfig.cmake.in
-)
-
-InstallCMakeConfig(
-    TARGETS ${MAIN_TARGET}
 )
 
 # ------------------------------------------------------------------

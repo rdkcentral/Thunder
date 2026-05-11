@@ -444,6 +444,7 @@ namespace TestCore {
 
         if (_initialized == true) {
             Messaging::MessageUnit::Instance().Close();
+            Core::Singleton::Dispose();
             _initialized = false;
         }
 
