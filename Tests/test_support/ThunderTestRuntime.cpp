@@ -4,7 +4,6 @@
 #include <PluginServer.h>
 #include <cstdlib>
 #include <fstream>
-#include <signal.h>
 #include <plugins/Configuration.h>
 
 // ==========================================================================
@@ -94,10 +93,25 @@ namespace TestCore {
 
         if (_dispatcher != nullptr) {
 
+            bool wasTracked = false;
+            bool noTrackedHandlersLeft = false;
+
+            {
+                std::lock_guard<std::mutex> guard(_lock);
+                auto it = _handlers.find(event);
+                if (it != _handlers.end()) {
+                    _handlers.erase(it);
+                    wasTracked = true;
+                }
+                noTrackedHandlersLeft = _handlers.empty();
+            }
+
             result = _dispatcher->Unsubscribe(this, event, _callsign, string());
 
-            std::lock_guard<std::mutex> guard(_lock);
-            _handlers.erase(event);
+            if ((result != Core::ERROR_NONE) && (wasTracked == true) && (noTrackedHandlersLeft == true)) {
+                _dispatcher->Dropped(this);
+                result = Core::ERROR_NONE;
+            }
         }
 
         return result;
@@ -108,11 +122,18 @@ namespace TestCore {
                                                           const string& /* index */,
                                                           const string& parameters)
     {
-        std::lock_guard<std::mutex> guard(_lock);
+        EventHandler handler;
 
-        auto it = _handlers.find(event);
-        if (it != _handlers.end()) {
-            it->second(parameters);
+        {
+            std::lock_guard<std::mutex> guard(_lock);
+            auto it = _handlers.find(event);
+            if (it != _handlers.end()) {
+                handler = it->second;
+            }
+        }
+
+        if (handler) {
+            handler(parameters);
         }
 
         return Core::ERROR_NONE;
@@ -433,34 +454,9 @@ namespace TestCore {
 
     void ThunderTestRuntime::Deinitialize()
     {
-        // Flush output so test results are visible even if the process
-        // crashes during shutdown or C++ static destruction. In CI
-        // environments, stdout is often block-buffered (pipe), so
-        // unflushed output is lost on abnormal termination.
-        fflush(stdout);
-        fflush(stderr);
-
-        // Thunder was designed to terminate via exit(0) after shutdown —
-        // the real daemon never survives C++ static destruction. When
-        // external plugin .so files are loaded, their statics (proxy
-        // stubs, generated JSON-RPC code) are destroyed in an
-        // uncontrolled order relative to Thunder's own singletons,
-        // which can cause SIGSEGV during Server::Close() or later
-        // during static destruction.
-        //
-        // Since all tests have completed and results have been flushed
-        // by this point, we install a signal handler that converts such
-        // crashes into a clean exit. SA_RESETHAND ensures a crash
-        // inside the handler itself falls through to the default.
-        struct sigaction sa = {};
-        sa.sa_handler = [](int) { _Exit(0); };
-        sigemptyset(&sa.sa_mask);
-        sa.sa_flags = SA_RESETHAND;
-        sigaction(SIGSEGV, &sa, nullptr);
-        sigaction(SIGABRT, &sa, nullptr);
-
         if (_server != nullptr) {
             _server->Close();
+            delete _server;
             _server = nullptr;
         }
 

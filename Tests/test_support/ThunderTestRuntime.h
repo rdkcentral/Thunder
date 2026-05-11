@@ -49,6 +49,7 @@
 #include <vector>
 #include <functional>
 #include <unordered_map>
+#include <atomic>
 #include <mutex>
 
 namespace Thunder {
@@ -92,8 +93,18 @@ namespace TestCore {
             const string& Callsign() const { return _callsign; }
 
             // IDispatcher::ICallback
-            uint32_t AddRef() const override { return Core::ERROR_NONE; }
-            uint32_t Release() const override { return Core::ERROR_NONE; }
+            uint32_t AddRef() const override
+            {
+                return ++_refCount;
+            }
+            uint32_t Release() const override
+            {
+                const uint32_t result = --_refCount;
+                if (result == 0) {
+                    delete const_cast<JSONRPCLink*>(this);
+                }
+                return result;
+            }
 
         private:
             // IDispatcher::ICallback
@@ -107,6 +118,7 @@ namespace TestCore {
             ThunderTestRuntime& _runtime;
             string _callsign;
             PluginHost::IDispatcher* _dispatcher;
+            mutable std::atomic<uint32_t> _refCount { 1 };
 
             mutable std::mutex _lock;
             std::unordered_map<string, EventHandler> _handlers;
@@ -128,7 +140,7 @@ namespace TestCore {
                             const string& proxyStubPath = "");
 
         // Create a callsign-bound JSON-RPC link for invoke and event operations.
-        // Caller owns the returned object.
+        // Caller must Release() the returned object when done.
         class JSONRPCLink* CreateJSONRPCLink(const string& callsign);
 
         // Invoke a JSON-RPC method on a loaded plugin (full designator form).

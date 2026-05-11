@@ -71,7 +71,7 @@ namespace Tests {
         EXPECT_EQ(result, Core::ERROR_NONE) << "status via link returned: " << result;
         EXPECT_FALSE(response.empty());
 
-        delete controller;
+        controller->Release();
     }
 
     // ------------------------------------------------------------------
@@ -105,7 +105,7 @@ namespace Tests {
         uint32_t result = controller->Invoke("thisMethodDoesNotExist", "{}", response);
         EXPECT_EQ(result, Core::ERROR_UNKNOWN_KEY);
 
-        delete controller;
+        controller->Release();
     }
 
     // ------------------------------------------------------------------

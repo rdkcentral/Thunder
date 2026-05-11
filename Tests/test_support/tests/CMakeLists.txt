@@ -10,8 +10,11 @@ add_executable(${TARGET}
 target_compile_definitions(${TARGET}
     PRIVATE
         MODULE_NAME=SmokeTest
-        BUILD_REFERENCE=${BUILD_REFERENCE}
 )
+
+if(BUILD_REFERENCE)
+    target_compile_definitions(${TARGET} PRIVATE BUILD_REFERENCE=${BUILD_REFERENCE})
+endif()
 
 target_link_libraries(${TARGET}
     PRIVATE
