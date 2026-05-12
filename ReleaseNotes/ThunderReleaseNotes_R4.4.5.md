@@ -3,7 +3,6 @@
 ## Introduction
 
 This document describes the changes introduced in Thunder R4.4.5 (compared to the R4.4.4 release).
-See [here](https://github.com/rdkcentral/Thunder/blob/R4_4/ReleaseNotes/ThunderReleaseNotes_R4.4.4.md) for the release notes of Thunder R4.4.4.
 
 The changes described here are present on the [R4_4 branch](https://github.com/rdkcentral/Thunder/tree/R4_4) and represent all commits since the [R4.4.4 tag](https://github.com/rdkcentral/Thunder/compare/R4.4.4...R4_4).
 
@@ -32,7 +31,7 @@ Additionally, a missing `Release()` call in the Dangling Notification path was f
 
 A crash was fixed that occurred when an invalid enum value was passed as an argument through the JSON-RPC or COM-RPC interface. The fix adds appropriate validation and graceful handling so that an out-of-range enum value no longer causes undefined behaviour.
 
-### Fix: Handling of Truncated UTF Code on Parsing Empty or Uninitialized Input
+### Fix: Handling of Truncated UTF-8 Code on Parsing Empty or Uninitialized Input
 
 The JSON parser now correctly handles the case where a truncated UTF-8 sequence is encountered while parsing an empty, null-terminated, or uninitialized input buffer, preventing reads beyond the end of valid data.
 
