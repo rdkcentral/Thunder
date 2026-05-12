@@ -60,8 +60,7 @@ A large set of stability and correctness fixes identified during Thunder 5 devel
   - `OptionalType<T>` assignment operators added to `NumberType`, `FloatType`, `Boolean`, `String`, `EnumType`, and `ArrayType`.
   - `String::RawString()` accessor added; `Variant` uses it to avoid re-quoting already-quoted strings.
   - `Variant` deserialization rewritten to correctly classify quoted strings (STRING), unquoted booleans (BOOLEAN), numbers (NUMBER / DOUBLE), objects (OBJECT), and arrays (ARRAY) without misclassifying them on reuse.
-  - `VariantContainer` gains `IsValid()`, `Remove()`, overridden `Clear()`, and a corrected `HasLabel()` that performs exact label matching.
-  - Forward slash (`/`) escaping in JSON strings is now conditionally compiled out when `__DISABLE_USE_COMPLEMENTARY_CODE_SET__` is defined, restoring backwards-compatible behaviour.
+  - `VariantContainer` got various issues fixed, among others the Remove method was fixed
   - New unit tests added in `Tests/unit/core/test_jsonobject.cpp` covering key removal, partial-match safety, key-value access, round-trip correctness, and `Variant` type classification.
 - **Safeguard against self-revocation of WorkerPool jobs** — `WorkerPool::Revoke()` no longer tries to wait on the external queue from the thread that owns the joined-thread ID, preventing a potential deadlock when a job revokes itself.
 - **`@opaque` removed from `IController::Environment`** — The `@opaque` annotation was removed from the `environment` out-parameter, which corrects the generated proxy/stub code for this method.
@@ -78,10 +77,6 @@ A critical race condition causing a `SIGSEGV` crash in `UnknownProxy` was fixed.
 ### Fix: Worker Pool Queue Size
 
 The `WorkerPoolImplementation` queue depth was increased from `8 * THREADPOOL_COUNT` to `64 * THREADPOOL_COUNT` to reduce the likelihood of job submission failures under heavy load.
-
-### Fix: Service Cleanup 
-
-The `PluginServer` channel `CleanupService()` helper was introduced and an `std::atomic<bool> _serviceCleanedUp` flag was added to ensure that service unsubscription and release happen exactly once, even when both the ResourceMonitor thread and the WorkerPool thread attempt cleanup concurrently. This prevents a crash caused by double-unsubscription.
 
 ### Fix: Proper Cleanup of Service on Channel Close
 
@@ -107,5 +102,5 @@ In `CommunicatorServer`, the `connection->Terminate()` call is now made after th
 
 ## Breaking Changes
 
-Thunder R4.4.5 does not introduce intentional breaking changes relative to R4.4.4. All interface signatures remain unchanged. The custom error codes feature is additive and disabled by default via `DISABLE_USE_COMPLEMENTARY_CODE_SET`.
+Thunder R4.4.5 does not introduce intentional breaking changes relative to R4.4.4. All interface signatures remain unchanged. The custom error codes feature is additive.
 
