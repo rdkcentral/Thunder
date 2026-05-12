@@ -39,12 +39,24 @@ jobs:
       with:
         path: Thunder
 
+    - name: Resolve ThunderTools default ref
+      if: ${{ !contains(github.event.pull_request.body, '[DependsOn=ThunderTools:') }}
+      id: tools_default
+      run: |
+        REF="${{ github.head_ref || github.ref_name }}"
+        if git ls-remote --exit-code --heads https://github.com/rdkcentral/ThunderTools "$REF" >/dev/null 2>&1; then
+          echo "ref=$REF" >> "$GITHUB_OUTPUT"
+        else
+          echo "ref=master" >> "$GITHUB_OUTPUT"
+        fi
+
     - name: Checkout ThunderTools - default
       if: ${{ !contains(github.event.pull_request.body, '[DependsOn=ThunderTools:') }}
       uses: actions/checkout@v4
       with:
         path: ThunderTools
         repository: rdkcentral/ThunderTools
+        ref: ${{steps.tools_default.outputs.ref}}
 
     - name: Regex ThunderTools
       if: ${{ contains(github.event.pull_request.body, '[DependsOn=ThunderTools:') }}
@@ -63,12 +75,24 @@ jobs:
         repository: rdkcentral/ThunderTools
         ref: ${{steps.tools.outputs.first_match}}
 
+    - name: Resolve ThunderInterfaces default ref
+      if: ${{ !contains(github.event.pull_request.body, '[DependsOn=ThunderInterfaces:') }}
+      id: interfaces_default
+      run: |
+        REF="${{ github.head_ref || github.ref_name }}"
+        if git ls-remote --exit-code --heads https://github.com/rdkcentral/ThunderInterfaces "$REF" >/dev/null 2>&1; then
+          echo "ref=$REF" >> "$GITHUB_OUTPUT"
+        else
+          echo "ref=master" >> "$GITHUB_OUTPUT"
+        fi
+
     - name: Checkout ThunderInterfaces - default
       if: ${{ !contains(github.event.pull_request.body, '[DependsOn=ThunderInterfaces:') }}
       uses: actions/checkout@v4
       with:
         path: ThunderInterfaces
         repository: rdkcentral/ThunderInterfaces
+        ref: ${{steps.interfaces_default.outputs.ref}}
 
     - name: Regex ThunderInterfaces
       if: ${{ contains(github.event.pull_request.body, '[DependsOn=ThunderInterfaces:') }}
@@ -87,12 +111,24 @@ jobs:
         repository: rdkcentral/ThunderInterfaces
         ref: ${{steps.interfaces.outputs.first_match}}
 
+    - name: Resolve ThunderNanoServices default ref
+      if: ${{ !contains(github.event.pull_request.body, '[DependsOn=ThunderNanoServices:') }}
+      id: nanoservices_default
+      run: |
+        REF="${{ github.head_ref || github.ref_name }}"
+        if git ls-remote --exit-code --heads https://github.com/rdkcentral/ThunderNanoServices "$REF" >/dev/null 2>&1; then
+          echo "ref=$REF" >> "$GITHUB_OUTPUT"
+        else
+          echo "ref=master" >> "$GITHUB_OUTPUT"
+        fi
+
     - name: Checkout ThunderNanoServices - default
       if: ${{ !contains(github.event.pull_request.body, '[DependsOn=ThunderNanoServices:') }}
       uses: actions/checkout@v4
       with:
         path: ThunderNanoServices
         repository: rdkcentral/ThunderNanoServices
+        ref: ${{steps.nanoservices_default.outputs.ref}}
 
     - name: Regex ThunderNanoServices
       if: ${{ contains(github.event.pull_request.body, '[DependsOn=ThunderNanoServices:') }}
