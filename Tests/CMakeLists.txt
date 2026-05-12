@@ -5,6 +5,7 @@ option(FILE_UNLINK_TEST "File unlink test" OFF)
 option(REDIRECT_TEST "Test stream redirection" OFF)
 option(MESSAGEBUFFER_TEST "Test message buffer" OFF)
 option(UNRAVELLER "reveal thread details" OFF)
+option(ENABLE_TEST_RUNTIME "Build Thunder test support library for plugin integration tests" OFF)
 
 if(BUILD_TESTS)
     add_subdirectory(unit)
@@ -40,4 +41,16 @@ endif()
 
 if(UNRAVELLER)
     add_subdirectory(unraveller)
+endif()
+
+if(ENABLE_TEST_RUNTIME)
+    if(UNIX)
+        add_subdirectory(test_support)
+    else()
+        message(FATAL_ERROR
+            "ENABLE_TEST_RUNTIME is supported only on POSIX platforms. "
+            "Tests/test_support currently depends on POSIX-specific temporary "
+            "directory handling."
+        )
+    endif()
 endif()
