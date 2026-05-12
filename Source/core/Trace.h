@@ -205,7 +205,8 @@ namespace Thunder {
         #define ASSERT_SENT                                                                                     \
             Thunder::Assertion::AssertionUnitProxy::Instance().AssertionEvent(                                  \
                 __assertMetadata__,                                                                             \
-                __message__);
+                __message__,                                                                                    \
+                Thunder::Assertion::BaseAssertType::Routing());
 
         #define ASSERT(expr)                                                                                    \
             do {                                                                                                \

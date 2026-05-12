@@ -25,6 +25,7 @@
 #include "IRemoteInstantiation.h"
 #include "WarningReportingCategories.h"
 #include "PostMortem.h"
+#include <atomic>
 
 #ifndef HOSTING_COMPROCESS
 #error "Please define the name of the COM process!!!"
@@ -5353,11 +5354,8 @@ namespace PluginHost {
 
                 // If we are closing (or closed) do the clean up
                 if (IsOpen() == false) {
-                    if (_service.IsValid() == true) {
-                        _service->Detach(*this);
 
-                        _service.Release();
-                    }
+                    CleanupService();
 
                     State(CLOSED, false);
 
@@ -5427,11 +5425,24 @@ namespace PluginHost {
                 SetId(id);
             }
 
+            void CleanupService()
+            {
+                bool expected = false;
+                if (_serviceCleanedUp.compare_exchange_strong(expected, true, std::memory_order_acq_rel)) {
+                    if (_service.IsValid() == true) {
+                        _service->Unsubscribe(*this);
+                        _service->Detach(*this);
+                        _service.Release();
+                    }
+                }
+            }
+
             Server& _parent;
             PluginHost::ISecurity* _security;
             Core::ProxyType<Service> _service;
             bool _requestClose;
             Jobs _jobs;
+            std::atomic<bool> _serviceCleanedUp;
 
             // Factories for creating jobs that can be placed on the PluginHost Worker pool.
             static Core::ProxyPoolType<WebRequestJob> _webJobs;

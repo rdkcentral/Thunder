@@ -42,7 +42,7 @@ namespace Thunder {
                     Core::Messaging::MessageInfo messageInfo(OperationalStream::StandardOut::Metadata(), Core::Time::Now().Ticks());
                     Core::Messaging::IStore::OperationalStream operationalStream(messageInfo);
                     Core::Messaging::TextMessage data(length, buffer);
-                    MessageUnit::Instance().Push(operationalStream, &data);
+                    MessageUnit::Instance().Push(operationalStream, &data, OperationalStream::StandardOut::Routing());
                 }
             }
 
@@ -65,7 +65,7 @@ namespace Thunder {
                     Core::Messaging::MessageInfo messageInfo(OperationalStream::StandardError::Metadata(), Core::Time::Now().Ticks());
                     Core::Messaging::IStore::OperationalStream operationalStream(messageInfo);
                     Core::Messaging::TextMessage data(length, buffer);
-                    MessageUnit::Instance().Push(operationalStream, &data);
+                    MessageUnit::Instance().Push(operationalStream, &data, OperationalStream::StandardError::Routing());
                 }
             }
         };

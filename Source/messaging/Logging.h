@@ -61,6 +61,10 @@ namespace Logging {
         inline static void Enable(const bool enable) {
             Instance().Enable(enable);
         }
+
+        inline static Core::Messaging::OutputMode Routing() {
+            return (Instance().Routing());
+        }
         
         inline static const Core::Messaging::Metadata& Metadata() {
             return (Instance().Metadata());
@@ -87,7 +91,7 @@ namespace Logging {
             );                                                                                                                              \
             Thunder::Core::Messaging::IStore::Logging __log__(__info__);                                                                    \
             Thunder::Core::Messaging::TextMessage __message__(__data__.Data());                                                             \
-            Thunder::Messaging::MessageUnit::Instance().Push(__log__, &__message__);                                                        \
+            Thunder::Messaging::MessageUnit::Instance().Push(__log__, &__message__, CATEGORY::Routing());                                   \
         }                                                                                                                                   \
     } while(false)
 
