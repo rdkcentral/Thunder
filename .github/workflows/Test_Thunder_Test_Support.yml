@@ -1,0 +1,175 @@
+name: Test Thunder Test Support Library
+
+permissions:
+  contents: read
+
+on:
+  workflow_dispatch:
+
+  pull_request:
+    branches: ["master"]
+
+jobs:
+  SmokeTest:
+    runs-on: ubuntu-24.04
+
+    strategy:
+      matrix:
+        build_type: [Debug, Release]
+
+    name: Smoke Test - ${{matrix.build_type}}
+
+    steps:
+    - name: Install necessary packages
+      uses: nick-fields/retry@v3
+      with:
+        timeout_minutes: 10
+        max_attempts: 10
+        command: |
+          sudo gem install apt-spy2
+          sudo apt-spy2 fix --commit --launchpad --country=US
+          sudo apt-get update
+          sudo apt-get install -y python3-pip python3-venv build-essential cmake ninja-build libusb-1.0-0-dev zlib1g-dev libssl-dev libgtest-dev
+          python3 -m venv venv
+          source venv/bin/activate
+          pip install jsonref
+
+    - name: Checkout Thunder
+      uses: actions/checkout@v4
+      with:
+        path: Thunder
+
+    - name: Checkout ThunderTools - default
+      if: ${{ !contains(github.event.pull_request.body, '[DependsOn=ThunderTools:') }}
+      uses: actions/checkout@v4
+      with:
+        path: ThunderTools
+        repository: rdkcentral/ThunderTools
+
+    - name: Regex ThunderTools
+      if: ${{ contains(github.event.pull_request.body, '[DependsOn=ThunderTools:') }}
+      id: tools
+      uses: AsasInnab/regex-action@v1
+      with:
+        regex_pattern: '(?<=\[DependsOn=ThunderTools:).*(?=\])'
+        regex_flags: 'gim'
+        search_string: ${{github.event.pull_request.body}}
+
+    - name: Checkout ThunderTools - ${{steps.tools.outputs.first_match}}
+      if: ${{ contains(github.event.pull_request.body, '[DependsOn=ThunderTools:') }}
+      uses: actions/checkout@v4
+      with:
+        path: ThunderTools
+        repository: rdkcentral/ThunderTools
+        ref: ${{steps.tools.outputs.first_match}}
+
+    - name: Checkout ThunderInterfaces - default
+      if: ${{ !contains(github.event.pull_request.body, '[DependsOn=ThunderInterfaces:') }}
+      uses: actions/checkout@v4
+      with:
+        path: ThunderInterfaces
+        repository: rdkcentral/ThunderInterfaces
+
+    - name: Regex ThunderInterfaces
+      if: ${{ contains(github.event.pull_request.body, '[DependsOn=ThunderInterfaces:') }}
+      id: interfaces
+      uses: AsasInnab/regex-action@v1
+      with:
+        regex_pattern: '(?<=\[DependsOn=ThunderInterfaces:).*(?=\])'
+        regex_flags: 'gim'
+        search_string: ${{github.event.pull_request.body}}
+
+    - name: Checkout ThunderInterfaces - ${{steps.interfaces.outputs.first_match}}
+      if: ${{ contains(github.event.pull_request.body, '[DependsOn=ThunderInterfaces:') }}
+      uses: actions/checkout@v4
+      with:
+        path: ThunderInterfaces
+        repository: rdkcentral/ThunderInterfaces
+        ref: ${{steps.interfaces.outputs.first_match}}
+
+    - name: Checkout ThunderNanoServices - default
+      if: ${{ !contains(github.event.pull_request.body, '[DependsOn=ThunderNanoServices:') }}
+      uses: actions/checkout@v4
+      with:
+        path: ThunderNanoServices
+        repository: rdkcentral/ThunderNanoServices
+
+    - name: Regex ThunderNanoServices
+      if: ${{ contains(github.event.pull_request.body, '[DependsOn=ThunderNanoServices:') }}
+      id: nanoservices
+      uses: AsasInnab/regex-action@v1
+      with:
+        regex_pattern: '(?<=\[DependsOn=ThunderNanoServices:).*(?=\])'
+        regex_flags: 'gim'
+        search_string: ${{github.event.pull_request.body}}
+
+    - name: Checkout ThunderNanoServices - ${{steps.nanoservices.outputs.first_match}}
+      if: ${{ contains(github.event.pull_request.body, '[DependsOn=ThunderNanoServices:') }}
+      uses: actions/checkout@v4
+      with:
+        path: ThunderNanoServices
+        repository: rdkcentral/ThunderNanoServices
+        ref: ${{steps.nanoservices.outputs.first_match}}
+
+    - name: Build ThunderTools
+      run: |
+        source venv/bin/activate
+        cmake -G Ninja -S ThunderTools -B ${{matrix.build_type}}/build/ThunderTools \
+          -DCMAKE_INSTALL_PREFIX="${{matrix.build_type}}/install/usr"
+        cmake --build ${{matrix.build_type}}/build/ThunderTools --target install
+
+    - name: Build Thunder with test support
+      run: |
+        source venv/bin/activate
+        cmake -G Ninja -S Thunder -B ${{matrix.build_type}}/build/Thunder \
+          -DBINDING="127.0.0.1" \
+          -DCMAKE_BUILD_TYPE=${{matrix.build_type}} \
+          -DCMAKE_INSTALL_PREFIX="${{matrix.build_type}}/install/usr" \
+          -DCMAKE_MODULE_PATH="${PWD}/${{matrix.build_type}}/install/usr/include/Thunder/Modules" \
+          -DPORT="0" \
+          -DENABLE_TEST_RUNTIME=ON
+        cmake --build ${{matrix.build_type}}/build/Thunder --target install
+
+    - name: Build ThunderInterfaces
+      run: |
+        source venv/bin/activate
+        cmake -G Ninja -S ThunderInterfaces -B ${{matrix.build_type}}/build/ThunderInterfaces \
+          -DCMAKE_BUILD_TYPE=${{matrix.build_type}} \
+          -DCMAKE_INSTALL_PREFIX="${{matrix.build_type}}/install/usr" \
+          -DCMAKE_MODULE_PATH="${PWD}/${{matrix.build_type}}/install/usr/include/Thunder/Modules" \
+          -DCMAKE_PREFIX_PATH="${PWD}/${{matrix.build_type}}/install/usr"
+        cmake --build ${{matrix.build_type}}/build/ThunderInterfaces --target install
+
+    - name: Build ThunderNanoServices TestPlugin + test
+      run: |
+        source venv/bin/activate
+        cmake -G Ninja -S ThunderNanoServices/tests -B ${{matrix.build_type}}/build/ThunderNanoServicesTests \
+          -DCMAKE_BUILD_TYPE=${{matrix.build_type}} \
+          -DCMAKE_INSTALL_PREFIX="${{matrix.build_type}}/install/usr" \
+          -DCMAKE_MODULE_PATH="${PWD}/${{matrix.build_type}}/install/usr/include/Thunder/Modules" \
+          -DCMAKE_PREFIX_PATH="${PWD}/${{matrix.build_type}}/install/usr" \
+          -DPLUGIN_TESTPLUGIN=ON \
+          -DTEST_PLUGIN_PATH="${PWD}/${{matrix.build_type}}/install/usr/lib/thunder/plugins"
+        cmake --build ${{matrix.build_type}}/build/ThunderNanoServicesTests --target install
+
+    - name: Run smoke test
+      run: |
+        LD_LIBRARY_PATH="${{matrix.build_type}}/install/usr/lib:$LD_LIBRARY_PATH" \
+        ${{matrix.build_type}}/build/Thunder/Tests/test_support/tests/thunder_test_runtime_smoke \
+          --gtest_output="xml:smoke-test-results.xml" \
+          --gtest_color=yes
+
+    - name: Run plugin test (COM-RPC + JSON-RPC + events)
+      run: |
+        LD_LIBRARY_PATH="${{matrix.build_type}}/install/usr/lib:${PWD}/${{matrix.build_type}}/install/usr/lib/thunder/plugins:${PWD}/${{matrix.build_type}}/install/usr/lib/thunder/proxystubs:$LD_LIBRARY_PATH" \
+        ${{matrix.build_type}}/build/ThunderNanoServicesTests/TestPlugin/test/thunder_testplugin_test \
+          --gtest_output="xml:plugin-test-results.xml" \
+          --gtest_color=yes
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results-${{matrix.build_type}}
+        path: |
+          smoke-test-results.xml
+          plugin-test-results.xml
