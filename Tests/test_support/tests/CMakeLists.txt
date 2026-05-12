@@ -19,8 +19,8 @@ endif()
 target_link_libraries(${TARGET}
     PRIVATE
         thunder_test_support
-        GTest::GTest
-        GTest::Main
+        GTest::gtest
+        GTest::gtest_main
 )
 
 add_test(NAME ${TARGET} COMMAND ${TARGET})

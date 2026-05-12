@@ -70,7 +70,9 @@ target_link_libraries(${TARGET}
 
 target_compile_definitions(${TARGET} PRIVATE HOSTING_COMPROCESS=ThunderPlugin)
 
-if(APPLE)
+if(WIN32)
+    message(FATAL_ERROR "thunder_test_support requires POSIX and is not supported on Windows.")
+elseif(APPLE)
     target_link_options(${TARGET} INTERFACE
         "$<BUILD_INTERFACE:SHELL:-Wl,-force_load,$<TARGET_FILE:${TARGET}>>"
     )

@@ -12,24 +12,25 @@ namespace TestCore {
     ThunderTestRuntime::JSONRPCLink::JSONRPCLink(ThunderTestRuntime& runtime, const string& callsign)
         : _runtime(runtime)
         , _callsign(callsign)
-        , _dispatcher(nullptr)
     {
-        Core::ProxyType<PluginHost::IShell> shell = _runtime.GetShell(_callsign);
-        if (shell.IsValid()) {
-            _dispatcher = shell->QueryInterface<PluginHost::IDispatcher>();
-        }
     }
 
     ThunderTestRuntime::JSONRPCLink::~JSONRPCLink()
     {
-        if (_dispatcher != nullptr) {
-            std::lock_guard<std::mutex> guard(_lock);
-            for (const auto& entry : _handlers) {
-                _dispatcher->Unsubscribe(this, entry.first, _callsign, string());
-            }
-            _handlers.clear();
-            _dispatcher->Release();
+        std::lock_guard<std::mutex> guard(_lock);
+        _handlers.clear();
+    }
+
+    PluginHost::IDispatcher* ThunderTestRuntime::JSONRPCLink::Dispatcher() const
+    {
+        PluginHost::IDispatcher* dispatcher = nullptr;
+
+        Core::ProxyType<PluginHost::IShell> shell = _runtime.GetShell(_callsign);
+        if (shell.IsValid()) {
+            dispatcher = shell->QueryInterface<PluginHost::IDispatcher>();
         }
+
+        return dispatcher;
     }
 
     uint32_t ThunderTestRuntime::JSONRPCLink::Invoke(const string& method,
@@ -37,15 +38,18 @@ namespace TestCore {
         string& response)
     {
         uint32_t result = Core::ERROR_UNAVAILABLE;
+        PluginHost::IDispatcher* dispatcher = Dispatcher();
 
-        if (_dispatcher != nullptr) {
+        if (dispatcher != nullptr) {
             const string fullMethod = _callsign + '.' + method;
 
-            if (_runtime.MethodExists(_dispatcher, _callsign, method) == false) {
+            if (_runtime.MethodExists(dispatcher, _callsign, method) == false) {
                 result = Core::ERROR_UNKNOWN_KEY;
             } else {
-                result = _dispatcher->Invoke(0, 0, string(), fullMethod, params, response);
+                result = dispatcher->Invoke(0, 0, string(), fullMethod, params, response);
             }
+
+            dispatcher->Release();
         }
 
         return result;
@@ -54,14 +58,17 @@ namespace TestCore {
     uint32_t ThunderTestRuntime::JSONRPCLink::Subscribe(const string& event, EventHandler handler)
     {
         uint32_t result = Core::ERROR_UNAVAILABLE;
+        PluginHost::IDispatcher* dispatcher = Dispatcher();
 
-        if (_dispatcher != nullptr) {
-            result = _dispatcher->Subscribe(this, event, _callsign, string());
+        if (dispatcher != nullptr) {
+            result = dispatcher->Subscribe(this, event, _callsign, string());
 
             if (result == Core::ERROR_NONE) {
                 std::lock_guard<std::mutex> guard(_lock);
                 _handlers[event] = std::move(handler);
             }
+
+            dispatcher->Release();
         }
 
         return result;
@@ -70,8 +77,9 @@ namespace TestCore {
     uint32_t ThunderTestRuntime::JSONRPCLink::Unsubscribe(const string& event)
     {
         uint32_t result = Core::ERROR_UNAVAILABLE;
+        PluginHost::IDispatcher* dispatcher = Dispatcher();
 
-        if (_dispatcher != nullptr) {
+        if (dispatcher != nullptr) {
             bool wasTracked = false;
             bool noTrackedHandlersLeft = false;
 
@@ -85,12 +93,14 @@ namespace TestCore {
                 noTrackedHandlersLeft = _handlers.empty();
             }
 
-            result = _dispatcher->Unsubscribe(this, event, _callsign, string());
+            result = dispatcher->Unsubscribe(this, event, _callsign, string());
 
             if ((result != Core::ERROR_NONE) && (wasTracked == true) && (noTrackedHandlersLeft == true)) {
-                _dispatcher->Dropped(this);
+                dispatcher->Dropped(this);
                 result = Core::ERROR_NONE;
             }
+
+            dispatcher->Release();
         }
 
         return result;

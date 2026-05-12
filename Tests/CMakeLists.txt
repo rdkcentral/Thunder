@@ -44,5 +44,8 @@ if(UNRAVELLER)
 endif()
 
 if(ENABLE_TEST_RUNTIME)
+    if(WIN32)
+        message(FATAL_ERROR "ENABLE_TEST_RUNTIME is supported on POSIX platforms only")
+    endif()
     add_subdirectory(test_support)
 endif()

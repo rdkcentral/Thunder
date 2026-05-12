@@ -2,6 +2,7 @@
 
 #include <core/Portability.h>
 #include <core/Proxy.h>
+#include <core/Services.h>
 #include <plugins/IShell.h>
 #include <plugins/IDispatcher.h>
 #include <plugins/Configuration.h>
@@ -57,6 +58,7 @@ namespace TestCore {
         private:
             Core::hresult Event(const string& event, const string& designator,
                 const string& index, const string& parameters) override;
+            PluginHost::IDispatcher* Dispatcher() const;
 
             BEGIN_INTERFACE_MAP(JSONRPCLink)
                 INTERFACE_ENTRY(PluginHost::IDispatcher::ICallback)
@@ -64,7 +66,6 @@ namespace TestCore {
 
             ThunderTestRuntime& _runtime;
             string _callsign;
-            PluginHost::IDispatcher* _dispatcher;
             mutable std::atomic<uint32_t> _refCount { 1 };
 
             mutable std::mutex _lock;
