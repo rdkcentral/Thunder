@@ -157,7 +157,6 @@ jobs:
         -DPROXYSTUB_PATH="${PWD}/${{matrix.build_type}}/install/usr/lib/wpeframework/proxystubs" \
         -DSYSTEM_PATH="${PWD}/${{matrix.build_type}}/install/usr/lib/wpeframework/plugins" \
         -DVOLATILE_PATH="tmp" \
-        -DBLUETOOTH_SUPPORT=ON \
         -DHIBERNATESUPPORT=ON \
         -DHIBERNATE_CHECKPOINTSERVER=ON \
         -DLOCALTRACER=ON \
