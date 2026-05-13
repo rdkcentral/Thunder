@@ -1,4 +1,4 @@
-name: Build Thunder on Linux
+name: Build Thunder on Linux (R4_4)
 
 permissions:
   contents: read
