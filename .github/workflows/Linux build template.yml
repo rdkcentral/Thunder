@@ -138,6 +138,7 @@ jobs:
         search_string: ${{github.event.pull_request.body}}
 
 # ----- Building & uploading artifacts -----
+#         -DHIBERNATESUPPORT=ON \
     - name: Build Thunder
       run: |
         source venv/bin/activate
@@ -156,7 +157,6 @@ jobs:
         -DPROXYSTUB_PATH="${PWD}/${{matrix.build_type}}/install/usr/lib/wpeframework/proxystubs" \
         -DSYSTEM_PATH="${PWD}/${{matrix.build_type}}/install/usr/lib/wpeframework/plugins" \
         -DVOLATILE_PATH="tmp" \
-        -DHIBERNATESUPPORT=ON \
         -DHIBERNATE_CHECKPOINTSERVER=ON \
         -DLOCALTRACER=ON \
         -DPERFORMANCE_MONITOR=ON \
