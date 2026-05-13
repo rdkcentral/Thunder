@@ -117,6 +117,7 @@ jobs:
         ref: ${{steps.tools.outputs.first_match}}
 
 # ----- Installing generators & Options regex -----
+#        ${{(matrix.build_type == 'Release' && matrix.shared_libs == 'ON' && matrix.architecture == '64') && '-DPROXYSTUB_GENERATOR_ENABLE_SECURITY=ON -DPROXYSTUB_GENERATOR_ENABLE_COHERENCY=ON' || ''}}
     - name: Install generators
       run: |
         source venv/bin/activate
@@ -125,7 +126,6 @@ jobs:
         -DCMAKE_CXX_FLAGS="-m${{matrix.architecture}}" \
         -DCMAKE_C_FLAGS="-m${{matrix.architecture}}" \
         -DCMAKE_INSTALL_PREFIX=${{matrix.build_type}}/install/usr \
-        ${{(matrix.build_type == 'Release' && matrix.shared_libs == 'ON' && matrix.architecture == '64') && '-DPROXYSTUB_GENERATOR_ENABLE_SECURITY=ON -DPROXYSTUB_GENERATOR_ENABLE_COHERENCY=ON' || ''}}
         cmake --build ${{matrix.build_type}}/build/ThunderTools --target install
 
     - name: Regex Thunder
