@@ -138,13 +138,6 @@ jobs:
         search_string: ${{github.event.pull_request.body}}
 
 # ----- Building & uploading artifacts -----
-#        -DHIBERNATESUPPORT=ON \
-#        -DHIBERNATE_CHECKPOINTSERVER=ON \
-#        -DLOCALTRACER=ON \
-#        -DPERFORMANCE_MONITOR=ON \
-#        -DPROCESSCONTAINERS=ON \
-#        -DPROCESSCONTAINERS_RUNC=ON \
-#        -DWARNING_REPORTING=ON \
     - name: Build Thunder
       run: |
         source venv/bin/activate
@@ -163,6 +156,13 @@ jobs:
         -DPROXYSTUB_PATH="${PWD}/${{matrix.build_type}}/install/usr/lib/wpeframework/proxystubs" \
         -DSYSTEM_PATH="${PWD}/${{matrix.build_type}}/install/usr/lib/wpeframework/plugins" \
         -DVOLATILE_PATH="tmp" \
+        -DHIBERNATESUPPORT=ON \
+        -DHIBERNATE_CHECKPOINTSERVER=ON \
+        -DLOCALTRACER=ON \
+        -DPERFORMANCE_MONITOR=ON \
+        -DPROCESSCONTAINERS=ON \
+        -DPROCESSCONTAINERS_RUNC=ON \
+        -DWARNING_REPORTING=ON \
         ${{steps.regexthunder.outputs.first_match}}
         cmake --build ${{matrix.build_type}}/build/Thunder --target install
 
