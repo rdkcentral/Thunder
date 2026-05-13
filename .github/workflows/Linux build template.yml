@@ -1,4 +1,4 @@
-name: Linux build template
+name: Linux build template (R4_4)
 
 permissions:
   contents: read
