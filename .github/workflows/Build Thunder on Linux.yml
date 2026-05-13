@@ -6,7 +6,7 @@ permissions:
 on:
   workflow_dispatch:
   push:
-    branches: ["R4_4"]
+    branches: ["development/actions-r4_4"] # change to R4_4
     paths-ignore:
       - 'doc/**'
       - 'docs/**'
