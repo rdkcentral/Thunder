@@ -683,6 +683,307 @@ namespace PluginHost {
                 uint32_t _mask;
                 state _state;
             };
+            // -----------------------------------------------------------------------
+            // StateMachine — lifecycle contract
+            //
+            // This documents the guarantees the state machine makes to plugin code,
+            // subscribers, and future maintainers.
+            //
+            // STATES
+            //   Stable states (externally observable):
+            //     DEACTIVATED  — plugin is not loaded. _handler is nullptr.
+            //     PRECONDITION — plugin is loaded but subsystem conditions not met.
+            //                    _handler exists, Initialize() has not been called.
+            //     ACTIVATED    — plugin is running. _handler, _jsonrpc, _stateControl
+            //                    are all valid.
+            //     HIBERNATED   — OOP process is frozen. Interfaces are valid but
+            //                    the process is suspended.
+            //     UNAVAILABLE  — explicitly marked not available. _handler is nullptr.
+            //
+            //   Transient states (in-progress guards):
+            //     ACTIVATION   — Initialize() is running. All triggers return
+            //                    ERROR_INPROGRESS except Deactivate(INITIALIZATION_FAILED).
+            //     DEACTIVATION — Deinitialize() is running. All triggers return
+            //                    ERROR_INPROGRESS.
+            //
+            // CALLBACK GUARANTEES
+            //   The Callback registered at construction fires once per stable state
+            //   transition, after the transition is complete and all locks are released.
+            //   The state machine is in the new stable state when the callback fires.
+            //
+            //   What is observable from within a callback:
+            //     ACTIVATION   fires: Initialize() has not yet been called.
+            //                         QueryInterface returns nullptr (ACTIVATION state).
+            //     ACTIVATED    fires: Initialize() completed successfully.
+            //                         Attach() completed. QueryInterface is valid.
+            //     DEACTIVATION fires: Deinitialize() has not yet been called.
+            //                         QueryInterface is still valid (_handler alive).
+            //     DEACTIVATED  fires: Deinitialize() and UnloadPlugin() completed.
+            //                         QueryInterface returns nullptr.
+            //     UNAVAILABLE  fires: state set. No plugin lifecycle calls were made.
+            //
+            //   What is legal from within a callback:
+            //     - QueryInterface on this service: legal for ACTIVATED and DEACTIVATION
+            //       callbacks. Returns nullptr for all other states.
+            //     - Triggers on OTHER services: legal. Each service has its own
+            //       _transitionLock.
+            //     - Triggers on THIS service: illegal. _transitionLock is still held.
+            //       Calling a public trigger from within a callback on the same thread
+            //       fires ASSERT in debug builds and deadlocks in release builds.
+            //
+            // REENTRANCY
+            //   Public triggers (Activate, Deactivate, Hibernate, Unavailable,
+            //   Reevaluate) are serialized by _transitionLock. At most one transition
+            //   executor exists per Service at any time.
+            //
+            //   Internal triggers (_Activate, _Deactivate) bypass _transitionLock and
+            //   are only legal from within an active transition (state class methods).
+            //   ASSERT(_transitionThread == Core::Thread::ThreadId()) guards misuse.
+            //
+            //   QueryInterface never holds _transitionLock and is never blocked by
+            //   an active transition. It uses _pluginHandling only.
+            //
+            // PROCESS CRASH HANDLING
+            //   When an OOP plugin process crashes during ACTIVATED state:
+            //     - The RPC connection detects the disconnect and calls back into
+            //       Service via the IConnectionServer::INotification interface.
+            //     - Deactivate(FAILURE) is triggered, which follows the normal
+            //       ACTIVATED -> DEACTIVATION -> DEACTIVATED path.
+            //     - DeinitializePlugin() calls _handler->Deinitialize() on the
+            //       now-dead proxy — this is safe because Thunder's COM-RPC layer
+            //       handles disconnected proxies without crashing.
+            //     - ReleaseInterfaces() terminates and releases the connection.
+            //     - _lastId records the connection ID so the next Activate() can
+            //       forcefully kill any zombie OOP process via _administrator.Destroy().
+            //
+            //   During ACTIVATION (crash mid-Initialize()):
+            //     - REPORT_DURATION_WARNING detects the failure via HasError().
+            //     - Deactivate(INITIALIZATION_FAILED) is the expected recovery path.
+            //     - ActivationState::Deactivate handles this as the sole legal
+            //       deactivation from the ACTIVATION transient state.
+            //
+            //   During DEACTIVATION (crash mid-Deinitialize()):
+            //     - DeinitializePlugin() completes without crashing (dead proxy).
+            //     - Normal teardown continues. State reaches DEACTIVATED.
+            //     - The zombie process is cleaned up on the next Activate() via
+            //       _administrator.Destroy(_lastId).
+            // -----------------------------------------------------------------------
+
+            // -----------------------------------------------------------------------
+            // StateMachine — lock ordering
+            //
+            // Three locks are in play within Service. They must always be acquired
+            // in the order listed below. Acquiring in any other order is a deadlock.
+            //
+            //   1. _transitionLock  (StateMachine)
+            //      Outermost. Held for the full duration of a lifecycle transition
+            //      including the post-transition callback. Ensures exactly one
+            //      transition executor exists at any time.
+            //      NOT held during QueryInterface.
+            //
+            //   2. Service::Lock()  (_adminLock in PluginHost::Service base)
+            //      Held briefly inside a transition to guard state mutation and
+            //      subsystem bit changes. Never held across blocking plugin calls.
+            //
+            //   3. _pluginHandling  (Service)
+            //      Innermost. Held briefly in QueryInterface and ReleaseInterfaces
+            //      to guard _handler lifetime. Never held while calling into plugin.
+            //
+            // Special cases:
+            //   - _transitionLock is intentionally released around sm.Evaluate()
+            //     to allow RecursiveNotification to call Reevaluate() on this
+            //     service without deadlocking. Safe because SetState(DEACTIVATION)
+            //     is always called before the release — the transient state rejects
+            //     all concurrent operations.
+            //
+            //   - _notificationLock (Notifiers) is independent of all three locks
+            //     above. It is never held during foreign code — observer lists are
+            //     snapshotted under the lock and callbacks fire after it is released.
+            //
+            //   - QueryInterface never holds _transitionLock. It uses _pluginHandling
+            //     only, and only ActivatedState::QueryInterface reaches plugin code.
+            // -----------------------------------------------------------------------
+            class StateMachine {
+            public:
+                // Base state — default implementations return ERROR_ILLEGAL_STATE.
+                // Concrete states only override what is legal for them.
+                class StateBase {
+                public:
+                    virtual ~StateBase() = default;
+                    virtual IShell::state        Id()                                            const = 0;
+                    virtual Core::hresult        Activate(StateMachine&, const reason)                 { return Core::ERROR_ILLEGAL_STATE; }
+                    virtual Core::hresult        Deactivate(StateMachine&, const reason)               { return Core::ERROR_ILLEGAL_STATE; }
+                    virtual Core::hresult        Hibernate(StateMachine&, const uint32_t)              { return Core::ERROR_ILLEGAL_STATE; }
+                    virtual Core::hresult        Unavailable(StateMachine&, const reason)              { return Core::ERROR_ILLEGAL_STATE; }
+                    virtual void                 Reevaluate(StateMachine&)                             {}
+                    virtual void*                QueryInterface(StateMachine&, const uint32_t, const bool) { return nullptr; }
+                };
+
+                class DeactivatedState : public StateBase {
+                public:
+                    IShell::state Id() const override { return IShell::DEACTIVATED; }
+                    Core::hresult Activate(StateMachine&, const reason) override;
+                    Core::hresult Unavailable(StateMachine&, const reason) override;
+                };
+
+                class PreconditionState : public StateBase {
+                public:
+                    IShell::state Id() const override { return IShell::PRECONDITION; }
+                    Core::hresult Deactivate(StateMachine&, const reason) override;
+                    void          Reevaluate(StateMachine&) override;
+                };
+
+                class ActivationState : public StateBase {
+                public:
+                    IShell::state Id() const override { return IShell::ACTIVATION; }
+                    Core::hresult Activate(StateMachine&, const reason) override   { return Core::ERROR_INPROGRESS; }
+                    Core::hresult Deactivate(StateMachine&, const reason) override;
+                    Core::hresult Hibernate(StateMachine&, const uint32_t) override { return Core::ERROR_INPROGRESS; }
+                    Core::hresult Unavailable(StateMachine&, const reason) override { return Core::ERROR_INPROGRESS; }
+                };
+
+                class ActivatedState : public StateBase {
+                public:
+                    IShell::state Id() const override { return IShell::ACTIVATED; }
+                    Core::hresult Deactivate(StateMachine&, const reason) override;
+                    Core::hresult Hibernate(StateMachine&, const uint32_t timeout) override;
+                    void          Reevaluate(StateMachine&) override;
+                    void*         QueryInterface(StateMachine&, const uint32_t id, const bool asIUnknown) override;
+                };
+
+                class DeactivationState : public StateBase {
+                public:
+                    IShell::state Id() const override { return IShell::DEACTIVATION; }
+                    Core::hresult Activate(StateMachine&, const reason) override    { return Core::ERROR_INPROGRESS; }
+                    Core::hresult Deactivate(StateMachine&, const reason) override   { return Core::ERROR_INPROGRESS; }
+                    Core::hresult Hibernate(StateMachine&, const uint32_t) override  { return Core::ERROR_INPROGRESS; }
+                    Core::hresult Unavailable(StateMachine&, const reason) override  { return Core::ERROR_INPROGRESS; }
+                };
+
+                class HibernatedState : public StateBase {
+                public:
+                    IShell::state Id() const override { return IShell::HIBERNATED; }
+                    Core::hresult Activate(StateMachine&, const reason) override;
+                    Core::hresult Deactivate(StateMachine&, const reason) override;
+                };
+
+                class UnavailableState : public StateBase {
+                public:
+                    IShell::state Id() const override { return IShell::UNAVAILABLE; }
+                    Core::hresult Deactivate(StateMachine&, const reason) override;
+                };
+
+            public:
+                using Callback = std::function<void(const IShell::state)>;
+
+                StateMachine() = delete;
+                StateMachine(StateMachine&&) = delete;
+                StateMachine(const StateMachine&) = delete;
+                StateMachine& operator=(StateMachine&&) = delete;
+                StateMachine& operator=(const StateMachine&) = delete;
+
+                StateMachine(Service& parent, Callback callback)
+                    : _parent(parent)
+                    , _callback(std::move(callback))
+                    , _transitionLock()
+                    , _transitionThread(0)
+                    , _current(&_stateDeactivated)
+                {
+                }
+                ~StateMachine() = default;
+
+            public:
+                inline IShell::state Current() const {
+                    return _current.load(std::memory_order_acquire)->Id();
+                }
+
+                inline void SetState(StateBase& newState) {
+                    _current.store(&newState, std::memory_order_release);
+                    // PluginHost::Service::State(value) is a plain _state = value assignment
+                    // with no lock — calling this while holding _parent.Lock() is safe.
+                    _parent.State(newState.Id());
+                }
+
+                inline bool IsTransitionThread() const {
+                    return _transitionThread.load(std::memory_order_acquire) == Core::Thread::ThreadId();
+                }
+
+                // Public triggers — acquire transition lock before dispatching.
+                // Guarantees exactly one transition executor at a time.
+                // QueryInterface intentionally does NOT take this lock.
+                Core::hresult Activate(const reason why)        { ASSERT(!IsTransitionThread()); Core::SafeSyncType<Core::CriticalSection> guard(_transitionLock); _transitionThread = Core::Thread::ThreadId(); Core::hresult result = _Activate(why);       _transitionThread = 0; return result; }
+                Core::hresult Deactivate(const reason why)      { ASSERT(!IsTransitionThread()); Core::SafeSyncType<Core::CriticalSection> guard(_transitionLock); _transitionThread = Core::Thread::ThreadId(); Core::hresult result = _Deactivate(why);     _transitionThread = 0; return result; }
+                Core::hresult Hibernate(const uint32_t timeout) { ASSERT(!IsTransitionThread()); Core::SafeSyncType<Core::CriticalSection> guard(_transitionLock); _transitionThread = Core::Thread::ThreadId(); Core::hresult result = _current.load(std::memory_order_acquire)->Hibernate(*this, timeout); _transitionThread = 0; return result; }
+                Core::hresult Unavailable(const reason why)     { ASSERT(!IsTransitionThread()); Core::SafeSyncType<Core::CriticalSection> guard(_transitionLock); _transitionThread = Core::Thread::ThreadId(); Core::hresult result = _current.load(std::memory_order_acquire)->Unavailable(*this, why);  _transitionThread = 0; return result; }
+                void          Reevaluate()                      { ASSERT(_transitionThread != Core::Thread::ThreadId()); Core::SafeSyncType<Core::CriticalSection> guard(_transitionLock); _transitionThread = Core::Thread::ThreadId(); _current.load(std::memory_order_acquire)->Reevaluate(*this);                                       _transitionThread = 0; }
+                void*         QueryInterface(const uint32_t id, const bool asIUnknown) { return _current.load(std::memory_order_acquire)->QueryInterface(*this, id, asIUnknown); }
+
+                // Internal triggers — no lock. Called by state class methods
+                // that are already executing under _transitionLock.
+                Core::hresult _Activate(const reason why)   { ASSERT(IsTransitionThread()); return _current.load(std::memory_order_acquire)->Activate(*this, why); }
+                Core::hresult _Deactivate(const reason why) { ASSERT(IsTransitionThread()); return _current.load(std::memory_order_acquire)->Deactivate(*this, why); }
+
+                struct TransitionYield {
+                    TransitionYield() = delete;
+                    TransitionYield(const TransitionYield&) = delete;
+                    TransitionYield(TransitionYield&&) = delete;
+                    TransitionYield& operator=(const TransitionYield&) = delete;
+                    TransitionYield& operator=(TransitionYield&&) = delete;
+
+                    explicit TransitionYield(StateMachine& sm)
+                        : _sm(sm)
+                    {
+                        _sm._transitionThread = 0;
+                        _sm._transitionLock.Unlock();
+                    }
+                    ~TransitionYield()
+                    {
+                        _sm._transitionLock.Lock();
+                        _sm._transitionThread = Core::Thread::ThreadId();
+                    }
+                    StateMachine& _sm;
+                };
+
+                // Called from within a state method to trigger cascading re-evaluation
+                // of dependent services. Temporarily yields _transitionLock via
+                // TransitionYield so RecursiveNotification can call Reevaluate() on
+                // this service without deadlocking. Safe because SetState(DEACTIVATION)
+                // must be called before this — the transient state rejects all
+                // concurrent operations during the yield window.
+                void Evaluate() {
+                    ASSERT(IsTransitionThread());
+                    TransitionYield yield(*this);
+                    _parent._administrator.Evaluate();
+                }
+
+                // Static state instances — shared across all plugins.
+                // Safe because state objects carry no per-plugin data.
+                static DeactivatedState  _stateDeactivated;
+                static PreconditionState _statePrecondition;
+                static ActivationState   _stateActivation;
+                static ActivatedState    _stateActivated;
+                static DeactivationState _stateDeactivation;
+                static HibernatedState   _stateHibernated;
+                static UnavailableState  _stateUnavailable;
+
+            // State classes access Service members via _parent (C++11 nested class access rules)
+            private:
+                Service& _parent;
+                Callback _callback;
+                mutable Core::CriticalSection _transitionLock;
+                // Debug: tracks which thread owns the current transition.
+                // ASSERT fires if a public trigger is called re-entrantly
+                // from within a callback or state method on the same thread.
+                // Atomic because the ASSERT reads it before _transitionLock
+                // is acquired — concurrent writes from other threads must be safe.
+                // Compiled out in release builds.
+                std::atomic<Core::thread_id> _transitionThread;
+                // Atomic pointer — written by SetState() during transitions,
+                // read concurrently by QueryInterface() and trigger methods.
+                // Preserves State pattern dispatch without a mutex on reads.
+                std::atomic<StateBase*> _current;
+            };
+
             class ControlData {
             public:
                 ControlData() = delete;
@@ -831,7 +1132,6 @@ namespace PluginHost {
             Service(const PluginHost::Config& server, const Plugin::Config& plugin, ServiceMap& administrator, const mode type, const Core::ProxyType<RPC::InvokeServer>& handler)
                 : PluginHost::Service(plugin, server.WebPrefix(), server.PersistentPath(), server.DataPath(), server.VolatilePath())
                 , _pluginHandling()
-                , _queryInterfaceLock()
                 , _handler(nullptr)
                 , _extended(nullptr)
                 , _webRequest(nullptr)
@@ -854,6 +1154,38 @@ namespace PluginHost {
                 , _composit(*this)
                 , _jobs(administrator)
                 , _type(type)
+                , _stateMachine(*this, [this](const IShell::state newState) {
+                    const string callSign(PluginHost::Service::Configuration().Callsign.Value());
+                    const Core::EnumerateType<IShell::reason> textReason(_reason);
+                    switch (newState) {
+                    case IShell::ACTIVATED:
+                        _administrator.Activated(callSign, this);
+                        #ifdef THUNDER_RESTFULL_API
+                        Notify(EMPTY_STRING, string(_T("{\"state\":\"activated\",\"reason\":\"")) + textReason.Data() + _T("\"}"));
+                        #endif
+                        Notify(_T("statechange"), string(_T("{\"state\":\"activated\",\"reason\":\"")) + textReason.Data() + _T("\"}"));
+                        break;
+                    case IShell::DEACTIVATED:
+                        _administrator.Deinitialized(callSign, this);
+                        #ifdef THUNDER_RESTFULL_API
+                        Notify(EMPTY_STRING, string(_T("{\"state\":\"deactivated\",\"reason\":\"")) + textReason.Data() + _T("\"}"));
+                        #endif
+                        Notify(_T("statechange"), string(_T("{\"state\":\"deactivated\",\"reason\":\"")) + textReason.Data() + _T("\"}"));
+                        break;
+                    case IShell::PRECONDITION:
+                        _administrator.Deinitialized(callSign, this);
+                        break;
+                    case IShell::UNAVAILABLE:
+                        _administrator.Unavailable(callSign, this);
+                        #ifdef THUNDER_RESTFULL_API
+                        Notify(EMPTY_STRING, string(_T("{\"state\":\"unavailable\",\"reason\":\"")) + textReason.Data() + _T("\"}"));
+                        #endif
+                        Notify(_T("statechange"), string(_T("{\"state\":\"unavailable\",\"reason\":\"")) + textReason.Data() + _T("\"}"));
+                        break;
+                    default:
+                        break;
+                    }
+                  })
             {
                 _jobs.Slots(_metadata.MaxRequests());
             }
@@ -1221,36 +1553,7 @@ namespace PluginHost {
             }
             inline void Evaluate()
             {
-                Lock();
-
-                uint32_t subsystems = _administrator.SubSystemInfo().Value();
-
-                IShell::state current(State());
-
-                // Active or not, update the condition state !!!!
-                if ((_precondition.Evaluate(subsystems) == true) && (current == IShell::PRECONDITION)) {
-                    if (_precondition.IsMet() == true) {
-
-                        Unlock();
-
-                        Activate(_reason);
-
-                        Lock();
-                    }
-                }
-
-                if ((_termination.Evaluate(subsystems) == true) && (current == IShell::ACTIVATED)) {
-                    if (_termination.IsMet() == false) {
-
-                        Unlock();
-
-                        Deactivate(IShell::CONDITIONS);
-
-                        Lock();
-                    }
-                }
-
-                Unlock();
+                _stateMachine.Reevaluate();
             }
             inline bool PostMortemAllowed(PluginHost::IShell::reason why) const {
                 return (_administrator.Configuration().PostMortemAllowed(why));
@@ -1438,6 +1741,16 @@ namespace PluginHost {
             }
 
         private:
+            // Work methods called by StateMachine during transitions.
+            // Each does exactly one thing. No guard logic, no state changes,
+            // no notifications — those are all owned by StateMachine.
+            Core::hresult LoadPlugin();       // AcquireInterfaces
+            Core::hresult InitializePlugin(); // _handler->Initialize()
+            void DeinitializePlugin();        // _handler->Deinitialize()
+            void UnloadPlugin();              // ReleaseInterfaces
+            void Attach();                    // WebServer + JSONRPC + external connector + StateControl
+            void Detach();                    // reverse of Attach
+
             uint32_t Wakeup(const uint32_t timeout);
 
             #ifdef HIBERNATE_SUPPORT_ENABLED
@@ -1691,8 +2004,6 @@ namespace PluginHost {
 
         private:
             mutable Core::CriticalSection _pluginHandling;
-            mutable Core::CriticalSection _queryInterfaceLock; // a little shortcut to protect both the QueryInterface from Plugin deinitializing which could make the QueryInterface to the OOP part of a plugin crash (and to facilitate sending the Plugin Deactivated notifications while still allow QueryInterface to be called)
-                                                             // the whole plugin state handling including locking needs a redesign...
 
             // The handlers that implement the actual logic behind the service
             IPlugin* _handler;
@@ -1720,6 +2031,7 @@ namespace PluginHost {
             Core::SinkType<Composit> _composit;
             Jobs _jobs;
             mode _type;
+            StateMachine _stateMachine;
 
             static Core::ProxyType<Web::Response> _unavailableHandler;
             static Core::ProxyType<Web::Response> _missingHandler;
@@ -2766,55 +3078,89 @@ namespace PluginHost {
                 }
                 void Notify(const string& callsign, PluginHost::IShell* entry, Core::hresult (PluginHost::IPlugin::INotification::*notificatonmethod)(const string& callsign, IShell* plugin))
                 {
-                    _notificationLock.Lock();
+                    // Phase 1 — snapshot observer list under lock.
+                    // Observers are AddRef'd so they stay alive across the unlock boundary.
+                    // Foreign code never runs while _notificationLock is held.
+                    std::vector<PluginHost::IPlugin::INotification*> snapshot;
 
-                    auto it = _notifiers.begin();
-                    while (it != _notifiers.end()) {
-                        if (it->second.SendNotification(callsign, entry) == true) {
-                            Core::hresult result = (it->first->*notificatonmethod)(callsign, entry);
-                            if (result == Core::ERROR_CANCEL) {
-                                PluginHost::IPlugin::INotification* foundnotification = it->first;
-                                it = _notifiers.erase(it);
-                                foundnotification->Release();
-                                foundnotification = nullptr;
-                            } else {
-                                ++it;
-                            }
-                        } else {
-                            ++it;
+                    _notificationLock.Lock();
+                    snapshot.reserve(_notifiers.size());
+                    for (auto& notifier : _notifiers) {
+                        if (notifier.second.SendNotification(callsign, entry) == true) {
+                            notifier.first->AddRef();
+                            snapshot.push_back(notifier.first);
                         }
                     }
-
                     _notificationLock.Unlock();
+
+                    // Phase 2 — fire callbacks outside lock.
+                    // Observers may now safely call Unregister() or trigger transitions.
+                    std::vector<PluginHost::IPlugin::INotification*> toRemove;
+                    for (PluginHost::IPlugin::INotification* observer : snapshot) {
+                        if ((observer->*notificatonmethod)(callsign, entry) == Core::ERROR_CANCEL) {
+                            toRemove.push_back(observer);
+                        }
+                        observer->Release();
+                    }
+
+                    // Phase 3 — remove ERROR_CANCEL observers under lock.
+                    // Preserves the ERROR_CANCEL API contract without holding
+                    // _notificationLock during foreign code execution.
+                    if (toRemove.empty() == false) {
+                        _notificationLock.Lock();
+                        for (PluginHost::IPlugin::INotification* observer : toRemove) {
+                            auto range = _notifiers.equal_range(observer);
+                            for (auto it = range.first; it != range.second; ++it) {
+                                it = _notifiers.erase(it);
+                            }
+                            observer->Release();
+                        }
+                        _notificationLock.Unlock();
+                    }
                 }
 
                 void Notify(const string& callsign, PluginHost::IShell* entry, void (PluginHost::IPlugin::ILifeTime::*notificatonmethod)(const string& callsign, IShell* plugin)) const
                 {
-                    _notificationLock.Lock();
+                    // Phase 1 — snapshot under lock.
+                    std::vector<PluginHost::IPlugin::ILifeTime*> snapshot;
 
+                    _notificationLock.Lock();
+                    snapshot.reserve(_notifiers.size());
                     for (const auto& notifier : _notifiers) {
                         if (notifier.second.SendNotification(callsign, entry) == true) {
                             PluginHost::IPlugin::ILifeTime* lifeTime = notifier.first->QueryInterface<PluginHost::IPlugin::ILifeTime>();
                             if (lifeTime != nullptr) {
-                                (lifeTime->*notificatonmethod)(callsign, entry);
-                                lifeTime->Release();
+                                snapshot.push_back(lifeTime);
                             }
                         }
                     }
-
                     _notificationLock.Unlock();
+
+                    // Phase 2 — fire outside lock. ILifeTime has no ERROR_CANCEL — no removal needed.
+                    for (PluginHost::IPlugin::ILifeTime* lifeTime : snapshot) {
+                        (lifeTime->*notificatonmethod)(callsign, entry);
+                        lifeTime->Release();
+                    }
                 }
 
                 template<typename FUNCTION>
                 void Visit(FUNCTION function) const
                 {
+                    // Snapshot under lock — function may call back into ServiceMap.
+                    std::vector<PluginHost::IPlugin::INotification*> snapshot;
+
                     _notificationLock.Lock();
-
+                    snapshot.reserve(_notifiers.size());
                     for (const auto& notifier : _notifiers) {
-                        function(notifier.first);
+                        notifier.first->AddRef();
+                        snapshot.push_back(notifier.first);
                     }
-
                     _notificationLock.Unlock();
+
+                    for (PluginHost::IPlugin::INotification* observer : snapshot) {
+                        function(observer);
+                        observer->Release();
+                    }
                 }
 
             private:

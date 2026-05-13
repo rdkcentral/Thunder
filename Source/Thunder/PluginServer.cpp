@@ -294,18 +294,9 @@ namespace PluginHost {
             asIUnknown == false ? result = static_cast<PluginHost::IShell::IConnectionServer*>(this) : result = static_cast<Core::IUnknown*>(this);
         }
         else {
-            _queryInterfaceLock.Lock();
-            if ((State() == IShell::state::ACTIVATED) || (State() == IShell::state::DEACTIVATION)) { //needed as we only want to send plugin state notifications when the plugin is active or deactivating which is not guaranteed by the lock itself as it comes from the same thread handling the activation and deactivation
-                if (id == PluginHost::IDispatcher::ID) {
-                    if (_jsonrpc != nullptr) {
-                        _jsonrpc->AddRef();
-                        asIUnknown == false ? result = _jsonrpc : result = static_cast<Core::IUnknown*>(_jsonrpc);
-                    }
-                } else if (_handler != nullptr) {
-                    result = _handler->QueryInterface(id, asIUnknown);
-                }
-            }
-            _queryInterfaceLock.Unlock();
+            // Route through the state machine — only ACTIVATED and states that
+            // explicitly override QueryInterface will return a non-null result.
+            result = _stateMachine.QueryInterface(id, asIUnknown);
         }
 
         return (result);
@@ -338,178 +329,22 @@ namespace PluginHost {
     // Methods to stop/start/update the service.
     Core::hresult Server::Service::Activate(const PluginHost::IShell::reason why) /* override */
     {
-        Core::hresult result = Core::ERROR_NONE;
-
-        Lock();
-
-        IShell::state currentState(State());
-
-        if (currentState == IShell::state::ACTIVATION) {
-            Unlock();
-            result = Core::ERROR_INPROGRESS;
-        }
-        else if ((currentState == IShell::state::UNAVAILABLE) || (currentState == IShell::state::DEACTIVATION) || (currentState == IShell::state::DESTROYED) ) {
-            Unlock();
-            result = Core::ERROR_ILLEGAL_STATE;
-        } else if (currentState == IShell::state::HIBERNATED) {
-            result = Wakeup(3000);
-            Unlock();
-        } else if ((currentState == IShell::state::DEACTIVATED) || (currentState == IShell::state::PRECONDITION)) {
-
-            _reason = why;
-
-            _queryInterfaceLock.Lock();
-
-            // Load the interfaces, If we did not load them yet...
-            if (_handler == nullptr) {
-                AcquireInterfaces();
-            }
-
-            const string callSign(PluginHost::Service::Configuration().Callsign.Value());
-            const string className(PluginHost::Service::Configuration().ClassName.Value());
-
-            if (_handler == nullptr) {
-                SYSLOG(Logging::Startup, (_T("Loading of plugin [%s]:[%s], failed. Error [%s]"), className.c_str(), callSign.c_str(), ErrorMessage().c_str()));
-                result = Core::ERROR_UNAVAILABLE;
-                _reason = reason::INSTANTIATION_FAILED;
-                State(DEACTIVATED);
-
-                _queryInterfaceLock.Unlock();
-
-                Unlock();
-
-                // See if the preconditions have been met..
-            } else if (_precondition.IsMet() == false) {
-                SYSLOG(Logging::Startup, (_T("Activation of plugin [%s]:[%s], postponed, preconditions have not been met, yet."), className.c_str(), callSign.c_str()));
-                result = Core::ERROR_PENDING_CONDITIONS;
-                State(PRECONDITION);
-
-                _queryInterfaceLock.Unlock();
-
-                if (Thunder::Messaging::LocalLifetimeType<Activity, &Thunder::Core::System::MODULE_NAME, Thunder::Core::Messaging::Metadata::type::TRACING>::IsEnabled() == true) {
-
-                    string feedback;
-                    uint8_t index = 1;
-                    uint32_t delta(_precondition.Delta(_administrator.SubSystemInfo().Value()));
-
-                    while (delta != 0) {
-                        if ((delta & 0x01) != 0) {
-                            if (feedback.empty() == false) {
-                                feedback += ',';
-                            }
-
-                            PluginHost::ISubSystem::subsystem element(static_cast<PluginHost::ISubSystem::subsystem>(index));
-                            feedback += string(Core::EnumerateType<PluginHost::ISubSystem::subsystem>(element).Data());
-                        }
-
-                        delta = (delta >> 1);
-                        index++;
-                    }
-
-                    TRACE(Activity, (_T("Delta preconditions: %s"), feedback.c_str()));
-                }
-
-                Unlock();
-
-            } else {
-
-                // Before we dive into the "new" initialize lets see if this has a pending OOP running, if so forcefully kill it now, no time to wait !
-                if (_lastId != 0) {
-                    _administrator.Destroy(_lastId);
-                    _lastId = 0;
-                }
-
-                TRACE(Activity, (_T("Activation plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
-
-                _administrator.Initialize(callSign, this);
-
-                State(ACTIVATION);
-
-                Unlock();
-
-                REPORT_DURATION_WARNING( { ErrorMessage(_handler->Initialize(this)); }, WarningReporting::TooLongPluginState, WarningReporting::TooLongPluginState::StateChange::ACTIVATION, callSign.c_str());
-
-                if (HasError() == true) {
-                    result = Core::ERROR_GENERAL;
-
-                    SYSLOG(Logging::Startup, (_T("Activation of plugin [%s]:[%s], failed. Error [%s]"), className.c_str(), callSign.c_str(), ErrorMessage().c_str()));
-
-                    _reason = reason::INITIALIZATION_FAILED;
-
-                    if( _administrator.Configuration().LegacyInitialize() == false ) {
-                        REPORT_DURATION_WARNING({ _handler->Deinitialize(this); }, WarningReporting::TooLongPluginState, WarningReporting::TooLongPluginState::StateChange::DEACTIVATION, callSign.c_str());
-                    }
-
-                    Lock();
-                    ReleaseInterfaces();
-                    State(DEACTIVATED);
-                    Unlock();
-
-                    _queryInterfaceLock.Unlock();
-
-                    _administrator.Deinitialized(callSign, this);
-
-                } else {
-
-                    const Core::EnumerateType<PluginHost::IShell::reason> textReason(why);
-                    const string webUI(PluginHost::Service::Configuration().WebUI.Value());
-                    if ((PluginHost::Service::Configuration().WebUI.IsSet()) || (webUI.empty() == false)) {
-                        EnableWebServer(webUI, EMPTY_STRING);
-                    }
-
-                    if (_jsonrpc != nullptr) {
-                        PluginHost::IShell::IConnectionServer::INotification* sink = nullptr;
-                        _jsonrpc->Attach(sink, this);
-                        if (sink != nullptr) {
-                            Register(sink);
-                            sink->Release();
-                        }
-                    }
-
-                    if (_external.Connector().empty() == false) {
-                        uint32_t result = _external.Open(0);
-                        if ((result != Core::ERROR_NONE) && (result != Core::ERROR_INPROGRESS)) {
-                            TRACE(Trace::Error, (_T("Could not open the external connector for %s"), Callsign().c_str()));
-                        }
-                    }
-
-                    SYSLOG(Logging::Startup, (_T("Activated plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
-                    Lock();
-                    State(ACTIVATED);
-
-                    _queryInterfaceLock.Unlock();
-
-                    _administrator.Activated(callSign, this);
-
-                    _stateControl = _handler->QueryInterface<PluginHost::IStateControl>();
-                    if (_stateControl != nullptr) {
-                        _stateControl->Register(&_composit);
-
-                        if (Resumed() == true) {
-                            _stateControl->Request(PluginHost::IStateControl::RESUME);
-                        }
-                    }
-
-                    Unlock();
-
-                    #ifdef THUNDER_RESTFULL_API
-                    Notify(EMPTY_STRING, string(_T("{\"state\":\"activated\",\"reason\":\"")) + textReason.Data() + _T("\"}"));
-                    #endif
-                    Notify(_T("statechange"), string(_T("{\"state\":\"activated\",\"reason\":\"")) + textReason.Data() + _T("\"}"));
-                }
-            }
-        } else {
-            Unlock();
-        }
-
-        return (result);
+        return _stateMachine.Activate(why);
     }
 
     uint32_t Server::Service::Resume(const reason why) /* override */ {
         uint32_t result = Core::ERROR_NONE;
-        Lock();
 
+        // Read state snapshot and release Lock() before calling Activate().
+        // Holding Lock() across Activate() inverts the lock order:
+        //   Resume: Lock() → _transitionLock (via Activate)
+        //   Transitions: _transitionLock → Lock()
+        // That inversion is a deadlock. The snapshot is acceptable — Resume()
+        // was already operating on a snapshot since state could change between
+        // the check and the Activate() call anyway.
+        Lock();
         IShell::state currentState(State());
+        Unlock();
 
         if (currentState == IShell::state::ACTIVATION) {
             result = Core::ERROR_INPROGRESS;
@@ -517,10 +352,13 @@ namespace PluginHost {
             result = Core::ERROR_ILLEGAL_STATE;
         } else if (currentState == IShell::state::DEACTIVATED) {
             result = Activate(why);
+            Lock();
             currentState = State();
+            Unlock();
         }
 
         if (currentState == IShell::ACTIVATED) {
+            Lock();
             // See if we need can and should RESUME.
             if (_stateControl == nullptr) {
                 result = Core::ERROR_BAD_REQUEST;
@@ -531,135 +369,15 @@ namespace PluginHost {
                     result = _stateControl->Request(PluginHost::IStateControl::RESUME);
                 }
             }
+            Unlock();
         }
-
-        Unlock();
 
         return (result);
     }
 
     Core::hresult Server::Service::Deactivate(const reason why) /* override */
     {
-        Core::hresult result = Core::ERROR_NONE;
-
-        Lock();
-
-        IShell::state currentState(State());
-
-        if (currentState == IShell::state::DEACTIVATION) {
-            result = Core::ERROR_INPROGRESS;
-            Unlock();
-        }
-        else if ( ((currentState == IShell::state::ACTIVATION) && (why != IShell::reason::INITIALIZATION_FAILED)) || (currentState == IShell::state::DESTROYED)) {
-            result = Core::ERROR_ILLEGAL_STATE;
-            Unlock();
-        }
-        else if ( ((currentState == IShell::state::ACTIVATION) && (why == IShell::reason::INITIALIZATION_FAILED)) || (currentState == IShell::state::UNAVAILABLE) || (currentState == IShell::state::ACTIVATED) || (currentState == IShell::state::PRECONDITION) || (currentState == IShell::state::HIBERNATED) ) {
-            const Core::EnumerateType<PluginHost::IShell::reason> textReason(why);
-
-            const string className(PluginHost::Service::Configuration().ClassName.Value());
-            const string callSign(PluginHost::Service::Configuration().Callsign.Value());
-
-            _reason = why;
-
-            if(currentState == IShell::state::HIBERNATED)
-            {
-                uint32_t wakeupResult = Wakeup(3000);
-                if(wakeupResult != Core::ERROR_NONE)
-                {
-                    //Force Activated state
-                    State(ACTIVATED);
-                }
-                currentState = ACTIVATED;
-            }
-
-            if ( (currentState == IShell::ACTIVATION) || (currentState == IShell::ACTIVATED)) {
-                ASSERT(_handler != nullptr);
-
-                State(DEACTIVATION);
-
-                SystemInfo& systeminfo = _administrator.SubSystemInfo();
-
-                // On behalf of the plugin stop all subsystems it was controlling.
-                for (const PluginHost::ISubSystem::subsystem sys : SubSystemControl()) {
-                    systeminfo.Unset(sys);
-                }
-
-                Unlock();
-
-                // Reevaluate status. In case some plugins were dependant on the subsystems
-                // that have been just disabled, deactivate them too, recursively.
-                _administrator.Evaluate();
-
-                // And finally start tearing down this plugin...
-
-                if (_stateControl != nullptr) {
-                    _stateControl->Unregister(&_composit);
-                    _stateControl->Release();
-                    _stateControl = nullptr;
-                }
-
-                if (currentState == IShell::ACTIVATED) {
-                    TRACE(Activity, (_T("Deactivating plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
-                    _administrator.Deactivated(callSign, this);
-                }
-
-                // We might require PostMortem analyses if the reason is not really clear. Call the PostMortum installed so it can generate
-                // required logs/OS information before we start to kill it.
-                Server::PostMortem(*this, why, _connection);
-
-                // If we enabled the webserver, we should also disable it.
-                if ((PluginHost::Service::Configuration().WebUI.IsSet()) || (PluginHost::Service::Configuration().WebUI.Value().empty() == false)) {
-                    DisableWebServer();
-                }
-
-                _queryInterfaceLock.Lock();
-
-                REPORT_DURATION_WARNING( { _handler->Deinitialize(this); }, WarningReporting::TooLongPluginState, WarningReporting::TooLongPluginState::StateChange::DEACTIVATION, callSign.c_str());
-
-                Lock();
-
-                if (currentState != IShell::state::ACTIVATION) {
-                    SYSLOG(Logging::Shutdown, (_T("Deactivated plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
-
-#ifdef THUNDER_RESTFULL_API
-                    Notify(EMPTY_STRING, string(_T("{\"state\":\"deactivated\",\"reason\":\"")) + textReason.Data() + _T("\"}"));
-#endif
-                    Notify(_T("statechange"), string(_T("{\"state\":\"deactivated\",\"reason\":\"")) + textReason.Data() + _T("\"}"));
-                }
-
-                if (_external.Connector().empty() == false) {
-                    _external.Close(0);
-                }
-
-                if (_jsonrpc != nullptr) {
-                    PluginHost::IShell::IConnectionServer::INotification* sink = nullptr;
-
-                    _jsonrpc->Detach(sink);
-
-                    if (sink != nullptr) {
-                        Unregister(sink);
-                        sink->Release();
-                    }
-                }
-            }
-
-            State(why == CONDITIONS ? PRECONDITION : DEACTIVATED);
-
-            // We have no need for his module anymore..
-            ReleaseInterfaces();
-            Unlock();
-
-            if ((currentState == IShell::ACTIVATION) || (currentState == IShell::ACTIVATED)) {
-                _queryInterfaceLock.Unlock();
-            }
-
-            _administrator.Deinitialized(callSign, this);
-        } else {
-            Unlock();
-        }
-
-        return (result);
+        return _stateMachine.Deactivate(why);
     }
 
     uint32_t Server::Service::Suspend(const reason why) {
@@ -699,124 +417,537 @@ namespace PluginHost {
     }
 
     Core::hresult Server::Service::Unavailable(const reason why) /* override */ {
-        Core::hresult result = Core::ERROR_NONE;
-
-        if (AllowedUnavailable() == true) {
-
-            Lock();
-
-            IShell::state currentState(State());
-
-            if ((currentState == IShell::state::DEACTIVATION) || (currentState == IShell::state::ACTIVATION) || (currentState == IShell::state::DESTROYED) || (currentState == IShell::state::ACTIVATED) || (currentState == IShell::state::PRECONDITION) || (currentState == IShell::state::HIBERNATED)) {
-                result = Core::ERROR_ILLEGAL_STATE;
-                Unlock();
-            } else if (currentState == IShell::state::DEACTIVATED) {
-
-                const Core::EnumerateType<PluginHost::IShell::reason> textReason(why);
-
-                const string className(PluginHost::Service::Configuration().ClassName.Value());
-                const string callSign(PluginHost::Service::Configuration().Callsign.Value());
-
-                _reason = why;
-
-                SYSLOG(Logging::Shutdown, (_T("Unavailable plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
-
-                TRACE(Activity, (Core::Format(_T("Unavailable plugin [%s]:[%s]"), className.c_str(), callSign.c_str())));
-
-                State(UNAVAILABLE);
-                _administrator.Unavailable(callSign, this);
-
-                Unlock();
-
-#ifdef THUNDER_RESTFULL_API
-                Notify(EMPTY_STRING, string(_T("{\"state\":\"unavailable\",\"reason\":\"")) + textReason.Data() + _T("\"}"));
-#endif
-                Notify(_T("statechange"), string(_T("{\"state\":\"unavailable\",\"reason\":\"")) + textReason.Data() + _T("\"}"));
-            } else {
-                Unlock();
-            }
-        } else {
-            result = Core::ERROR_NOT_SUPPORTED;
-        }
-        return (result);
-
+        return _stateMachine.Unavailable(why);
     }
 
     Core::hresult Server::Service::Hibernate(const uint32_t timeout VARIABLE_IS_NOT_USED) /* override */ {
-        Core::hresult result = Core::ERROR_NONE;
+        return _stateMachine.Hibernate(timeout);
+    }
 
-        if (AllowedHibernate() == true) {
+    // -------------------------------------------------------------------------
+    // StateMachine — static state instance definitions
+    // -------------------------------------------------------------------------
 
-            Lock();
+    Server::Service::StateMachine::DeactivatedState  Server::Service::StateMachine::_stateDeactivated;
+    Server::Service::StateMachine::PreconditionState Server::Service::StateMachine::_statePrecondition;
+    Server::Service::StateMachine::ActivationState   Server::Service::StateMachine::_stateActivation;
+    Server::Service::StateMachine::ActivatedState    Server::Service::StateMachine::_stateActivated;
+    Server::Service::StateMachine::DeactivationState Server::Service::StateMachine::_stateDeactivation;
+    Server::Service::StateMachine::HibernatedState   Server::Service::StateMachine::_stateHibernated;
+    Server::Service::StateMachine::UnavailableState  Server::Service::StateMachine::_stateUnavailable;
 
-            IShell::state currentState(State());
+    // -------------------------------------------------------------------------
+    // DeactivatedState
+    // -------------------------------------------------------------------------
 
-            if (currentState != IShell::state::ACTIVATED) {
-                result = Core::ERROR_ILLEGAL_STATE;
-            } else if (_connection == nullptr) {
-                result = Core::ERROR_INPROC;
-            } else {
-                // Oke we have an Connection so there is something to Hibernate..
-                RPC::IMonitorableProcess* local = _connection->QueryInterface<RPC::IMonitorableProcess>();
+    Core::hresult Server::Service::StateMachine::DeactivatedState::Activate(StateMachine& sm, const reason why)
+    {
+        const string callSign(sm._parent.PluginHost::Service::Configuration().Callsign.Value());
 
-                if (local == nullptr) {
-                    result = Core::ERROR_BAD_REQUEST;
-                } else {
-                    State(IShell::HIBERNATED);
-#ifdef HIBERNATE_SUPPORT_ENABLED
-                    pid_t parentPID = local->ParentPID();
-                    local->Release();
-                    Unlock();
+        sm._parent.Lock();
+        sm._parent._reason = why;
 
-                    TRACE(Activity, (_T("Hibernation of plugin [%s] process [%u]"), Callsign().c_str(), parentPID));
-                    result = HibernateProcess(timeout, parentPID, _administrator.Configuration().HibernateLocator().c_str(), _T(""), &_hibernateStorage);
-                    Lock();
-                    if (State() != IShell::HIBERNATED) {
-                        SYSLOG(Logging::Startup, (_T("Hibernation aborted of plugin [%s] process [%u]"), Callsign().c_str(), parentPID));
-                        result = Core::ERROR_ABORTED;
-                    }
-                    Unlock();
+        Core::hresult result = sm._parent.LoadPlugin();
 
-                    if (result == HIBERNATE_ERROR_NONE) {
-                        result = HibernateChildren(parentPID, timeout);
-                    }
-
-                    if (result != Core::ERROR_NONE && result != Core::ERROR_ABORTED) {
-                        // try to wakeup Parent process to revert Hibernation and recover
-                        TRACE(Activity, (_T("Wakeup plugin [%s] process [%u] on Hibernate error [%d]"), Callsign().c_str(), parentPID, result));
-                        WakeupProcess(timeout, parentPID, _administrator.Configuration().HibernateLocator().c_str(), _T(""), &_hibernateStorage);
-                    }
-
-                    Lock();
-#else
-                    local->Release();
-                    result = Core::ERROR_NONE;
-#endif
-                    // coverity[DEADCODE] - On the non-HIBERNATE_ENABLED path result is always
-                    // ERROR_NONE here, making the else-if appear unreachable to Coverity.
-                    // Both branches are reachable when HIBERNATE_ENABLED is defined.
-                    if (result == Core::ERROR_NONE) {
-                        if (State() == IShell::state::HIBERNATED) {
-                            SYSLOG(Logging::Startup, ("Hibernated plugin [%s]:[%s]", ClassName().c_str(), Callsign().c_str()));
-                        } else {
-                            // wakeup occured right after hibernation finished
-                            SYSLOG(Logging::Startup, ("Hibernation aborted of plugin [%s]:[%s]", ClassName().c_str(), Callsign().c_str()));
-                            result = Core::ERROR_ABORTED;
-                        }
-                    } else if (State() == IShell::state::HIBERNATED) {
-                        State(IShell::ACTIVATED);
-                        SYSLOG(Logging::Startup, (_T("Hibernation error [%d] of [%s]:[%s]"), result, ClassName().c_str(), Callsign().c_str()));
-                    }
-                }
-            }
-            Unlock();
-        } else {
-        
-            result = Core::ERROR_NOT_SUPPORTED;
+        if (result == Core::ERROR_UNAVAILABLE) {
+            sm.SetState(_stateDeactivated);
+            sm._parent.Unlock();
+            return result;
+        }
+        if (result == Core::ERROR_PENDING_CONDITIONS) {
+            sm.SetState(_statePrecondition);
+            sm._parent.Unlock();
+            return result;
         }
 
-        return (result);
+        sm._parent._administrator.Initialize(callSign, &sm._parent);
+        sm.SetState(_stateActivation);
+        sm._parent.Unlock();
 
+        result = sm._parent.InitializePlugin();
+
+        if (result != Core::ERROR_NONE) {
+            sm._parent.Lock();
+            sm._parent._reason = IShell::reason::INITIALIZATION_FAILED;
+            sm._parent.UnloadPlugin();
+            sm.SetState(_stateDeactivated);
+            sm._parent.Unlock();
+            sm._callback(IShell::DEACTIVATED);
+            return result;
+        }
+
+        sm._parent.Attach();
+
+        sm._parent.Lock();
+        sm.SetState(_stateActivated);
+        sm._parent.Unlock();
+
+        sm._callback(IShell::ACTIVATED);
+        return Core::ERROR_NONE;
+    }
+
+    Core::hresult Server::Service::StateMachine::DeactivatedState::Unavailable(StateMachine& sm, const reason why)
+    {
+        if (sm._parent.AllowedUnavailable() == false) {
+            return Core::ERROR_NOT_SUPPORTED;
+        }
+
+        const string callSign(sm._parent.PluginHost::Service::Configuration().Callsign.Value());
+        const string className(sm._parent.PluginHost::Service::Configuration().ClassName.Value());
+
+        sm._parent.Lock();
+        sm._parent._reason = why;
+        SYSLOG(Logging::Shutdown, (_T("Unavailable plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
+        TRACE(Activity, (Core::Format(_T("Unavailable plugin [%s]:[%s]"), className.c_str(), callSign.c_str())));
+        sm.SetState(_stateUnavailable);
+        sm._parent.Unlock();
+
+        sm._callback(IShell::UNAVAILABLE);
+        return Core::ERROR_NONE;
+    }
+
+    // -------------------------------------------------------------------------
+    // PreconditionState
+    // -------------------------------------------------------------------------
+
+    Core::hresult Server::Service::StateMachine::PreconditionState::Deactivate(StateMachine& sm, const reason why)
+    {
+        sm._parent.Lock();
+        sm._parent._reason = why;
+        const IShell::state finalState(why == IShell::CONDITIONS ? IShell::PRECONDITION : IShell::DEACTIVATED);
+        sm.SetState(why == IShell::CONDITIONS ? static_cast<StateBase&>(_statePrecondition) : static_cast<StateBase&>(_stateDeactivated));
+        sm._parent.Unlock();
+
+        sm._parent.UnloadPlugin();
+
+        sm._callback(finalState);
+        return Core::ERROR_NONE;
+    }
+
+    void Server::Service::StateMachine::PreconditionState::Reevaluate(StateMachine& sm)
+    {
+        sm._parent.Lock();
+        const uint32_t subsystems(sm._parent._administrator.SubSystemInfo().Value());
+
+        if ((sm._parent._precondition.Evaluate(subsystems) == true) && (sm._parent._precondition.IsMet() == true)) {
+            sm._parent.Unlock();
+            sm._Activate(sm._parent._reason);
+        } else {
+            sm._parent.Unlock();
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // ActivationState — only INITIALIZATION_FAILED deactivation is legal
+    // -------------------------------------------------------------------------
+
+    Core::hresult Server::Service::StateMachine::ActivationState::Deactivate(StateMachine& sm, const reason why)
+    {
+        if (why != IShell::reason::INITIALIZATION_FAILED) {
+            return Core::ERROR_ILLEGAL_STATE;
+        }
+
+        const string callSign(sm._parent.PluginHost::Service::Configuration().Callsign.Value());
+
+        sm._parent.Lock();
+        sm._parent._reason = why;
+        sm.SetState(_stateDeactivation);
+        sm._parent.Unlock();
+
+        sm.Evaluate();  // temporarily releases _transitionLock — safe, DEACTIVATION is set
+        Server::PostMortem(sm._parent, why, sm._parent._connection);
+        sm._parent.Detach();
+
+        sm._parent.DeinitializePlugin();
+        sm._parent.Lock();
+
+        sm.SetState(_stateDeactivated);
+        sm._parent.UnloadPlugin();
+        sm._parent.Unlock();
+
+        sm._callback(IShell::DEACTIVATED);
+        return Core::ERROR_NONE;
+    }
+
+    // -------------------------------------------------------------------------
+    // ActivatedState
+    // -------------------------------------------------------------------------
+
+    Core::hresult Server::Service::StateMachine::ActivatedState::Deactivate(StateMachine& sm, const reason why)
+    {
+        const string callSign(sm._parent.PluginHost::Service::Configuration().Callsign.Value());
+
+        sm._parent.Lock();
+        sm._parent._reason = why;
+
+        SystemInfo& systeminfo = sm._parent._administrator.SubSystemInfo();
+        for (const PluginHost::ISubSystem::subsystem sys : sm._parent.SubSystemControl()) {
+            systeminfo.Unset(sys);
+        }
+
+        // Set transient state before Evaluate() so RecursiveNotification sees
+        // DEACTIVATION and short-circuits — no-op in DeactivationState::Reevaluate.
+        sm.SetState(_stateDeactivation);
+        sm._parent.Unlock();
+
+        // Temporarily releases _transitionLock — safe because DEACTIVATION is set.
+        sm.Evaluate();
+
+        // Fire Deactivated() while _handler is still alive — subscribers may
+        // safely call QueryInterface during this notification.
+        sm._parent._administrator.Deactivated(callSign, &sm._parent);
+
+        Server::PostMortem(sm._parent, why, sm._parent._connection);
+        sm._parent.Detach();
+
+        sm._parent.DeinitializePlugin();
+        sm._parent.Lock();
+
+        const IShell::state finalState(why == IShell::CONDITIONS ? IShell::PRECONDITION : IShell::DEACTIVATED);
+        sm.SetState(why == IShell::CONDITIONS ? static_cast<StateBase&>(_statePrecondition) : static_cast<StateBase&>(_stateDeactivated));
+        sm._parent.UnloadPlugin();
+        sm._parent.Unlock();
+
+        sm._callback(finalState);
+        return Core::ERROR_NONE;
+    }
+
+    Core::hresult Server::Service::StateMachine::ActivatedState::Hibernate(StateMachine& sm, const uint32_t timeout VARIABLE_IS_NOT_USED)
+    {
+        if (sm._parent.AllowedHibernate() == false) {
+            return Core::ERROR_NOT_SUPPORTED;
+        }
+
+        sm._parent.Lock();
+
+        if (sm._parent._connection == nullptr) {
+            sm._parent.Unlock();
+            return Core::ERROR_INPROC;
+        }
+
+        RPC::IMonitorableProcess* local = sm._parent._connection->QueryInterface<RPC::IMonitorableProcess>();
+
+        if (local == nullptr) {
+            sm._parent.Unlock();
+            return Core::ERROR_BAD_REQUEST;
+        }
+
+        // Set HIBERNATED under lock as the in-progress guard.
+        // Note: this is set before the blocking HibernateProcess() call — the process
+        // is still running at this point. A HIBERNATING transient state would be
+        // more accurate but requires an IShell::state enum change (tracked as debt).
+        sm.SetState(_stateHibernated);
+
+#ifdef HIBERNATE_SUPPORT_ENABLED
+        pid_t parentPID = local->ParentPID();
+        local->Release();
+        sm._parent.Unlock();
+
+        TRACE(Activity, (_T("Hibernation of plugin [%s] process [%u]"), sm._parent.Callsign().c_str(), parentPID));
+        Core::hresult result = HibernateProcess(timeout, parentPID, sm._parent._administrator.Configuration().HibernateLocator().c_str(), _T(""), &sm._parent._hibernateStorage);
+
+        sm._parent.Lock();
+        // Note: in the original design this checked whether a concurrent Wakeup() or
+        // Deactivate() had changed state during HibernateProcess(). Under the new design
+        // _transitionLock is held throughout — no concurrent transition can run — so this
+        // check can never fire. Retained as a defensive guard only.
+        if (sm._parent.State() != IShell::HIBERNATED) {
+            SYSLOG(Logging::Startup, (_T("Hibernation aborted of plugin [%s] process [%u]"), sm._parent.Callsign().c_str(), parentPID));
+            sm._parent.Unlock();
+            return Core::ERROR_ABORTED;
+        }
+        sm._parent.Unlock();
+
+        if (result == HIBERNATE_ERROR_NONE) {
+            result = sm._parent.HibernateChildren(parentPID, timeout);
+        }
+
+        if (result != Core::ERROR_NONE && result != Core::ERROR_ABORTED) {
+            // Rollback — try to wake the parent process to recover from failed hibernation.
+            TRACE(Activity, (_T("Wakeup plugin [%s] process [%u] on Hibernate error [%d]"), sm._parent.Callsign().c_str(), parentPID, result));
+            WakeupProcess(timeout, parentPID, sm._parent._administrator.Configuration().HibernateLocator().c_str(), _T(""), &sm._parent._hibernateStorage);
+        }
+
+        sm._parent.Lock();
+#else
+        local->Release();
+        Core::hresult result = Core::ERROR_NONE;
+#endif
+        // coverity[DEADCODE] — on the non-HIBERNATE_ENABLED path result is always
+        // ERROR_NONE here, making the else-if appear unreachable to Coverity.
+        // Both branches are reachable when HIBERNATE_SUPPORT_ENABLED is defined.
+        if (result == Core::ERROR_NONE) {
+            if (sm._parent.State() == IShell::state::HIBERNATED) {
+                SYSLOG(Logging::Startup, ("Hibernated plugin [%s]:[%s]", sm._parent.ClassName().c_str(), sm._parent.Callsign().c_str()));
+                sm._parent.Unlock();
+                sm._callback(IShell::HIBERNATED);
+            } else {
+                // Wakeup occurred right after hibernation finished.
+                SYSLOG(Logging::Startup, ("Hibernation aborted of plugin [%s]:[%s]", sm._parent.ClassName().c_str(), sm._parent.Callsign().c_str()));
+                sm._parent.Unlock();
+                result = Core::ERROR_ABORTED;
+            }
+        } else if (sm._parent.State() == IShell::state::HIBERNATED) {
+            // Hibernation failed — roll back state to ACTIVATED.
+            sm.SetState(_stateActivated);
+            SYSLOG(Logging::Startup, (_T("Hibernation error [%d] of [%s]:[%s]"), result, sm._parent.ClassName().c_str(), sm._parent.Callsign().c_str()));
+            sm._parent.Unlock();
+            sm._callback(IShell::ACTIVATED);
+        } else {
+            sm._parent.Unlock();
+        }
+
+        return result;
+    }
+
+    void Server::Service::StateMachine::ActivatedState::Reevaluate(StateMachine& sm)
+    {
+        sm._parent.Lock();
+        const uint32_t subsystems(sm._parent._administrator.SubSystemInfo().Value());
+
+        if ((sm._parent._termination.Evaluate(subsystems) == true) && (sm._parent._termination.IsMet() == false)) {
+            sm._parent.Unlock();
+            sm._Deactivate(IShell::CONDITIONS);
+        } else {
+            sm._parent.Unlock();
+        }
+    }
+
+    void* Server::Service::StateMachine::ActivatedState::QueryInterface(StateMachine& sm, const uint32_t id, const bool asIUnknown)
+    {
+        // Take a ref-counted local copy of _handler under _pluginHandling.
+        // This keeps _handler alive across the lock boundary even if
+        // UnloadPlugin() runs concurrently on another thread.
+        sm._parent._pluginHandling.Lock();
+
+        if (id == PluginHost::IDispatcher::ID) {
+            // Fast path: return the cached _jsonrpc pointer directly rather than
+            // routing through _handler->QueryInterface(). This is intentional.
+            // _jsonrpc is set once in AcquireInterfaces() via
+            // _handler->QueryInterface<IDispatcher>() and is the same pointer the
+            // plugin would return. Bypassing the plugin's own QueryInterface avoids
+            // a potential lock inversion if the plugin's QI acquires internal locks.
+            // Assumption: plugins do not conditionally expose IDispatcher at runtime.
+            // If a plugin gates IDispatcher on runtime state, this fast path will
+            // return the cached pointer regardless — revisit if that pattern emerges.
+            IDispatcher* jsonrpc = sm._parent._jsonrpc;
+            if (jsonrpc != nullptr) {
+                jsonrpc->AddRef();
+            }
+            sm._parent._pluginHandling.Unlock();
+            if (jsonrpc != nullptr) {
+                return asIUnknown == false ? static_cast<void*>(jsonrpc) : static_cast<void*>(static_cast<Core::IUnknown*>(jsonrpc));
+            }
+            return nullptr;
+        }
+
+        IPlugin* handler = sm._parent._handler;
+        if (handler != nullptr) {
+            handler->AddRef();
+        }
+        sm._parent._pluginHandling.Unlock();
+
+        if (handler == nullptr) {
+            return nullptr;
+        }
+
+        void* result = handler->QueryInterface(id, asIUnknown);
+        handler->Release();
+        return result;
+    }
+
+    // -------------------------------------------------------------------------
+    // HibernatedState
+    // -------------------------------------------------------------------------
+
+    Core::hresult Server::Service::StateMachine::HibernatedState::Activate(StateMachine& sm, const reason why VARIABLE_IS_NOT_USED)
+    {
+        const Core::hresult result = sm._parent.Wakeup(3000);
+        if (result == Core::ERROR_NONE) {
+            sm.SetState(_stateActivated);
+            sm._callback(IShell::ACTIVATED);
+        }
+        return result;
+    }
+
+    Core::hresult Server::Service::StateMachine::HibernatedState::Deactivate(StateMachine& sm, const reason why)
+    {
+        // Always update _current before dispatching regardless of Wakeup result.
+        // If _current is not updated and Wakeup succeeds, _Deactivate dispatches
+        // back to HibernatedState::Deactivate → infinite recursion → stack overflow.
+        sm._parent.Wakeup(3000);       // best-effort, errors are non-fatal here
+        sm.SetState(_stateActivated);  // _current must be updated before _Deactivate
+        return sm._Deactivate(why);
+    }
+
+    // -------------------------------------------------------------------------
+    // UnavailableState
+    // -------------------------------------------------------------------------
+
+    Core::hresult Server::Service::StateMachine::UnavailableState::Deactivate(StateMachine& sm, const reason why)
+    {
+        sm._parent.Lock();
+        sm._parent._reason = why;
+        sm.SetState(_stateDeactivated);
+        sm._parent.Unlock();
+        sm._callback(IShell::DEACTIVATED);
+        return Core::ERROR_NONE;
+    }
+
+    // -------------------------------------------------------------------------
+    // Work methods — called by StateMachine, one concern each
+    // -------------------------------------------------------------------------
+
+    Core::hresult Server::Service::LoadPlugin()
+    {
+        ASSERT(_stateMachine.IsTransitionThread());
+        // Pre: Lock() held by caller (state transition in progress)
+        const string callSign(PluginHost::Service::Configuration().Callsign.Value());
+        const string className(PluginHost::Service::Configuration().ClassName.Value());
+
+        if (_handler == nullptr) {
+            AcquireInterfaces();
+        }
+
+        if (_handler == nullptr) {
+            SYSLOG(Logging::Startup, (_T("Loading of plugin [%s]:[%s], failed. Error [%s]"), className.c_str(), callSign.c_str(), ErrorMessage().c_str()));
+            _reason = reason::INSTANTIATION_FAILED;
+            return Core::ERROR_UNAVAILABLE;
+        }
+
+        if (_precondition.IsMet() == false) {
+            SYSLOG(Logging::Startup, (_T("Activation of plugin [%s]:[%s], postponed, preconditions have not been met, yet."), className.c_str(), callSign.c_str()));
+
+            if (Thunder::Messaging::LocalLifetimeType<Activity, &Thunder::Core::System::MODULE_NAME, Thunder::Core::Messaging::Metadata::type::TRACING>::IsEnabled() == true) {
+                string feedback;
+                uint8_t index = 1;
+                uint32_t delta(_precondition.Delta(_administrator.SubSystemInfo().Value()));
+
+                while (delta != 0) {
+                    if ((delta & 0x01) != 0) {
+                        if (feedback.empty() == false) {
+                            feedback += ',';
+                        }
+                        PluginHost::ISubSystem::subsystem element(static_cast<PluginHost::ISubSystem::subsystem>(index));
+                        feedback += string(Core::EnumerateType<PluginHost::ISubSystem::subsystem>(element).Data());
+                    }
+                    delta = (delta >> 1);
+                    index++;
+                }
+                TRACE(Activity, (_T("Delta preconditions: %s"), feedback.c_str()));
+            }
+
+            return Core::ERROR_PENDING_CONDITIONS;
+        }
+
+        if (_lastId != 0) {
+            _administrator.Destroy(_lastId);
+            _lastId = 0;
+        }
+
+        TRACE(Activity, (_T("Activation plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
+        return Core::ERROR_NONE;
+    }
+
+    Core::hresult Server::Service::InitializePlugin()
+    {
+        ASSERT(_stateMachine.IsTransitionThread());
+        // Pre: no service Lock() — blocking call
+        const string callSign(PluginHost::Service::Configuration().Callsign.Value());
+        const string className(PluginHost::Service::Configuration().ClassName.Value());
+
+        REPORT_DURATION_WARNING({ ErrorMessage(_handler->Initialize(this)); }, WarningReporting::TooLongPluginState, WarningReporting::TooLongPluginState::StateChange::ACTIVATION, callSign.c_str());
+
+        if (HasError() == true) {
+            SYSLOG(Logging::Startup, (_T("Activation of plugin [%s]:[%s], failed. Error [%s]"), className.c_str(), callSign.c_str(), ErrorMessage().c_str()));
+
+            if (_administrator.Configuration().LegacyInitialize() == false) {
+                REPORT_DURATION_WARNING({ _handler->Deinitialize(this); }, WarningReporting::TooLongPluginState, WarningReporting::TooLongPluginState::StateChange::DEACTIVATION, callSign.c_str());
+            }
+
+            return Core::ERROR_GENERAL;
+        }
+
+        SYSLOG(Logging::Startup, (_T("Activated plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
+        return Core::ERROR_NONE;
+    }
+
+    void Server::Service::DeinitializePlugin()
+    {
+        ASSERT(_stateMachine.IsTransitionThread());
+        // Pre: no service Lock() — blocking call
+        const string callSign(PluginHost::Service::Configuration().Callsign.Value());
+        REPORT_DURATION_WARNING({ _handler->Deinitialize(this); }, WarningReporting::TooLongPluginState, WarningReporting::TooLongPluginState::StateChange::DEACTIVATION, callSign.c_str());
+        SYSLOG(Logging::Shutdown, (_T("Deactivated plugin [%s]:[%s]"), ClassName().c_str(), callSign.c_str()));
+    }
+
+    void Server::Service::UnloadPlugin()
+    {
+        ASSERT(_stateMachine.IsTransitionThread());
+        // Pre: Lock() held by caller
+        ReleaseInterfaces();
+    }
+
+    void Server::Service::Attach()
+    {
+        ASSERT(_stateMachine.IsTransitionThread());
+        // Pre: no locks held
+        const string webUI(PluginHost::Service::Configuration().WebUI.Value());
+        if ((PluginHost::Service::Configuration().WebUI.IsSet()) || (webUI.empty() == false)) {
+            EnableWebServer(webUI, EMPTY_STRING);
+        }
+
+        if (_jsonrpc != nullptr) {
+            PluginHost::IShell::IConnectionServer::INotification* sink = nullptr;
+            _jsonrpc->Attach(sink, this);
+            if (sink != nullptr) {
+                Register(sink);
+                sink->Release();
+            }
+        }
+
+        if (_external.Connector().empty() == false) {
+            uint32_t result = _external.Open(0);
+            if ((result != Core::ERROR_NONE) && (result != Core::ERROR_INPROGRESS)) {
+                TRACE(Trace::Error, (_T("Could not open the external connector for %s"), Callsign().c_str()));
+            }
+        }
+
+        _stateControl = _handler->QueryInterface<PluginHost::IStateControl>();
+        if (_stateControl != nullptr) {
+            _stateControl->Register(&_composit);
+            if (Resumed() == true) {
+                _stateControl->Request(PluginHost::IStateControl::RESUME);
+            }
+        }
+    }
+
+    void Server::Service::Detach()
+    {
+        ASSERT(_stateMachine.IsTransitionThread());
+        // Pre: no locks held — reverse of Attach()
+        if (_stateControl != nullptr) {
+            _stateControl->Unregister(&_composit);
+            _stateControl->Release();
+            _stateControl = nullptr;
+        }
+
+        if ((PluginHost::Service::Configuration().WebUI.IsSet()) || (PluginHost::Service::Configuration().WebUI.Value().empty() == false)) {
+            DisableWebServer();
+        }
+
+        if (_external.Connector().empty() == false) {
+            _external.Close(0);
+        }
+
+        if (_jsonrpc != nullptr) {
+            PluginHost::IShell::IConnectionServer::INotification* sink = nullptr;
+            _jsonrpc->Detach(sink);
+            if (sink != nullptr) {
+                Unregister(sink);
+                sink->Release();
+            }
+        }
     }
 
     uint32_t Server::Service::Wakeup(const uint32_t timeout VARIABLE_IS_NOT_USED) {
@@ -849,6 +980,11 @@ namespace PluginHost {
                 result = Core::ERROR_NONE;
 #endif
                 if (result == Core::ERROR_NONE) {
+                    // Updates base class _state only — _current in StateMachine is NOT updated.
+                    // Callers (HibernatedState::Activate and HibernatedState::Deactivate) are
+                    // responsible for calling SetState(_stateActivated) immediately after Wakeup()
+                    // returns to close the window where State() == ACTIVATED but _current still
+                    // points to HibernatedState (which returns nullptr from QueryInterface).
                     State(ACTIVATED);
                     SYSLOG(Logging::Startup, (_T("Activated plugin from hibernation [%s]:[%s]"), ClassName().c_str(), Callsign().c_str()));
                 }
@@ -1214,7 +1350,7 @@ namespace PluginHost {
     {
         TRACE(Activity, (_T("Destruct a link with ID [%d] to [%s]"), Id(), RemoteId().c_str()));
 
-        // If we are still atatched to a service, detach, we are out of scope...
+        // If we are still attached to a service, detach, we are out of scope...
         CleanupService();
 
         if (_security != nullptr) {
