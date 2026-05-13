@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 Metrological
+ * Copyright 2023 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,12 +19,8 @@
 
 #pragma once
 
-#include "Module.h"
-#include "interfaces/IStateControl.h"
+// Generated JSON enum sources include this header.
 
-namespace Thunder {
-
-ENUM_CONVERSION_HANDLER(PluginHost::IStateControl::command)
-ENUM_CONVERSION_HANDLER(PluginHost::IStateControl::state)
-
-}
+#include <core/core.h>
+#include <interfaces/IController.h>
+#include <interfaces/IStateController.h>

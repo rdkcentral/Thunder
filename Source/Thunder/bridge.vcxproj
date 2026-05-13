@@ -122,7 +122,7 @@
       <PreprocessorDefinitions>APPLICATION_NAME=Thunder;__CORE_MESSAGING__;_CRT_SECURE_NO_WARNINGS;_WINDOWS;THREADPOOL_COUNT=4;HOSTING_COMPROCESS=comprocess.exe;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(FrameworkPath)plugins;$(FrameworkPath);$(WindowsPath);$(WindowsPath)zlib;$(FrameworkPath)extensions</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(FrameworkPath)plugins;$(FrameworkPath)interfaces;$(FrameworkPath);$(WindowsPath);$(WindowsPath)zlib;$(FrameworkPath)extensions</AdditionalIncludeDirectories>
       <UseStandardPreprocessor>true</UseStandardPreprocessor>
     </ClCompile>
     <Link>
@@ -131,6 +131,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>interfaces.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ProgramDatabaseFile>$(IntDir)$(TargetName).pdb</ProgramDatabaseFile>
     </Link>
     <PostBuildEvent>
@@ -146,13 +147,14 @@
       <PreprocessorDefinitions>APPLICATION_NAME=Thunder;__CORE_MESSAGING__;_CRT_SECURE_NO_WARNINGS;_WINDOWS;THREADPOOL_COUNT=4;HOSTING_COMPROCESS=comprocess.exe;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(FrameworkPath)plugins;$(FrameworkPath);$(WindowsPath);$(WindowsPath)zlib;$(FrameworkPath)extensions</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(FrameworkPath)plugins;$(FrameworkPath)interfaces;$(FrameworkPath);$(WindowsPath);$(WindowsPath)zlib;$(FrameworkPath)extensions</AdditionalIncludeDirectories>
       <UseStandardPreprocessor>true</UseStandardPreprocessor>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>interfaces.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ProgramDatabaseFile>$(IntDir)$(TargetName).pdb</ProgramDatabaseFile>
     </Link>
     <PostBuildEvent>
@@ -168,13 +170,14 @@
       <PreprocessorDefinitions>APPLICATION_NAME=Thunder;__CORE_MESSAGING__;_CRT_SECURE_NO_WARNINGS;_WINDOWS;THREADPOOL_COUNT=4;HOSTING_COMPROCESS=comprocess.exe;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(FrameworkPath)plugins;$(FrameworkPath);$(WindowsPath);$(WindowsPath)zlib;$(FrameworkPath)extensions</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(FrameworkPath)plugins;$(FrameworkPath)interfaces;$(FrameworkPath);$(WindowsPath);$(WindowsPath)zlib;$(FrameworkPath)extensions</AdditionalIncludeDirectories>
       <UseStandardPreprocessor>true</UseStandardPreprocessor>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>interfaces.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ProgramDatabaseFile>$(IntDir)$(TargetName).pdb</ProgramDatabaseFile>
     </Link>
     <PostBuildEvent>
@@ -192,7 +195,7 @@
       <PreprocessorDefinitions>APPLICATION_NAME=Thunder;__CORE_MESSAGING__;_CRT_SECURE_NO_WARNINGS;_WINDOWS;THREADPOOL_COUNT=4;HOSTING_COMPROCESS=comprocess.exe;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(FrameworkPath)plugins;$(FrameworkPath);$(WindowsPath);$(WindowsPath)zlib;$(FrameworkPath)extensions</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(FrameworkPath)plugins;$(FrameworkPath)interfaces;$(FrameworkPath);$(WindowsPath);$(WindowsPath)zlib;$(FrameworkPath)extensions</AdditionalIncludeDirectories>
       <UseStandardPreprocessor>true</UseStandardPreprocessor>
     </ClCompile>
     <Link>
@@ -201,6 +204,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>interfaces.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ProgramDatabaseFile>$(IntDir)$(TargetName).pdb</ProgramDatabaseFile>
     </Link>
     <PostBuildEvent>

@@ -28,21 +28,16 @@
 #define CORE_TRACE_NOT_ALLOWED
 
 #include "Module.h"
-#include "Config.h"
-#include "Channel.h"
-#include "Configuration.h"
-#include "JSONRPC.h"
-#include "Metadata.h"
-#include "Request.h"
-#include "Service.h"
-#include "StateControl.h"
-#include "SubSystem.h"
-#include "System.h"
-#include "Types.h"
-#include "VirtualInput.h"
+#include "IController.h"
+#include "IPlugin.h"
+#include "IShell.h"
+#include "IStateControl.h"
+#include "ISubSystem.h"
+#include "IVirtualInput.h"
+#include "IStateController.h"
 
 #ifdef __WINDOWS__
-#pragma comment(lib, "plugins.lib")
+#pragma comment(lib, "interfaces.lib")
 #endif
 
 WPEFRAMEWORK_NESTEDNAMESPACE_COMPATIBILIY(Plugin)

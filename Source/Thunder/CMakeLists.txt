@@ -57,7 +57,7 @@ endif()
 
 target_include_directories(${TARGET}
         PUBLIC
-            $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/../plugins/generated/jsonrpc>
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/../interfaces/json>
         PRIVATE
             $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/generated>
         )

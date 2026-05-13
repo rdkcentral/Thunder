@@ -22,8 +22,8 @@
 #include "IShell.h"
 
 // @insert <com/ICOM.h>
-// @insert <plugins/IShell.h>
-// @insert <plugins/ISubSystem.h>
+// @insert <interfaces/IShell.h>
+// @insert <interfaces/ISubSystem.h>
 
 namespace Thunder {
 

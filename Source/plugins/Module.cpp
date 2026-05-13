@@ -18,7 +18,7 @@
  */
 
 #include "Module.h"
-#include "IController.h"
+#include "interfaces/IController.h"
 
 #ifdef BUILD_SHARED_LIBS
 MODULE_NAME_DECLARATION(BUILD_REFERENCE)

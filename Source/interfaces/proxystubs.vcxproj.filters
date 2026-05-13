@@ -24,6 +24,9 @@
     <ClCompile Include="..\..\..\..\artifacts\generated\proxystubs\ProxyStubs_StateControl.cpp">
       <Filter>Generated Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\..\artifacts\generated\proxystubs\ProxyStubs_StateController.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\..\..\artifacts\generated\proxystubs\ProxyStubs_SubSystem.cpp">
       <Filter>Generated Files</Filter>
     </ClCompile>

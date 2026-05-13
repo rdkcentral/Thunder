@@ -19,40 +19,65 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Channel.cpp" />
-    <ClCompile Include="Metadata.cpp" />
+    <ClCompile Include="json\JsonEnum_Discovery.cpp" />
+    <ClCompile Include="json\JsonEnum_Events.cpp" />
+    <ClCompile Include="json\JsonEnum_LifeTime.cpp" />
+    <ClCompile Include="json\JsonEnum_Metadata.cpp" />
+    <ClCompile Include="json\JsonEnum_Subsystems.cpp" />
+    <ClCompile Include="json\JsonEnum_System.cpp" />
     <ClCompile Include="Module.cpp" />
-    <ClCompile Include="Service.cpp" />
-    <ClCompile Include="Shell.cpp" />
-    <ClCompile Include="JSONRPC.cpp" />
-    <ClCompile Include="StateControl.cpp" />
-    <ClCompile Include="SubSystem.cpp" />
-    <ClCompile Include="System.cpp" />
-    <ClCompile Include="VirtualInput.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Channel.h" />
-    <ClInclude Include="Config.h" />
-    <ClInclude Include="Configuration.h" />
-    <ClInclude Include="JSONRPC.h" />
-    <ClInclude Include="Metadata.h" />
+    <CustomBuild Include="IController.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</DeploymentContent>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ExcludedFromBuild>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</DeploymentContent>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">python "$(ToolPath)\JsonGenerator\JsonGenerator.py" -I "$(FrameworkPath)\" --case-convention legacy --no-includes --keep-empty -c --namespace Thunder::Exchange::Controller -o "$(ProjectDir)/json" "%(FullPath)" --force</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">python "$(ToolPath)\JsonGenerator\JsonGenerator.py" -I "$(FrameworkPath)\" --case-convention legacy --no-includes --keep-empty -c --namespace Thunder::Exchange::Controller -o "$(ProjectDir)/json" "%(FullPath)" --force</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">python "$(ToolPath)\JsonGenerator\JsonGenerator.py" -I "$(FrameworkPath)\" --case-convention legacy --no-includes --keep-empty -c --namespace Thunder::Exchange::Controller -o "$(ProjectDir)/json" "%(FullPath)" --force</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">python "$(ToolPath)\JsonGenerator\JsonGenerator.py" -I "$(FrameworkPath)\" --case-convention legacy --no-includes --keep-empty -c --namespace Thunder::Exchange::Controller -o "$(ProjectDir)/json" "%(FullPath)" --force</Command>
+    </CustomBuild>
+    <ClInclude Include="IDispatcher.h">
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectDir)json/JDispatcher.h</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectDir)json/JDispatcher.h</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)json/JDispatcher.h</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)json/JDispatcher.h</Outputs>
+    </ClInclude>
+    <ClInclude Include="IPlugin.h" />
+    <ClInclude Include="IShell.h" />
+    <ClInclude Include="IStateControl.h" />
+    <CustomBuild Include="IStateController.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</DeploymentContent>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ExcludedFromBuild>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</DeploymentContent>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">python "$(ToolPath)\JsonGenerator\JsonGenerator.py" -I "$(ProjectDir)\" -I "$(FrameworkPath)\" --case-convention legacy --keep-empty -c --namespace Thunder::PluginHost -o "$(ProjectDir)/json" "%(FullPath)" --force</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">python "$(ToolPath)\JsonGenerator\JsonGenerator.py" -I "$(ProjectDir)\" -I "$(FrameworkPath)\" --case-convention legacy --keep-empty -c --namespace Thunder::PluginHost -o "$(ProjectDir)/json" "%(FullPath)" --force</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">python "$(ToolPath)\JsonGenerator\JsonGenerator.py" -I "$(ProjectDir)\" -I "$(FrameworkPath)\" --case-convention legacy --keep-empty -c --namespace Thunder::PluginHost -o "$(ProjectDir)/json" "%(FullPath)" --force</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">python "$(ToolPath)\JsonGenerator\JsonGenerator.py" -I "$(ProjectDir)\" -I "$(FrameworkPath)\" --case-convention legacy --keep-empty -c --namespace Thunder::PluginHost -o "$(ProjectDir)/json" "%(FullPath)" --force</Command>
+    </CustomBuild>
+    <ClInclude Include="ISubSystem.h" />
     <ClInclude Include="Module.h" />
-    <ClInclude Include="plugins.h" />
-    <ClInclude Include="Request.h" />
-    <ClInclude Include="Service.h" />
-    <ClInclude Include="SubSystem.h" />
-    <ClInclude Include="System.h" />
-    <ClInclude Include="Types.h" />
-    <ClInclude Include="VirtualInput.h" />
+    <ClInclude Include="interfaces.h" />
+    <ClInclude Include="IVirtualInput.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="CMakeLists.txt" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
-    <ProjectGuid>{0CA4C3EA-2DD4-4BB3-804C-331D09CC3402}</ProjectGuid>
+    <ProjectGuid>{4D595795-BD40-45A2-BE53-D5A626691D4C}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>plugins</RootNamespace>
+    <RootNamespace>interfaces</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -128,9 +153,9 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>__CORE_MESSAGING__;_CRT_SECURE_NO_WARNINGS;NDEBUG;PLUGINS_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>__CORE_MESSAGING__;_CRT_SECURE_NO_WARNINGS;NDEBUG;INTERFACES_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>.;$(ProjectDir)..\interfaces;$(FrameworkPath);$(WindowsPath);$(WindowsPath)zlib;$(FrameworkPath)extensions</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;$(FrameworkPath);$(WindowsPath);$(WindowsPath)zlib;$(FrameworkPath)extensions</AdditionalIncludeDirectories>
       <UseStandardPreprocessor>true</UseStandardPreprocessor>
     </ClCompile>
     <Link>
@@ -139,7 +164,6 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>interfaces.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ProgramDatabaseFile>$(IntDir)$(TargetName).pdb</ProgramDatabaseFile>
     </Link>
     <PreBuildEvent>
@@ -170,16 +194,15 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>__CORE_MESSAGING__;_CRT_SECURE_NO_WARNINGS;WIN32;_DEBUG;PLUGINS_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>__CORE_MESSAGING__;_CRT_SECURE_NO_WARNINGS;WIN32;_DEBUG;INTERFACES_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>.;$(ProjectDir)..\interfaces;$(FrameworkPath);$(WindowsPath);$(WindowsPath)zlib;$(FrameworkPath)extensions</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;$(FrameworkPath);$(WindowsPath);$(WindowsPath)zlib;$(FrameworkPath)extensions</AdditionalIncludeDirectories>
       <UseStandardPreprocessor>true</UseStandardPreprocessor>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>interfaces.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ProgramDatabaseFile>$(IntDir)$(TargetName).pdb</ProgramDatabaseFile>
     </Link>
     <PreBuildEvent>
@@ -210,16 +233,15 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>__CORE_MESSAGING__;_CRT_SECURE_NO_WARNINGS;_DEBUG;PLUGINS_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>__CORE_MESSAGING__;_CRT_SECURE_NO_WARNINGS;_DEBUG;INTERFACES_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>.;$(ProjectDir)..\interfaces;$(FrameworkPath);$(WindowsPath);$(WindowsPath)zlib;$(FrameworkPath)extensions</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;$(FrameworkPath);$(WindowsPath);$(WindowsPath)zlib;$(FrameworkPath)extensions</AdditionalIncludeDirectories>
       <UseStandardPreprocessor>true</UseStandardPreprocessor>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>interfaces.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ProgramDatabaseFile>$(IntDir)$(TargetName).pdb</ProgramDatabaseFile>
     </Link>
     <PreBuildEvent>
@@ -252,9 +274,9 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>__CORE_MESSAGING__;_CRT_SECURE_NO_WARNINGS;WIN32;NDEBUG;PLUGINS_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>__CORE_MESSAGING__;_CRT_SECURE_NO_WARNINGS;WIN32;NDEBUG;INTERFACES_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>.;$(ProjectDir)..\interfaces;$(FrameworkPath);$(WindowsPath);$(WindowsPath)zlib;$(FrameworkPath)extensions</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;$(FrameworkPath);$(WindowsPath);$(WindowsPath)zlib;$(FrameworkPath)extensions</AdditionalIncludeDirectories>
       <UseStandardPreprocessor>true</UseStandardPreprocessor>
     </ClCompile>
     <Link>
@@ -263,7 +285,6 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>interfaces.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ProgramDatabaseFile>$(IntDir)$(TargetName).pdb</ProgramDatabaseFile>
     </Link>
     <PreBuildEvent>
@@ -291,4 +312,7 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
+  <Target Name="CustomCleanGeneratedFiles" BeforeTargets="Clean">
+    <RemoveDir Directories="json" />
+  </Target>
 </Project>
