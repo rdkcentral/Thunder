@@ -607,6 +607,13 @@ namespace Core {
             DEBUG_VARIABLE(additionalThreads);
             ASSERT(((lowPriorityThreadCount <= (count + additionalThreads)) && (mediumPriorityThreadCount <= (count + additionalThreads))));
 
+            TRACE_L1("WorkerPool config: created threads=%d, additional threads=%d, total thread capacity=%d, low priority limit=%d, medium priority limit=%d",
+                count,
+                additionalThreads,
+                static_cast<uint16_t>(count + additionalThreads),
+                lowPriorityThreadCount,
+                mediumPriorityThreadCount);
+
             const TCHAR* name = _T("WorkerPool::Thread");
             for (uint8_t index = 0; index < count; index++) {
                 _units.emplace_back(*this, dispatcher, stackSize, name);
