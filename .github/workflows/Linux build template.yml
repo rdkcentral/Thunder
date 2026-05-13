@@ -125,7 +125,7 @@ jobs:
         cmake -G Ninja -S ThunderTools -B ${{matrix.build_type}}/build/ThunderTools \
         -DCMAKE_CXX_FLAGS="-m${{matrix.architecture}}" \
         -DCMAKE_C_FLAGS="-m${{matrix.architecture}}" \
-        -DCMAKE_INSTALL_PREFIX=${{matrix.build_type}}/install/usr \
+        -DCMAKE_INSTALL_PREFIX=${{matrix.build_type}}/install/usr
         cmake --build ${{matrix.build_type}}/build/ThunderTools --target install
 
     - name: Regex Thunder
