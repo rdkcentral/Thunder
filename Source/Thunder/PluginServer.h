@@ -923,27 +923,37 @@ namespace PluginHost {
                 Core::hresult _Activate(const reason why)   { ASSERT(IsTransitionThread()); return _current.load(std::memory_order_acquire)->Activate(*this, why); }
                 Core::hresult _Deactivate(const reason why) { ASSERT(IsTransitionThread()); return _current.load(std::memory_order_acquire)->Deactivate(*this, why); }
 
+                struct TransitionYield {
+                    TransitionYield() = delete;
+                    TransitionYield(const TransitionYield&) = delete;
+                    TransitionYield(TransitionYield&&) = delete;
+                    TransitionYield& operator=(const TransitionYield&) = delete;
+                    TransitionYield& operator=(TransitionYield&&) = delete;
+
+                    explicit TransitionYield(StateMachine& sm)
+                        : _sm(sm)
+                    {
+                        _sm._transitionThread = 0;
+                        _sm._transitionLock.Unlock();
+                    }
+                    ~TransitionYield()
+                    {
+                        _sm._transitionLock.Lock();
+                        _sm._transitionThread = Core::Thread::ThreadId();
+                    }
+                    StateMachine& _sm;
+                };
+
                 // Called from within a state method to trigger cascading re-evaluation
-                // of dependent services. Temporarily releases _transitionLock so
-                // RecursiveNotification can call Reevaluate() on this service without
-                // deadlocking. Safe because SetState(DEACTIVATION) must be called
-                // before this — the transient state rejects concurrent operations.
-                //
-                // DEBT: this is controlled lock borrowing, not RAII-managed ownership.
-                // The ASSERT(IsTransitionThread()) guards against misuse in debug builds
-                // but compiles out in release. If _transitionLock is ever not held when
-                // this is called in release, Unlock() on an unheld mutex is UB.
-                // Mitigation: IsTransitionThread() is also asserted on all internal
-                // triggers (_Activate, _Deactivate) that are the only legal callers of
-                // state methods — making it structurally difficult to reach Evaluate()
-                // outside a transition without triggering an earlier assert.
+                // of dependent services. Temporarily yields _transitionLock via
+                // TransitionYield so RecursiveNotification can call Reevaluate() on
+                // this service without deadlocking. Safe because SetState(DEACTIVATION)
+                // must be called before this — the transient state rejects all
+                // concurrent operations during the yield window.
                 void Evaluate() {
                     ASSERT(IsTransitionThread());
-                    _transitionThread = 0;
-                    _transitionLock.Unlock();
+                    TransitionYield yield(*this);
                     _parent._administrator.Evaluate();
-                    _transitionLock.Lock();
-                    _transitionThread = Core::Thread::ThreadId();
                 }
 
                 // Static state instances — shared across all plugins.
