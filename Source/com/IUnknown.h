@@ -317,6 +317,10 @@ namespace ProxyStub {
         {
             return (_implementation);
         }
+        // Required by proxystubs!
+        const Core::ProxyType<Core::IPCChannel>& Channel() const {
+            return (_channel);
+        }
 
         // -------------------------------------------------------------------------------------------------------------------------------
         // Proxy environment calls
