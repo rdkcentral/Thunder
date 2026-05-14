@@ -97,7 +97,7 @@ jobs:
       with:
         path: ThunderTools
         repository: rdkcentral/ThunderTools
-        ref: R4_4
+        ref: development/tools-backport # TO-DO: change back to R4_4
 
     - name: Regex ThunderTools
       if: contains(github.event.pull_request.body, '[DependsOn=ThunderTools:')
@@ -117,7 +117,6 @@ jobs:
         ref: ${{steps.tools.outputs.first_match}}
 
 # ----- Installing generators & Options regex -----
-#        ${{(matrix.build_type == 'Release' && matrix.shared_libs == 'ON' && matrix.architecture == '64') && '-DPROXYSTUB_GENERATOR_ENABLE_SECURITY=ON -DPROXYSTUB_GENERATOR_ENABLE_COHERENCY=ON' || ''}}
     - name: Install generators
       run: |
         source venv/bin/activate
@@ -125,7 +124,8 @@ jobs:
         cmake -G Ninja -S ThunderTools -B ${{matrix.build_type}}/build/ThunderTools \
         -DCMAKE_CXX_FLAGS="-m${{matrix.architecture}}" \
         -DCMAKE_C_FLAGS="-m${{matrix.architecture}}" \
-        -DCMAKE_INSTALL_PREFIX=${{matrix.build_type}}/install/usr
+        -DCMAKE_INSTALL_PREFIX=${{matrix.build_type}}/install/usr \
+        ${{(matrix.build_type == 'Release' && matrix.shared_libs == 'ON' && matrix.architecture == '64') && '-DPROXYSTUB_GENERATOR_ENABLE_SECURITY=ON -DPROXYSTUB_GENERATOR_ENABLE_COHERENCY=ON' || ''}}
         cmake --build ${{matrix.build_type}}/build/ThunderTools --target install
 
     - name: Regex Thunder
