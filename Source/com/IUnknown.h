@@ -473,6 +473,10 @@ namespace ProxyStub {
         {
             return(&_unknown);
         }
+        const UnknownProxy* Administration() const
+        {
+            return(&_unknown);
+        }
 
         // -------------------------------------------------------------------------------------------------------------------------------
         // Proxy environment calls
