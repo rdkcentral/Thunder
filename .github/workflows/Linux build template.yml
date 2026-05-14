@@ -97,7 +97,7 @@ jobs:
       with:
         path: ThunderTools
         repository: rdkcentral/ThunderTools
-        ref: development/tools-backport # TO-DO: change back to R4_4 / retry
+        ref: development/tools-backport # TO-DO: change back to R4_4 / retry2
 
     - name: Regex ThunderTools
       if: contains(github.event.pull_request.body, '[DependsOn=ThunderTools:')
