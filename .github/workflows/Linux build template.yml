@@ -71,7 +71,7 @@ jobs:
       with:
         path: Thunder
         repository: rdkcentral/Thunder
-        ref: R4_4
+        ref: development/adjust-to-tools-update # TO-DO: change back to R4_4
 
     - name: Regex Thunder
       if: contains(github.event.pull_request.body, '[DependsOn=Thunder:')
