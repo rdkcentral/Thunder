@@ -71,7 +71,7 @@ jobs:
       with:
         path: Thunder
         repository: rdkcentral/Thunder
-        ref: development/adjust-to-tools-update # TO-DO: change back to R4_4
+        ref: development/adjust-to-tools-update # TO-DO: change to R4_4 when this branch is merged and deleted
 
     - name: Regex Thunder
       if: contains(github.event.pull_request.body, '[DependsOn=Thunder:')
@@ -97,7 +97,7 @@ jobs:
       with:
         path: ThunderTools
         repository: rdkcentral/ThunderTools
-        ref: development/tools-backport # TO-DO: change back to R4_4 / retry 3
+        ref: development/tools-backport # TO-DO: change to R4_4 when this branch is merged and deleted
 
     - name: Regex ThunderTools
       if: contains(github.event.pull_request.body, '[DependsOn=ThunderTools:')
