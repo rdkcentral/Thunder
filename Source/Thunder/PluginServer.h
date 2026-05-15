@@ -960,6 +960,7 @@ namespace PluginHost {
                 // It's reference counted, so just take it out of the list, state to DESTROYED
                 // Also unsubscribe all subscribers. They need to go..
                 State(DESTROYED);
+                _administrator.Destroyed(Callsign(), this);
 
                 Unlock();
             }
@@ -1291,6 +1292,8 @@ namespace PluginHost {
             void Unregister(IPlugin::INotification* sink, const Core::OptionalType<string>& callsign) override;
             void Register(IPlugin::INotification* sink, const uint32_t interface_id) override;
             void Unregister(IPlugin::INotification* sink, const uint32_t interface_id) override;
+            void Register(IPlugin::INotificationExtended* sink, const Core::OptionalType<string>& callsign) override;
+            void Unregister(IPlugin::INotificationExtended* sink, const Core::OptionalType<string>& callsign) override;
 
             string Model() const override {
                 return (_administrator.Configuration().Model());
@@ -2837,6 +2840,128 @@ namespace PluginHost {
                 mutable Core::CriticalSection _notificationLock;
             };
 
+            class ExtendedNotifiers
+            {
+            public:
+                ExtendedNotifiers()
+                    : _notifiers()
+                    , _notificationLock()
+                {
+                }
+                ~ExtendedNotifiers() = default;
+
+                ExtendedNotifiers(ExtendedNotifiers&&) = delete;
+                ExtendedNotifiers(const ExtendedNotifiers&) = delete;
+                ExtendedNotifiers& operator=(ExtendedNotifiers&&) = delete;
+                ExtendedNotifiers& operator=(const ExtendedNotifiers&) = delete;
+
+                template <typename... Args>
+                bool Add(PluginHost::IPlugin::INotificationExtended* notification, Args&&... args)
+                {
+                    _notificationLock.Lock();
+
+                    bool allowed = RegistrationAllowed(notification, std::forward<Args>(args)...);
+
+                    ASSERT(allowed == true);
+
+                    if (allowed == true) {
+                        notification->AddRef();
+                        _notifiers.emplace(std::piecewise_construct,
+                            std::forward_as_tuple(notification),
+                            std::forward_as_tuple(std::forward<Args>(args)...));
+                    }
+
+                    _notificationLock.Unlock();
+
+                    return allowed;
+                }
+
+                template <typename... Args>
+                bool Remove(const PluginHost::IPlugin::INotificationExtended* const notification, Args&&... args)
+                {
+                    bool found = false;
+
+                    _notificationLock.Lock();
+
+                    auto range = _notifiers.equal_range(const_cast<PluginHost::IPlugin::INotificationExtended*>(notification));
+                    for (auto it = range.first; it != range.second; ++it) {
+                        if (it->second.IsEqual(std::forward<Args>(args)...) == true) {
+                            PluginHost::IPlugin::INotificationExtended* foundnotification = it->first;
+                            _notifiers.erase(it);
+                            foundnotification->Release();
+                            foundnotification = nullptr;
+                            found = true;
+                            break;
+                        }
+                    }
+
+                    _notificationLock.Unlock();
+
+                    return found;
+                }
+
+                void RemoveAll(const Core::IUnknown* const notification)
+                {
+                    _notificationLock.Lock();
+
+                    auto it = _notifiers.begin();
+                    while (it != _notifiers.end()) {
+                        if (static_cast<const Core::IUnknown*>(it->first) == notification) {
+                            PluginHost::IPlugin::INotificationExtended* foundnotification = it->first;
+                            it = _notifiers.erase(it);
+                            foundnotification->Release();
+                            foundnotification = nullptr;
+                        } else {
+                            ++it;
+                        }
+                    }
+
+                    _notificationLock.Unlock();
+                }
+
+                void Notify(const string& callsign, PluginHost::IShell* entry, Core::hresult (PluginHost::IPlugin::INotificationExtended::*notificatonmethod)(const string& callsign, IShell* plugin))
+                {
+                    _notificationLock.Lock();
+
+                    auto it = _notifiers.begin();
+                    while (it != _notifiers.end()) {
+                        if (it->second.SendNotification(callsign, entry) == true) {
+                            Core::hresult result = (it->first->*notificatonmethod)(callsign, entry);
+                            if (result == Core::ERROR_CANCEL) {
+                                PluginHost::IPlugin::INotificationExtended* foundnotification = it->first;
+                                it = _notifiers.erase(it);
+                                foundnotification->Release();
+                                foundnotification = nullptr;
+                            } else {
+                                ++it;
+                            }
+                        } else {
+                            ++it;
+                        }
+                    }
+
+                    _notificationLock.Unlock();
+                }
+
+            private:
+                template <typename... Args>
+                bool RegistrationAllowed(PluginHost::IPlugin::INotificationExtended* notification, Args&&... args) const
+                {
+                    bool notallowed = false;
+                    auto range = _notifiers.equal_range(notification);
+                    for (auto it = range.first; it != range.second; ++it) {
+                        notallowed = it->second.ConsideredDuplicate(std::forward<Args>(args)...);
+                        if (notallowed == true) {
+                            break;
+                        }
+                    }
+                    return (notallowed == false);
+                }
+
+            private:
+                std::unordered_multimap<PluginHost::IPlugin::INotificationExtended*, Notifier> _notifiers;
+                mutable Core::CriticalSection _notificationLock;
+            };
 
             using Plugins = std::unordered_map<string, Core::ProxyType<Service>>;
             using RemoteInstantiators = std::unordered_map<string, IRemoteInstantiation*>;
@@ -3689,6 +3814,7 @@ namespace PluginHost {
                 , _notificationLock()
                 , _services()
                 , _notifiers()
+                , _extendedNotifiers()
                 , _engine(Core::ProxyType<RPC::InvokeServer>::Create(&(server._dispatcher)))
                 , _processAdministrator(
                       *this,
@@ -3816,6 +3942,14 @@ namespace PluginHost {
             {
                 _notifiers.Notify(callsign, entry, &PluginHost::IPlugin::INotification::CancelableUnavailable);
             }
+            void Hibernated(const string& callsign, PluginHost::IShell* entry)
+            {
+                _extendedNotifiers.Notify(callsign, entry, &PluginHost::IPlugin::INotificationExtended::CancelableHibernated);
+            }
+            void Destroyed(const string& callsign, PluginHost::IShell* entry)
+            {
+                _extendedNotifiers.Notify(callsign, entry, &PluginHost::IPlugin::INotificationExtended::CancelableDestroyed);
+            }
             void StateControlStateChange(const string& callsign, const IStateControl::state state)
             {
                 _server.StateControlStateChange(callsign, state);       
@@ -3856,12 +3990,29 @@ namespace PluginHost {
                     }
                 }
             }
+            void Register(PluginHost::IPlugin::INotificationExtended* sink, const Core::OptionalType<string>& callsign = {})
+            {
+                if (callsign.IsSet() == true) {
+                    _extendedNotifiers.Add(sink, callsign.Value());
+                }
+                else {
+                    _extendedNotifiers.Add(sink);
+                }
+            }
             void Unregister(const PluginHost::IPlugin::INotification* sink, const Core::OptionalType<string>& callsign = {})
             {
                 if (callsign.IsSet() == true) {
                     _notifiers.Remove(sink, callsign.Value());
                 } else {
                     _notifiers.Remove(sink);
+                }
+            }
+            void Unregister(const PluginHost::IPlugin::INotificationExtended* sink, const Core::OptionalType<string>& callsign = {})
+            {
+                if (callsign.IsSet() == true) {
+                    _extendedNotifiers.Remove(sink, callsign.Value());
+                } else {
+                    _extendedNotifiers.Remove(sink);
                 }
             }
             void Register(IPlugin::INotification* sink, const uint32_t interface_id)
@@ -4305,6 +4456,9 @@ namespace PluginHost {
                 if (interfaceId == PluginHost::IPlugin::INotification::ID) {
                     _notifiers.RemoveAll(remote);
                 }
+                else if (interfaceId == PluginHost::IPlugin::INotificationExtended::ID) {
+                    _extendedNotifiers.RemoveAll(remote);
+                }
                 else if (interfaceId == IShell::IConnectionServer::INotification::ID) {
 
                     _notificationLock.Lock();
@@ -4452,6 +4606,7 @@ namespace PluginHost {
             Plugins _services;
             mutable RemoteInstantiators _instantiators;
             Notifiers _notifiers;
+            ExtendedNotifiers _extendedNotifiers;
             Core::ProxyType<RPC::InvokeServer> _engine;
             CommunicatorServer _processAdministrator;
             Core::SinkType<SubSystems> _subSystems;

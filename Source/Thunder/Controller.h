@@ -53,6 +53,7 @@ namespace Plugin {
 
         class Sink 
             : public PluginHost::IPlugin::INotification
+            , public PluginHost::IPlugin::INotificationExtended
             , public PluginHost::ISubSystem::INotification {
         private:
             class Job {
@@ -109,9 +110,18 @@ namespace Plugin {
             {
                 _parent.NotifyStateChange(callsign, PluginHost::IShell::UNAVAILABLE, plugin->Reason());
             }
+            void Hibernated(const string& callsign, PluginHost::IShell* plugin) override
+            {
+                _parent.NotifyStateChange(callsign, PluginHost::IShell::HIBERNATED, plugin->Reason());
+            }
+            void Destroyed(const string& callsign, PluginHost::IShell* plugin) override
+            {
+                _parent.NotifyStateChange(callsign, PluginHost::IShell::DESTROYED, plugin->Reason());
+            }
 
             BEGIN_INTERFACE_MAP(Sink)
                 INTERFACE_ENTRY(PluginHost::IPlugin::INotification)
+                INTERFACE_ENTRY(PluginHost::IPlugin::INotificationExtended)
             END_INTERFACE_MAP
 
         private:

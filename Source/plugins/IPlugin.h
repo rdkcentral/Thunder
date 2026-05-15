@@ -88,6 +88,40 @@ namespace PluginHost {
 
         };
 
+        struct INotificationExtended : virtual public Core::IUnknown {
+
+            enum { ID = RPC::ID_PLUGIN_NOTIFICATION_EXTENDED };
+
+            ~INotificationExtended() override = default;
+
+            //! @{
+            //! ================================== CALLED ON THREADPOOL THREAD =====================================
+            //! Whenever a plugin transitions to a hibernated or destroyed state, this is reported to an observer.
+            //! @}
+
+            // @stubgen:omit
+            virtual void Hibernated(const string&, IShell*)
+            {
+                ASSERT(false);
+            }
+            // @stubgen:omit
+            virtual void Destroyed(const string&, IShell*)
+            {
+                ASSERT(false);
+            }
+
+            virtual Core::hresult CancelableHibernated(const string& callsign, IShell* plugin)
+            {
+                Hibernated(callsign, plugin);
+                return Core::ERROR_NONE;
+            }
+            virtual Core::hresult CancelableDestroyed(const string& callsign, IShell* plugin)
+            {
+                Destroyed(callsign, plugin);
+                return Core::ERROR_NONE;
+            }
+        };
+
         struct ILifeTime : virtual public Core::IUnknown {
 
             enum { ID = RPC::ID_PLUGIN_LIFETIME };
