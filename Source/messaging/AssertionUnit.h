@@ -19,15 +19,29 @@
 
 #pragma once
 
-#ifndef MODULE_NAME
-#error "Please define a MODULE_NAME that describes the binary/library you are building."
-#endif
+#include "Module.h"
+#include "MessageUnit.h"
 
-#include "IWarningReportingMedia.h"
-#include "WarningReportingUnit.h"
+namespace WPEFramework {
+namespace Assertion {
 
-#ifdef __WINDOWS__
-#pragma comment(lib, "warningreporting.lib")
-#endif
+    class EXTERNAL AssertionUnit : public IAssertionUnit {
+    private:
+        AssertionUnit(const AssertionUnit&) = delete;
+        AssertionUnit& operator=(const AssertionUnit&) = delete;
+        AssertionUnit(AssertionUnit&&) = delete;
+        AssertionUnit& operator=(AssertionUnit&&) = delete;
 
-WPEFRAMEWORK_NESTEDNAMESPACE_COMPATIBILIY(WarningReporting)
+    protected:
+        AssertionUnit();
+
+    public:
+        ~AssertionUnit() override;
+
+    public:
+        static AssertionUnit& Instance();
+
+        void AssertionEvent(Core::Messaging::IStore::Assert& metadata, const Core::Messaging::TextMessage& message, Core::Messaging::OutputMode outputMode) override;
+    };
+}
+}

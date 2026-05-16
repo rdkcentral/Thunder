@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 Metrological
+ * Copyright 2022 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,17 +17,29 @@
  * limitations under the License.
  */
 
-#pragma once
+#include "Module.h"
+#include "ConsoleStreamRedirect.h"
 
-#ifndef MODULE_NAME
-#error "Please define a MODULE_NAME that describes the binary/library you are building."
-#endif
+namespace WPEFramework {
+namespace Messaging {
 
-#include "IWarningReportingMedia.h"
-#include "WarningReportingUnit.h"
-
+    ConsoleStandardOut::ConsoleStandardOut()
 #ifdef __WINDOWS__
-#pragma comment(lib, "warningreporting.lib")
+        : Core::TextStreamRedirectType<StandardOut>(::_fileno(stdout))
+#else
+        : Core::TextStreamRedirectType<StandardOut>(STDOUT_FILENO)
 #endif
+    {
+    }
 
-WPEFRAMEWORK_NESTEDNAMESPACE_COMPATIBILIY(WarningReporting)
+    ConsoleStandardError::ConsoleStandardError()
+#ifdef __WINDOWS__
+        : Core::TextStreamRedirectType<StandardError>(::_fileno(stderr))
+#else
+        : Core::TextStreamRedirectType<StandardError>(STDERR_FILENO)
+#endif
+    {
+    }
+
+}
+}

@@ -21,6 +21,8 @@
 
 #include "Module.h"
 
+#define ASSERT_CATEGORY General
+
 namespace WPEFramework {
 
 namespace Core {
@@ -29,6 +31,8 @@ namespace Core {
 
         extern EXTERNAL const char* MODULE_LOGGING;
         extern EXTERNAL const char* MODULE_REPORTING;
+        extern EXTERNAL const char* MODULE_OPERATIONAL_STREAM;
+        extern EXTERNAL const char* MODULE_ASSERT;
 
         struct EXTERNAL IEvent {
             virtual ~IEvent() = default;
@@ -44,12 +48,13 @@ namespace Core {
         class EXTERNAL Metadata {
         public:
             enum type : uint8_t {
-                INVALID        = 0,
-                TRACING        = 1,
-                LOGGING        = 2,
-                REPORTING      = 3,
-                STANDARD_OUT   = 4,
-                STANDARD_ERROR = 5
+                INVALID             = 0,
+                TRACING             = 1,
+                LOGGING             = 2,
+                REPORTING           = 3,
+                OPERATIONAL_STREAM  = 4,
+                ASSERT              = 5,
+                TELEMETRY           = 6
             };
 
 // @stop
@@ -95,7 +100,7 @@ namespace Core {
             }
 
             bool Default() const {
-                return (_type == type::TRACING ? false : true);
+                return ((_type == type::TRACING || _type == type::TELEMETRY) ? false : true);
             }
 
             bool Specific() const {
@@ -118,6 +123,18 @@ namespace Core {
             string _module;
         };
 
+        // Determines where a message type/category/module is routed.
+        // HANDLER - sent to the data buffer (handler, e.g. MessageControl)
+        // DIRECT  - printed immediately via DirectOutput (console/syslog)
+        // ALL     - sent to all destinations
+        // The default when no explicit override is configured is HANDLER in normal
+        // mode and DIRECT in DirectOutput mode (-f / flush flag).
+        enum OutputMode : uint8_t {
+            HANDLER = 0,
+            DIRECT  = 1,
+            ALL     = 2
+        };
+
         struct EXTERNAL IControl {
 
             struct EXTERNAL IHandler {
@@ -128,6 +145,8 @@ namespace Core {
             virtual ~IControl() = default;
             virtual void Enable(bool enable) = 0;
             virtual bool Enable() const = 0;
+            virtual void Routing(OutputMode routing) = 0;
+            virtual OutputMode Routing() const = 0;
             virtual void Destroy() = 0;
 
             virtual const Core::Messaging::Metadata& Metadata() const = 0;
@@ -150,9 +169,16 @@ namespace Core {
         public:
             MessageInfo(const MessageInfo&) = default;
             MessageInfo& operator=(const MessageInfo&) = default;
+            MessageInfo(MessageInfo&&) = default;
+            MessageInfo& operator=(MessageInfo&&) = default;
 
             MessageInfo()
                 : Metadata()
+                , _timeStamp()
+            {
+            }
+            MessageInfo(const Metadata& metadata)
+                : Metadata(metadata)
                 , _timeStamp()
             {
             }
@@ -166,6 +192,9 @@ namespace Core {
         public:
             uint64_t TimeStamp() const {
                 return (_timeStamp);
+            }
+            void TimeStamp(const uint64_t timeStamp) {
+                _timeStamp = timeStamp;
             }
 
         public:
@@ -190,6 +219,8 @@ namespace Core {
             public:
                 Logging(const Logging&) = default;
                 Logging& operator=(const Logging&) = default;
+                Logging(Logging&&) = default;
+                Logging& operator=(Logging&&) = default;
 
                 Logging()
                     : MessageInfo()
@@ -209,6 +240,8 @@ namespace Core {
             public:
                 Tracing(const Tracing&) = default;
                 Tracing& operator=(const Tracing&) = default;
+                Tracing(Tracing&&) = default;
+                Tracing& operator=(Tracing&&) = default;
 
                 Tracing()
                     : MessageInfo()
@@ -257,6 +290,8 @@ namespace Core {
             public:
                 WarningReporting(const WarningReporting&) = default;
                 WarningReporting& operator=(const WarningReporting&) = default;
+                WarningReporting(WarningReporting&&) = default;
+                WarningReporting& operator=(WarningReporting&&) = default;
 
                 WarningReporting()
                     : MessageInfo()
@@ -283,13 +318,122 @@ namespace Core {
                 string _callsign;
             };
 
-	    public:
+           /**
+            * @brief Data-Carrier, extended information about the operational-stream-type message.
+            *        No additional info for now, used for function overloading.
+            */
+            class EXTERNAL OperationalStream : public MessageInfo {
+            public:
+                OperationalStream(const OperationalStream&) = default;
+                OperationalStream& operator=(const OperationalStream&) = default;
+                OperationalStream(OperationalStream&&) = default;
+                OperationalStream& operator=(OperationalStream&&) = default;
+
+                OperationalStream()
+                    : MessageInfo()
+                {
+                }
+                OperationalStream(const MessageInfo& messageInfo)
+                    : MessageInfo(messageInfo)
+                {
+                }
+                ~OperationalStream() = default;
+            };
+
+            /**
+            * @brief Data-Carrier, extended information about the assert-type message
+            */
+            class EXTERNAL Assert : public MessageInfo {
+            public:
+                Assert(const Assert&) = default;
+                Assert& operator=(const Assert&) = default;
+                Assert(Assert&&) = default;
+                Assert& operator=(Assert&&) = default;
+
+                Assert()
+                    : MessageInfo()
+                    , _processId(0)
+                    , _processName()
+                    , _fileName()
+                    , _lineNumber(0)
+                    , _callstack()
+                {
+                }
+                Assert(const MessageInfo& messageInfo, const pid_t processId, const string& processName, const string& fileName, const uint16_t lineNumber, const string& callstack)
+                    : MessageInfo(messageInfo)
+                    , _processId(processId)
+                    , _processName(processName)
+                    , _fileName(fileName)
+                    , _lineNumber(lineNumber)
+                    , _callstack(callstack)
+                {
+                }
+                ~Assert() = default;
+
+            public:
+                pid_t ProcessId() const {
+                    return (_processId);
+                }
+
+                const string& ProcessName() const {
+                    return (_processName);
+                }
+
+                const string& FileName() const {
+                    return (_fileName);
+                }
+
+                uint16_t LineNumber() const {
+                    return (_lineNumber);
+                }
+
+                const string& Callstack() const {
+                    return (_callstack);
+                }
+
+            public:
+                uint16_t Serialize(uint8_t buffer[], const uint16_t bufferSize) const override;
+                uint16_t Deserialize(const uint8_t buffer[], const uint16_t bufferSize) override;
+                string ToString(const abbreviate abbreviate) const override;
+
+            private:
+                pid_t _processId;
+                string _processName;
+                string _fileName;
+                uint16_t _lineNumber;
+                string _callstack;
+        };
+
+           /**
+            * @brief Data-Carrier, extended information about the telemetry-type message.
+            *        No additional info for now, used for function overloading.
+            */
+            class EXTERNAL Telemetry : public MessageInfo {
+            public:
+                Telemetry(const Telemetry&) = default;
+                Telemetry& operator=(const Telemetry&) = default;
+                Telemetry(Telemetry&&) = default;
+                Telemetry& operator=(Telemetry&&) = default;
+
+                Telemetry()
+                    : MessageInfo()
+                {
+                }
+                Telemetry(const MessageInfo& messageInfo)
+                    : MessageInfo(messageInfo)
+                {
+                }
+                ~Telemetry() = default;
+            };
+
+            public:
             virtual ~IStore() = default;
             static IStore* Instance();
             static void Set(IStore*);
 
             virtual bool Default(const Metadata& metadata) const = 0;
-            virtual void Push(const MessageInfo& messageInfo, const IEvent* message) = 0;
+            virtual OutputMode DefaultOutput(const Metadata& metadata) const = 0;
+            virtual void Push(const MessageInfo& messageInfo, const IEvent* message, OutputMode outputMode) = 0;
         };
 
     } // namespace Messaging

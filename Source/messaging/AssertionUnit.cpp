@@ -17,17 +17,29 @@
  * limitations under the License.
  */
 
-#pragma once
+#include "AssertionUnit.h"
 
-#ifndef MODULE_NAME
-#error "Please define a MODULE_NAME that describes the binary/library you are building."
-#endif
+namespace WPEFramework {
+namespace Assertion {
 
-#include "IWarningReportingMedia.h"
-#include "WarningReportingUnit.h"
+    AssertionUnit::AssertionUnit()
+    {
+        AssertionUnitProxy::Instance().Handle(this);
+    }
 
-#ifdef __WINDOWS__
-#pragma comment(lib, "warningreporting.lib")
-#endif
+    AssertionUnit& AssertionUnit::Instance()
+    {
+        return (Core::SingletonType<AssertionUnit>::Instance());
+    }
 
-WPEFRAMEWORK_NESTEDNAMESPACE_COMPATIBILIY(WarningReporting)
+    AssertionUnit::~AssertionUnit()
+    {
+        AssertionUnitProxy::Instance().Handle(nullptr);
+    }
+
+    void AssertionUnit::AssertionEvent(Core::Messaging::IStore::Assert& metadata, const Core::Messaging::TextMessage& message, Core::Messaging::OutputMode outputMode)
+    {
+        WPEFramework::Messaging::MessageUnit::Instance().Push(metadata, &message, outputMode);
+    }
+}
+}
