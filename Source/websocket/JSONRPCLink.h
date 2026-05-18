@@ -131,8 +131,11 @@ namespace WPEFramework {
 						: BaseClass(5, FactoryImpl::Instance(), callsign, _T("JSON"), query, "", false, false, false, remoteNode.AnyInterface(), remoteNode, 256, -1)
 						, _parent(*parent)
 					{
+						TRACE_L1("[RM_CRASH] Creating channel for %s for callsign: [%s]", remoteNode.HostAddress().c_str(), callsign.c_str());
 					}
-					~ChannelImpl() override = default;
+					~ChannelImpl() override {
+						TRACE_L1("[RM_CRASH] Destroying channel for %s for callsign: [%s]", RemoteNode().HostAddress().c_str(), Callsign().c_str());
+					}
 
 				public:
 					virtual void Received(Core::ProxyType<INTERFACE>& jsonObject) override
@@ -195,10 +198,13 @@ namespace WPEFramework {
 					: _channel(this, remoteNode, callsign, query)
 					, _sequence(0)
 				{
+					TRACE_L1("[RM_CRASH] Creating communication channel for remoteNode: %s callsign: [%s]", remoteNode.HostAddress().c_str(), callsign.c_str());
 				}
 
 			public:
-				virtual ~CommunicationChannel() = default;
+				virtual ~CommunicationChannel() {
+					TRACE_L1("[RM_CRASH] Destroying communication channel for remoteNode: %s callsign: [%s]", RemoteNode().HostAddress().c_str(), Callsign().c_str());
+				}
 				static Core::ProxyType<CommunicationChannel> Instance(const Core::NodeId& remoteNode, const string& callsign, const string& query)
 				{
 					static Core::ProxyMapType<string, CommunicationChannel> channelMap;
@@ -522,6 +528,7 @@ namespace WPEFramework {
 				, _scheduledTime(0)
 				, _versionstring()
 			{
+				TRACE_L1("[RM_CRASH] Creating LinkType for callsign: [%s] for localCallsign: [%s]", callsign.c_str(), localCallsign ? localCallsign : "nullptr");
 				if (localCallsign == nullptr) {
 					static uint32_t sequence;
 					_localSpace = string("temporary") + Core::NumberType<uint32_t>(Core::InterlockedIncrement(sequence)).Text();
@@ -556,6 +563,7 @@ namespace WPEFramework {
 			}
 			virtual ~LinkType()
 			{
+				TRACE_L1("[RM_CRASH] Destroying LinkType for callsign: [%s]", Callsign().c_str());
 				_channel->Unregister(*this);
 
 				for (auto& element : _pendingQueue) {
@@ -1313,11 +1321,13 @@ namespace WPEFramework {
                     			, _eventSubscriber(*this)
 					, _state(UNKNOWN)
 				{
+					TRACE_L1("[CRASH_RM] Creating Connection for callsign %s", Base::Callsign().c_str());
 					_monitor.template Assign<Statechange>(_T("statechange"), &Connection::state_change, this);
 					LinkType<INTERFACE>::Announce();
 				}
 				~Connection() override
 				{
+					TRACE_L1("[CRASH_RM] Destructing Connection for callsign %s", Base::Callsign().c_str());
 					_monitor.Revoke(_T("statechange"));
                     			_eventSubscriber.Stop();
                     			_eventSubscriber.Wait(Core::Thread::STOPPED, Core::infinite);
