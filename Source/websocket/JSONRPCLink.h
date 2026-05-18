@@ -203,7 +203,7 @@ namespace WPEFramework {
 
 			public:
 				virtual ~CommunicationChannel() {
-					TRACE_L1("[RM_CRASH] Destroying communication channel for remoteNode: %s callsign: [%s]", RemoteNode().HostAddress().c_str(), Callsign().c_str());
+					TRACE_L1("[RM_CRASH] Destroying communication channel for callsign: [%s]", Callsign().c_str());
 				}
 				static Core::ProxyType<CommunicationChannel> Instance(const Core::NodeId& remoteNode, const string& callsign, const string& query)
 				{
