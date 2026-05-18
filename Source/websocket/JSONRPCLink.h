@@ -131,10 +131,10 @@ namespace WPEFramework {
 						: BaseClass(5, FactoryImpl::Instance(), callsign, _T("JSON"), query, "", false, false, false, remoteNode.AnyInterface(), remoteNode, 256, -1)
 						, _parent(*parent)
 					{
-						TRACE_L1("[RM_CRASH] Creating channel for %s for callsign: [%s]", remoteNode.HostAddress().c_str(), callsign.c_str());
+						TRACE_L1("[RM_CRASH] Creating channelImpl for %s for callsign: [%s] this: %p", remoteNode.HostAddress().c_str(), callsign.c_str(), this);
 					}
 					~ChannelImpl() override {
-						TRACE_L1("[RM_CRASH] Destroying channel for %s for callsign: [%s]", RemoteNode().HostAddress().c_str(), Callsign().c_str());
+						TRACE_L1("[RM_CRASH] Destroying channelImpl %p", this);
 					}
 
 				public:
