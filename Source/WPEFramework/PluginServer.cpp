@@ -71,6 +71,7 @@ namespace PluginHost
 #endif
 
     /* static */ const TCHAR* Server::PluginOverrideFile = _T("PluginHost/override.json");
+    /* static */ const TCHAR* Server::ExtensionsConfigDirectory = _T("extensions/");
     /* static */ const TCHAR* Server::PluginConfigDirectory = _T("plugins/");
     /* static */ const TCHAR* Server::CommunicatorConnector = _T("COMMUNICATOR_CONNECTOR");
 
@@ -230,36 +231,118 @@ namespace PluginHost
         }
     }
 
+    void Server::ServiceMap::Startup()
+    {
+        //first we start the priority start plugins in the requested order (if any)
+        for (const string& prioservice : _prioritystartorder) {
+            if (prioservice != PluginHost::Config::AllExtensionsAuthorized()) {
+                ServiceContainer::iterator index = _services.find(prioservice);
+                if ((index != _services.end()) && (AutoActivateAllowed(index->second) == true)) {
+                    ActivateService(index->second);
+                } 
+            }
+        }
+
+        // sort plugins based on StartupOrder from configuration
+        std::vector<Core::ProxyType<Service>> configured_services;
+
+        bool needssorting = false;
+
+        for (auto& service : _services) {  
+            if (service.second->PriorityStart() == true) {
+                if ((AutoActivateAllowed(service.second) == true) && (std::find(_prioritystartorder.begin(), _prioritystartorder.end(), service.second->Callsign()) == _prioritystartorder.end())) {
+                    ActivateService(service.second);
+                }
+            } else if (AutoActivateAllowed(service.second) == true) {
+                configured_services.emplace_back(service.second);
+                if (service.second->StartupOrderSet() == true) {
+                    needssorting = true;
+                }
+            }
+        }
+
+        if ((needssorting == true) && (configured_services.size() != 0)) {
+            std::sort(configured_services.begin(), configured_services.end(),
+                [](const Core::ProxyType<Service>& lhs, const Core::ProxyType<Service>& rhs) {
+                    return lhs->StartupOrder() < rhs->StartupOrder();
+                });
+        }
+
+        for (auto& service : configured_services) {
+            ActivateService(service);
+        }        
+    }
+
     void Server::ServiceMap::Destroy()
     {
         _adminLock.Lock();
 
-        ServiceContainer::iterator index(_services.begin());
-        std::list< Core::ProxyType<Service> > deactivationList;
+        TRACE_L1("Destructing %d plugins.", static_cast<uint32_t>(_services.size()));
 
-        // First, move them all to deactivated except Controller
-        Core::ProxyType<Service> controller (_server.Controller());
+        Core::ProxyType<Service> controller(_server.Controller());
 
+        // first we move all non priority plugins to deactivated, 
+        auto index = _services.begin();
+        while (index != _services.end()) {
+
+            auto index = _services.begin();
+            Core::ProxyType<Service> service(index->second);
+
+            ASSERT(service.IsValid());
+
+            if ((service->PriorityStart() == false) && (index->first != controller->Callsign())) {
+                _adminLock.Unlock();
+
+                index->second->Deactivate(PluginHost::IShell::SHUTDOWN);
+
+                _adminLock.Lock();
+
+                index = _services.erase(index);
+            } else {
+                ++index;
+            }
+
+        }
+
+        // now we do the priority ones that have no specific order
+        index = _services.begin();
         while (index != _services.end()) {
 
             Core::ProxyType<Service> service(index->second);
 
             ASSERT(service.IsValid());
 
-            if (index->first.c_str() != controller->Callsign()) {
-                deactivationList.push_back(service);
+            if ((std::find(_prioritystartorder.begin(), _prioritystartorder.end(), index->first) == _prioritystartorder.end()) && (index->first != controller->Callsign()))
+            {
+                _adminLock.Unlock();
+
+                index->second->Deactivate(PluginHost::IShell::SHUTDOWN);
+
+                _adminLock.Lock();
+
+                index = _services.erase(index);
+            } else {
+                ++index;
             }
 
-            index = _services.erase(index);
         }
+
+        // and now the priority ones with order in reverse order
+        for (auto it = _prioritystartorder.rbegin(); it != _prioritystartorder.rend(); ++it) {
+            ServiceContainer::iterator index = _services.find(*it);
+            if (index != _services.end()) {
+                _adminLock.Unlock();
+                index->second->Deactivate(PluginHost::IShell::SHUTDOWN);
+                _adminLock.Lock();
+                _services.erase(index);
+            } 
+        }        
+
+        // and now only the controller is left...
+        ASSERT((_services.size() == 1) && (_services.begin()->first == controller->Callsign()));
+        _services.clear();
 
         _adminLock.Unlock();
-
-        TRACE_L1("Destructing %d plugins.", static_cast<uint32_t>(_services.size()));
-
-        for (Core::ProxyType<Service>& entry : deactivationList) {
-            entry->Deactivate(PluginHost::IShell::SHUTDOWN);
-        }
 
         // Now deactivate controller plugin, once other plugins are deactivated
         controller->Deactivate(PluginHost::IShell::SHUTDOWN);
@@ -629,117 +712,121 @@ namespace PluginHost
     /* virtual */ Core::hresult Server::Service::Unavailable(const reason why) {
         Core::hresult result = Core::ERROR_NONE;
 
-        Lock();
+        if (AllowedUnavailable() == true) {
 
-        IShell::state currentState(State());
+            Lock();
 
-        if ((currentState == IShell::state::DEACTIVATION) ||
-            (currentState == IShell::state::ACTIVATION)   ||
-            (currentState == IShell::state::DESTROYED)    ||
-            (currentState == IShell::state::ACTIVATED)    ||
-            (currentState == IShell::state::PRECONDITION) ||
-            (currentState == IShell::state::HIBERNATED)   ) {
-            result = Core::ERROR_ILLEGAL_STATE;
+            IShell::state currentState(State());
+
+            if ((currentState == IShell::state::DEACTIVATION) || (currentState == IShell::state::ACTIVATION) || (currentState == IShell::state::DESTROYED) || (currentState == IShell::state::ACTIVATED) || (currentState == IShell::state::PRECONDITION) || (currentState == IShell::state::HIBERNATED)) {
+                result = Core::ERROR_ILLEGAL_STATE;
+                Unlock();
+            } else if (currentState == IShell::state::DEACTIVATED) {
+
+                const Core::EnumerateType<PluginHost::IShell::reason> textReason(why);
+
+                const string className(PluginHost::Service::Configuration().ClassName.Value());
+                const string callSign(PluginHost::Service::Configuration().Callsign.Value());
+
+                _reason = why;
+
+                SYSLOG(Logging::Shutdown, (_T("Unavailable plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
+
+                TRACE(Activity, (Core::Format(_T("Unavailable plugin [%s]:[%s]"), className.c_str(), callSign.c_str())));
+
+                State(UNAVAILABLE);
+                _administrator.Unavailable(callSign, this);
+
+                Unlock();
+
+#ifdef THUNDER_RESTFULL_API
+                _administrator.Notification(_T("{\"callsign\":\"") + callSign + _T("\",\"state\":\"unavailable\",\"reason\":\"") + textReason.Data() + _T("\"}"));
+ #endif
+                _administrator.Notification(PluginHost::Server::ForwardMessage(callSign, string(_T("{\"state\":\"unavailable\",\"reason\":\"")) + textReason.Data() + _T("\"}")));
+            } else {
+                Unlock();
+            }
+        } else {
+            result = Core::ERROR_NOT_SUPPORTED;
         }
-        else if (currentState == IShell::state::DEACTIVATED) {
-
-            const Core::EnumerateType<PluginHost::IShell::reason> textReason(why);
-
-            const string className(PluginHost::Service::Configuration().ClassName.Value());
-            const string callSign(PluginHost::Service::Configuration().Callsign.Value());
-
-            _reason = why;
-
-            SYSLOG(Logging::Shutdown, (_T("Unavailable plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
-
-            TRACE(Activity, (Core::Format(_T("Unavailable plugin [%s]:[%s]"), className.c_str(), callSign.c_str())));
-
-            State(UNAVAILABLE);
-            _administrator.Unavailable(callSign, this);
-
-#if THUNDER_RESTFULL_API
-            _administrator.Notification(_T("{\"callsign\":\"") + callSign + _T("\",\"state\":\"unavailable\",\"reason\":\"") + textReason.Data() + _T("\"}"));
-#endif
-
-            _administrator.Notification(PluginHost::Server::ForwardMessage(callSign, string(_T("{\"state\":\"unavailable\",\"reason\":\"")) + textReason.Data() + _T("\"}")));
-        }
-
-        Unlock();
 
         return (result);
-
     }
 
     Core::hresult Server::Service::Hibernate(const uint32_t timeout VARIABLE_IS_NOT_USED) /* override */ {
-        Core::hresult result = Core::ERROR_NONE;
+      Core::hresult result = Core::ERROR_NONE;
 
-        Lock();
+        if (AllowedHibernate() == true) {
 
-        IShell::state currentState(State());
+            Lock();
 
-        if (currentState != IShell::state::ACTIVATED) {
-            result = Core::ERROR_ILLEGAL_STATE;
-        }
-        else if (_connection == nullptr) {
-            result = Core::ERROR_INPROC;
-        }
-        else {
-            // Oke we have an Connection so there is something to Hibernate..
-            RPC::IMonitorableProcess* local = _connection->QueryInterface< RPC::IMonitorableProcess>();
+            IShell::state currentState(State());
 
-            if (local == nullptr) {
-                result = Core::ERROR_BAD_REQUEST;
-            }
-            else {
-                State(IShell::HIBERNATED);
+            if (currentState != IShell::state::ACTIVATED) {
+                result = Core::ERROR_ILLEGAL_STATE;
+            } else if (_connection == nullptr) {
+                result = Core::ERROR_INPROC;
+            } else {
+                // Oke we have an Connection so there is something to Hibernate..
+                RPC::IMonitorableProcess* local = _connection->QueryInterface<RPC::IMonitorableProcess>();
+
+                if (local == nullptr) {
+                    result = Core::ERROR_BAD_REQUEST;
+                } else {
+                    State(IShell::HIBERNATED);
 #ifdef HIBERNATE_SUPPORT_ENABLED
-                Core::process_t parentPID = local->ParentPID();
-                local->Release();
-                Unlock();
+                    pid_t parentPID = local->ParentPID();
+                    local->Release();
+                    Unlock();
 
-                TRACE(Activity, (_T("Hibernation of plugin [%s] process [%u]"), Callsign().c_str(), parentPID));
-                result = HibernateProcess(timeout, parentPID, _administrator.Configuration().HibernateLocator().c_str(), _T(""), &_hibernateStorage);
-                Lock();
-                if (State() != IShell::HIBERNATED) {
-                    SYSLOG(Logging::Startup, (_T("Hibernation aborted of plugin [%s] process [%u]"), Callsign().c_str(), parentPID));
-                    result = Core::ERROR_ABORTED;
-                }
-                Unlock();
-
-                if (result == HIBERNATE_ERROR_NONE) {
-                    result = HibernateChildren(parentPID, timeout);
-                }
-
-                if (result != Core::ERROR_NONE && result != Core::ERROR_ABORTED) {
-                    // try to wakeup Parent process to revert Hibernation and recover
-                    TRACE(Activity, (_T("Wakeup plugin [%s] process [%u] on Hibernate error [%d]"), Callsign().c_str(), parentPID, result));
-                    WakeupProcess(timeout, parentPID, _administrator.Configuration().HibernateLocator().c_str(), _T(""), &_hibernateStorage);
-                }
-
-                Lock();
-#else
-                local->Release();
-                result = Core::ERROR_NONE;
-#endif
-                if (result == Core::ERROR_NONE) {
-                    if (State() == IShell::state::HIBERNATED) {
-                        SYSLOG(Logging::Startup, ("Hibernated plugin [%s]:[%s]", ClassName().c_str(), Callsign().c_str()));
-                    } else {
-                        // wakeup occured right after hibernation finished
-                        SYSLOG(Logging::Startup, ("Hibernation aborted of plugin [%s]:[%s]", ClassName().c_str(), Callsign().c_str()));
+                    TRACE(Activity, (_T("Hibernation of plugin [%s] process [%u]"), Callsign().c_str(), parentPID));
+                    result = HibernateProcess(timeout, parentPID, _administrator.Configuration().HibernateLocator().c_str(), _T(""), &_hibernateStorage);
+                    Lock();
+                    if (State() != IShell::HIBERNATED) {
+                        SYSLOG(Logging::Startup, (_T("Hibernation aborted of plugin [%s] process [%u]"), Callsign().c_str(), parentPID));
                         result = Core::ERROR_ABORTED;
                     }
-                }
-                else if (State() == IShell::state::HIBERNATED) {
-                    State(IShell::ACTIVATED);
-                    SYSLOG(Logging::Startup, (_T("Hibernation error [%d] of [%s]:[%s]"), result, ClassName().c_str(), Callsign().c_str()));
+                    Unlock();
+
+                    if (result == HIBERNATE_ERROR_NONE) {
+                        result = HibernateChildren(parentPID, timeout);
+                    }
+
+                    if (result != Core::ERROR_NONE && result != Core::ERROR_ABORTED) {
+                        // try to wakeup Parent process to revert Hibernation and recover
+                        TRACE(Activity, (_T("Wakeup plugin [%s] process [%u] on Hibernate error [%d]"), Callsign().c_str(), parentPID, result));
+                        WakeupProcess(timeout, parentPID, _administrator.Configuration().HibernateLocator().c_str(), _T(""), &_hibernateStorage);
+                    }
+
+                    Lock();
+#else
+                    local->Release();
+                    result = Core::ERROR_NONE;
+#endif
+                    // coverity[DEADCODE] - On the non-HIBERNATE_ENABLED path result is always
+                    // ERROR_NONE here, making the else-if appear unreachable to Coverity.
+                    // Both branches are reachable when HIBERNATE_ENABLED is defined.
+                    if (result == Core::ERROR_NONE) {
+                        if (State() == IShell::state::HIBERNATED) {
+                            SYSLOG(Logging::Startup, ("Hibernated plugin [%s]:[%s]", ClassName().c_str(), Callsign().c_str()));
+                        } else {
+                            // wakeup occured right after hibernation finished
+                            SYSLOG(Logging::Startup, ("Hibernation aborted of plugin [%s]:[%s]", ClassName().c_str(), Callsign().c_str()));
+                            result = Core::ERROR_ABORTED;
+                        }
+                    } else if (State() == IShell::state::HIBERNATED) {
+                        State(IShell::ACTIVATED);
+                        SYSLOG(Logging::Startup, (_T("Hibernation error [%d] of [%s]:[%s]"), result, ClassName().c_str(), Callsign().c_str()));
+                    }
                 }
             }
+            Unlock();
+        } else {
+        
+            result = Core::ERROR_NOT_SUPPORTED;
         }
-        Unlock();
 
         return (result);
-
     }
 
     uint32_t Server::Service::Wakeup(const uint32_t timeout VARIABLE_IS_NOT_USED) {
@@ -931,6 +1018,29 @@ namespace PluginHost
         return (result);
     }
 
+
+    void Server::ServiceMap::ActivateService(Core::ProxyType<PluginHost::Server::Service>& service)
+    {
+        ASSERT(service.IsValid() == true);
+
+        if ((service->State() != PluginHost::Service::state::UNAVAILABLE) && (service->State() != PluginHost::Service::state::ACTIVATED)) { // 2nd prevents the controller from tried to activate twice
+            if (service->Startup() == PluginHost::IShell::startup::ACTIVATED) {
+                SYSLOG(Logging::Startup, (_T("Activating plugin [%s]:[%s]"), service->ClassName().c_str(), service->Callsign().c_str()));
+                service->Activate(PluginHost::IShell::STARTUP);
+            } else {
+                SYSLOG(Logging::Startup, (_T("Activation of plugin [%s]:[%s] delayed, autostart is false"),
+                    service->ClassName().c_str(), service->Callsign().c_str()));
+            }
+        }
+    }
+
+    bool Server::ServiceMap::AutoActivateAllowed(Core::ProxyType<PluginHost::Server::Service>& service) const
+    {
+        ASSERT(service.IsValid() == true);
+
+        return (service->AutoActivationAlwaysEnabled() || (_disablePluginAutoActivation == false));
+    }
+
     Server::Channel::Channel(const SOCKET& connector, const Core::NodeId& remoteId, Core::SocketServerType<Channel>* parent)
         : PluginHost::Channel(connector, remoteId)
         , _parent(static_cast<ChannelMap&>(*parent).Parent())
@@ -957,6 +1067,36 @@ namespace PluginHost
         Close(Core::infinite);
     }
 
+    void Server::InsertLoadPluginConfig(Core::JSON::ArrayType<Plugin::Config>::Iterator index, Plugin::Config& metaDataConfig, const bool thunderextension, const bool background)
+    {
+        while (index.Next() == true) {
+            Plugin::Config& entry(index.Current());
+
+            if ((entry.ClassName.Value().empty() == true) && (entry.Locator.Value().empty() == true)) {
+
+                // This is a definition/configuration for the Controller or an incorrect entry :-).
+                // Read and define the Controller.
+                if (metaDataConfig.Callsign.Value().empty() == true) {
+                    // Oke, this is the first time we "initialize" it.
+                    metaDataConfig.Callsign = (entry.Callsign.Value().empty() == true ? string(_defaultControllerCallsign) : entry.Callsign.Value());
+                    metaDataConfig.Configuration = entry.Configuration;
+                } else {
+// Let's raise an error, this is a bit strange, again, the controller is initialized !!!
+#ifndef __WINDOWS__
+                    if (background == true) {
+                        syslog(LOG_NOTICE, "Configuration error. Controller is defined mutiple times [%s].\n", entry.Callsign.Value().c_str());
+                    } else
+#endif
+                    {
+                        fprintf(stdout, "Configuration error. Controller is defined multiple times [%s].\n", entry.Callsign.Value().c_str());
+                    }
+                }
+            } else {
+                _services.Insert(entry, Service::mode::CONFIGURED, thunderextension);
+            }
+        }
+    }
+
 PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
 
     Server::Server(Config& configuration, const bool background)
@@ -979,40 +1119,17 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
         // Lets assign a workerpool, we created it...
         Core::WorkerPool::Assign(&_dispatcher);
 
-        Core::JSON::ArrayType<Plugin::Config>::Iterator index = configuration.Plugins();
-
-        // First register all services, than if we got them, start "activating what is required.
-        // Whatever plugin is needed, we at least have our MetaData plugin available (as the first entry :-).
         Plugin::Config metaDataConfig;
 
         metaDataConfig.ClassName = Core::ClassNameOnly(typeid(Plugin::Controller).name()).Text();
 
-        while (index.Next() == true) {
-            Plugin::Config& entry(index.Current());
+        Core::JSON::ArrayType<Plugin::Config>::Iterator index = configuration.Extensions();
 
-            if ((entry.ClassName.Value().empty() == true) && (entry.Locator.Value().empty() == true)) {
+        InsertLoadPluginConfig(index, metaDataConfig, true, background);
 
-                // This is a definition/configuration for the Controller or an incorrect entry :-).
-                // Read and define the Controller.
-                if (metaDataConfig.Callsign.Value().empty() == true) {
-                    // Oke, this is the first time we "initialize" it.
-                    metaDataConfig.Callsign = (entry.Callsign.Value().empty() == true ? string(_defaultControllerCallsign) : entry.Callsign.Value());
-                    metaDataConfig.Configuration = entry.Configuration;
-                } else {
-                    // Let's raise an error, this is a bit strange, again, the controller is initialized !!!
-#ifndef __WINDOWS__
-                    if (background == true) {
-                        syslog(LOG_NOTICE, "Configuration error. Controller is defined mutiple times [%s].\n", entry.Callsign.Value().c_str());
-                    } else
-#endif
-                    {
-                        fprintf(stdout, "Configuration error. Controller is defined mutiple times [%s].\n", entry.Callsign.Value().c_str());
-                    }
-                }
-            } else {
-                _services.Insert(entry, Service::mode::CONFIGURED);
-            }
-        }
+        index = configuration.Plugins();
+
+        InsertLoadPluginConfig(index, metaDataConfig, false, background);
 
         if (metaDataConfig.Callsign.Value().empty() == true) {
             // Oke, this is the first time we "initialize" it.
@@ -1033,7 +1150,7 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
         Channel::Initialize(_config.WebPrefix());
 
         // Add the controller as a service to the services.
-        _controller = _services.Insert(metaDataConfig, Service::mode::CONFIGURED);
+        _controller = _services.Insert(metaDataConfig, Service::mode::CONFIGURED, true);
 
 #ifdef PROCESSCONTAINERS_ENABLED
         // turn on ProcessContainer logging
@@ -1100,6 +1217,7 @@ POP_WARNING()
             }
         }
 
+        SYSLOG(Logging::Startup, (_T("Activating controller")));
         _controller->Activate(PluginHost::IShell::STARTUP);
 
         Plugin::Controller* controller = _controller->ClassType<Plugin::Controller>();
@@ -1121,34 +1239,7 @@ POP_WARNING()
         _dispatcher.Run();
         Dispatcher().Open(MAX_EXTERNAL_WAITS);
 
-        // Right we have the shells for all possible services registered, time to activate what is needed :-)
-        iterator.Reset(0);
-
-        // sort plugins based on StartupOrder from configuration
-        std::vector<Core::ProxyType<Service>> configured_services;
-        while (iterator.Next())
-          configured_services.push_back(*iterator);
-
-        std::sort(configured_services.begin(), configured_services.end(),
-          [](const Core::ProxyType<Service>& lhs, const Core::ProxyType<Service>&rhs)
-          {
-            return lhs->StartupOrder() < rhs->StartupOrder();
-          });
-
-        for (auto service : configured_services)
-        {
-            if (service->State() != PluginHost::Service::state::UNAVAILABLE) {
-                if (service->Startup() == PluginHost::IShell::startup::ACTIVATED) {
-                    SYSLOG(Logging::Startup, (_T("Activating plugin [%s]:[%s]"),
-                        service->ClassName().c_str(), service->Callsign().c_str()));
-                    service->Activate(PluginHost::IShell::STARTUP);
-                }
-                else {
-                    SYSLOG(Logging::Startup, (_T("Activation of plugin [%s]:[%s] delayed, autostart is false"),
-                        service->ClassName().c_str(), service->Callsign().c_str()));
-                }
-            }
-        }
+        _services.Startup();
     }
 
     void Server::Close()
