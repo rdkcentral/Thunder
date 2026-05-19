@@ -301,7 +301,7 @@ ENUM_CONVERSION_END(Thunder::Core::Messaging::OutputMode)
                 if ((_metaDataBuffer != nullptr) && (_metaDataBuffer->IsOpen() == true)) {
 
                     if (_settings.DataSize() != 0) {
-                        _dataBuffer.reset(new MessageDataBuffer(_settings.Identifier(), instanceId, _settings.BasePath(), _settings.DataSize(), _settings.SocketPort(), false));
+                        _dataBuffer.reset(new MessageDataBuffer(_settings.Identifier(), instanceId, _settings.BasePath(), _settings.DataSize(), _settings.SocketPort(), true));
                         ASSERT(_dataBuffer != nullptr);
                     }
 
