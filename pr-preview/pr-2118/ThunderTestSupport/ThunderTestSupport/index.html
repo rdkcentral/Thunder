@@ -4221,7 +4221,7 @@
 <td>JsonObject overload — handles serialization/deserialization automatically.</td>
 </tr>
 <tr>
-<td><code>QueryInterfaceByCallsign()</code></td>
+<td><code>CreateJSONRPCLink()</code></td>
 <td>Returns a callsign-bound <code>JSONRPCLink</code> for repeated calls and event subscriptions. Caller must <code>Release()</code> when done.</td>
 </tr>
 <tr>
@@ -4229,7 +4229,7 @@
 <td>Checks whether a JSON-RPC method is registered on a plugin, using the framework's built-in <code>"exists"</code> endpoint.</td>
 </tr>
 <tr>
-<td><code>GetInterface&lt;T&gt;()</code></td>
+<td><code>QueryInterfaceByCallsign&lt;T&gt;()</code></td>
 <td>Template: obtains a COM-RPC interface from a plugin via <code>QueryInterface&lt;T&gt;()</code>. Caller must <code>Release()</code> when done.</td>
 </tr>
 <tr>
@@ -4287,7 +4287,7 @@
     └── dispatcher-&gt;Invoke(0, 0, &quot;&quot;, method, params, response)
 </code></pre></div>
 <h4 id="com-rpc-interface-access">COM-RPC interface access</h4>
-<div class="highlight"><pre><span></span><code>GetInterface&lt;Exchange::IMyInterface&gt;(&quot;Callsign&quot;)
+<div class="highlight"><pre><span></span><code>QueryInterfaceByCallsign&lt;Exchange::IMyInterface&gt;(&quot;Callsign&quot;)
     ├── GetShell(&quot;Callsign&quot;)               → IShell proxy
     └── shell-&gt;QueryInterface&lt;T&gt;()         → interface pointer
 </code></pre></div>
@@ -4416,7 +4416,7 @@ cmake<span class="w"> </span>--build<span class="w"> </span>build/Thunder<span c
 <h4 id="4-json-rpc-via-jsonrpclink">4. JSON-RPC via <code>JSONRPCLink</code></h4>
 <div class="highlight"><pre><span></span><code><span class="n">TEST_F</span><span class="p">(</span><span class="n">MyPluginTest</span><span class="p">,</span><span class="w"> </span><span class="n">JsonRpcViaLink</span><span class="p">)</span>
 <span class="p">{</span>
-<span class="w">    </span><span class="k">auto</span><span class="o">*</span><span class="w"> </span><span class="n">link</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_runtime</span><span class="p">.</span><span class="n">QueryInterfaceByCallsign</span><span class="p">(</span><span class="s">&quot;MyPlugin&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="k">auto</span><span class="o">*</span><span class="w"> </span><span class="n">link</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_runtime</span><span class="p">.</span><span class="n">CreateJSONRPCLink</span><span class="p">(</span><span class="s">&quot;MyPlugin&quot;</span><span class="p">);</span>
 <span class="w">    </span><span class="n">ASSERT_NE</span><span class="p">(</span><span class="n">link</span><span class="p">,</span><span class="w"> </span><span class="nb">nullptr</span><span class="p">);</span>
 
 <span class="w">    </span><span class="n">string</span><span class="w"> </span><span class="n">response</span><span class="p">;</span>
@@ -4430,7 +4430,7 @@ cmake<span class="w"> </span>--build<span class="w"> </span>build/Thunder<span c
 <p>Events do not require a dedicated "trigger" method. Any plugin operation can fire an event internally as a side-effect. Subscribe before calling the operation, then wait for the callback to arrive.</p>
 <div class="highlight"><pre><span></span><code><span class="n">TEST_F</span><span class="p">(</span><span class="n">MyPluginTest</span><span class="p">,</span><span class="w"> </span><span class="n">JSONRPC_OperationTriggersEvent</span><span class="p">)</span>
 <span class="p">{</span>
-<span class="w">    </span><span class="k">auto</span><span class="o">*</span><span class="w"> </span><span class="n">link</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_runtime</span><span class="p">.</span><span class="n">QueryInterfaceByCallsign</span><span class="p">(</span><span class="s">&quot;MyPlugin&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="k">auto</span><span class="o">*</span><span class="w"> </span><span class="n">link</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_runtime</span><span class="p">.</span><span class="n">CreateJSONRPCLink</span><span class="p">(</span><span class="s">&quot;MyPlugin&quot;</span><span class="p">);</span>
 <span class="w">    </span><span class="n">ASSERT_NE</span><span class="p">(</span><span class="n">link</span><span class="p">,</span><span class="w"> </span><span class="nb">nullptr</span><span class="p">);</span>
 
 <span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="w"> </span><span class="n">mtx</span><span class="p">;</span>
@@ -4463,7 +4463,7 @@ cmake<span class="w"> </span>--build<span class="w"> </span>build/Thunder<span c
 <div class="highlight"><pre><span></span><code><span class="n">TEST_F</span><span class="p">(</span><span class="n">MyPluginTest</span><span class="p">,</span><span class="w"> </span><span class="n">ComRpc</span><span class="p">)</span>
 <span class="p">{</span>
 <span class="w">    </span><span class="n">Exchange</span><span class="o">::</span><span class="n">IMyInterface</span><span class="o">*</span><span class="w"> </span><span class="n">iface</span><span class="w"> </span><span class="o">=</span>
-<span class="w">        </span><span class="n">_runtime</span><span class="p">.</span><span class="n">GetInterface</span><span class="o">&lt;</span><span class="n">Exchange</span><span class="o">::</span><span class="n">IMyInterface</span><span class="o">&gt;</span><span class="p">(</span><span class="s">&quot;MyPlugin&quot;</span><span class="p">);</span>
+<span class="w">        </span><span class="n">_runtime</span><span class="p">.</span><span class="n">QueryInterfaceByCallsign</span><span class="o">&lt;</span><span class="n">Exchange</span><span class="o">::</span><span class="n">IMyInterface</span><span class="o">&gt;</span><span class="p">(</span><span class="s">&quot;MyPlugin&quot;</span><span class="p">);</span>
 <span class="w">    </span><span class="n">ASSERT_NE</span><span class="p">(</span><span class="n">iface</span><span class="p">,</span><span class="w"> </span><span class="nb">nullptr</span><span class="p">);</span>
 
 <span class="w">    </span><span class="n">string</span><span class="w"> </span><span class="n">result</span><span class="p">;</span>
@@ -4516,7 +4516,7 @@ cmake<span class="w"> </span>--build<span class="w"> </span>build/Thunder<span c
 
 <span class="n">TEST_F</span><span class="p">(</span><span class="n">MyPluginTest</span><span class="p">,</span><span class="w"> </span><span class="n">COMRPC_OperationTriggersNotification</span><span class="p">)</span>
 <span class="p">{</span>
-<span class="w">    </span><span class="k">auto</span><span class="o">*</span><span class="w"> </span><span class="n">iface</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_runtime</span><span class="p">.</span><span class="n">GetInterface</span><span class="o">&lt;</span><span class="n">Exchange</span><span class="o">::</span><span class="n">IMyInterface</span><span class="o">&gt;</span><span class="p">(</span><span class="s">&quot;MyPlugin&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="k">auto</span><span class="o">*</span><span class="w"> </span><span class="n">iface</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_runtime</span><span class="p">.</span><span class="n">QueryInterfaceByCallsign</span><span class="o">&lt;</span><span class="n">Exchange</span><span class="o">::</span><span class="n">IMyInterface</span><span class="o">&gt;</span><span class="p">(</span><span class="s">&quot;MyPlugin&quot;</span><span class="p">);</span>
 <span class="w">    </span><span class="n">ASSERT_NE</span><span class="p">(</span><span class="n">iface</span><span class="p">,</span><span class="w"> </span><span class="nb">nullptr</span><span class="p">);</span>
 
 <span class="w">    </span><span class="n">Core</span><span class="o">::</span><span class="n">SinkType</span><span class="o">&lt;</span><span class="n">MySink</span><span class="o">&gt;</span><span class="w"> </span><span class="n">sink</span><span class="p">;</span>
@@ -4533,7 +4533,7 @@ cmake<span class="w"> </span>--build<span class="w"> </span>build/Thunder<span c
 
 <span class="n">TEST_F</span><span class="p">(</span><span class="n">MyPluginTest</span><span class="p">,</span><span class="w"> </span><span class="n">COMRPC_MultipleOperationsTriggerMultipleNotifications</span><span class="p">)</span>
 <span class="p">{</span>
-<span class="w">    </span><span class="k">auto</span><span class="o">*</span><span class="w"> </span><span class="n">iface</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_runtime</span><span class="p">.</span><span class="n">GetInterface</span><span class="o">&lt;</span><span class="n">Exchange</span><span class="o">::</span><span class="n">IMyInterface</span><span class="o">&gt;</span><span class="p">(</span><span class="s">&quot;MyPlugin&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="k">auto</span><span class="o">*</span><span class="w"> </span><span class="n">iface</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_runtime</span><span class="p">.</span><span class="n">QueryInterfaceByCallsign</span><span class="o">&lt;</span><span class="n">Exchange</span><span class="o">::</span><span class="n">IMyInterface</span><span class="o">&gt;</span><span class="p">(</span><span class="s">&quot;MyPlugin&quot;</span><span class="p">);</span>
 <span class="w">    </span><span class="n">ASSERT_NE</span><span class="p">(</span><span class="n">iface</span><span class="p">,</span><span class="w"> </span><span class="nb">nullptr</span><span class="p">);</span>
 
 <span class="w">    </span><span class="n">Core</span><span class="o">::</span><span class="n">SinkType</span><span class="o">&lt;</span><span class="n">MySink</span><span class="o">&gt;</span><span class="w"> </span><span class="n">sink</span><span class="p">;</span>
@@ -4636,6 +4636,13 @@ cmake<span class="w"> </span>--build<span class="w"> </span>build/Thunder<span c
 <li><strong>UnknownMethodReturnsError</strong> — verifies <code>Core::ERROR_UNKNOWN_METHOD</code> for unregistered methods</li>
 <li><strong>UnknownMethodViaJSONRPCLinkReturnsError</strong> — same via <code>JSONRPCLink</code></li>
 <li><strong>MissingCallsignReturnsError</strong> — verifies error when callsign is missing from designator</li>
+<li><strong>QueryInterfaceByCallsign_ControllerPlugin</strong> — obtains <code>IPlugin</code> from Controller via <code>QueryInterfaceByCallsign&lt;T&gt;()</code></li>
+<li><strong>QueryInterfaceByCallsign_NonExistentCallsignReturnsNull</strong> — verifies <code>nullptr</code> for a non-existent callsign</li>
+<li><strong>QueryInterfaceByCallsign_UnsupportedInterfaceReturnsNull</strong> — verifies <code>nullptr</code> when querying an unsupported interface</li>
+<li><strong>QueryInterfaceByCallsign_ControllerDispatcher</strong> — obtains <code>IDispatcher</code> from Controller via <code>QueryInterfaceByCallsign&lt;T&gt;()</code></li>
+<li><strong>InvokeWithJsonObjectViaFullDesignator</strong> — calls <code>Controller.status</code> using <code>JsonObject</code> overload</li>
+<li><strong>InvokeWithJsonObjectViaLink</strong> — same via <code>JSONRPCLink</code> with <code>JsonObject</code> overload</li>
+<li><strong>InvokeWithJsonObjectUnknownMethodReturnsError</strong> — verifies <code>Core::ERROR_UNKNOWN_METHOD</code> with <code>JsonObject</code> overload</li>
 </ul>
 <p>Running:</p>
 <div class="highlight"><pre><span></span><code><span class="nv">LD_LIBRARY_PATH</span><span class="o">=</span>/path/to/install/lib:<span class="nv">$LD_LIBRARY_PATH</span><span class="w"> </span><span class="se">\</span>
