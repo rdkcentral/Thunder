@@ -118,8 +118,8 @@ namespace TestCore {
     }
 
     Core::hresult ThunderTestRuntime::JSONRPCLink::Event(const string& event,
-        const string& /* designator */,
-        const string& /* index */,
+        const string& designator,
+        const string& index,
         const string& parameters)
     {
         EventHandler handler;
@@ -133,7 +133,7 @@ namespace TestCore {
         }
 
         if (handler) {
-            handler(parameters);
+            handler(designator, index, parameters);
         }
 
         return Core::ERROR_NONE;

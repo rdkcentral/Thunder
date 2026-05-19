@@ -127,7 +127,7 @@ Callsign-bound helper for JSON-RPC invocations and event subscriptions. Implemen
 |--------|-------------|
 | `Invoke(method, params, response)` | Invoke a method by bare name (for example `"echo"`), without repeating the callsign. String variant. |
 | `Invoke(method, params, response)` | JsonObject overload — handles serialization/deserialization automatically. |
-| `Subscribe(event, handler, index)` | Subscribe to a JSON-RPC event by name with a `std::function` callback. Optional `index` parameter for indexed events. |
+| `Subscribe(event, handler, index)` | Subscribe to a JSON-RPC event by name with a `std::function<void(const string& designator, const string& index, const string& params)>` callback. Optional `index` parameter for indexed events. |
 | `Unsubscribe(event, index)` | Unsubscribe from a previously subscribed event. Optional `index` parameter for indexed events. |
 | `Callsign()` | Returns the callsign this link is bound to. |
 
@@ -320,7 +320,7 @@ TEST_F(MyPluginTest, JSONRPC_OperationTriggersEvent)
     string receivedParams;
     bool fired = false;
 
-    link->Subscribe("onStateChanged", [&](const string& params) {
+    link->Subscribe("onStateChanged", [&](const string& /*designator*/, const string& /*index*/, const string& params) {
         std::lock_guard<std::mutex> lock(mtx);
         receivedParams = params;
         fired = true;

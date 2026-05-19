@@ -28,7 +28,7 @@ namespace TestCore {
 
         class JSONRPCLink : public PluginHost::IDispatcher::ICallback {
         public:
-            using EventHandler = std::function<void(const string& params)>;
+            using EventHandler = std::function<void(const string& designator, const string& index, const string& params)>;
 
             JSONRPCLink(ThunderTestRuntime& runtime, const string& callsign);
             ~JSONRPCLink() override;
