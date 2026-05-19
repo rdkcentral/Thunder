@@ -4213,12 +4213,20 @@
 <td>Stops the server, closes messaging, releases config, cleans up temp directories.</td>
 </tr>
 <tr>
-<td><code>Invoke()</code></td>
-<td>Calls a JSON-RPC method synchronously via in-process <code>IDispatcher::Invoke()</code>. Method format: <code>"Callsign.method"</code>.</td>
+<td><code>Invoke(method, params, response)</code></td>
+<td>Calls a JSON-RPC method synchronously via in-process <code>IDispatcher::Invoke()</code>. Method format: <code>"Callsign.method"</code>. String variant.</td>
 </tr>
 <tr>
-<td><code>CreateJSONRPCLink()</code></td>
+<td><code>Invoke(method, params, response)</code></td>
+<td>JsonObject overload — handles serialization/deserialization automatically.</td>
+</tr>
+<tr>
+<td><code>QueryInterfaceByCallsign()</code></td>
 <td>Returns a callsign-bound <code>JSONRPCLink</code> for repeated calls and event subscriptions. Caller must <code>Release()</code> when done.</td>
+</tr>
+<tr>
+<td><code>Exists()</code></td>
+<td>Checks whether a JSON-RPC method is registered on a plugin, using the framework's built-in <code>"exists"</code> endpoint.</td>
 </tr>
 <tr>
 <td><code>GetInterface&lt;T&gt;()</code></td>
@@ -4249,16 +4257,20 @@
 </thead>
 <tbody>
 <tr>
-<td><code>Invoke()</code></td>
-<td>Invoke a method by bare name (for example <code>"echo"</code>), without repeating the callsign.</td>
+<td><code>Invoke(method, params, response)</code></td>
+<td>Invoke a method by bare name (for example <code>"echo"</code>), without repeating the callsign. String variant.</td>
 </tr>
 <tr>
-<td><code>Subscribe()</code></td>
-<td>Subscribe to a JSON-RPC event by name with a <code>std::function</code> callback.</td>
+<td><code>Invoke(method, params, response)</code></td>
+<td>JsonObject overload — handles serialization/deserialization automatically.</td>
 </tr>
 <tr>
-<td><code>Unsubscribe()</code></td>
-<td>Unsubscribe from a previously subscribed event.</td>
+<td><code>Subscribe(event, handler, index)</code></td>
+<td>Subscribe to a JSON-RPC event by name with a <code>std::function</code> callback. Optional <code>index</code> parameter for indexed events.</td>
+</tr>
+<tr>
+<td><code>Unsubscribe(event, index)</code></td>
+<td>Unsubscribe from a previously subscribed event. Optional <code>index</code> parameter for indexed events.</td>
 </tr>
 <tr>
 <td><code>Callsign()</code></td>
@@ -4272,7 +4284,6 @@
     ├── Core::JSONRPC::Message::Method()    → methodName
     ├── Services().FromIdentifier()         → IShell proxy
     ├── shell-&gt;QueryInterface&lt;IDispatcher&gt;()
-    ├── MethodExists() via built-in &quot;exists&quot; endpoint
     └── dispatcher-&gt;Invoke(0, 0, &quot;&quot;, method, params, response)
 </code></pre></div>
 <h4 id="com-rpc-interface-access">COM-RPC interface access</h4>
@@ -4344,8 +4355,8 @@ cmake<span class="w"> </span>--build<span class="w"> </span>build/Thunder<span c
 <span class="p">)</span>
 <span class="nb">target_link_libraries</span><span class="p">(</span><span class="s">my_plugin_test</span><span class="w"> </span><span class="s">PRIVATE</span>
 <span class="w">    </span><span class="s">thunder_test_support::thunder_test_support</span>
-<span class="w">    </span><span class="s">GTest::GTest</span>
-<span class="w">    </span><span class="s">GTest::Main</span>
+<span class="w">    </span><span class="s">GTest::gtest</span>
+<span class="w">    </span><span class="s">GTest::gtest_main</span>
 <span class="w">    </span><span class="o">${</span><span class="nv">NAMESPACE</span><span class="o">}</span><span class="s">Definitions::</span><span class="o">${</span><span class="nv">NAMESPACE</span><span class="o">}</span><span class="s">Definitions</span>
 <span class="p">)</span>
 
@@ -4405,7 +4416,7 @@ cmake<span class="w"> </span>--build<span class="w"> </span>build/Thunder<span c
 <h4 id="4-json-rpc-via-jsonrpclink">4. JSON-RPC via <code>JSONRPCLink</code></h4>
 <div class="highlight"><pre><span></span><code><span class="n">TEST_F</span><span class="p">(</span><span class="n">MyPluginTest</span><span class="p">,</span><span class="w"> </span><span class="n">JsonRpcViaLink</span><span class="p">)</span>
 <span class="p">{</span>
-<span class="w">    </span><span class="k">auto</span><span class="o">*</span><span class="w"> </span><span class="n">link</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_runtime</span><span class="p">.</span><span class="n">CreateJSONRPCLink</span><span class="p">(</span><span class="s">&quot;MyPlugin&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="k">auto</span><span class="o">*</span><span class="w"> </span><span class="n">link</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_runtime</span><span class="p">.</span><span class="n">QueryInterfaceByCallsign</span><span class="p">(</span><span class="s">&quot;MyPlugin&quot;</span><span class="p">);</span>
 <span class="w">    </span><span class="n">ASSERT_NE</span><span class="p">(</span><span class="n">link</span><span class="p">,</span><span class="w"> </span><span class="nb">nullptr</span><span class="p">);</span>
 
 <span class="w">    </span><span class="n">string</span><span class="w"> </span><span class="n">response</span><span class="p">;</span>
@@ -4419,7 +4430,7 @@ cmake<span class="w"> </span>--build<span class="w"> </span>build/Thunder<span c
 <p>Events do not require a dedicated "trigger" method. Any plugin operation can fire an event internally as a side-effect. Subscribe before calling the operation, then wait for the callback to arrive.</p>
 <div class="highlight"><pre><span></span><code><span class="n">TEST_F</span><span class="p">(</span><span class="n">MyPluginTest</span><span class="p">,</span><span class="w"> </span><span class="n">JSONRPC_OperationTriggersEvent</span><span class="p">)</span>
 <span class="p">{</span>
-<span class="w">    </span><span class="k">auto</span><span class="o">*</span><span class="w"> </span><span class="n">link</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_runtime</span><span class="p">.</span><span class="n">CreateJSONRPCLink</span><span class="p">(</span><span class="s">&quot;MyPlugin&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="k">auto</span><span class="o">*</span><span class="w"> </span><span class="n">link</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_runtime</span><span class="p">.</span><span class="n">QueryInterfaceByCallsign</span><span class="p">(</span><span class="s">&quot;MyPlugin&quot;</span><span class="p">);</span>
 <span class="w">    </span><span class="n">ASSERT_NE</span><span class="p">(</span><span class="n">link</span><span class="p">,</span><span class="w"> </span><span class="nb">nullptr</span><span class="p">);</span>
 
 <span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="w"> </span><span class="n">mtx</span><span class="p">;</span>
@@ -4622,7 +4633,7 @@ cmake<span class="w"> </span>--build<span class="w"> </span>build/Thunder<span c
 <li><strong>ControllerSubsystemsViaFullDesignator</strong> — calls <code>Controller.subsystems</code> and verifies a non-empty response</li>
 <li><strong>ControllerStatusViaJSONRPCLink</strong> — same via <code>JSONRPCLink</code></li>
 <li><strong>GetControllerShell</strong> — obtains the Controller <code>IShell</code> and verifies it is valid</li>
-<li><strong>UnknownMethodReturnsError</strong> — verifies <code>Core::ERROR_UNKNOWN_KEY</code> for unregistered methods</li>
+<li><strong>UnknownMethodReturnsError</strong> — verifies <code>Core::ERROR_UNKNOWN_METHOD</code> for unregistered methods</li>
 <li><strong>UnknownMethodViaJSONRPCLinkReturnsError</strong> — same via <code>JSONRPCLink</code></li>
 <li><strong>MissingCallsignReturnsError</strong> — verifies error when callsign is missing from designator</li>
 </ul>
