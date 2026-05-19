@@ -110,8 +110,10 @@ Defined in `ThunderTestRuntime.h` under `Thunder::TestCore`.
 | `PluginConfig` | Type alias for `Plugin::Config`. Key fields: `Callsign`, `Locator`, `ClassName`, `StartupOrder`, `StartMode`, `Configuration`. |
 | `Initialize()` | Boots the embedded server with given plugins, system path, and proxy stub path. |
 | `Deinitialize()` | Stops the server, closes messaging, releases config, cleans up temp directories. |
-| `Invoke()` | Calls a JSON-RPC method synchronously via in-process `IDispatcher::Invoke()`. Method format: `"Callsign.method"`. |
-| `CreateJSONRPCLink()` | Returns a callsign-bound `JSONRPCLink` for repeated calls and event subscriptions. Caller must `Release()` when done. |
+| `Invoke(method, params, response)` | Calls a JSON-RPC method synchronously via in-process `IDispatcher::Invoke()`. Method format: `"Callsign.method"`. String variant. |
+| `Invoke(method, params, response)` | JsonObject overload — handles serialization/deserialization automatically. |
+| `QueryInterfaceByCallsign()` | Returns a callsign-bound `JSONRPCLink` for repeated calls and event subscriptions. Caller must `Release()` when done. |
+| `Exists()` | Checks whether a JSON-RPC method is registered on a plugin, using the framework's built-in `"exists"` endpoint. |
 | `GetInterface<T>()` | Template: obtains a COM-RPC interface from a plugin via `QueryInterface<T>()`. Caller must `Release()` when done. |
 | `GetShell()` | Returns the `IShell` proxy for a plugin. |
 | `Server()` | Direct access to the underlying `PluginHost::Server`. |
@@ -123,9 +125,10 @@ Callsign-bound helper for JSON-RPC invocations and event subscriptions. Implemen
 
 | Member | Description |
 |--------|-------------|
-| `Invoke()` | Invoke a method by bare name (for example `"echo"`), without repeating the callsign. |
-| `Subscribe()` | Subscribe to a JSON-RPC event by name with a `std::function` callback. |
-| `Unsubscribe()` | Unsubscribe from a previously subscribed event. |
+| `Invoke(method, params, response)` | Invoke a method by bare name (for example `"echo"`), without repeating the callsign. String variant. |
+| `Invoke(method, params, response)` | JsonObject overload — handles serialization/deserialization automatically. |
+| `Subscribe(event, handler, index)` | Subscribe to a JSON-RPC event by name with a `std::function` callback. Optional `index` parameter for indexed events. |
+| `Unsubscribe(event, index)` | Unsubscribe from a previously subscribed event. Optional `index` parameter for indexed events. |
 | `Callsign()` | Returns the callsign this link is bound to. |
 
 #### JSON-RPC invocation path
@@ -136,7 +139,6 @@ Invoke("Callsign.method", params, response)
     ├── Core::JSONRPC::Message::Method()    → methodName
     ├── Services().FromIdentifier()         → IShell proxy
     ├── shell->QueryInterface<IDispatcher>()
-    ├── MethodExists() via built-in "exists" endpoint
     └── dispatcher->Invoke(0, 0, "", method, params, response)
 ```
 
@@ -219,8 +221,8 @@ add_executable(my_plugin_test
 )
 target_link_libraries(my_plugin_test PRIVATE
     thunder_test_support::thunder_test_support
-    GTest::GTest
-    GTest::Main
+    GTest::gtest
+    GTest::gtest_main
     ${NAMESPACE}Definitions::${NAMESPACE}Definitions
 )
 
@@ -292,7 +294,7 @@ TEST_F(MyPluginTest, JsonRpcFullDesignator)
 ```cpp
 TEST_F(MyPluginTest, JsonRpcViaLink)
 {
-    auto* link = _runtime.CreateJSONRPCLink("MyPlugin");
+    auto* link = _runtime.QueryInterfaceByCallsign("MyPlugin");
     ASSERT_NE(link, nullptr);
 
     string response;
@@ -310,7 +312,7 @@ Events do not require a dedicated "trigger" method. Any plugin operation can fir
 ```cpp
 TEST_F(MyPluginTest, JSONRPC_OperationTriggersEvent)
 {
-    auto* link = _runtime.CreateJSONRPCLink("MyPlugin");
+    auto* link = _runtime.QueryInterfaceByCallsign("MyPlugin");
     ASSERT_NE(link, nullptr);
 
     std::mutex mtx;
@@ -552,7 +554,7 @@ Covered cases:
 - **ControllerSubsystemsViaFullDesignator** — calls `Controller.subsystems` and verifies a non-empty response
 - **ControllerStatusViaJSONRPCLink** — same via `JSONRPCLink`
 - **GetControllerShell** — obtains the Controller `IShell` and verifies it is valid
-- **UnknownMethodReturnsError** — verifies `Core::ERROR_UNKNOWN_KEY` for unregistered methods
+- **UnknownMethodReturnsError** — verifies `Core::ERROR_UNKNOWN_METHOD` for unregistered methods
 - **UnknownMethodViaJSONRPCLinkReturnsError** — same via `JSONRPCLink`
 - **MissingCallsignReturnsError** — verifies error when callsign is missing from designator
 
