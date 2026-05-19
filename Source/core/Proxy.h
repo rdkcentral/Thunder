@@ -1636,7 +1636,9 @@ POP_WARNING()
                 typename ContainerMap::iterator index(_map.find(key));
 
                 if (index == _map.end()) {
-                    LogKeyIfAtSign(key, "[CRASH_RM] Creating a new element for key: %s\n");
+                    if (KeyHasAtSign(key)) {
+                        TRACE_L1("[CRASH_RM] Creating a new element for key: %s\n", key.c_str());
+                    }
                     // Oops we do not have such an element, create it...
                     Core::ProxyType<ActualElement> newItem;
                     Core::ProxyType<ActualElement>::template CreateMove(newItem, 0, *this, std::forward<Args>(args)...);
@@ -1655,7 +1657,9 @@ POP_WARNING()
 
                     }
                 } else {
-                    LogKeyIfAtSign(key, "[CRASH_RM] Reusing existing element for key: %s\n");
+                    if (KeyHasAtSign(key)) {
+                        TRACE_L1("[CRASH_RM] Reusing existing element for key: %s\n", key.c_str());
+                    }
                     result = Core::ProxyType<PROXYELEMENT>(index->second.first);
                 }
 
@@ -1768,17 +1772,16 @@ POP_WARNING()
 
         private:
             template <typename KEY = PROXYKEY>
-            static typename std::enable_if<std::is_same<KEY, std::string>::value, void>::type
-            LogKeyIfAtSign(const KEY& key, const char* msg)
+            static typename std::enable_if<std::is_same<KEY, std::string>::value, bool>::type
+            KeyHasAtSign(const KEY& key)
             {
-                if (key.find('@') != std::string::npos) {
-                    TRACE_L1(msg, key.c_str());
-                }
+                return (key.find('@') != std::string::npos);
             }
             template <typename KEY = PROXYKEY>
-            static typename std::enable_if<!std::is_same<KEY, std::string>::value, void>::type
-            LogKeyIfAtSign(const KEY&, const char*)
+            static typename std::enable_if<!std::is_same<KEY, std::string>::value, bool>::type
+            KeyHasAtSign(const KEY&)
             {
+                return false;
             }
 
             ContainerMap _map;
