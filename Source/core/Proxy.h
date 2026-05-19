@@ -1636,11 +1636,7 @@ POP_WARNING()
                 typename ContainerMap::iterator index(_map.find(key));
 
                 if (index == _map.end()) {
-                    if constexpr (std::is_same<PROXYKEY, std::string>::value) {
-                        if(key.find('@') != std::string::npos) {
-                            TRACE_L1("[CRASH_RM] Creating a new element for key: %s\n", key.c_str());
-                        }
-                    }
+                    LogKeyIfAtSign(key, "[CRASH_RM] Creating a new element for key: %s\n");
                     // Oops we do not have such an element, create it...
                     Core::ProxyType<ActualElement> newItem;
                     Core::ProxyType<ActualElement>::template CreateMove(newItem, 0, *this, std::forward<Args>(args)...);
@@ -1659,11 +1655,7 @@ POP_WARNING()
 
                     }
                 } else {
-                    if constexpr (std::is_same<PROXYKEY, std::string>::value) {
-                        if(key.find('@') != std::string::npos) {
-                            TRACE_L1("[CRASH_RM] Reusing existing element for key: %s\n", key.c_str());
-                        }
-                    }
+                    LogKeyIfAtSign(key, "[CRASH_RM] Reusing existing element for key: %s\n");
                     result = Core::ProxyType<PROXYELEMENT>(index->second.first);
                 }
 
@@ -1775,6 +1767,20 @@ POP_WARNING()
             }
 
         private:
+            template <typename KEY = PROXYKEY>
+            static typename std::enable_if<std::is_same<KEY, std::string>::value, void>::type
+            LogKeyIfAtSign(const KEY& key, const char* msg)
+            {
+                if (key.find('@') != std::string::npos) {
+                    TRACE_L1(msg, key.c_str());
+                }
+            }
+            template <typename KEY = PROXYKEY>
+            static typename std::enable_if<!std::is_same<KEY, std::string>::value, void>::type
+            LogKeyIfAtSign(const KEY&, const char*)
+            {
+            }
+
             ContainerMap _map;
             mutable Core::CriticalSection _lock;
         };
