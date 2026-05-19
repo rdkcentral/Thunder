@@ -4266,7 +4266,7 @@
 </tr>
 <tr>
 <td><code>Subscribe(event, handler, index)</code></td>
-<td>Subscribe to a JSON-RPC event by name with a <code>std::function</code> callback. Optional <code>index</code> parameter for indexed events.</td>
+<td>Subscribe to a JSON-RPC event by name with a <code>std::function&lt;void(const string&amp; designator, const string&amp; index, const string&amp; params)&gt;</code> callback. Optional <code>index</code> parameter for indexed events.</td>
 </tr>
 <tr>
 <td><code>Unsubscribe(event, index)</code></td>
@@ -4438,7 +4438,7 @@ cmake<span class="w"> </span>--build<span class="w"> </span>build/Thunder<span c
 <span class="w">    </span><span class="n">string</span><span class="w"> </span><span class="n">receivedParams</span><span class="p">;</span>
 <span class="w">    </span><span class="kt">bool</span><span class="w"> </span><span class="n">fired</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span>
 
-<span class="w">    </span><span class="n">link</span><span class="o">-&gt;</span><span class="n">Subscribe</span><span class="p">(</span><span class="s">&quot;onStateChanged&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="o">&amp;</span><span class="p">](</span><span class="k">const</span><span class="w"> </span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">params</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">link</span><span class="o">-&gt;</span><span class="n">Subscribe</span><span class="p">(</span><span class="s">&quot;onStateChanged&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="o">&amp;</span><span class="p">](</span><span class="k">const</span><span class="w"> </span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="cm">/*designator*/</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="cm">/*index*/</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">params</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">lock_guard</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="o">&gt;</span><span class="w"> </span><span class="n">lock</span><span class="p">(</span><span class="n">mtx</span><span class="p">);</span>
 <span class="w">        </span><span class="n">receivedParams</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">params</span><span class="p">;</span>
 <span class="w">        </span><span class="n">fired</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span>
