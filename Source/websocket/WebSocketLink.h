@@ -673,9 +673,11 @@ POP_WARNING()
                                         }
                                     }
                                 }
-
-                                result += static_cast<uint16_t>(headerSize + payloadSizeInControlFrame); // actualDataSize
-
+                                if (headerSize == 0) {
+                                    result += actualDataSize;
+                                } else {
+                                    result += static_cast<uint16_t>(headerSize + payloadSizeInControlFrame);
+                                }
                             } else {
                                 if (actualDataSize != 0) {
                                    _parent.ReceiveData(&(dataFrame[result + headerSize]), actualDataSize);
