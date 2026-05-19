@@ -67,7 +67,7 @@ namespace Tests {
     {
         string response;
         const uint32_t result = _runtime.Invoke("Controller.thisMethodDoesNotExist", "{}", response);
-        EXPECT_EQ(result, Core::ERROR_UNKNOWN_METHOD);
+        EXPECT_EQ(result, Core::ERROR_UNKNOWN_KEY);
     }
 
     TEST_F(SmokeTest, UnknownMethodViaJSONRPCLinkReturnsError)
@@ -77,7 +77,7 @@ namespace Tests {
 
         string response;
         const uint32_t result = controller->Invoke("thisMethodDoesNotExist", "{}", response);
-        EXPECT_EQ(result, Core::ERROR_UNKNOWN_METHOD);
+        EXPECT_EQ(result, Core::ERROR_UNKNOWN_KEY);
 
         controller->Release();
     }
