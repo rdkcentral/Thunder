@@ -84,12 +84,12 @@ namespace TestCore {
             const string& systemPath = "",
             const string& proxyStubPath = "");
 
-        class JSONRPCLink* QueryInterfaceByCallsign(const string& callsign);
+        class JSONRPCLink* CreateJSONRPCLink(const string& callsign);
         uint32_t Invoke(const string& method, const string& params, string& response);
         uint32_t Invoke(const string& method, const JsonObject& params, JsonObject& response);
 
         template <typename INTERFACE>
-        INTERFACE* GetInterface(const string& callsign)
+        INTERFACE* QueryInterfaceByCallsign(const string& callsign)
         {
             INTERFACE* result = nullptr;
             Core::ProxyType<PluginHost::IShell> shell = GetShell(callsign);

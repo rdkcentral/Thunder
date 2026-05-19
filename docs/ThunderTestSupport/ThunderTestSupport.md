@@ -112,9 +112,9 @@ Defined in `ThunderTestRuntime.h` under `Thunder::TestCore`.
 | `Deinitialize()` | Stops the server, closes messaging, releases config, cleans up temp directories. |
 | `Invoke(method, params, response)` | Calls a JSON-RPC method synchronously via in-process `IDispatcher::Invoke()`. Method format: `"Callsign.method"`. String variant. |
 | `Invoke(method, params, response)` | JsonObject overload — handles serialization/deserialization automatically. |
-| `QueryInterfaceByCallsign()` | Returns a callsign-bound `JSONRPCLink` for repeated calls and event subscriptions. Caller must `Release()` when done. |
+| `CreateJSONRPCLink()` | Returns a callsign-bound `JSONRPCLink` for repeated calls and event subscriptions. Caller must `Release()` when done. |
 | `Exists()` | Checks whether a JSON-RPC method is registered on a plugin, using the framework's built-in `"exists"` endpoint. |
-| `GetInterface<T>()` | Template: obtains a COM-RPC interface from a plugin via `QueryInterface<T>()`. Caller must `Release()` when done. |
+| `QueryInterfaceByCallsign<T>()` | Template: obtains a COM-RPC interface from a plugin via `QueryInterface<T>()`. Caller must `Release()` when done. |
 | `GetShell()` | Returns the `IShell` proxy for a plugin. |
 | `Server()` | Direct access to the underlying `PluginHost::Server`. |
 | `CommunicatorPath()` | Returns the UNIX domain socket path used by the communicator. |
@@ -145,7 +145,7 @@ Invoke("Callsign.method", params, response)
 #### COM-RPC interface access
 
 ```
-GetInterface<Exchange::IMyInterface>("Callsign")
+QueryInterfaceByCallsign<Exchange::IMyInterface>("Callsign")
     ├── GetShell("Callsign")               → IShell proxy
     └── shell->QueryInterface<T>()         → interface pointer
 ```
@@ -294,7 +294,7 @@ TEST_F(MyPluginTest, JsonRpcFullDesignator)
 ```cpp
 TEST_F(MyPluginTest, JsonRpcViaLink)
 {
-    auto* link = _runtime.QueryInterfaceByCallsign("MyPlugin");
+    auto* link = _runtime.CreateJSONRPCLink("MyPlugin");
     ASSERT_NE(link, nullptr);
 
     string response;
@@ -312,7 +312,7 @@ Events do not require a dedicated "trigger" method. Any plugin operation can fir
 ```cpp
 TEST_F(MyPluginTest, JSONRPC_OperationTriggersEvent)
 {
-    auto* link = _runtime.QueryInterfaceByCallsign("MyPlugin");
+    auto* link = _runtime.CreateJSONRPCLink("MyPlugin");
     ASSERT_NE(link, nullptr);
 
     std::mutex mtx;
@@ -348,7 +348,7 @@ TEST_F(MyPluginTest, JSONRPC_OperationTriggersEvent)
 TEST_F(MyPluginTest, ComRpc)
 {
     Exchange::IMyInterface* iface =
-        _runtime.GetInterface<Exchange::IMyInterface>("MyPlugin");
+        _runtime.QueryInterfaceByCallsign<Exchange::IMyInterface>("MyPlugin");
     ASSERT_NE(iface, nullptr);
 
     string result;
@@ -405,7 +405,7 @@ private:
 
 TEST_F(MyPluginTest, COMRPC_OperationTriggersNotification)
 {
-    auto* iface = _runtime.GetInterface<Exchange::IMyInterface>("MyPlugin");
+    auto* iface = _runtime.QueryInterfaceByCallsign<Exchange::IMyInterface>("MyPlugin");
     ASSERT_NE(iface, nullptr);
 
     Core::SinkType<MySink> sink;
@@ -422,7 +422,7 @@ TEST_F(MyPluginTest, COMRPC_OperationTriggersNotification)
 
 TEST_F(MyPluginTest, COMRPC_MultipleOperationsTriggerMultipleNotifications)
 {
-    auto* iface = _runtime.GetInterface<Exchange::IMyInterface>("MyPlugin");
+    auto* iface = _runtime.QueryInterfaceByCallsign<Exchange::IMyInterface>("MyPlugin");
     ASSERT_NE(iface, nullptr);
 
     Core::SinkType<MySink> sink;
@@ -557,6 +557,13 @@ Covered cases:
 - **UnknownMethodReturnsError** — verifies `Core::ERROR_UNKNOWN_METHOD` for unregistered methods
 - **UnknownMethodViaJSONRPCLinkReturnsError** — same via `JSONRPCLink`
 - **MissingCallsignReturnsError** — verifies error when callsign is missing from designator
+- **QueryInterfaceByCallsign_ControllerPlugin** — obtains `IPlugin` from Controller via `QueryInterfaceByCallsign<T>()`
+- **QueryInterfaceByCallsign_NonExistentCallsignReturnsNull** — verifies `nullptr` for a non-existent callsign
+- **QueryInterfaceByCallsign_UnsupportedInterfaceReturnsNull** — verifies `nullptr` when querying an unsupported interface
+- **QueryInterfaceByCallsign_ControllerDispatcher** — obtains `IDispatcher` from Controller via `QueryInterfaceByCallsign<T>()`
+- **InvokeWithJsonObjectViaFullDesignator** — calls `Controller.status` using `JsonObject` overload
+- **InvokeWithJsonObjectViaLink** — same via `JSONRPCLink` with `JsonObject` overload
+- **InvokeWithJsonObjectUnknownMethodReturnsError** — verifies `Core::ERROR_UNKNOWN_METHOD` with `JsonObject` overload
 
 Running:
 

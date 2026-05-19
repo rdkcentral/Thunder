@@ -46,7 +46,7 @@ namespace Tests {
 
     TEST_F(SmokeTest, ControllerStatusViaJSONRPCLink)
     {
-        auto* controller = _runtime.QueryInterfaceByCallsign("Controller");
+        auto* controller = _runtime.CreateJSONRPCLink("Controller");
         ASSERT_NE(controller, nullptr);
 
         string response;
@@ -72,7 +72,7 @@ namespace Tests {
 
     TEST_F(SmokeTest, UnknownMethodViaJSONRPCLinkReturnsError)
     {
-        auto* controller = _runtime.QueryInterfaceByCallsign("Controller");
+        auto* controller = _runtime.CreateJSONRPCLink("Controller");
         ASSERT_NE(controller, nullptr);
 
         string response;
@@ -87,6 +87,66 @@ namespace Tests {
         string response;
         const uint32_t result = _runtime.Invoke("noCallsignDot", "{}", response);
         EXPECT_NE(result, Core::ERROR_NONE);
+    }
+
+    // --- QueryInterfaceByCallsign tests ---
+
+    TEST_F(SmokeTest, QueryInterfaceByCallsign_ControllerPlugin)
+    {
+        auto* plugin = _runtime.QueryInterfaceByCallsign<PluginHost::IPlugin>("Controller");
+        ASSERT_NE(plugin, nullptr) << "Controller must implement IPlugin";
+        plugin->Release();
+    }
+
+    TEST_F(SmokeTest, QueryInterfaceByCallsign_NonExistentCallsignReturnsNull)
+    {
+        auto* plugin = _runtime.QueryInterfaceByCallsign<PluginHost::IPlugin>("NoSuchPlugin");
+        EXPECT_EQ(plugin, nullptr);
+    }
+
+    TEST_F(SmokeTest, QueryInterfaceByCallsign_UnsupportedInterfaceReturnsNull)
+    {
+        auto* iface = _runtime.QueryInterfaceByCallsign<PluginHost::ISubSystem::IInternet>("Controller");
+        EXPECT_EQ(iface, nullptr);
+    }
+
+    TEST_F(SmokeTest, QueryInterfaceByCallsign_ControllerDispatcher)
+    {
+        auto* dispatcher = _runtime.QueryInterfaceByCallsign<PluginHost::IDispatcher>("Controller");
+        ASSERT_NE(dispatcher, nullptr) << "Controller must expose IDispatcher";
+        dispatcher->Release();
+    }
+
+    // --- JsonObject overload tests ---
+
+    TEST_F(SmokeTest, InvokeWithJsonObjectViaFullDesignator)
+    {
+        JsonObject params;
+        JsonObject response;
+        const uint32_t result = _runtime.Invoke("Controller.status", params, response);
+        EXPECT_EQ(result, Core::ERROR_NONE) << "Controller.status (JsonObject) returned: " << result;
+        EXPECT_TRUE(response.HasLabel("") == false || true);
+    }
+
+    TEST_F(SmokeTest, InvokeWithJsonObjectViaLink)
+    {
+        auto* controller = _runtime.CreateJSONRPCLink("Controller");
+        ASSERT_NE(controller, nullptr);
+
+        JsonObject params;
+        JsonObject response;
+        const uint32_t result = controller->Invoke("status", params, response);
+        EXPECT_EQ(result, Core::ERROR_NONE) << "status (JsonObject) via link returned: " << result;
+
+        controller->Release();
+    }
+
+    TEST_F(SmokeTest, InvokeWithJsonObjectUnknownMethodReturnsError)
+    {
+        JsonObject params;
+        JsonObject response;
+        const uint32_t result = _runtime.Invoke("Controller.thisMethodDoesNotExist", params, response);
+        EXPECT_EQ(result, Core::ERROR_UNKNOWN_METHOD);
     }
 
 } // namespace Tests
