@@ -22,7 +22,8 @@
 #include "Ids.h"
 #include "IIteratorType.h"
 
-// @stubgen:include "IIteratorType.h"
+// @insert "IIteratorType.h"
+// @insert "Ids.h"
 
 namespace WPEFramework {
     namespace RPC {
