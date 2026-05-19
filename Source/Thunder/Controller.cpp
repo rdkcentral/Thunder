@@ -133,7 +133,7 @@ namespace Plugin {
             }
         }
 
-        _service->Register(static_cast<PluginHost::IPlugin::INotification*>(&_systemInfoReport));
+        _service->Register(&_systemInfoReport);
 
         if (config.Ui.Value() == true) {
             _service->EnableWebServer(_T("UI"), EMPTY_STRING);
@@ -180,7 +180,7 @@ namespace Plugin {
             _probe = nullptr;
         }
 
-        _service->Unregister(static_cast<PluginHost::IPlugin::INotification*>(&_systemInfoReport));
+        _service->Unregister(&_systemInfoReport);
 
         /* stop the file serving over http.... */
         service->DisableWebServer();
