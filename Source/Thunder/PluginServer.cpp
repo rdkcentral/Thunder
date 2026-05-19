@@ -319,29 +319,43 @@ namespace PluginHost {
     void Server::Service::Register(IPlugin::INotification * sink, const Core::OptionalType<string>& callsign) /* override */
     {
         _administrator.Register(sink, callsign);
+
+        IPlugin::INotificationExtended* extended = sink->QueryInterface<IPlugin::INotificationExtended>();
+        if (extended != nullptr) {
+            _administrator.Register(extended, callsign);
+            extended->Release();
+        }
     }
 
     void Server::Service::Unregister(IPlugin::INotification * sink, const Core::OptionalType<string>& callsign) /* override */
     {
-        _administrator.Unregister(sink, callsign);
-    }
+        IPlugin::INotificationExtended* extended = sink->QueryInterface<IPlugin::INotificationExtended>();
+        if (extended != nullptr) {
+            _administrator.Unregister(extended, callsign);
+            extended->Release();
+        }
 
-    void Server::Service::Register(IPlugin::INotificationExtended * sink, const Core::OptionalType<string>& callsign) /* override */
-    {
-        _administrator.Register(sink, callsign);
-    }
-
-    void Server::Service::Unregister(IPlugin::INotificationExtended * sink, const Core::OptionalType<string>& callsign) /* override */
-    {
         _administrator.Unregister(sink, callsign);
     }
 
     void Server::Service::Register(IPlugin::INotification * sink, const uint32_t interface_id)
     {
         _administrator.Register(sink, interface_id);
+
+        IPlugin::INotificationExtended* extended = sink->QueryInterface<IPlugin::INotificationExtended>();
+        if (extended != nullptr) {
+            _administrator.Register(extended, interface_id);
+            extended->Release();
+        }
     }
     void Server::Service::Unregister(IPlugin::INotification * sink, const uint32_t interface_id)
     {
+        IPlugin::INotificationExtended* extended = sink->QueryInterface<IPlugin::INotificationExtended>();
+        if (extended != nullptr) {
+            _administrator.Unregister(extended, interface_id);
+            extended->Release();
+        }
+
         _administrator.Unregister(sink, interface_id);
     }
 
