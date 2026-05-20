@@ -1655,9 +1655,7 @@ POP_WARNING()
 
                     }
                 } else {
-                    if (KeyHasAtSign(key)) {
-                        TRACE_L1("[CRASH_RM] Reusing existing element for key: %p\n", &key);
-                    }
+                    TRACE_L1("[CRASH_RM] Reusing existing element for key: %p\n", &key);
                     result = Core::ProxyType<PROXYELEMENT>(index->second.first);
                 }
 
