@@ -157,7 +157,7 @@ POP_WARNING()
     class ConsoleOptions : public Core::Options {
     public:
         ConsoleOptions(int argumentCount, TCHAR* arguments[])
-            : Core::Options(argumentCount, arguments, _T("h:l:c:C:r:p:s:d:a:m:i:u:g:t:e:x:V:v:P:S:"))
+            : Core::Options(argumentCount, arguments, _T("h:l:c:C:r:p:s:X:d:a:m:i:u:g:t:e:x:V:v:P:S:"))
             , Locator(nullptr)
             , ClassName(nullptr)
             , Callsign(nullptr)
@@ -167,6 +167,7 @@ POP_WARNING()
             , Exchange(0)
             , PersistentPath()
             , SystemPath()
+            , ExtensionPath()
             , DataPath()
             , VolatilePath()
             , AppPath()
@@ -193,6 +194,7 @@ POP_WARNING()
         uint32_t Exchange;
         string PersistentPath;
         string SystemPath;
+        string ExtensionPath;        
         string DataPath;
         string VolatilePath;
         string AppPath;
@@ -237,6 +239,9 @@ POP_WARNING()
             case 's':
                 SystemPath = Strip(argument);
                 break;
+            case 'X':
+                ExtensionPath = Strip(argument);
+                break;                
             case 'd':
                 DataPath = Strip(argument);
                 break;
@@ -319,14 +324,22 @@ POP_WARNING()
                 result = CheckInstance(path, options.Locator, options.ClassName, options.InterfaceId, options.Version);
 
                 if (result == nullptr) {
-                    path = (!options.SystemRootPath.empty() ? options.SystemRootPath : "") + options.DataPath;
-                    result = CheckInstance(path, options.Locator, options.ClassName, options.InterfaceId, options.Version);
+                    if (options.ExtensionPath.empty() == false) {
+                        path = (!options.SystemRootPath.empty() ? options.SystemRootPath : "") + options.ExtensionPath;
+                        result = CheckInstance(path, options.Locator, options.ClassName, options.InterfaceId, options.Version);
+                    }
 
                     if (result == nullptr) {
-                        string searchPath(options.AppPath.empty() == false ? Core::Directory::Normalize(options.AppPath) : string());
 
-                        path = (!options.SystemRootPath.empty() ? options.SystemRootPath : "") + searchPath;
-                        result = CheckInstance((path + _T("Plugins/")), options.Locator, options.ClassName, options.InterfaceId, options.Version);
+                        path = (!options.SystemRootPath.empty() ? options.SystemRootPath : "") + options.DataPath;
+                        result = CheckInstance(path, options.Locator, options.ClassName, options.InterfaceId, options.Version);
+
+                        if (result == nullptr) {
+                            string searchPath(options.AppPath.empty() == false ? Core::Directory::Normalize(options.AppPath) : string());
+
+                            path = (!options.SystemRootPath.empty() ? options.SystemRootPath : "") + searchPath;
+                            result = CheckInstance((path + _T("Plugins/")), options.Locator, options.ClassName, options.InterfaceId, options.Version);
+                        }
                     }
                 }
             }
@@ -561,6 +574,7 @@ int main(int argc, char** argv)
         printf("        [-g <group>]\n");
         printf("        [-p <persistent path>]\n");
         printf("        [-s <system path>]\n");
+        printf("        [-X <extension path>]\n");        
         printf("        [-d <data path>]\n");
         printf("        [-v <volatile path>]\n");
         printf("        [-a <app path>]\n");
