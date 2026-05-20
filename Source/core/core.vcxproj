@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ASN1.h" />
+    <ClInclude Include="AssertionControl.h" />
     <ClInclude Include="CallsignTLS.h" />
     <ClInclude Include="Config.h" />
     <ClInclude Include="core.h" />
@@ -40,6 +41,7 @@
     <ClInclude Include="IPCConnector.h" />
     <ClInclude Include="IPFrame.h" />
     <ClInclude Include="ISO639.h" />
+    <ClInclude Include="IAssertionControl.h" />
     <ClInclude Include="IWarningReportingControl.h" />
     <ClInclude Include="JSON.h" />
     <ClInclude Include="JSONRPC.h" />
@@ -52,6 +54,7 @@
     <ClInclude Include="MessageDispatcher.h" />
     <ClInclude Include="MessageException.h" />
     <ClInclude Include="MessageStore.h" />
+    <ClInclude Include="Messaging.h" />
     <ClInclude Include="Module.h" />
     <ClInclude Include="Netlink.h" />
     <ClInclude Include="NetworkInfo.h" />
@@ -92,6 +95,7 @@
     <ClInclude Include="Time.h" />
     <ClInclude Include="Timer.h" />
     <ClInclude Include="Trace.h" />
+    <ClInclude Include="TextStreamRedirectType.h" />
     <ClInclude Include="TriState.h" />
     <ClInclude Include="TypeTraits.h" />
     <ClInclude Include="ValueRecorder.h" />
@@ -113,7 +117,9 @@
     <ClCompile Include="JSONRPC.cpp" />
     <ClCompile Include="Library.cpp" />
     <ClCompile Include="MessageException.cpp" />
+    <ClCompile Include="AssertionControl.cpp" />
     <ClCompile Include="MessageStore.cpp" />
+    <ClCompile Include="Messaging.cpp" />
     <ClCompile Include="NetworkInfo.cpp" />
     <ClCompile Include="NodeId.cpp" />
     <ClCompile Include="Number.cpp" />
