@@ -20,6 +20,7 @@
 #ifndef __SOCKETSERVER_H
 #define __SOCKETSERVER_H
 
+#include "IIterator.h"
 #include "Module.h"
 #include "Portability.h"
 #include "Proxy.h"
@@ -33,102 +34,7 @@ namespace Core {
         using ClientMap = std::map<uint32_t, Core::ProxyType<CLIENT>>;
 
     public:
-        template <typename HANDLECLIENT>
-        class IteratorType {
-        public:
-            IteratorType()
-                : _atHead(true)
-                , _clients()
-                , _iterator(_clients.begin())
-            {
-            }
-            IteratorType(const ClientMap& container)
-                : _atHead(true)
-                , _clients()
-                , _iterator()
-            {
-
-                typename ClientMap::const_iterator index(container.begin());
-
-                while (index != container.end()) {
-                    _clients.push_back(index->second);
-                    index++;
-                }
-                _iterator = _clients.begin();
-            }
-            IteratorType(const IteratorType<HANDLECLIENT>& copy)
-                : _atHead(true)
-                , _clients(copy._clients)
-                , _iterator(_clients.begin())
-            {
-            }
-            IteratorType(IteratorType<HANDLECLIENT>&& move)
-                : _atHead(move._atHead)
-                , _clients(std::move(move._clients))
-                , _iterator(std::move(move._iterator))
-            {
-                move._atHead = true;
-            }
-            ~IteratorType() = default;
-
-            IteratorType& operator=(const IteratorType<HANDLECLIENT>& RHS)
-            {
-
-                _atHead = RHS._atHead;
-                _clients = RHS._clients;
-                _iterator = RHS._iterator;
-            }
-            IteratorType& operator=(IteratorType<HANDLECLIENT>&& move)
-            {
-                if (this != &move) {
-                    _atHead = move._atHead;
-                    _clients = std::move(move._clients);
-                    _iterator = std::move(move._iterator);
-
-                    move._atHead = true;
-                }
-            }
-
-        public:
-            inline bool IsValid() const
-            {
-                return ((_atHead == false) && (_iterator != _clients.end()));
-            }
-            inline void Reset()
-            {
-                _atHead = true;
-                _iterator = _clients.begin();
-            }
-            inline bool Next()
-            {
-
-                if (_atHead == true) {
-                    _atHead = false;
-                } else if (_iterator != _clients.end()) {
-                    _iterator++;
-                }
-
-                return (_iterator != _clients.end());
-            }
-            inline uint32_t Count() const
-            {
-                return (static_cast<uint32_t>(_clients.size()));
-            }
-            HANDLECLIENT Client()
-            {
-
-                ASSERT(IsValid() == true);
-
-                return (*_iterator);
-            }
-
-        private:
-            bool _atHead;
-            typename std::list<HANDLECLIENT> _clients;
-            typename std::list<HANDLECLIENT>::iterator _iterator;
-        };
-
-        using Iterator = IteratorType<ProxyType<CLIENT>>;
+        using Iterator = Core::IteratorMapType<ClientMap, Core::ProxyType<CLIENT>, uint32_t>;
 
     private:
         template <typename HANDLECLIENT>

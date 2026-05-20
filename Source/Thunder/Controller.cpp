@@ -1194,7 +1194,7 @@ namespace Plugin {
 
             while (it.Next() == true) {
                 string info;
-                const string& cs(it.Index());
+                const string& cs(it.Key());
 
                 if (it.Current().operator->()->Metadata(info) == Core::ERROR_NONE) {
                     PluginHost::Metadata::Service meta;

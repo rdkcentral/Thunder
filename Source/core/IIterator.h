@@ -42,19 +42,23 @@ namespace Core {
     class IteratorType : public IIterator {
     public:
         IteratorType()
-            : m_Container(nullptr)
+            : m_Owned(nullptr)
+            , m_Container(nullptr)
             , m_Iterator()
             , m_Index(0)
         {
         }
+        // Reference mode: iterator does NOT own the container.
         IteratorType(CONTAINER& container)
-            : m_Container(&container)
+            : m_Owned(nullptr)
+            , m_Container(&container)
             , m_Iterator(container.begin())
             , m_Index(0)
         {
         }
         IteratorType(CONTAINER& container, ITERATOR startPoint)
-            : m_Container(&container)
+            : m_Owned(nullptr)
+            , m_Container(&container)
             , m_Iterator(startPoint)
             , m_Index(1)
         {
@@ -67,40 +71,82 @@ namespace Core {
                 index++;
             }
         }
-        IteratorType(IteratorType<CONTAINER, ELEMENT, ITERATOR>&& move)
-            : m_Container(move.m_Container)
+        // Snapshot mode: iterator takes ownership of a copy/move of the container.
+        // Use when the iterator must outlive the source or when a snapshot is needed.
+        // Note: non-const lvalue still binds to CONTAINER& (reference mode) above;
+        //       pass std::as_const(c) or std::move(c) to choose snapshot mode.
+        IteratorType(const CONTAINER& container)
+            : m_Owned(new CONTAINER(container))
+            , m_Container(m_Owned)
+            , m_Iterator(m_Owned->begin())
+            , m_Index(0)
+        {
+        }
+        IteratorType(CONTAINER&& container)
+            : m_Owned(new CONTAINER(std::move(container)))
+            , m_Container(m_Owned)
+            , m_Iterator(m_Owned->begin())
+            , m_Index(0)
+        {
+        }
+        IteratorType(IteratorType<CONTAINER, ELEMENT, ITERATOR>&& move) noexcept
+            : m_Owned(move.m_Owned)
+            , m_Container(move.m_Container)
             , m_Iterator(std::move(move.m_Iterator))
             , m_Index(move.m_Index)
         {
+            move.m_Owned = nullptr;
             move.m_Container = nullptr;
             move.m_Index = 0;
         }
+        // Copy: in snapshot mode the owned container is deep-copied and the
+        // position is reset; in reference mode the external pointer is shared.
         IteratorType(const IteratorType<CONTAINER, ELEMENT, ITERATOR>& copy)
-            : m_Container(copy.m_Container)
-            , m_Iterator(copy.m_Iterator)
-            , m_Index(copy.m_Index)
+            : m_Owned(copy.m_Owned != nullptr ? new CONTAINER(*copy.m_Owned) : nullptr)
+            , m_Container(copy.m_Owned != nullptr ? m_Owned : copy.m_Container)
+            , m_Iterator(copy.m_Owned != nullptr ? m_Owned->begin() : copy.m_Iterator)
+            , m_Index(copy.m_Owned != nullptr ? 0 : copy.m_Index)
         {
         }
-        ~IteratorType() = default;
+        ~IteratorType()
+        {
+            delete m_Owned;
+        }
 
         IteratorType<CONTAINER, ELEMENT, ITERATOR>& operator=(const IteratorType<CONTAINER, ELEMENT, ITERATOR>& RHS)
         {
-            m_Container = RHS.m_Container;
-            m_Iterator = RHS.m_Iterator;
-            m_Index = RHS.m_Index;
-
+            if (this != &RHS) {
+                delete m_Owned;
+                m_Owned     = (RHS.m_Owned != nullptr ? new CONTAINER(*RHS.m_Owned) : nullptr);
+                m_Container = (RHS.m_Owned != nullptr ? m_Owned : RHS.m_Container);
+                m_Iterator  = (RHS.m_Owned != nullptr ? m_Owned->begin() : RHS.m_Iterator);
+                m_Index     = (RHS.m_Owned != nullptr ? 0 : RHS.m_Index);
+            }
             return (*this);
         }
         IteratorType<CONTAINER, ELEMENT, ITERATOR>& operator=(IteratorType<CONTAINER, ELEMENT, ITERATOR>&& move)
         {
             if (this != &move) {
+                delete m_Owned;
+                m_Owned     = move.m_Owned;
                 m_Container = move.m_Container;
-                m_Iterator = std::move(move.m_Iterator);
-                m_Index = move.m_Index;
-
+                m_Iterator  = std::move(move.m_Iterator);
+                m_Index     = move.m_Index;
+                move.m_Owned     = nullptr;
                 move.m_Container = nullptr;
-                move.m_Index = 0;
+                move.m_Index     = 0;
             }
+            return (*this);
+        }
+        // Snapshot-from-container assignment: replaces the held container with a
+        // moved-in snapshot, resetting the iteration position to the beginning.
+        IteratorType<CONTAINER, ELEMENT, ITERATOR>& operator=(CONTAINER&& container)
+        {
+            delete m_Owned;
+            m_Owned     = new CONTAINER(std::move(container));
+            m_Container = m_Owned;
+            m_Iterator  = m_Owned->begin();
+            m_Index     = 0;
             return (*this);
         }
 
@@ -174,6 +220,12 @@ namespace Core {
         virtual uint32_t Count() const
         {
             return (m_Container == nullptr ? 0 : static_cast<uint32_t>(m_Container->size()));
+        }
+
+        // Convenience overload: reset to the beginning (equivalent to Reset(0)).
+        inline void Reset()
+        {
+            Reset(0);
         }
 
         inline ELEMENT& Current()
@@ -190,32 +242,32 @@ namespace Core {
             return (*m_Iterator);
         }
 
-        inline ELEMENT operator->()
+        inline std::remove_reference_t<ELEMENT>* operator->()
+        {
+            ASSERT(IsValid());
+
+            return &(*m_Iterator);
+        }
+
+        inline const std::remove_reference_t<ELEMENT>* operator->() const
+        {
+            ASSERT(IsValid());
+
+            return &(*m_Iterator);
+        }
+
+        inline std::remove_reference_t<ELEMENT>& operator*()
         {
             ASSERT(IsValid());
 
             return (*m_Iterator);
         }
 
-        inline ELEMENT operator->() const
+        inline const std::remove_reference_t<ELEMENT>& operator*() const
         {
             ASSERT(IsValid());
 
             return (*m_Iterator);
-        }
-
-        inline ELEMENT operator*()
-        {
-            ASSERT(IsValid());
-
-            return (*m_Iterator);
-        }
-
-        inline const ELEMENT operator*() const
-        {
-            ASSERT(IsValid());
-
-            return (m_Iterator.operator*());
         }
 
     protected:
@@ -228,13 +280,16 @@ namespace Core {
             return (m_Container);
         }
         inline void Container(CONTAINER& container) {
+            delete m_Owned;
+            m_Owned = nullptr;
             m_Container = &container;
             m_Iterator = m_Container->begin();
             m_Index = 0;
         }
 
     private:
-        CONTAINER* m_Container;
+        CONTAINER*       m_Owned;     // non-null only in snapshot (owned) mode
+        CONTAINER*       m_Container; // points to m_Owned or to an external container
         mutable ITERATOR m_Iterator;
         mutable uint32_t m_Index;
     };
@@ -243,19 +298,23 @@ namespace Core {
     class IteratorMapType : public IIterator {
     public:
         IteratorMapType()
-            : m_Container(nullptr)
+            : m_Owned(nullptr)
+            , m_Container(nullptr)
             , m_Iterator()
             , m_Index(0)
         {
         }
+        // Reference mode: iterator does NOT own the container.
         IteratorMapType(CONTAINER& container)
-            : m_Container(&container)
+            : m_Owned(nullptr)
+            , m_Container(&container)
             , m_Iterator(container.begin())
             , m_Index(0)
         {
         }
         IteratorMapType(CONTAINER& container, ITERATOR& startPoint)
-            : m_Container(&container)
+            : m_Owned(nullptr)
+            , m_Container(&container)
             , m_Iterator(startPoint)
             , m_Index(1)
         {
@@ -268,41 +327,65 @@ namespace Core {
                 index++;
             }
         }
-        IteratorMapType(const IteratorMapType<CONTAINER, KEY, ELEMENT, ITERATOR>& copy)
-            : m_Container(copy.m_Container)
-            , m_Iterator(copy.m_Iterator)
-            , m_Index(copy.m_Index)
+        // Snapshot mode: iterator takes ownership of a copy/move of the container.
+        IteratorMapType(const CONTAINER& container)
+            : m_Owned(new CONTAINER(container))
+            , m_Container(m_Owned)
+            , m_Iterator(m_Owned->begin())
+            , m_Index(0)
         {
         }
-        IteratorMapType(IteratorMapType<CONTAINER, KEY, ELEMENT, ITERATOR>&& move)
-            : m_Container(move.m_Container)
+        IteratorMapType(CONTAINER&& container)
+            : m_Owned(new CONTAINER(std::move(container)))
+            , m_Container(m_Owned)
+            , m_Iterator(m_Owned->begin())
+            , m_Index(0)
+        {
+        }
+        IteratorMapType(const IteratorMapType<CONTAINER, ELEMENT, KEY, ITERATOR>& copy)
+            : m_Owned(copy.m_Owned != nullptr ? new CONTAINER(*copy.m_Owned) : nullptr)
+            , m_Container(copy.m_Owned != nullptr ? m_Owned : copy.m_Container)
+            , m_Iterator(copy.m_Owned != nullptr ? m_Owned->begin() : copy.m_Iterator)
+            , m_Index(copy.m_Owned != nullptr ? 0 : copy.m_Index)
+        {
+        }
+        IteratorMapType(IteratorMapType<CONTAINER, ELEMENT, KEY, ITERATOR>&& move) noexcept
+            : m_Owned(move.m_Owned)
+            , m_Container(move.m_Container)
             , m_Iterator(std::move(move.m_Iterator))
             , m_Index(move.m_Index)
         {
+            move.m_Owned = nullptr;
             move.m_Container = nullptr;
             move.m_Index = 0;
         }
         ~IteratorMapType()
         {
+            delete m_Owned;
         }
 
-        IteratorMapType<CONTAINER, KEY, ELEMENT, ITERATOR>& operator=(const IteratorMapType<CONTAINER, KEY, ELEMENT, ITERATOR>& RHS)
+        IteratorMapType<CONTAINER, ELEMENT, KEY, ITERATOR>& operator=(const IteratorMapType<CONTAINER, ELEMENT, KEY, ITERATOR>& RHS)
         {
-            m_Container = RHS.m_Container;
-            m_Iterator = RHS.m_Iterator;
-            m_Index = RHS.m_Index;
-
+            if (this != &RHS) {
+                delete m_Owned;
+                m_Owned     = (RHS.m_Owned != nullptr ? new CONTAINER(*RHS.m_Owned) : nullptr);
+                m_Container = (RHS.m_Owned != nullptr ? m_Owned : RHS.m_Container);
+                m_Iterator  = (RHS.m_Owned != nullptr ? m_Owned->begin() : RHS.m_Iterator);
+                m_Index     = (RHS.m_Owned != nullptr ? 0 : RHS.m_Index);
+            }
             return (*this);
         }
-        IteratorMapType<CONTAINER, KEY, ELEMENT, ITERATOR>& operator=(IteratorMapType<CONTAINER, KEY, ELEMENT, ITERATOR>&& move)
+        IteratorMapType<CONTAINER, ELEMENT, KEY, ITERATOR>& operator=(IteratorMapType<CONTAINER, ELEMENT, KEY, ITERATOR>&& move)
         {
             if (this != &move) {
+                delete m_Owned;
+                m_Owned     = move.m_Owned;
                 m_Container = move.m_Container;
-                m_Iterator = std::move(move.m_Iterator);
-                m_Index = move.m_Index;
-
+                m_Iterator  = std::move(move.m_Iterator);
+                m_Index     = move.m_Index;
+                move.m_Owned     = nullptr;
                 move.m_Container = nullptr;
-                move.m_Index = 0;
+                move.m_Index     = 0;
             }
             return (*this);
         }
@@ -377,6 +460,12 @@ namespace Core {
         virtual uint32_t Count() const
         {
             return (m_Container == nullptr ? 0 : static_cast<uint32_t>(m_Container->size()));
+        }
+
+        // Convenience overload: reset to the beginning (equivalent to Reset(0)).
+        inline void Reset()
+        {
+            Reset(0);
         }
 
         inline KEY Key() const
@@ -429,17 +518,18 @@ namespace Core {
         }
 
     protected:
-        inline std::map<KEY, ELEMENT>* Container()
+        inline CONTAINER* Container()
         {
             return (m_Container);
         }
-        inline const std::map<KEY, ELEMENT>* Container() const
+        inline const CONTAINER* Container() const
         {
             return (m_Container);
         }
 
     private:
-        CONTAINER* m_Container;
+        CONTAINER*       m_Owned;     // non-null only in snapshot (owned) mode
+        CONTAINER*       m_Container; // points to m_Owned or to an external container
         mutable ITERATOR m_Iterator;
         mutable uint32_t m_Index;
     };
@@ -510,6 +600,7 @@ namespace Core {
             return (*this);
         }
     };
+
 }
 } // namespace Core
 

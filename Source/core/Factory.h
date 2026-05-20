@@ -22,6 +22,7 @@
 
 #include <map>
 
+#include "IIterator.h"
 #include "Portability.h"
 #include "Proxy.h"
 
@@ -69,84 +70,9 @@ namespace Core {
         };
 
     public:
-        class Iterator {
-        public:
-            Iterator() = delete;
-            Iterator& operator=(const Iterator&) = delete;
-
-            Iterator(const std::map<IDENTIFIER, IFactory*>& warehouse)
-                : _map(warehouse)
-                , _index(warehouse.begin())
-                , _start(true)
-            {
-            }
-            Iterator(const Iterator& copy)
-                : _map(copy._map)
-                , _index(_map.begin())
-                , _start(true)
-            {
-            }
-            Iterator(Iterator&& move)
-                : _map(move._map.begin(), move._map.end())
-                , _index(move._index.begin(), move._index.end())
-                , _start(move._start)
-            {
-                move._map.clear();
-                move._index.clear();
-                move._start = true;
-            }
-            ~Iterator() = default;
-
-        public:
-            bool IsValid() const
-            {
-                return ((_start == false) && (_index != _map.end()));
-            }
-            void Reset()
-            {
-                _start = true;
-                _index = _map.begin();
-            }
-            bool Next()
-            {
-                if (_start == true) {
-                    _start = false;
-                } else if (_index != _map.end()) {
-                    _index++;
-                }
-
-                return (_index != _map.end());
-            }
-            inline const IDENTIFIER& Label() const
-            {
-                ASSERT(IsValid());
-
-                return (_index->first);
-            }
-            inline uint32_t CreatedElements() const
-            {
-                ASSERT(IsValid());
-
-                return (_index->second->CreatedElements());
-            }
-            inline uint32_t QueuedElements() const
-            {
-                ASSERT(IsValid());
-
-                return (_index->second->QueuedElements());
-            }
-            inline uint32_t CurrentQueueSize() const
-            {
-                ASSERT(IsValid());
-
-                return (_index->second->CurrentQueueSize());
-            }
-
-        private:
-            const std::map<IDENTIFIER, IFactory*>& _map;
-            typename std::map<IDENTIFIER, IFactory*>::const_iterator _index;
-            bool _start;
-        };
+        // Iterator over the registered factories. Key() returns the identifier;
+        // Current() returns the IFactory* (call Current()->CreatedElements() etc.).
+        using Iterator = IteratorMapType<std::map<IDENTIFIER, IFactory*>, IFactory*, IDENTIFIER>;
 
     public:
         FactoryType(const FactoryType<BASEOBJECT, IDENTIFIER>&) = delete;

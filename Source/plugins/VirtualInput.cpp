@@ -608,7 +608,7 @@ POP_WARNING()
 
     /* virtual */ VirtualInput::Iterator LinuxKeyboardInput::Consumers() const
     {
-        return (VirtualInput::Iterator(ConsumerName));
+        return (VirtualInput::Iterator(std::list<string>{ConsumerName}));
     }
 
     /* virtual */ bool LinuxKeyboardInput::Consumer(const string& name) const 

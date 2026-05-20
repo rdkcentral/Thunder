@@ -295,101 +295,10 @@ POP_WARNING()
             bool _passThrough;
         };
 
-        class EXTERNAL Iterator {
-        public:
-            Iterator()
-                : _consumers()
-                , _index()
-                , _position(~0)
-            {
-            }
-            Iterator(const string& consumer)
-                : _consumers()
-                , _index()
-                , _position(~0)
-            {
-                _consumers.push_back(consumer);
-            }
-            Iterator(const std::list<string>&& consumer)
-                : _consumers(consumer)
-                , _index()
-                , _position(~0)
-            {
-            }
-            Iterator(const Iterator& copy)
-                : _consumers(copy._consumers)
-                , _index(copy._index)
-                , _position(copy._position)
-            {
-            }
-            Iterator(Iterator&& move) noexcept
-                : _consumers(std::move(move._consumers))
-                , _index(std::move(move._index))
-                , _position(move._position)
-            {
-                move._position = ~0;
-            }
-            ~Iterator()
-            {
-            }
-
-            Iterator& operator=(const Iterator& rhs)
-            {
-                _consumers = rhs._consumers;
-                _position = ~0;
-
-                return (*this);
-            }
-
-            Iterator& operator=(Iterator&& move) noexcept
-            {
-                if (this != &move) {
-                    _consumers = std::move(move._consumers);
-                    _index = std::move(move._index);
-                    _position = move._position;
-
-                    move._position = ~0;
-                }
-
-                return (*this);
-            }
-
-        public:
-            bool IsValid() const
-            {
-                return (_position < _consumers.size());
-            }
-            void Reset()
-            {
-                _position = ~0;
-            }
-            bool Next()
-            {
-                if (_position == static_cast<uint32_t>(~0)) {
-                    _position = 0;
-                    _index = _consumers.cbegin();
-                }
-                else if (_index != _consumers.cend()) {
-                    _position++;
-                    _index++;
-                }
-                  
-                return (IsValid());
-            }
-            const string& Name() const 
-            {
-                ASSERT(IsValid() == true);
-                return (*_index);
-            }
-            const std::list<string> Container() const {
-                return(_consumers);
-            }
-
-        private:
-            std::list<string> _consumers;
-            std::list<string>::const_iterator _index;
-            uint32_t _position;
-        };
+        // Current() returns the consumer name string.
+        // Construct with a single name: Iterator(std::list<string>{name})
+        // or a list: Iterator(std::move(nameList)).
+        using Iterator = Core::IteratorType<std::list<string>, string>;
 
     public:
         struct EXTERNAL INotifier {

@@ -2267,99 +2267,13 @@ namespace PluginHost {
 
         class ServiceMap {
         public:
-            class Iterator {
-            public:
-                Iterator()
-                    : _container()
-                    , _index()
-                    , _position(0) {
-                }
-                Iterator(Shells&& services)
-                    : _container(services)
-                    , _index()
-                    , _position(0) {
-                }
-                Iterator(Iterator&& move)
-                    : _container(std::move(move._container))
-                    , _index()
-                    , _position(0) {
-                }
-                Iterator(const Iterator& copy)
-                    : _container(copy._container)
-                    , _index()
-                    , _position(0) {
-                }
-                ~Iterator() {
-                    for (const std::pair<const string, PluginHost::IShell*>& entry :  _container) {
-                        entry.second->Release();
-                    }
-                }
-
-                Iterator& operator=(Iterator&& move) {
-                    if (this != &move) {
-                        _container = std::move(move._container);
-                        _index = std::move(move._index);
-                        _position = move._position;
-                    }
-                    return (*this);
-                }
-                Iterator& operator=(const Iterator& copy) {
-                    _container = copy._container;
-                    _position = copy._position;
-                    if (_position > 0) {
-                        _index = _container.begin();
-                        uint32_t steps = _position - 1;
-                        while ((steps != 0) && (_index != _container.end())) {
-                            _index++;
-                            steps--;
-                        }
-                    }
-                    return (*this);
-                }
-
-            public:
-                bool IsValid() const {
-                    return ((_position > 0) && (_index != _container.end()));
-                }
-                void Reset() {
-                    _position = 0;
-                }
-                bool Next() {
-                    if (_position == 0) {
-                        _position = 1;
-                        _index = _container.begin();
-                    }
-                    else if (_index != _container.end()) {
-                        _position++;
-                        _index++;
-                    }
-                    return (_index != _container.end());
-                }
-                const string& Index() const {
-                    ASSERT(IsValid());
-                    return (_index->first);
-                }
-                Core::ProxyType<PluginHost::IShell> Current() {
-                    ASSERT(IsValid());
-                    return (Core::ProxyType<PluginHost::IShell>(static_cast<Core::IReferenceCounted&>(*_index->second), *_index->second));
-                }
-                uint32_t Count() const {
-                    return (static_cast<uint32_t>(_container.size()));
-                }
-                Core::ProxyType<PluginHost::IShell> operator->() {
-                    ASSERT(IsValid());
-                    return (Core::ProxyType<PluginHost::IShell>(static_cast<Core::IReferenceCounted&>(*_index->second), *_index->second));
-                }
-                Core::ProxyType<const PluginHost::IShell> operator->() const {
-                    ASSERT(IsValid());
-                    return (Core::ProxyType<const PluginHost::IShell>(static_cast<Core::IReferenceCounted&>(*_index->second), *_index->second));
-                }
-
-            private:
-                 Shells _container;
-                 Shells::iterator _index;
-                 uint32_t _position;
-            }; 
+            // ShellSnapshot holds ref-counted IShell proxies so no manual Release is needed
+            // in the iterator's destructor — ProxyType handles that automatically.
+            using ShellSnapshot = std::unordered_map<string, Core::ProxyType<PluginHost::IShell>>;
+            // Current() returns Core::ProxyType<PluginHost::IShell>&.
+            // operator->() chains through ProxyType::operator->() to IShell* automatically.
+            // Key() returns the callsign string.
+            using Iterator = Core::IteratorMapType<ShellSnapshot, Core::ProxyType<PluginHost::IShell>, string>; 
 
         private:
             class Notifier {
@@ -4100,23 +4014,24 @@ namespace PluginHost {
             }
             inline Iterator Services()
             {
-                Shells workingList;
+                ShellSnapshot workingList;
 
                 Core::SafeSyncType<Core::CriticalSection> lock(_adminLock);
 
                 workingList.reserve(_services.size());
 
                 for (const std::pair<const string, Core::ProxyType<Service>>& entry : _services) {
+                    IShell* raw = entry.second->QueryInterface<PluginHost::IShell>();
                     workingList.emplace(std::piecewise_construct,
                         std::make_tuple(entry.first),
-                        std::make_tuple(entry.second->QueryInterface<PluginHost::IShell>()));
+                        std::make_tuple(Core::ProxyType<PluginHost::IShell>(static_cast<Core::IReferenceCounted&>(*raw), *raw)));
 
                     // Report any composit plugins that are active..
                     entry.second->Composits().Visit([&](const string& callsign, IShell* proxy) {
                         proxy->AddRef();
                         workingList.emplace(std::piecewise_construct,
                             std::make_tuple(callsign),
-                            std::make_tuple(proxy));
+                            std::make_tuple(Core::ProxyType<PluginHost::IShell>(static_cast<Core::IReferenceCounted&>(*proxy), *proxy)));
                     });
                 }
 
@@ -5507,7 +5422,7 @@ namespace PluginHost {
                 BaseClass::Iterator index(BaseClass::Clients());
 
                 while (index.Next() == true) {
-                    index.Client()->Revoke(fallback);
+                    index.Current()->Revoke(fallback);
                 }
 
                 BaseClass::Unlock();
@@ -5554,25 +5469,25 @@ namespace PluginHost {
                     BaseClass::Iterator index(BaseClass::Clients());
 
                     while (index.Next() == true) {
-                        if (index.Client()->IsWebSocket() == true){
-                            if(index.Client()->HasReadActivity()) {
-                                index.Client()->ResetActivity();
+                        if (index.Current()->IsWebSocket() == true){
+                            if(index.Current()->HasReadActivity()) {
+                                index.Current()->ResetActivity();
                             }
-                            else if (index.Client()->IsPingInProgress()) {
-                                TRACE(Activity, (_T("Client close without activity on ID [%d]"), index.Client()->Id()));
+                            else if (index.Current()->IsPingInProgress()) {
+                                TRACE(Activity, (_T("Client close without activity on ID [%d]"), index.Current()->Id()));
 
                                 // Oops nothing hapened for a long time, kill the connection
                                 // Give it all the time (0) if it i not yet suspended to close. If it is
                                 // suspended, force the close down if not closed in 100ms.
-                                index.Client()->Close(0);
+                                index.Current()->Close(0);
                             } else {
-                                index.Client()->Ping();
+                                index.Current()->Ping();
                             }
                         } else {
-                            if(index.Client()->HasActivity()) {
-                                index.Client()->ResetActivity();
+                            if(index.Current()->HasActivity()) {
+                                index.Current()->ResetActivity();
                             } else {
-                                index.Client()->Close(0);
+                                index.Current()->Close(0);
                             }
                         }
                     }
@@ -5718,7 +5633,7 @@ namespace PluginHost {
             ChannelMap::Iterator it = _connections.Clients();
 
             while (it.Next() == true) {
-                handler(*it.Client());
+                handler(*it.Current());
             }
         }
 

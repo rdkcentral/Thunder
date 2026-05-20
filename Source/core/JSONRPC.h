@@ -20,6 +20,7 @@
 #pragma once
 
 #include "JSON.h"
+#include "IIterator.h"
 #include "Module.h"
 #include "TypeTraits.h"
 #include "Errors.h"
@@ -832,89 +833,8 @@ POP_WARNING()
             typedef std::function<void(const uint32_t id, const string& designator, const string& data)> NotificationFunction;
 
         public:
-            class EventIterator {
-            public:
-                EventIterator()
-                    : _container(nullptr)
-                    , _index()
-                    , _position(~0)
-                {
-                }
-                EventIterator(const HandlerMap& container)
-                    : _container(&container)
-                    , _index()
-                    , _position(~0)
-                {
-                }
-                EventIterator(const EventIterator& copy)
-                    : _container(copy._container)
-                    , _index(copy._index)
-                    , _position(copy._position)
-                {
-                }
-                EventIterator(EventIterator&& move) noexcept
-                    : _container(move._container)
-                    , _index(std::move(move._index))
-                    , _position(move._position)
-                {
-                    move._container = nullptr;
-                    move._position = ~0;
-                }
-                ~EventIterator() = default;
-
-                EventIterator& operator=(const EventIterator& rhs)
-                {
-                    _container = rhs._container;
-                    _index = rhs._index;
-                    _position = rhs._position;
-
-                    return (*this);
-                }
-                EventIterator& operator=(EventIterator&& move) noexcept
-                {
-                    if (this != &move) {
-                        _container = move._container;
-                        _index = std::move(move._index);
-                        _position = move._position;
-
-                        move._container = nullptr;
-                        move._position = ~0;
-                    }
-                    return (*this);
-                }
-            public:
-                bool IsValid() const
-                {
-                    return ((_container != nullptr) && (_position < _container->size()));
-                }
-                void Reset()
-                {
-                    _position = ~0;
-                }
-                bool Next()
-                {
-                    if (_position == static_cast<uint16_t>(~0)) {
-                        if (_container != nullptr) {
-                            _position = 0;
-                            _index = _container->cbegin();
-                        }
-                    } else if (_index != _container->cend()) {
-                        _index++;
-                        _position++;
-                    }
-                    return (IsValid());
-                }
-                const string& Event() const
-                {
-                    ASSERT(IsValid());
-                    return (_index->first);
-                }
-
-            private:
-                const HandlerMap* _container;
-                HandlerMap::const_iterator _index;
-                uint16_t _position;
-            };
+            // Iterator over registered event names. Use Key() to retrieve the event name.
+            using EventIterator = IteratorMapType<HandlerMap, Entry, string>;
 
         public:
             Handler() = delete;

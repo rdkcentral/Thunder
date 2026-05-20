@@ -204,7 +204,7 @@ namespace PluginHost {
             Metadata::Channel newInfo;
             // Let the Channel,report it's metadata
 
-            Core::ProxyType<Channel> client(index.Client());
+            Core::ProxyType<Channel> client(index.Current());
 
             newInfo.ID = client->Id();
 

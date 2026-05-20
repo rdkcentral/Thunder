@@ -186,105 +186,10 @@ namespace Thunder {
             };
 
             using ControlList = std::vector<Control>;
-            class EXTERNAL Iterator {
-            public:
-                Iterator(const Iterator&) = delete;
-                Iterator& operator=(const Iterator&) = delete;
-
-                Iterator()
-                    : _position(0)
-                    , _container()
-                    , _index()
-                {
-                }
-                Iterator(const ControlList& copy)
-                    : _position(0)
-                    , _container(copy)
-                    , _index(_container.begin())
-                {
-                }
-                Iterator(Iterator&& move) noexcept
-                    : _position(0)
-                    , _container(std::move(move._container))
-                    , _index(_container.begin())
-                {
-                }
-                ~Iterator() = default;
-
-                Iterator& operator=(Iterator&& rhs) noexcept
-                {
-                    _position = 0;
-                    _container = std::move(rhs._container);
-                    _index = _container.begin();
-
-                    return (*this);
-                }
-                Iterator& operator=(ControlList&& rhs) noexcept
-                {
-                    _position = 0;
-                    _container = std::move(rhs);
-                    _index = _container.begin();
-
-                    return (*this);
-                }
-
-            public:
-                bool IsValid() const {
-                    return ((_position > 0) && (_index != _container.end()));
-                }
-
-                void Reset()
-                {
-                    _position = 0;
-                    _index = _container.begin();
-                }
-
-                bool Next()
-                {
-                    if (_position == 0) {
-                        _position++;
-                    }
-                    else if (_index != _container.end()) {
-                        _position++;
-                        _index++;
-                    }
-
-                    return (_index != _container.end());
-                }
-
-                Core::Messaging::Metadata::type Type() const
-                {
-                    ASSERT(IsValid());
-
-                    return (_index->Type());
-                }
-
-                const string& Module() const
-                {
-                    ASSERT(IsValid());
-
-                    return (_index->Module());
-                }
-
-                const string& Category() const
-                {
-                    ASSERT(IsValid());
-
-                    return (_index->Category());
-                }
-
-                bool Enabled() const
-                {
-                    ASSERT(IsValid());
-                    
-                    return (_index->Enabled().Value());
-                }
-
-            private:
-                uint32_t _position;
-                ControlList _container;
-                ControlList::iterator _index;
-            };
+            // Use it->Type(), it->Module(), it->Category(), it->Enabled().Value()
+            // to access element fields, or it.Current() for the whole Control.
+            // Assign a new snapshot via: iterator = std::move(controlList);
+            using Iterator = Core::IteratorType<ControlList, Control>;
 
             class EXTERNAL Settings {
             private:
