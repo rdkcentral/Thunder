@@ -49,10 +49,12 @@
 #include <cstring>
 #include <atomic>
 
+#ifdef __POSIX__
 #include <unistd.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#endif // __POSIX__
 
 namespace Thunder {
 namespace Test {
@@ -113,8 +115,7 @@ namespace Test {
         JSONServer(const SOCKET& connector,
                    const ::Thunder::Core::NodeId& remoteId,
                    ::Thunder::Core::SocketServerType<JSONServer>*)
-            : Base(5, _factory, false, connector, remoteId, 1024, 1024)
-            , _factory(2)
+            : Base(5, s_factory, false, connector, remoteId, 1024, 1024)
         {
             fprintf(stdout, "[Server] Connection accepted from %s\n",
                     remoteId.HostAddress().c_str());
@@ -156,14 +157,13 @@ namespace Test {
         static std::atomic<uint32_t>  s_receivedCount;
         static std::atomic<bool>      s_validMessageReceived;
         static ::Thunder::Core::Event s_closedEvent;
-
-    private:
-        JSONFactory _factory;
+        static JSONFactory            s_factory;
     };
 
     std::atomic<uint32_t>  JSONServer::s_receivedCount{ 0 };
     std::atomic<bool>       JSONServer::s_validMessageReceived{ false };
     ::Thunder::Core::Event  JSONServer::s_closedEvent{ false, true };
+    JSONFactory             JSONServer::s_factory{ 2 };
 
 } // namespace Test
 } // namespace Thunder
@@ -201,6 +201,7 @@ int main()
     ::SleepMs(200);
 
     // ---- 2. Connect a raw POSIX client and send garbage --------------------
+#ifdef __POSIX__
     int clientFd = ::socket(AF_INET, SOCK_STREAM, 0);
     if (clientFd < 0) {
         fprintf(stderr, "[Main]   ERROR: socket() failed\n");
@@ -243,6 +244,7 @@ int main()
     // Close the client side.  Without the bug fix, this TCP FIN can never
     // propagate to the server because the worker thread is stuck in the loop.
     ::close(clientFd);
+#endif // __POSIX__
     fprintf(stdout, "[Main]   Client socket closed (sent TCP FIN)\n");
     fflush(stdout);
 
