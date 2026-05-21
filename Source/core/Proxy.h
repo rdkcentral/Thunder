@@ -1765,7 +1765,6 @@ POP_WARNING()
             }
 
         private:
-
             ContainerMap _map;
             mutable Core::CriticalSection _lock;
         };

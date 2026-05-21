@@ -207,9 +207,7 @@ namespace WPEFramework {
 				}
 
 			public:
-				~CommunicationChannel() override {
-					TRACE_L1("[RM_CRASH] Destroying communication channel this:[%p]", this);
-				}
+				~CommunicationChannel() override = default;
 				static Core::ProxyType<CommunicationChannel> Instance(const Core::NodeId& remoteNode, const string& callsign, const string& query)
 				{
 					// Use type-discriminated key to prevent collisions between different INTERFACE types
