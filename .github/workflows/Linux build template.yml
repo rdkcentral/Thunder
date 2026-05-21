@@ -5,6 +5,11 @@ permissions:
 
 on:
   workflow_call:
+    inputs:
+      thundertools_ref:
+        description: 'ThunderTools ref to checkout (branch, tag, or SHA). Defaults to R4_4.'
+        type: string
+        default: 'R4_4'
 
 jobs:
   Thunder:
@@ -97,7 +102,7 @@ jobs:
       with:
         path: ThunderTools
         repository: rdkcentral/ThunderTools
-        ref: R4_4
+        ref: ${{ inputs.thundertools_ref }}
 
     - name: Regex ThunderTools
       if: contains(github.event.pull_request.body, '[DependsOn=ThunderTools:')
