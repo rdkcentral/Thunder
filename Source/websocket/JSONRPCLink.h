@@ -140,11 +140,8 @@ namespace WPEFramework {
 						: BaseClass(5, FactoryImpl::Instance(), callsign, _T("JSON"), query, "", false, false, false, remoteNode.AnyInterface(), remoteNode, 256, -1)
 						, _parent(*parent)
 					{
-						TRACE_L1("[RM_CRASH] Creating channelImpl for %s for callsign: [%s] this: %p", remoteNode.HostAddress().c_str(), callsign.c_str(), this);
 					}
-					~ChannelImpl() override {
-						TRACE_L1("[RM_CRASH] Destroying channelImpl %p", this);
-					}
+					~ChannelImpl() override = default;
 
 				public:
 					virtual void Received(Core::ProxyType<INTERFACE>& jsonObject) override
@@ -207,7 +204,6 @@ namespace WPEFramework {
 					: _channel(this, remoteNode, callsign, query)
 					, _sequence(0)
 				{
-					TRACE_L1("[RM_CRASH] Creating communication channel for remoteNode: %s callsign: [%s] this: %p", remoteNode.HostAddress().c_str(), callsign.c_str(), this);
 				}
 
 			public:
@@ -536,7 +532,6 @@ namespace WPEFramework {
 				, _scheduledTime(0)
 				, _versionstring()
 			{
-				TRACE_L1("[RM_CRASH] Creating LinkType for callsign: [%s] for localCallsign: [%s] this: %p", callsign.c_str(), localCallsign ? localCallsign : "nullptr", this);
 				if (localCallsign == nullptr) {
 					static uint32_t sequence;
 					_localSpace = string("temporary") + Core::NumberType<uint32_t>(Core::InterlockedIncrement(sequence)).Text();
@@ -571,7 +566,6 @@ namespace WPEFramework {
 			}
 			virtual ~LinkType()
 			{
-				TRACE_L1("[RM_CRASH] Destroying LinkType this: [%p]", this);
 				_channel->Unregister(*this);
 
 				for (auto& element : _pendingQueue) {
@@ -1329,13 +1323,11 @@ namespace WPEFramework {
                     			, _eventSubscriber(*this)
 					, _state(UNKNOWN)
 				{
-					TRACE_L1("[CRASH_RM] Creating Connection for callsign %s this: %p", callsign.c_str(), this);
 					_monitor.template Assign<Statechange>(_T("statechange"), &Connection::state_change, this);
 					LinkType<INTERFACE>::Announce();
 				}
 				~Connection() override
 				{
-					TRACE_L1("[CRASH_RM] Destructing Connection for this: %p", this);
 					_monitor.Revoke(_T("statechange"));
                     			_eventSubscriber.Stop();
                     			_eventSubscriber.Wait(Core::Thread::STOPPED, Core::infinite);

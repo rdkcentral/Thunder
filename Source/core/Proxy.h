@@ -1636,7 +1636,6 @@ POP_WARNING()
                 typename ContainerMap::iterator index(_map.find(key));
 
                 if (index == _map.end()) {
-                    TRACE_L1("[CRASH_RM] Creating a new element for key: %p\n", &key);
                     // Oops we do not have such an element, create it...
                     Core::ProxyType<ActualElement> newItem;
                     Core::ProxyType<ActualElement>::template CreateMove(newItem, 0, *this, std::forward<Args>(args)...);
@@ -1655,7 +1654,6 @@ POP_WARNING()
 
                     }
                 } else {
-                    TRACE_L1("[CRASH_RM] Reusing existing element for key: %p\n", &key);
                     result = Core::ProxyType<PROXYELEMENT>(index->second.first);
                 }
 
