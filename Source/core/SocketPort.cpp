@@ -880,7 +880,7 @@ namespace Thunder {
             // See if we need to bind to a specific interface.
             if ((l_Result != INVALID_SOCKET) && (specificInterface.empty() == false)) {
 
-                struct ifreq interface;
+                struct ifreq interface = {};
 #ifdef __APPLE__
                 strncpy(interface.ifr_name, specificInterface.c_str(), IFNAMSIZ - 1);
                 int index = if_nametoindex(interface.ifr_name);
