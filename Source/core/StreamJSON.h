@@ -287,12 +287,14 @@ POP_WARNING()
         uint16_t ReceiveData(uint8_t* dataFrame, const uint16_t receivedSize)
         {
             uint16_t handled = 0;
+            uint16_t processed;
 
             do {
-                handled += _deserializer.Deserialize(&dataFrame[handled], (receivedSize - handled));
+                processed = _deserializer.Deserialize(&dataFrame[handled], (receivedSize - handled));
+                handled += processed;
 
                 // The dataframe can hold more items....
-            } while (handled < receivedSize);
+            } while ((processed != 0) && (handled < receivedSize));
 
             return (handled);
         }
