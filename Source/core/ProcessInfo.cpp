@@ -93,7 +93,7 @@ namespace Core {
 
                 snprintf(procpath, sizeof(procpath), "/proc/%u/comm", pid);
 
-                if ((fd = open(procpath, O_RDONLY)) > 0) {
+                if ((fd = open(procpath, O_RDONLY)) != -1) {
                     ssize_t size;
                     if ((size = read(fd, buffer, maxLength - 1)) > 0) {
                         if (buffer[size - 1] == '\n') {
@@ -145,7 +145,7 @@ namespace Core {
                     int fd;
 
                     snprintf(buffer, sizeof(buffer), "/proc/%d/stat", pid);
-                    if ((fd = open(buffer, O_RDONLY)) > 0) {
+                    if ((fd = open(buffer, O_RDONLY)) != -1) {
                         if (read(fd, buffer, sizeof(buffer) - sizeof(buffer[0])) > 0) {
                             int ppid = 0;
                             sscanf(buffer, "%*d (%*[^)]) %*c %d", &ppid);
@@ -423,7 +423,7 @@ namespace Core {
         int VmSize = 0;
 
         snprintf(buffer, sizeof(buffer), "/proc/%d/statm", _pid);
-        if ((fd = open(buffer, O_RDONLY)) > 0) {
+        if ((fd = open(buffer, O_RDONLY)) != -1) {
             ssize_t readAmount = 0;
             if ((readAmount = read(fd, buffer, sizeof(buffer))) > 0) {
                 ssize_t nulIndex = std::min(readAmount, static_cast<ssize_t>(sizeof(buffer) - 1));
@@ -454,7 +454,7 @@ namespace Core {
         int VmRSS = 0;
 
         snprintf(buffer, sizeof(buffer), "/proc/%d/statm", _pid);
-        if ((fd = open(buffer, O_RDONLY)) > 0) {
+        if ((fd = open(buffer, O_RDONLY)) != -1) {
             ssize_t readAmount = 0;
             if ((readAmount = read(fd, buffer, sizeof(buffer))) > 0) {
                 ssize_t nulIndex = std::min(readAmount, static_cast<ssize_t>(sizeof(buffer) - 1));
@@ -485,7 +485,7 @@ namespace Core {
         int Share = 0;
 
         snprintf(buffer, sizeof(buffer), "/proc/%d/statm", _pid);
-        if ((fd = open(buffer, O_RDONLY)) > 0) {
+        if ((fd = open(buffer, O_RDONLY)) != -1) {
             ssize_t readAmount = 0;
             if ((readAmount = read(fd, buffer, sizeof(buffer))) > 0) {
                 ssize_t nulIndex = std::min(readAmount, static_cast<ssize_t>(sizeof(buffer) - 1));
