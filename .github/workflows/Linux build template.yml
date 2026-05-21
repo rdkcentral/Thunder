@@ -10,6 +10,10 @@ on:
         description: 'ThunderTools ref to checkout (branch, tag, or SHA). Defaults to R4_4.'
         type: string
         default: 'R4_4'
+      thunder_ref:
+        description: 'Thunder ref to checkout (branch, tag, or SHA). Defaults to R4_4.'
+        type: string
+        default: 'R4_4'
 
 jobs:
   Thunder:
@@ -76,7 +80,7 @@ jobs:
       with:
         path: Thunder
         repository: rdkcentral/Thunder
-        ref: R4_4
+        ref: ${{ inputs.thunder_ref }}
 
     - name: Regex Thunder
       if: contains(github.event.pull_request.body, '[DependsOn=Thunder:')
