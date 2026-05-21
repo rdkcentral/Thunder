@@ -1,3 +1,4 @@
+if(NOT CMAKE_SYSTEM_NAME STREQUAL "Windows")
 add_executable(StreamJSONGarbageTest
     Module.cpp
     GarbageTest.cpp
@@ -20,3 +21,4 @@ install(TARGETS StreamJSONGarbageTest
     DESTINATION ${CMAKE_INSTALL_BINDIR}
     COMPONENT ${NAMESPACE}_Test
 )
+endif() # NOT Windows
