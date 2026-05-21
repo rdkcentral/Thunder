@@ -219,7 +219,7 @@ namespace WPEFramework {
 					// Use type-discriminated key to prevent collisions between different INTERFACE types
 					string searchLine = remoteNode.HostAddress() + '@' + callsign + '@' + typeid(INTERFACE).name();
 
-					return (GetChannelMap().template Instance<CommunicationChannel>(searchLine, remoteNode, callsign, query));
+					return Core::ProxyType<CommunicationChannel>(GetChannelMap().template Instance<CommunicationChannel>(searchLine, remoteNode, callsign, query));
 				}
 
 			public:
