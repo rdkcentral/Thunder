@@ -888,6 +888,9 @@ void SerialPort::Read(const uint16_t readBytes)
                 uint32_t size = ::read(_descriptor, reinterpret_cast<char*>(&_receiveBuffer[_readBytes]), _receiveBufferSize - _readBytes);
 
                 if ((size != static_cast<uint32_t>(~0)) && (size != 0)) {
+                    // coverity[INTEGER_OVERFLOW] - Intentional: POSIX read() returns at most the requested count
+                    // (_receiveBufferSize - _readBytes), which is a uint16_t difference and thus <= UINT16_MAX.
+                    // The sum _readBytes + size therefore never exceeds _receiveBufferSize, so no overflow occurs.
                     _readBytes += size;
 
                     if (_readBytes != 0) {
