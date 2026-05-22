@@ -18,7 +18,7 @@
 find_package(GTest REQUIRED)
 
 # TODO: coverage causes attempt to write on invalid location, -keep-static-functions is not recognized by buildroot compiler
-add_compile_options(--coverage -fprofile-update=atomic -fno-inline -fno-inline-small-functions -fno-default-inline)
+add_compile_options(--coverage -fno-inline -fno-inline-small-functions -fno-default-inline)
 add_link_options(-fprofile-arcs)
 add_compile_options(-pthread)
 add_link_options(-pthread)
