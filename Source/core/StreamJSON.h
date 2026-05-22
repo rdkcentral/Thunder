@@ -148,6 +148,7 @@ namespace Core {
 
                     if (error.IsSet() == true) {
                         Clear(_current);
+                       _current.Release();
                         if (_consecutiveErrors < maxConsecutiveErrors) {
                             ++_consecutiveErrors;
 
