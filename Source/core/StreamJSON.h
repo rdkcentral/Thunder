@@ -148,12 +148,15 @@ namespace Core {
 
                     if (error.IsSet() == true) {
                         Clear(_current);
-                        if(_consecutiveErrors++ < (maxConsecutiveErrors-1)) {
+                        if (_consecutiveErrors < maxConsecutiveErrors) {
+                            ++_consecutiveErrors;
+
                             error.Value().Context(reinterpret_cast<const char*>(stream), length, loaded);
-                            CC_SYSLOG("StreamJSONType failed: %s", ErrorDisplayMessage(error.Value()).c_str());
-                        } else if(_consecutiveErrors == maxConsecutiveErrors) {
-                            error.Value().Context(reinterpret_cast<const char*>(stream), length, loaded);
-                            CC_SYSLOG("StreamJSONType failed (errors after this one will not be reported until correct message is received again): %s", ErrorDisplayMessage(error.Value()).c_str());
+                            if (_consecutiveErrors < maxConsecutiveErrors) {
+                                CC_SYSLOG("StreamJSONType failed: %s", ErrorDisplayMessage(error.Value()).c_str());
+                            } else {
+                                CC_SYSLOG("StreamJSONType failed (errors after this one will not be reported until correct message is received again): %s", ErrorDisplayMessage(error.Value()).c_str());
+                            }
                         }
                     } else {
                         _consecutiveErrors = 0;
