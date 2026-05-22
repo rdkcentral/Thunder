@@ -39,6 +39,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_iterator.cpp
    test_jsonobject.cpp
    test_jsonparser.cpp
+   test_jsonrpc_handler.cpp
    test_jsonstring.cpp
    test_keyvalue.cpp
    test_library.cpp
@@ -47,6 +48,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_memberavailability.cpp
    test_message_dispatcher.cpp
    test_messageException.cpp
+   test_serviceadministrator.cpp
    test_networkinfo.cpp
    test_nodeid.cpp
    test_numbertype.cpp
@@ -54,6 +56,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_parser.cpp
    test_portability.cpp
    test_processinfo.cpp
+   test_proxytype.cpp
    test_queue.cpp
    test_rangetype.cpp
    test_readwritelock.cpp
@@ -106,6 +109,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_iterator.cpp
    test_jsonobject.cpp
    test_jsonparser.cpp
+   test_jsonrpc_handler.cpp
    test_jsonstring.cpp
    test_keyvalue.cpp
    test_library.cpp
@@ -113,6 +117,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_measurementtype.cpp
    test_memberavailability.cpp
    test_messageException.cpp
+   test_serviceadministrator.cpp
    test_networkinfo.cpp
    test_nodeid.cpp
    test_numbertype.cpp

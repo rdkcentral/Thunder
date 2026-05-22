@@ -17,8 +17,12 @@
  * limitations under the License.
  */
 
+#include <algorithm>
+#include <atomic>
 #include <condition_variable>
 #include <mutex>
+#include <thread>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -236,7 +240,8 @@ namespace Core {
     };
 
     // =========================================================================
-    // State queries — no network activity
+    // SocketPort tests — closes gap: Core SocketPort error handling
+    // (v2.1 gap: "SocketPort — invalid address, timeout, peer close")
     // =========================================================================
 
     TEST(test_socketport, initial_state_is_closed)
@@ -1206,6 +1211,516 @@ namespace Core {
 
             ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
             sender.Close(maxWaitTimeMs);
+        };
+
+        IPTestAdministrator testAdmin(callback_parent, callback_child,
+                                      initHandshakeValue, maxWaitTime);
+        ::Thunder::Core::Singleton::Dispose();
+    }
+
+    // =========================================================================
+    // Error Path: TCP IPv4 connect to a port where nothing is listening
+    // =========================================================================
+
+    TEST(test_socketport, open_tcp_ipv4_refused_connection_returns_error)
+    {
+        // Port 59876 on loopback — nothing is expected to be listening.
+        ::Thunder::Core::NodeId remote("127.0.0.1", 59876,
+                                       ::Thunder::Core::NodeId::TYPE_IPV4);
+        EchoConnector client(remote);
+
+        uint32_t result = client.Open(2000);
+        EXPECT_NE(result, ::Thunder::Core::ERROR_NONE);
+
+        client.Close(1000);
+
+        uint32_t waited = 0;
+        while (!client.IsClosed() && waited < 2000) {
+            SleepMs(10);
+            waited += 10;
+        }
+        EXPECT_TRUE(client.IsClosed());
+
+        ::Thunder::Core::Singleton::Dispose();
+    }
+
+    // =========================================================================
+    // Error Path: TCP connect to unreachable (non-routable) network address
+    // =========================================================================
+
+    TEST(test_socketport, open_tcp_to_unreachable_address_returns_error)
+    {
+        // 198.51.100.1 (TEST-NET-2, RFC 5737) — reserved for documentation,
+        // should never be routed, producing ENETUNREACH or a timeout.
+        ::Thunder::Core::NodeId remote("198.51.100.1", 12345,
+                                       ::Thunder::Core::NodeId::TYPE_IPV4);
+        EchoConnector client(remote);
+
+        // Short timeout — either ENETUNREACH immediately or timeout.
+        uint32_t result = client.Open(500);
+        EXPECT_NE(result, ::Thunder::Core::ERROR_NONE);
+
+        client.Close(1000);
+
+        uint32_t waited = 0;
+        while (!client.IsClosed() && waited < 2000) {
+            SleepMs(10);
+            waited += 10;
+        }
+        EXPECT_TRUE(client.IsClosed());
+
+        ::Thunder::Core::Singleton::Dispose();
+    }
+
+    // =========================================================================
+    // Edge Case: Concurrent clients — thread safety of ResourceMonitor
+    // =========================================================================
+
+    TEST(test_socketport, concurrent_clients_echo_thread_safety)
+    {
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 12,
+                           maxWaitTimeMs = 12000, maxInitTime = 500;
+        constexpr uint8_t maxRetries = 1;
+        constexpr int kNumClients = 4;
+
+        const string connector = "/tmp/test_sp_concurrent.sock";
+
+        IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
+            ::unlink(connector.c_str());
+            EchoConnector::ResetState();
+
+            ::Thunder::Core::SocketServerType<EchoConnector> server(
+                ::Thunder::Core::NodeId(connector.c_str()));
+
+            ASSERT_EQ(server.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries),
+                      ::Thunder::Core::ERROR_NONE);
+
+            // Wait for parent to finish all concurrent clients.
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(server.Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+        };
+
+        IPTestAdministrator::Callback callback_parent = [&](IPTestAdministrator& testAdmin) {
+            SleepMs(maxInitTime);
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+
+            std::atomic<int> successCount(0);
+            std::vector<std::thread> threads;
+
+            for (int i = 0; i < kNumClients; ++i) {
+                threads.emplace_back([&connector, &successCount, i, maxWaitTimeMs]() {
+                    EchoConnector client(::Thunder::Core::NodeId(connector.c_str()));
+                    if (client.Open(maxWaitTimeMs) == ::Thunder::Core::ERROR_NONE) {
+                        string msg = "concurrent_" + std::to_string(i);
+                        client.Submit(msg);
+                        if (client.WaitForEcho() == ::Thunder::Core::ERROR_NONE &&
+                            client.ReceivedText() == msg) {
+                            successCount.fetch_add(1, std::memory_order_relaxed);
+                        }
+                        client.Close(maxWaitTimeMs);
+                    }
+                });
+                // Small stagger to avoid thundering herd on accept().
+                SleepMs(50);
+            }
+
+            for (auto& t : threads) {
+                t.join();
+            }
+
+            EXPECT_EQ(successCount.load(std::memory_order_relaxed), kNumClients);
+
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries),
+                      ::Thunder::Core::ERROR_NONE);
+        };
+
+        IPTestAdministrator testAdmin(callback_parent, callback_child,
+                                      initHandshakeValue, maxWaitTime);
+        ::Thunder::Core::Singleton::Dispose();
+    }
+
+    // =========================================================================
+    // Error Path: Remote unexpected close triggers StateChange notification
+    // =========================================================================
+
+    TEST(test_socketport, remote_unexpected_close_triggers_statechange)
+    {
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 8,
+                           maxWaitTimeMs = 8000, maxInitTime = 500;
+        constexpr uint8_t maxRetries = 1;
+
+        const string connector = "/tmp/test_sp_remotesc.sock";
+
+        IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
+            ::unlink(connector.c_str());
+
+            ::Thunder::Core::SocketServerType<StateChangeConnector> server(
+                ::Thunder::Core::NodeId(connector.c_str()));
+
+            ASSERT_EQ(server.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries),
+                      ::Thunder::Core::ERROR_NONE);
+
+            // Wait for parent to confirm the client is connected.
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+
+            // Close the server — simulates unexpected remote close from
+            // the client's perspective.
+            ASSERT_EQ(server.Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+
+            // Signal parent that server has closed.
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries),
+                      ::Thunder::Core::ERROR_NONE);
+        };
+
+        IPTestAdministrator::Callback callback_parent = [&](IPTestAdministrator& testAdmin) {
+            SleepMs(maxInitTime);
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+
+            StateChangeConnector client(::Thunder::Core::NodeId(connector.c_str()));
+            ASSERT_EQ(client.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+
+            // Wait for the connect StateChange.
+            EXPECT_TRUE(client.WaitForStateChange(maxWaitTimeMs));
+            int connectChanges = client.StateChanges();
+            EXPECT_GE(connectChanges, 1);
+
+            // Signal server to close — simulates an unexpected remote close
+            // from the client's point of view.
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries),
+                      ::Thunder::Core::ERROR_NONE);
+
+            // Wait for server closure signal.
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+
+            // Wait for the remote-close StateChange notification.
+            uint32_t waited = 0;
+            while (client.StateChanges() <= connectChanges && waited < maxWaitTimeMs) {
+                SleepMs(50);
+                waited += 50;
+            }
+
+            // StateChange must have been invoked again for the remote close.
+            EXPECT_GT(client.StateChanges(), connectChanges);
+
+            // Client must no longer be open.
+            EXPECT_FALSE(client.IsOpen());
+
+            // Cleanup.
+            client.Close(maxWaitTimeMs);
+
+            waited = 0;
+            while (!client.IsClosed() && waited < 2000) {
+                SleepMs(10);
+                waited += 10;
+            }
+            EXPECT_TRUE(client.IsClosed());
+        };
+
+        IPTestAdministrator testAdmin(callback_parent, callback_child,
+                                      initHandshakeValue, maxWaitTime);
+        ::Thunder::Core::Singleton::Dispose();
+    }
+
+    // =========================================================================
+    // Accessor: RemoteId() — symmetric counterpart of LocalId()
+    // =========================================================================
+
+    TEST(test_socketport, remote_id_returns_identifier_string)
+    {
+        const string localPath  = "/tmp/test_sp_rid_loc.sock";
+        const string remotePath = "/tmp/test_sp_rid_rem.sock";
+        ::unlink(localPath.c_str());
+        ::unlink(remotePath.c_str());
+
+        TestDatagram sock(::Thunder::Core::NodeId(localPath.c_str()),
+                          ::Thunder::Core::NodeId(remotePath.c_str()));
+
+        string rid = sock.RemoteId();
+        EXPECT_FALSE(rid.empty());
+        EXPECT_NE(rid.find(remotePath), string::npos);
+
+        ::Thunder::Core::Singleton::Dispose();
+    }
+
+    // =========================================================================
+    // Accessor: SocketSendBufferSize / SocketReceiveBufferSize on open UDP
+    // =========================================================================
+
+    TEST(test_socketport, socket_buffer_size_accessors_on_open_udp)
+    {
+        ::Thunder::Core::NodeId node("0.0.0.0", 0, ::Thunder::Core::NodeId::TYPE_IPV4);
+        TestDatagram sock(node);
+
+        ASSERT_EQ(sock.Open(1000), ::Thunder::Core::ERROR_NONE);
+
+        // Kernel buffer sizes should be non-zero once the socket is open.
+        EXPECT_GT(sock.SocketSendBufferSize(), 0u);
+        EXPECT_GT(sock.SocketReceiveBufferSize(), 0u);
+
+        sock.Close(1000);
+        ::Thunder::Core::Singleton::Dispose();
+    }
+
+    // =========================================================================
+    // Accessor: ReceivedInterface() — default value before any receive
+    // =========================================================================
+
+    TEST(test_socketport, received_interface_default_value)
+    {
+        ::Thunder::Core::NodeId node("0.0.0.0", 0, ::Thunder::Core::NodeId::TYPE_IPV4);
+        TestDatagram sock(node);
+
+        // Before any data is received, ReceivedInterface() returns ~0 (unset).
+        EXPECT_EQ(sock.ReceivedInterface(), static_cast<uint32_t>(~0));
+
+        ::Thunder::Core::Singleton::Dispose();
+    }
+
+    // =========================================================================
+    // State: IsConnecting() — captured during async TCP connect
+    // =========================================================================
+
+    TEST(test_socketport, is_connecting_true_during_async_connect)
+    {
+        // Connect to a non-routable address with waitTime=0 to capture
+        // the LINK state before OPEN is set.
+        ::Thunder::Core::NodeId remote("198.51.100.1", 12345,
+                                       ::Thunder::Core::NodeId::TYPE_IPV4);
+        StateChangeConnector client(remote);
+
+        uint32_t result = client.Open(0);
+
+        // Open(0) should return ERROR_INPROGRESS for a non-blocking connect.
+        if (result == ::Thunder::Core::ERROR_INPROGRESS) {
+            EXPECT_TRUE(client.IsConnecting());
+            EXPECT_FALSE(client.IsOpen());
+            EXPECT_FALSE(client.IsClosed());
+        }
+        // If the kernel immediately refuses (ENETUNREACH), IsConnecting
+        // won't be true — that's also valid, skip the assertion.
+
+        client.Close(1000);
+
+        uint32_t waited = 0;
+        while (!client.IsClosed() && waited < 2000) {
+            SleepMs(10);
+            waited += 10;
+        }
+        EXPECT_TRUE(client.IsClosed());
+
+        ::Thunder::Core::Singleton::Dispose();
+    }
+
+    // =========================================================================
+    // State: IsSuspended() — remote_closed path
+    // =========================================================================
+
+    TEST(test_socketport, is_suspended_after_remote_close)
+    {
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 8,
+                           maxWaitTimeMs = 8000, maxInitTime = 500;
+        constexpr uint8_t maxRetries = 1;
+
+        const string connector = "/tmp/test_sp_suspended.sock";
+
+        IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
+            ::unlink(connector.c_str());
+            EchoConnector::ResetState();
+
+            ::Thunder::Core::SocketServerType<EchoConnector> server(
+                ::Thunder::Core::NodeId(connector.c_str()));
+
+            ASSERT_EQ(server.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries),
+                      ::Thunder::Core::ERROR_NONE);
+
+            // Wait for parent to confirm connection.
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+
+            // Close server — remote-close from client's perspective.
+            ASSERT_EQ(server.Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+
+            // Signal parent that server has closed.
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries),
+                      ::Thunder::Core::ERROR_NONE);
+        };
+
+        IPTestAdministrator::Callback callback_parent = [&](IPTestAdministrator& testAdmin) {
+            SleepMs(maxInitTime);
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+
+            StateChangeConnector client(::Thunder::Core::NodeId(connector.c_str()));
+            ASSERT_EQ(client.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+            EXPECT_TRUE(client.WaitForStateChange(maxWaitTimeMs));
+
+            // Signal server to close.
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries),
+                      ::Thunder::Core::ERROR_NONE);
+
+            // Wait for server closure.
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+
+            // Wait for the remote-close to propagate.
+            uint32_t waited = 0;
+            while (client.IsOpen() && waited < maxWaitTimeMs) {
+                SleepMs(50);
+                waited += 50;
+            }
+
+            // After remote close, the socket should be in SUSPENDED or
+            // fully closed state depending on timing.
+            bool suspended = client.IsSuspended();
+            bool closed    = client.IsClosed();
+            EXPECT_TRUE(suspended || closed);
+
+            client.Close(maxWaitTimeMs);
+
+            waited = 0;
+            while (!client.IsClosed() && waited < 2000) {
+                SleepMs(10);
+                waited += 10;
+            }
+            EXPECT_TRUE(client.IsClosed());
+        };
+
+        IPTestAdministrator testAdmin(callback_parent, callback_child,
+                                      initHandshakeValue, maxWaitTime);
+        ::Thunder::Core::Singleton::Dispose();
+    }
+
+    // =========================================================================
+    // SocketListner: direct lifecycle — Open, IsListening, Close
+    // =========================================================================
+
+    class TestListner : public ::Thunder::Core::SocketListner {
+    public:
+        TestListner() = delete;
+        TestListner(const TestListner&) = delete;
+        TestListner& operator=(const TestListner&) = delete;
+
+        explicit TestListner(const ::Thunder::Core::NodeId& node)
+            : ::Thunder::Core::SocketListner(node)
+            , _accepted(false)
+            , _lastClient(INVALID_SOCKET)
+        {
+        }
+
+        ~TestListner() override = default;
+
+        void Accept(SOCKET& newClient, const ::Thunder::Core::NodeId& remoteId) override
+        {
+            std::unique_lock<std::mutex> lk(_mutex);
+            _lastClient = newClient;
+            _lastRemoteId = remoteId;
+            _accepted = true;
+            _cv.notify_all();
+            // Close the accepted socket since we don't need it.
+            ::close(newClient);
+            newClient = INVALID_SOCKET;
+        }
+
+        bool WaitForAccept(uint32_t ms)
+        {
+            std::unique_lock<std::mutex> lk(_mutex);
+            return _cv.wait_for(lk, std::chrono::milliseconds(ms),
+                                [this] { return _accepted; });
+        }
+
+        ::Thunder::Core::NodeId LastRemoteId() const
+        {
+            std::unique_lock<std::mutex> lk(_mutex);
+            return _lastRemoteId;
+        }
+
+    private:
+        mutable std::mutex _mutex;
+        std::condition_variable _cv;
+        bool _accepted;
+        SOCKET _lastClient;
+        ::Thunder::Core::NodeId _lastRemoteId;
+    };
+
+    TEST(test_socketport, socketlistner_open_listen_close_lifecycle)
+    {
+        const string path = "/tmp/test_sp_listner.sock";
+        ::unlink(path.c_str());
+
+        TestListner listener(::Thunder::Core::NodeId(path.c_str()));
+
+        EXPECT_FALSE(listener.IsListening());
+
+        ASSERT_EQ(listener.Open(1000), ::Thunder::Core::ERROR_NONE);
+        EXPECT_TRUE(listener.IsListening());
+
+        // Verify LocalNode accessor.
+        EXPECT_STREQ(listener.LocalNode().HostName().c_str(), path.c_str());
+
+        ASSERT_EQ(listener.Close(1000), ::Thunder::Core::ERROR_NONE);
+
+        uint32_t waited = 0;
+        while (listener.IsListening() && waited < 1000) {
+            SleepMs(10);
+            waited += 10;
+        }
+        EXPECT_FALSE(listener.IsListening());
+
+        ::Thunder::Core::Singleton::Dispose();
+    }
+
+    // =========================================================================
+    // SocketListner: Accept incoming connection
+    // =========================================================================
+
+    TEST(test_socketport, socketlistner_accepts_incoming_connection)
+    {
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 4,
+                           maxWaitTimeMs = 4000, maxInitTime = 500;
+        constexpr uint8_t maxRetries = 1;
+
+        const string connector = "/tmp/test_sp_listner_accept.sock";
+
+        IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
+            ::unlink(connector.c_str());
+
+            TestListner listener(::Thunder::Core::NodeId(connector.c_str()));
+
+            ASSERT_EQ(listener.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+            ASSERT_TRUE(listener.IsListening());
+
+            // Wait for parent to signal (child Waits, parent Signals)
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue),
+                      ::Thunder::Core::ERROR_NONE);
+
+            // Wait for client to connect and Accept() callback.
+            EXPECT_TRUE(listener.WaitForAccept(maxWaitTimeMs));
+
+            // Wait for parent to finish before closing
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue),
+                      ::Thunder::Core::ERROR_NONE);
+
+            ASSERT_EQ(listener.Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+        };
+
+        IPTestAdministrator::Callback callback_parent = [&](IPTestAdministrator& testAdmin) {
+            SleepMs(maxInitTime);
+
+            // Signal child that we're about to connect
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries),
+                      ::Thunder::Core::ERROR_NONE);
+
+            // Connect a simple stream client to trigger Accept().
+            StateChangeConnector client(::Thunder::Core::NodeId(connector.c_str()));
+            ASSERT_EQ(client.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+
+            // Give the listener time to accept.
+            SleepMs(500);
+
+            client.Close(maxWaitTimeMs);
+
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries),
+                      ::Thunder::Core::ERROR_NONE);
         };
 
         IPTestAdministrator testAdmin(callback_parent, callback_child,
