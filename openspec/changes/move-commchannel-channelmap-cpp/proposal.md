@@ -13,34 +13,142 @@ static Core::ProxyType<CommunicationChannel> Instance(const Core::NodeId& remote
 }
 ```
 
-Because `CommunicationChannel` is a nested class of the `LinkType<INTERFACE>` template, the `channelMap` static is instantiated in whichever plugin shared library first triggers the template instantiation. In RDK, platform linker flags ensure only one copy of this static exists per process, so channel sharing does work — subsequent plugins calling `Instance()` for the same endpoint correctly receive a proxy to the existing channel. However, that channel's vtable pointer (`_vptr.CommunicationChannel`) points into the library that originally instantiated it.
+Because `CommunicationChannel` is a nested class of the `LinkType<INTERFACE>` template, the entire class — including its vtable, the vtable of its nested `ChannelImpl<INTERFACE>` member, and the `channelMap` static — is instantiated in whichever plugin shared library first triggers the template instantiation. In RDK, platform linker flags ensure only one copy of this static exists per process via COMDAT merging, so channel sharing works: subsequent plugins calling `Instance()` for the same endpoint receive a proxy to the existing channel. However, the `channelMap` object itself and the vtable of every `CommunicationChannel` and `ChannelImpl<INTERFACE>` instance are owned by the originating plugin's library.
 
-When that originating plugin is **deactivated and its shared library is unloaded**, the vtable pointer becomes a dangling pointer. Any later operation on the shared channel — including the `ResourceMonitor` callback that still holds a reference — dereferences the unmapped vtable address and produces a **SIGSEGV**. The gdb evidence from the issue confirms exactly this pattern: `channelMap` is in library Y, the returned channel's vtable is in library Z, and when Z unloads the crash follows.
+The inheritance chain that carries the problem is:
 
-The fix is to move `channelMap` into `JSONRPCLink.cpp` so it is owned by the websocket shared library. Because the websocket library's lifetime is tied to the Thunder daemon process, the map — and the channels it keeps alive — can never be unloaded while Thunder is running.
+```
+ChannelImpl<INTERFACE>
+  → StreamJSONType<WebSocketClientType<SocketStream>, FactoryImpl&, INTERFACE>
+      → HandlerType<WebSocketClientType<SocketStream>>   ← nested inside StreamJSONType
+          → WebSocketClientType<SocketStream>
+              → SocketStream  →  IResource
+```
+
+`ResourceMonitor` holds an `IResource*` pointer into the `SocketStream` deep inside `ChannelImpl`. Because `HandlerType` is nested inside the `StreamJSONType` template, its vtable is instantiated in the same plugin DSO as `CommunicationChannel`.
+
+When the originating plugin is **deactivated and its shared library is unloaded**, both the `channelMap` static and the vtable for `CommunicationChannel` / `HandlerType` / `ChannelImpl` become dangling. Any later operation on the shared channel — in particular the `ResourceMonitor` callback that still holds a live `IResource*` — dereferences the unmapped vtable address and produces a **SIGSEGV**. The gdb evidence from the issue confirms this pattern exactly.
+
+### Root architectural tension
+
+`StreamJSONType<SOURCE, ALLOCATOR, INTERFACE>` fuses two unrelated concerns into one template class:
+
+- **Socket ownership** — the `HandlerType<SOURCE>` member manages the underlying TCP socket and implements `IResource`. This has **process lifetime**: `ResourceMonitor` holds a reference to it as long as the connection is open.
+- **Protocol framing** — the `Serializer` / `Deserializer` members handle JSON text (for `IElement`) or binary MessagePack (for `IMessagePack`). This is **INTERFACE-dependent**.
+
+Because both concerns are fused inside a template parameterised on `INTERFACE`, the socket-related vtables are tied to the instantiating DSO, which may be a plugin library with a shorter lifetime than the process.
 
 ## What Changes
 
-`CommunicationChannel` is a nested dependent type of `LinkType<INTERFACE>`, so its type — and the type of `channelMap` — varies per `INTERFACE`. A single non-template function in `.cpp` cannot directly own the map. The correct mechanism is **explicit template specialization** of `CommunicationChannel::Instance()` combined with `extern template`:
+This change is implemented in **two stages**. Stage 1 is the immediate bug fix; Stage 2 is the correct long-term architectural resolution.
 
-- In `JSONRPCLink.h`, add `extern template` declarations for the concrete INTERFACE types used in practice (currently only `Core::JSON::IElement`). This suppresses implicit instantiation in every consumer TU and forces all callers to link to the websocket library's definition.
-- In `JSONRPCLink.cpp`, add explicit full specializations of `CommunicationChannel::Instance()` for those same types. The `static channelMap` local variable inside these specializations is compiled once into the websocket library TU — never into plugin libraries.
-- Annotate each explicit specialization with `EXTERNAL` so the symbol is exported from the websocket library.
-- No public API or ABI changes to `LinkType<INTERFACE>` or `CommunicationChannel`; the change is purely an implementation fix.
-- Custom/third-party INTERFACE types not listed in the `extern template` set fall back to the old header template behaviour, but those are always instantiated in a single library (no cross-library channel sharing), so the original crash cannot affect them.
+---
+
+### Stage 1 — Short-term fix: whole-class explicit instantiation (Option A)
+
+`CommunicationChannel` and all of its nested types (`ChannelImpl`, `FactoryImpl`, `HandlerType`) are INTERFACE-dependent. The correct mechanism to anchor their code — including `channelMap`, all vtables, and all statics — in a specific DSO without changing any behaviour is **explicit template instantiation** (not explicit specialisation, which would imply behavioural difference):
+
+**`JSONRPCLink.h`** — after the `LinkType` class body, suppress implicit instantiation in all consumer TUs:
+
+```cpp
+// Suppress implicit instantiation of LinkType<IElement> in all consumer TUs.
+// The websocket library provides the single authoritative instantiation.
+// Add a matching `template class LinkType<...>` line in JSONRPCLink.cpp for each new INTERFACE type.
+extern template class LinkType<Core::JSON::IElement>;
+```
+
+**`JSONRPCLink.cpp`** — force the complete instantiation into the websocket library TU:
+
+```cpp
+template class LinkType<Core::JSON::IElement>;
+```
+
+This causes the compiler to emit every symbol for `LinkType<IElement>` — including `CommunicationChannel`'s vtable, `ChannelImpl`'s vtable, `HandlerType`'s vtable, and the `channelMap` function-local static — exactly once, into the websocket library's object file. Plugin libraries that include the header see `extern template` and do not emit their own copies; they link to the websocket library's symbols instead.
+
+**Properties of this approach:**
+- `extern template` / `template class` is the C++ standardised mechanism for controlling which TU owns template instantiations. It expresses DSO placement, not behavioural divergence — semantically correct for this problem.
+- No new function bodies, no specialisations, no ABI changes to `LinkType<INTERFACE>` or `CommunicationChannel`.
+- Fixes both the `channelMap` static and all affected vtables in a single operation.
+- Adding a new INTERFACE type requires two lines: one `extern template` in the header and one `template class` in the `.cpp`. A comment at the `extern template` site documents this contract. The INTERFACE value space is bounded: only `Core::JSON::IElement` (active) and `Core::JSON::IMessagePack` (protocol-supported but currently unused) are valid because `Core::JSONRPC::Message` must implement the INTERFACE, and only these two are implemented.
+
+---
+
+### Stage 2 — Long-term fix: separate socket ownership from protocol framing
+
+The two-line-per-type requirement in Stage 1, while minimal, exists because the socket's vtable is inside a template class. The correct architectural fix eliminates the requirement entirely by separating the two concerns that `StreamJSONType` conflates.
+
+**New non-template class `WebSocketConnection`** (defined in `JSONRPCLink.cpp`):
+- Owns the `WebSocketClientType<SocketStream>` by value — non-template, vtable permanently in the websocket library.
+- Owns the `channelMap` static — the map stores `Core::ProxyType<WebSocketConnection>`, not a template type.
+- Implements `IResource` (via `SocketStream` inheritance) — `ResourceMonitor` holds `IResource*` into this object, which is always valid.
+- Calls back via a narrow non-template `IFramingCallback` interface when a message arrives or the connection state changes.
+
+```cpp
+class EXTERNAL IFramingCallback {
+public:
+    virtual ~IFramingCallback() = default;
+    virtual void OnReceived(const Core::ProxyType<Core::JSONRPC::Message>&) = 0;
+    virtual void OnStateChange(bool open) = 0;
+};
+```
+
+**`ChannelImpl<INTERFACE>` becomes a thin framing adapter** (remains in the header):
+- No longer inherits from `StreamJSONType` — no longer owns the socket.
+- Implements `IFramingCallback` — handles JSON text or binary MessagePack deserialisation for the specific INTERFACE.
+- Created per-plugin or per-client, destroyed when the library unloads. Its vtable lives in the plugin DSO, but `ResourceMonitor` never touches it — `ResourceMonitor` only touches `WebSocketConnection`.
+
+**`FactoryImpl` becomes non-template** (moves to `JSONRPCLink.cpp`):
+- `WatchDog` stores `IChannelClient*` instead of `LinkType<INTERFACE>*`.
+- One shared message pool and one timer thread for the entire process, regardless of how many INTERFACE types are used.
+
+**`IChannelClient` interface** (new, in header, ~8 lines):
+- `Opened()`, `Closed()`, `Inbound(Core::ProxyType<Core::JSONRPC::Message>)`, `Timed()` as pure virtuals.
+- `LinkType<INTERFACE>` implements it — four methods already exist, add `virtual` and inherit.
+- `CommunicationChannel`'s `_observers` list becomes `std::list<IChannelClient*>`, removing its INTERFACE dependency.
+
+**`CommunicationChannel` becomes non-template** (moves to `JSONRPCLink.cpp`):
+- Owns `WebSocketConnection` by value (or as a composed member).
+- All channel management logic (register/unregister/sequence/inbound routing) is unchanged in behaviour.
+- `Instance()` is a plain non-template `EXTERNAL` function — no per-type registration needed.
+
+**Properties of this approach:**
+- Adding a new INTERFACE type (e.g., a future binary protocol) requires zero changes to the channel ownership layer. `ChannelImpl<INewProtocol>` is a thin adapter that compiles into the new plugin without any registration.
+- Adding a new transport (e.g., TLS socket) requires a new non-template `WebSocketConnection` subclass in `.cpp` — semantically correct because it is genuinely a new transport implementation.
+- `FactoryImpl`'s timer thread is created once per process instead of once per INTERFACE type, reducing resource consumption.
+- `ResourceMonitor` always holds a pointer into a non-template class with a permanently stable vtable.
+
+### Complete usage matrix evaluated against both stages
+
+| Instantiation | Status | Stage 1 | Stage 2 |
+|---|---|---|---|
+| `LinkType<Core::JSON::IElement>` | Active — only real usage | Fixed: 2 lines in header + .cpp | Fixed: zero per-type changes |
+| `LinkType<Core::JSON::IMessagePack>` | Dead code — protocol supported, no callers | Fixed: 2 lines if activated | Fixed: zero per-type changes |
+| `SmartLinkType<Core::JSON::IElement>` | Active — wraps two `LinkType<IElement>` instances | Fixed by same 2 lines | Fixed: zero per-type changes |
+| `SmartLinkType<Core::JSON::IMessagePack>` | Dead code | Fixed: 2 lines if activated | Fixed: zero per-type changes |
+| `Client` (deprecated alias for `LinkType<IElement>`) | Backward compat only | Fixed by same 2 lines | Fixed: zero per-type changes |
+| Hypothetical new INTERFACE type | Not currently possible without modifying `JSONRPC::Message` | Requires 2 new lines | Zero changes to channel layer |
+| Hypothetical new transport (TLS etc.) | Not in current design | Not addressed | One new non-template class in `.cpp` |
 
 ## Capabilities
 
 ### New Capabilities
-- `channelmap-cpp-anchor`: `channelMap` is anchored in the websocket library translation unit, ensuring that shared channels outlive any individual plugin library and their vtable pointers remain valid for the lifetime of the process.
+- `channelmap-cpp-anchor` (Stage 1): `channelMap` and all INTERFACE-dependent vtables are anchored in the websocket library translation unit, ensuring that shared channels and their `ResourceMonitor` references remain valid for the lifetime of the process.
+- `socket-framing-separation` (Stage 2): `WebSocketConnection` separates socket ownership (process lifetime, non-template) from protocol framing (INTERFACE-dependent, per-plugin). Adding a new INTERFACE type requires zero changes to the channel ownership layer.
 
 ### Modified Capabilities
+- (Stage 2) `FactoryImpl` — becomes non-template; one shared message pool and timer thread per process.
 
 ## Impact
 
-- **Source/websocket/JSONRPCLink.h** — `CommunicationChannel::Instance()` body refactored; `channelMap` static removed.
-- **Source/websocket/JSONRPCLink.cpp** — non-template accessor added with the `channelMap` static, annotated `EXTERNAL`.
-- **Bug fixed**: SIGSEGV on plugin deactivation caused by dangling `_vptr.CommunicationChannel` after the owning shared library is unloaded (rdkcentral/Thunder#2040).
-- **ResourceMonitor safety**: channels held by the `ResourceMonitor` remain valid because they are now kept alive by the websocket library static, not by a plugin library.
-- Build: no CMakeLists changes required; `JSONRPCLink.cpp` is already compiled into the websocket library.
-- Consumers of `LinkType<INTERFACE>` outside the websocket library: no source or binary changes required.
+**Stage 1:**
+- **Source/websocket/JSONRPCLink.h** — `extern template class LinkType<Core::JSON::IElement>` added after the `LinkType` class body.
+- **Source/websocket/JSONRPCLink.cpp** — `template class LinkType<Core::JSON::IElement>` added.
+- **Bug fixed**: SIGSEGV on plugin deactivation caused by dangling vtables after the owning shared library is unloaded (rdkcentral/Thunder#2040).
+- No API, ABI, or CMakeLists changes. Consumers of `LinkType<INTERFACE>` require no source changes.
+
+**Stage 2:**
+- **Source/websocket/JSONRPCLink.h** — `IFramingCallback`, `IChannelClient` interfaces added (~16 lines); `CommunicationChannel` reduced to a forward declaration or thin shell; `ChannelImpl<INTERFACE>` refactored to implement `IFramingCallback`; `LinkType<INTERFACE>` gains `: public IChannelClient` and four `virtual` methods; `FactoryImpl` moved out of the template.
+- **Source/websocket/JSONRPCLink.cpp** — `WebSocketConnection`, non-template `CommunicationChannel`, non-template `FactoryImpl` added (~250 lines); `channelMap` static moves here permanently.
+- **Source/core/StreamJSON.h** — no changes required; `ChannelImpl` no longer inherits from `StreamJSONType` directly (it wraps it or uses it differently).
+- Stage 1 `extern template` / `template class` lines are removed as they become unnecessary.
+- No API changes visible to `LinkType<INTERFACE>` callers.
