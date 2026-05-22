@@ -179,10 +179,10 @@ namespace Core {
                 return (source->Deserialize(stream, length, _offset));
             }
             inline void Clear(const Core::ProxyType<Core::JSON::IElement>& source) {
-                return(source->Clear());
+                source->Clear();
             }
             inline void Clear(const Core::ProxyType<Core::JSON::IMessagePack>& source) {
-                return (source->Clear());
+                source->Clear();
             }
         private:
             static constexpr uint8_t maxConsecutiveErrors = 200;
