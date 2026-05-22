@@ -821,11 +821,11 @@ namespace PluginHost {
                 _binding = config.Binding.Value();
                 _interface = config.Interface.Value();
                 _portNumber = config.Port.Value();
-                _threadPoolCount = config.Process.IsSet() ? config.Process.ThreadPoolCount.Value() : 4;
+                _threadPoolCount = (config.Process.IsSet() && config.Process.ThreadPoolCount.IsSet()) ? config.Process.ThreadPoolCount.Value() : 4;
                 _stackSize = config.Process.IsSet() ? config.Process.StackSize.Value() : 0;
-                _lowPriorityThreadCount = config.Process.IsSet() ? config.Process.LowPriorityThreadCount.Value() : (_threadPoolCount > 1 ? (_threadPoolCount - 1) : 1);
-                _mediumPriorityThreadCount = config.Process.IsSet() ? config.Process.MediumPriorityThreadCount.Value() : (_threadPoolCount > 1 ? (_threadPoolCount - 1) : 1);
-                _queueSize = config.Process.IsSet() ? config.Process.QueueSize.Value() : 8 * _threadPoolCount;
+                _lowPriorityThreadCount = (config.Process.IsSet() && config.Process.LowPriorityThreadCount.IsSet()) ? config.Process.LowPriorityThreadCount.Value() : (_threadPoolCount > 1 ? (_threadPoolCount - 1) : 1);
+                _mediumPriorityThreadCount = (config.Process.IsSet() && config.Process.MediumPriorityThreadCount.IsSet()) ? config.Process.MediumPriorityThreadCount.Value() : (_threadPoolCount > 1 ? (_threadPoolCount - 1) : 1);
+                _queueSize = (config.Process.IsSet() && config.Process.QueueSize.IsSet()) ? config.Process.QueueSize.Value() : (8 * _threadPoolCount);
                 _inputInfo.Set(config.Input);
                 _processInfo.Set(config.Process);
                 _ethernetCard = config.EthernetCard.Value();
