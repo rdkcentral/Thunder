@@ -24,7 +24,7 @@
 // triggered by a single-byte slice landing on the last character of a garbage
 // (non-JSON) payload.
 //
-// How to build (from your Thunder build directory):
+// How to build (from your WPEFramework build directory):
 //   cmake -DSTREAMJSON_GARBAGE_TEST=ON ...
 //   make StreamJSONGarbageTest
 //
@@ -56,7 +56,7 @@
 #include <arpa/inet.h>
 #endif // __POSIX__
 
-namespace Thunder {
+namespace WPEFramework {
 namespace Test {
 
     // -----------------------------------------------------------------------
@@ -64,23 +64,23 @@ namespace Test {
     // JSONRPC::Message extends JSON::Container, so Container::Deserialize is the
     // code path that calls IsNullValue when the first byte is not '{'.
     // -----------------------------------------------------------------------
-    class JSONFactory : public ::Thunder::Core::ProxyPoolType<::Thunder::Core::JSONRPC::Message> {
+    class JSONFactory : public ::WPEFramework::Core::ProxyPoolType<::WPEFramework::Core::JSONRPC::Message> {
     public:
         JSONFactory() = delete;
         JSONFactory(const JSONFactory&) = delete;
         JSONFactory& operator=(const JSONFactory&) = delete;
 
         explicit JSONFactory(uint32_t poolSize)
-            : ::Thunder::Core::ProxyPoolType<::Thunder::Core::JSONRPC::Message>(poolSize)
+            : ::WPEFramework::Core::ProxyPoolType<::WPEFramework::Core::JSONRPC::Message>(poolSize)
         {
         }
 
         ~JSONFactory() = default;
 
-        ::Thunder::Core::ProxyType<::Thunder::Core::JSON::IElement> Element(const string&)
+        ::WPEFramework::Core::ProxyType<::WPEFramework::Core::JSON::IElement> Element(const string&)
         {
-            return ::Thunder::Core::ProxyType<::Thunder::Core::JSON::IElement>(
-                ::Thunder::Core::ProxyPoolType<::Thunder::Core::JSONRPC::Message>::Element());
+            return ::WPEFramework::Core::ProxyType<::WPEFramework::Core::JSON::IElement>(
+                ::WPEFramework::Core::ProxyPoolType<::WPEFramework::Core::JSONRPC::Message>::Element());
         }
     };
 
@@ -88,7 +88,7 @@ namespace Test {
     // Server-side per-connection handler.
     //
     // Accepted by SocketServerType<JSONServer>, so the constructor signature
-    // must follow the Thunder convention:
+    // must follow the WPEFramework convention:
     //   (const SOCKET&, const NodeId&, SocketServerType<JSONServer>*)
     //
     // NOTE: _factory is declared AFTER the StreamJSONType base so it is
@@ -97,15 +97,15 @@ namespace Test {
     // practice and matches the pattern used by the existing unit tests.
     // -----------------------------------------------------------------------
     class JSONServer
-        : public ::Thunder::Core::StreamJSONType<
-              ::Thunder::Core::SocketStream,
+        : public ::WPEFramework::Core::StreamJSONType<
+              ::WPEFramework::Core::SocketStream,
               JSONFactory&,
-              ::Thunder::Core::JSON::IElement> {
+              ::WPEFramework::Core::JSON::IElement> {
 
-        using Base = ::Thunder::Core::StreamJSONType<
-            ::Thunder::Core::SocketStream,
+        using Base = ::WPEFramework::Core::StreamJSONType<
+            ::WPEFramework::Core::SocketStream,
             JSONFactory&,
-            ::Thunder::Core::JSON::IElement>;
+            ::WPEFramework::Core::JSON::IElement>;
 
     public:
         JSONServer() = delete;
@@ -113,8 +113,8 @@ namespace Test {
         JSONServer& operator=(const JSONServer&) = delete;
 
         JSONServer(const SOCKET& connector,
-                   const ::Thunder::Core::NodeId& remoteId,
-                   ::Thunder::Core::SocketServerType<JSONServer>*)
+                   const ::WPEFramework::Core::NodeId& remoteId,
+                   ::WPEFramework::Core::SocketServerType<JSONServer>*)
             : Base(5, s_factory, false, connector, remoteId, 1024, 1024)
         {
             fprintf(stdout, "[Server] Connection accepted from %s\n",
@@ -128,7 +128,7 @@ namespace Test {
         // Called every time the deserialiser completes one JSON element.
         // With the bug this fires in a tight loop for the last garbage byte;
         // with the fix it fires once for each successfully parsed object.
-        void Received(::Thunder::Core::ProxyType<::Thunder::Core::JSON::IElement>& element) override
+        void Received(::WPEFramework::Core::ProxyType<::WPEFramework::Core::JSON::IElement>& element) override
         {
             uint32_t n = ++s_receivedCount;
             string text;
@@ -141,7 +141,7 @@ namespace Test {
             fflush(stdout);
         }
 
-        void Send(::Thunder::Core::ProxyType<::Thunder::Core::JSON::IElement>&) override {}
+        void Send(::WPEFramework::Core::ProxyType<::WPEFramework::Core::JSON::IElement>&) override {}
 
         void StateChange() override
         {
@@ -156,25 +156,25 @@ namespace Test {
         // Shared across all accepted connections (only one expected in this test).
         static std::atomic<uint32_t>  s_receivedCount;
         static std::atomic<bool>      s_validMessageReceived;
-        static ::Thunder::Core::Event s_closedEvent;
+        static ::WPEFramework::Core::Event s_closedEvent;
         static JSONFactory            s_factory;
     };
 
     std::atomic<uint32_t>  JSONServer::s_receivedCount{ 0 };
     std::atomic<bool>       JSONServer::s_validMessageReceived{ false };
-    ::Thunder::Core::Event  JSONServer::s_closedEvent{ false, true };
+    ::WPEFramework::Core::Event  JSONServer::s_closedEvent{ false, true };
     JSONFactory             JSONServer::s_factory{ 2 };
 
 } // namespace Test
-} // namespace Thunder
+} // namespace WPEFramework
 
 // ---------------------------------------------------------------------------
 // main
 // ---------------------------------------------------------------------------
 int main()
 {
-    using namespace Thunder;
-    using namespace Thunder::Test;
+    using namespace WPEFramework;
+    using namespace WPEFramework::Test;
 
     // Use a high-numbered port that is unlikely to be in use.
     constexpr uint16_t SERVER_PORT  = 19273;
@@ -186,11 +186,11 @@ int main()
     constexpr uint32_t SPIN_THRESHOLD = 20;
 
     // ---- 1. Start the server -----------------------------------------------
-    ::Thunder::Core::NodeId serverNode("0.0.0.0", SERVER_PORT);
-    ::Thunder::Core::SocketServerType<JSONServer> server(serverNode);
+    ::WPEFramework::Core::NodeId serverNode("0.0.0.0", SERVER_PORT);
+    ::WPEFramework::Core::SocketServerType<JSONServer> server(serverNode);
 
     uint32_t err = server.Open(2000);
-    if (err != ::Thunder::Core::ERROR_NONE) {
+    if (err != ::WPEFramework::Core::ERROR_NONE) {
         fprintf(stderr, "[Main]   ERROR: failed to open server socket: %u\n", err);
         return 1;
     }
@@ -262,7 +262,7 @@ int main()
     fprintf(stdout, "Received() was called %u time(s) total\n", received);
     fprintf(stdout, "Valid JSON message parsed: %s\n", validParsed ? "YES" : "NO");
 
-    if ((waitResult == ::Thunder::Core::ERROR_NONE) && validParsed) {
+    if ((waitResult == ::WPEFramework::Core::ERROR_NONE) && validParsed) {
         fprintf(stdout,
                 "PASS: Server processed close normally AND parsed the valid JSON\n"
                 "      that followed the garbage input.\n");
@@ -289,7 +289,7 @@ int main()
     fflush(stdout);
 
     server.Close(2000);
-    ::Thunder::Core::Singleton::Dispose();
+    ::WPEFramework::Core::Singleton::Dispose();
 
-    return ((waitResult == ::Thunder::Core::ERROR_NONE) && validParsed) ? 0 : 1;
+    return ((waitResult == ::WPEFramework::Core::ERROR_NONE) && validParsed) ? 0 : 1;
 }
