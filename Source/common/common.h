@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 Metrological
+ * Copyright 2026 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,24 +19,27 @@
 
 #pragma once
 
+#ifdef __WINDOWS__
+#pragma comment(lib, "common.lib")
+#endif
+
 #ifndef MODULE_NAME
-#define MODULE_NAME Application
+#error "Please define a MODULE_NAME that describes the binary/library you are building."
 #endif
 
-#include <core/core.h>
-#include <cryptalgo/cryptalgo.h>
-#include <plugins/plugins.h>
-#include <common/common.h>
-#include <websocket/websocket.h>
-#include <messaging/messaging.h>
+#include "Module.h"
+#include "Config.h"
+#include "Channel.h"
+#include "Configuration.h"
+#include "JSONRPC.h"
+#include "Metadata.h"
+#include "Request.h"
+#include "Service.h"
+#include "StateControl.h"
+#include "SubSystem.h"
+#include "System.h"
+#include "Types.h"
+#include "VirtualInput.h"
 
-#ifdef __CORE_WARNING_REPORTING__
-#include <warningreporting/warningreporting.h>
-#endif
-
-#ifndef TREE_REFERENCE
-#define TREE_REFERENCE engineering_build_for_debug_purpose_only
-#endif
-
-#undef EXTERNAL
-#define EXTERNAL
+WPEFRAMEWORK_NESTEDNAMESPACE_COMPATIBILIY(Plugin)
+WPEFRAMEWORK_NESTEDNAMESPACE_COMPATIBILIY(PluginHost)

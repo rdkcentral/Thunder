@@ -17,26 +17,9 @@
  * limitations under the License.
  */
 
-#pragma once
+#include "Module.h"
+#include <plugins/ISubSystem.h>
 
-#ifndef MODULE_NAME
-#define MODULE_NAME Application
-#endif
+namespace Thunder {
 
-#include <core/core.h>
-#include <cryptalgo/cryptalgo.h>
-#include <plugins/plugins.h>
-#include <common/common.h>
-#include <websocket/websocket.h>
-#include <messaging/messaging.h>
-
-#ifdef __CORE_WARNING_REPORTING__
-#include <warningreporting/warningreporting.h>
-#endif
-
-#ifndef TREE_REFERENCE
-#define TREE_REFERENCE engineering_build_for_debug_purpose_only
-#endif
-
-#undef EXTERNAL
-#define EXTERNAL
+} // namespace Thunder

@@ -20,8 +20,8 @@
 
 #include "Module.h"
 
-#include "IPlugin.h"
-#include "IShell.h"
+#include <plugins/IPlugin.h>
+#include <plugins/IShell.h>
 
 namespace Thunder {
 namespace PluginHost {
