@@ -6,6 +6,7 @@ option(REDIRECT_TEST "Test stream redirection" OFF)
 option(MESSAGEBUFFER_TEST "Test message buffer" OFF)
 option(UNRAVELLER "reveal thread details" OFF)
 option(STREAMJSON_GARBAGE_TEST "Reproducer for issue #1963: infinite loop on garbage data in StreamJSONType::ReceiveData()" OFF)
+option(JSON_BENCHMARK "JSON library evaluation suite (Thunder vs nlohmann vs RapidJSON)" OFF)
 
 if(BUILD_TESTS)
     add_subdirectory(unit)
@@ -45,4 +46,8 @@ endif()
 
 if(STREAMJSON_GARBAGE_TEST)
     add_subdirectory(streamjson-garbage)
+endif()
+
+if(JSON_BENCHMARK)
+    add_subdirectory(jsonbenchmark)
 endif()
