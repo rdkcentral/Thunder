@@ -243,6 +243,8 @@ GetOrCreate(const Core::NodeId& remoteNode, const string& callsign, const string
 
 **Drawbacks:**
 - Requires RTTI (`typeid`, `std::type_index`) across shared library boundaries, which has known fragility in multi-DSO environments when symbol visibility is restricted.
+  - **`typeid().name()` is non-portable:** The string returned by `typeid(T).name()` is implementation-defined and mangled. On some platforms, especially with `-fvisibility=hidden`, `typeid()` can return **different `type_info` pointers** for the same type when called from different DSOs. Using `typeid().name()` or `std::type_index` as a map key across shared library boundaries is fragile — lookups may fail to find entries inserted by another DSO even for identical types.
+  - Some embedded toolchains strip or mangle RTTI data inconsistently, causing silent runtime mismatches.
 - The registry stores `void*` — requires `static_cast` back to the concrete `CommunicationChannel<INTERFACE>` type, introducing the same cross-DSO downcast risk as Alternative 1.
 - `ChannelImpl` and `HandlerType` vtables are still in the plugin DSO. **The `ResourceMonitor` vtable crash is not fixed.**
 - Adds significant complexity (registry, factory lambdas, RTTI) for no benefit over the chosen approach.
@@ -267,6 +269,64 @@ Separate `WebSocketConnection` (non-template, owns the socket, `IResource` in we
 **Why chosen:** Eliminates the per-INTERFACE-type registration requirement entirely (zero lines per new type), ensures `ResourceMonitor` references are structurally stable regardless of plugin lifetime, and corrects the root architectural tension (`StreamJSONType` fusing socket ownership and framing). The added `IFramingCallback` and `IChannelClient` interfaces are small and well-bounded.
 
 **Trade-off:** Substantially more refactoring than Stage 1. Stage 1 is safe to ship independently while Stage 2 is designed.
+
+---
+
+### Alternative 7 — C++17 `inline` static variables
+
+C++17 introduces `inline` variables, which guarantee that a `static` data member marked `inline` has exactly one definition across all translation units, regardless of how many TUs include the header:
+
+```cpp
+template<typename INTERFACE>
+class LinkType {
+    class CommunicationChannel {
+        // C++17 inline variable — guaranteed single definition across all TUs
+        static inline Core::ProxyMapType<string, CommunicationChannel> channelMap;
+
+        static Core::ProxyType<CommunicationChannel> Instance(...) {
+            // Use the inline static directly — no function-local static needed
+            return channelMap.template Instance<CommunicationChannel>(...);
+        }
+    };
+};
+```
+
+**Why not adopted:**
+
+1. **Thunder builds with C++11.** The `CMAKE_CXX_STANDARD` defaults to 11 across Thunder and its plugins. Adopting C++17 `inline` variables would require raising the minimum standard across the entire ecosystem — a significant policy change beyond the scope of this bug fix.
+
+2. **`inline` only fixes the static data, not the vtable.** The `inline` specifier guarantees ODR compliance for `channelMap` — the linker will merge all definitions into one. However, `CommunicationChannel`'s vtable, `ChannelImpl`'s vtable, and `HandlerType`'s vtable are still COMDAT symbols. The linker picks one arbitrarily (typically from the first-loaded DSO), which could be a plugin. **The `IResource*` crash from dangling vtables is not fixed by `inline` variables.**
+
+3. **Linker COMDAT selection is not controllable.** Even with `inline`, which DSO "owns" the merged symbol depends on ELF symbol interposition rules. The first-loaded DSO wins, which could be a plugin that later unloads. There is no C++ mechanism to force the websocket library's copy to be selected.
+
+4. **Does not address the architectural tension.** The root problem is that `StreamJSONType` fuses socket ownership and protocol framing into one template. `inline` variables do not separate these concerns; they only guarantee static data uniqueness. Stage 2's socket/framing separation is the structural fix.
+
+**Summary:** C++17 `inline` variables are a partial solution that requires a language-standard upgrade and still leaves the vtable crash unfixed. The chosen approaches (Stage 1 explicit instantiation, Stage 2 socket extraction) are available in C++11 and address both the static data and vtable problems.
+
+---
+
+### Alternative 8 — `dlopen` with `RTLD_GLOBAL` flag
+
+Force all plugin shared libraries to be loaded with the `RTLD_GLOBAL` flag, which adds the plugin's symbols to the global symbol table. This causes the dynamic linker to merge duplicate symbols (including `channelMap` and vtables) at load time, similar to how symbols from the main executable are handled.
+
+```cpp
+// In plugin loader (hypothetical)
+void* handle = dlopen(pluginPath, RTLD_NOW | RTLD_GLOBAL);
+```
+
+**Why not adopted:**
+
+1. **Pollutes the global symbol namespace.** `RTLD_GLOBAL` exposes *all* symbols from the plugin to subsequent `dlopen` calls. This can cause unintended symbol interposition — a plugin's internal helper function could accidentally override a function of the same name in another plugin or library.
+
+2. **First-loaded DSO wins.** Even with `RTLD_GLOBAL`, the dynamic linker uses the *first* definition it encounters for COMDAT symbols. If a plugin is loaded before the websocket library (unusual but possible in some init sequences), that plugin's vtables become the authoritative copies. When the plugin unloads, the same crash occurs.
+
+3. **Platform-specific.** `dlopen` flags are POSIX-specific. Thunder supports Windows (where `LoadLibrary` has no equivalent flag) and other platforms. A solution based on `RTLD_GLOBAL` would not be portable.
+
+4. **Requires changes to Thunder's plugin loading machinery.** The plugin loader in `Source/Thunder/` would need modification. This is a larger architectural change than the chosen Stage 1 fix, and the outcome is still fragile.
+
+5. **Does not fix the root cause.** The problem is that template instantiation places symbols in the wrong DSO. `RTLD_GLOBAL` papers over the symptom by forcing symbol merging at runtime, but does not ensure the websocket library is the authoritative owner.
+
+**Summary:** `RTLD_GLOBAL` is a runtime workaround that introduces global namespace pollution, is platform-specific, and does not guarantee correct ownership. The chosen approaches fix the problem at compile/link time with no runtime fragility.
 
 ## Risks / Trade-offs
 
