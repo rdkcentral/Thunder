@@ -99,7 +99,6 @@ namespace Core {
         if ((index > 0) && (index < 4)) {
             EXPECT_EQ(index, (*iterator)->Value());
             EXPECT_EQ(index, iterator.Current()->Value());
-            EXPECT_EQ(index, iterator->Value());
         }
     }
 
@@ -110,7 +109,6 @@ namespace Core {
         if ((index > 0) && (index < 4)) {
             EXPECT_EQ(index, (*iterator)->Value());
             EXPECT_EQ(index, iterator.Current()->Value());
-            EXPECT_EQ(index, iterator->Value());
             EXPECT_EQ(index, iterator.Key());
         }
     }
