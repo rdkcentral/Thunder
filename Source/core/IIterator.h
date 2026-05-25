@@ -75,6 +75,8 @@ namespace Core {
         // Use when the iterator must outlive the source or when a snapshot is needed.
         // Note: non-const lvalue still binds to CONTAINER& (reference mode) above;
         //       pass std::as_const(c) or std::move(c) to choose snapshot mode.
+        // Disabled when CONTAINER is already const to avoid duplicate constructor signature.
+        template<typename C = CONTAINER, typename std::enable_if<!std::is_const<C>::value, int>::type = 0>
         IteratorType(const CONTAINER& container)
             : m_Owned(new CONTAINER(container))
             , m_Container(m_Owned)
@@ -328,6 +330,8 @@ namespace Core {
             }
         }
         // Snapshot mode: iterator takes ownership of a copy/move of the container.
+        // Disabled when CONTAINER is already const to avoid duplicate constructor signature.
+        template<typename C = CONTAINER, typename std::enable_if<!std::is_const<C>::value, int>::type = 0>
         IteratorMapType(const CONTAINER& container)
             : m_Owned(new CONTAINER(container))
             , m_Container(m_Owned)
@@ -406,10 +410,20 @@ namespace Core {
                     m_Iterator = m_Container->end();
                     m_Index = Count() + 1;
                 } else if ((position < m_Index) && ((m_Index - position) < position)) {
-                    // Better that we walk back from where we are ;-)
-                    while (m_Index != position) {
-                        m_Index--;
-                        m_Iterator--;
+                    if constexpr (std::is_base_of_v<std::bidirectional_iterator_tag,
+                                      typename std::iterator_traits<ITERATOR>::iterator_category>) {
+                        // Better that we walk back from where we are ;-)
+                        while (m_Index != position) {
+                            m_Index--;
+                            m_Iterator--;
+                        }
+                    } else {
+                        m_Iterator = m_Container->begin();
+                        m_Index = position;
+                        for (uint32_t teller = 1; teller < position; teller++) {
+                            m_Iterator++;
+                        }
+                        ASSERT(m_Iterator != m_Container->end());
                     }
                 } else {
                     m_Iterator = m_Container->begin();
@@ -429,7 +443,15 @@ namespace Core {
         {
             if ((m_Container != nullptr) && (m_Index != 0)) {
                 if (m_Index > 1) {
-                    m_Iterator--;
+                    if constexpr (std::is_base_of_v<std::bidirectional_iterator_tag,
+                                      typename std::iterator_traits<ITERATOR>::iterator_category>) {
+                        m_Iterator--;
+                    } else {
+                        m_Iterator = m_Container->begin();
+                        for (uint32_t teller = 1; teller < m_Index - 1; teller++) {
+                            m_Iterator++;
+                        }
+                    }
                 }
                 m_Index--;
 
