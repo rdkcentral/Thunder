@@ -113,6 +113,7 @@ namespace Core {
                 , _factory(slotSize)
                 , _current()
                 , _offset(0)
+                , _consecutiveErrors(0)
             {
             }
             DeserializerImpl(ParentClass& parent, ALLOCATOR allocator)
@@ -120,6 +121,7 @@ namespace Core {
                 , _factory(allocator)
                 , _current()
                 , _offset(0)
+                , _consecutiveErrors(0)
             {
 			}
             ~DeserializerImpl()
@@ -140,10 +142,29 @@ namespace Core {
                     _offset = 0;
                 }
                 if (_current.IsValid() == true) {
-                    loaded = Deserialize(_current, stream, length);
-                    if ((_offset == 0) || (loaded != length)) {
-                        _parent.Received(_current);
-                        _current.Release();
+                    Core::OptionalType<Core::JSON::Error> error;
+
+                    loaded = Deserialize(_current, stream, length, error);
+
+                    if (error.IsSet() == true) {
+                        Clear(_current);
+                        _offset = 0;
+                        if (_consecutiveErrors < maxConsecutiveErrors) {
+                            ++_consecutiveErrors;
+
+                            error.Value().Context(reinterpret_cast<const char*>(stream), length, loaded);
+                            if (_consecutiveErrors < maxConsecutiveErrors) {
+                                CC_SYSLOG("StreamJSONType failed: %s", ErrorDisplayMessage(error.Value()).c_str());
+                            } else {
+                                CC_SYSLOG("StreamJSONType failed (errors after this one will not be reported until correct message is received again): %s", ErrorDisplayMessage(error.Value()).c_str());
+                            }
+                        }
+                    } else {
+                        _consecutiveErrors = 0;
+                        if ((_offset == 0) || (loaded != length)) {
+                            _parent.Received(_current);
+                            _current.Release();
+                        }
                     }
                 }
 
@@ -151,18 +172,27 @@ namespace Core {
             }
 
         private:
-            inline uint16_t Deserialize(const Core::ProxyType<Core::JSON::IElement>& source, const uint8_t* stream, const uint16_t length) {
-                return(source->Deserialize(reinterpret_cast<const char*>(stream), length, _offset));
+            inline uint16_t Deserialize(const Core::ProxyType<Core::JSON::IElement>& source, const uint8_t* stream, const uint16_t length, Core::OptionalType<Core::JSON::Error>& error) {
+                return(source->Deserialize(reinterpret_cast<const char*>(stream), length, _offset, error));
             }
-            inline uint16_t Deserialize(const Core::ProxyType<Core::JSON::IMessagePack>& source, const uint8_t* stream, const uint16_t length) {
+            inline uint16_t Deserialize(const Core::ProxyType<Core::JSON::IMessagePack>& source, const uint8_t* stream, const uint16_t length, Core::OptionalType<Core::JSON::Error>&) {
                 return (source->Deserialize(stream, length, _offset));
             }
+            inline void Clear(const Core::ProxyType<Core::JSON::IElement>& source) {
+                source->Clear();
+            }
+            inline void Clear(const Core::ProxyType<Core::JSON::IMessagePack>& source) {
+                source->Clear();
+            }
+        private:
+            static constexpr uint8_t maxConsecutiveErrors = 200;
 
         private:
             ParentClass& _parent;
             ALLOCATOR _factory;
             Core::ProxyType<INTERFACE> _current;
             uint32_t _offset;
+            uint8_t _consecutiveErrors;
         };
 
         class HandlerType : public SOURCE {
