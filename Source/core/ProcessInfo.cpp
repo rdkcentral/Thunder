@@ -93,7 +93,7 @@ namespace Core {
 
                 snprintf(procpath, sizeof(procpath), "/proc/%u/comm", pid);
 
-                if ((fd = open(procpath, O_RDONLY)) != -1) {
+                if ((fd = open(procpath, O_RDONLY)) > 0) {
                     ssize_t size;
                     if ((size = read(fd, buffer, maxLength - 1)) > 0) {
                         if (buffer[size - 1] == '\n') {
