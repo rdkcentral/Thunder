@@ -84,7 +84,7 @@ namespace TestCore {
             const string& systemPath = "",
             const string& proxyStubPath = "");
 
-        class JSONRPCLink* CreateJSONRPCLink(const string& callsign);
+        Core::ProxyType<JSONRPCLink> CreateJSONRPCLink(const string& callsign);
         uint32_t Invoke(const string& method, const string& params, string& response);
         uint32_t Invoke(const string& method, const JsonObject& params, JsonObject& response);
 

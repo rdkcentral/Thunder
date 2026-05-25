@@ -46,15 +46,13 @@ namespace Tests {
 
     TEST_F(SmokeTest, ControllerStatusViaJSONRPCLink)
     {
-        auto* controller = _runtime.CreateJSONRPCLink("Controller");
-        ASSERT_NE(controller, nullptr);
+        auto controller = _runtime.CreateJSONRPCLink("Controller");
+        ASSERT_TRUE(controller.IsValid());
 
         string response;
         const uint32_t result = controller->Invoke("status", "{}", response);
         EXPECT_EQ(result, Core::ERROR_NONE) << "status via link returned: " << result;
         EXPECT_FALSE(response.empty());
-
-        controller->Release();
     }
 
     TEST_F(SmokeTest, GetControllerShell)
@@ -72,14 +70,12 @@ namespace Tests {
 
     TEST_F(SmokeTest, UnknownMethodViaJSONRPCLinkReturnsError)
     {
-        auto* controller = _runtime.CreateJSONRPCLink("Controller");
-        ASSERT_NE(controller, nullptr);
+        auto controller = _runtime.CreateJSONRPCLink("Controller");
+        ASSERT_TRUE(controller.IsValid());
 
         string response;
         const uint32_t result = controller->Invoke("thisMethodDoesNotExist", "{}", response);
         EXPECT_EQ(result, Core::ERROR_UNKNOWN_METHOD);
-
-        controller->Release();
     }
 
     TEST_F(SmokeTest, MissingCallsignReturnsError)
@@ -130,15 +126,13 @@ namespace Tests {
 
     TEST_F(SmokeTest, InvokeWithJsonObjectViaLink)
     {
-        auto* controller = _runtime.CreateJSONRPCLink("Controller");
-        ASSERT_NE(controller, nullptr);
+        auto controller = _runtime.CreateJSONRPCLink("Controller");
+        ASSERT_TRUE(controller.IsValid());
 
         JsonObject params;
         JsonObject response;
         const uint32_t result = controller->Invoke("status", params, response);
         EXPECT_EQ(result, Core::ERROR_NONE) << "status (JsonObject) via link returned: " << result;
-
-        controller->Release();
     }
 
     TEST_F(SmokeTest, InvokeWithJsonObjectUnknownMethodReturnsError)
