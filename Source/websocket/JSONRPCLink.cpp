@@ -28,4 +28,16 @@ ENUM_CONVERSION_BEGIN(Thunder::JSONRPC::JSONPluginState)
 
 ENUM_CONVERSION_END(Thunder::JSONRPC::JSONPluginState)
 
+namespace JSONRPC {
+
+    // Explicit instantiation of LinkType for all supported INTERFACE types.
+    // This anchors all symbols (vtables, statics, function bodies) for the entire class
+    // in the websocket library, preventing use-after-free when a plugin that would
+    // otherwise have instantiated this template is unloaded.
+    // See the extern template declarations in JSONRPCLink.h.
+    template class EXTERNAL LinkType<Core::JSON::IElement>;
+    template class EXTERNAL LinkType<Core::JSON::IMessagePack>;
+
+} // namespace JSONRPC
+
 }
