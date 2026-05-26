@@ -35,8 +35,8 @@ namespace JSONRPC {
     // in the websocket library, preventing use-after-free when a plugin that would
     // otherwise have instantiated this template is unloaded.
     // See the extern template declarations in JSONRPCLink.h.
-    template class EXTERNAL LinkType<Core::JSON::IElement>;
-    template class EXTERNAL LinkType<Core::JSON::IMessagePack>;
+    template class LinkType<Core::JSON::IElement>;
+    template class LinkType<Core::JSON::IMessagePack>;
 
 } // namespace JSONRPC
 

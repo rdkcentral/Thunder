@@ -1232,8 +1232,8 @@ namespace Thunder {
         // vtables are all anchored in the websocket library, preventing use-after-free
         // when a plugin that first instantiated the template is unloaded.
         // Add a matching `template class LinkType<...>` line in JSONRPCLink.cpp for each new INTERFACE type.
-        extern template class EXTERNAL LinkType<Core::JSON::IElement>;
-        extern template class EXTERNAL LinkType<Core::JSON::IMessagePack>;
+        extern template class LinkType<Core::JSON::IElement>;
+        extern template class LinkType<Core::JSON::IMessagePack>;
 
         // This is for backward compatibility. Please use the template and not the typedef below!!!
         typedef LinkType<Core::JSON::IElement> DEPRECATED Client;
