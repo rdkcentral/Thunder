@@ -29,7 +29,7 @@ namespace Thunder {
         using namespace Core::TypeTraits;
 
         template<typename INTERFACE>
-        class LinkType {
+        class EXTERNAL LinkType {
         private:
             typedef std::function<void(const Core::JSONRPC::Message&)> CallbackFunction;
 
