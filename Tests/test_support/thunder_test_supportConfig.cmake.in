@@ -1,0 +1,20 @@
+set(dependencies @dependencies@)
+
+foreach(dependency ${dependencies})
+    find_package(${dependency} REQUIRED)
+endforeach()
+
+get_filename_component(_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
+include(${_DIR}/@_name@Targets.cmake)
+
+if(TARGET @_name@::@_name@)
+    if(WIN32)
+        message(FATAL_ERROR "thunder_test_support is not supported on Windows (POSIX-only).")
+    elseif(APPLE)
+        set_property(TARGET @_name@::@_name@ APPEND PROPERTY
+            INTERFACE_LINK_OPTIONS "SHELL:-Wl,-force_load,$<TARGET_FILE:@_name@::@_name@>")
+    else()
+        set_property(TARGET @_name@::@_name@ APPEND PROPERTY
+            INTERFACE_LINK_OPTIONS "SHELL:-Wl,--whole-archive $<TARGET_FILE:@_name@::@_name@> -Wl,--no-whole-archive")
+    endif()
+endif()
