@@ -27,6 +27,10 @@
 #error "Please define a MODULE_NAME that describes the binary/library you are building."
 #endif
 
+// Since this header is included, the code using it is external to Thunder core.
+// So therefore it should use the correct Tracing functionality and not TRACE_L# (which are just fancy printfs).
+#define CORE_TRACE_NOT_ALLOWED
+
 #include "Module.h"
 #include "Config.h"
 #include "Channel.h"
