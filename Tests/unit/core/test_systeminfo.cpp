@@ -109,7 +109,6 @@ namespace Core {
     }
     std::string GetCPUJiffies(std::string result) 
     {
-        int i = 0;
         std::stringstream iss(result);
 
         uint64_t jiffies = 0;
@@ -124,7 +123,6 @@ namespace Core {
                     // https://titanwolf.org/Network/Articles/Article?AID=3d8450d1-470b-4533-bb5a-c46ded0215bb
                 }
             }
-            i++;
         }
 
         return std::to_string(jiffies);
@@ -149,7 +147,7 @@ namespace Core {
             i++;
         }
 
-        float nonIdle = 0, idle = 0;
+        float nonIdle = 0, VARIABLE_IS_NOT_USED idle = 0;
         for (uint8_t index = 0; index < usageData.size(); ++index) {
             if ((index == 3) || (index == 4)) {
                 idle += usageData[index];

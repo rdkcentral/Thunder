@@ -1075,8 +1075,9 @@ namespace Crypto {
 
     static void sha256_trans(SHA256::Context* ctx, const unsigned char* message)
     {
-       uint32_t a, b, c, d, e, f, g, h, i, j, t1, t2, m[64];
-        for (i = 0, j = 0; i < 16; ++i, j += 4) {
+       uint32_t a, b, c, d, e, f, g, h, i, t1, t2, m[64];
+        
+        for (i = 0; i < 16; ++i) {
              PACK32(&message[i << 2], &m[i]);
         }
         for ( ; i < 64; ++i) {
