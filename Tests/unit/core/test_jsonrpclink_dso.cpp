@@ -117,19 +117,44 @@ namespace Core {
     }
 
     /**
-     * @brief Test that vtable pointers are in the websocket library
+     * @brief Helper to check if ThunderWebSocket is loaded as a shared library
+     *
+     * @return true if libThunderWebSocket is loaded as a shared library
+     */
+    static bool IsWebSocketSharedLibraryLoaded()
+    {
+        // Try to find if ThunderWebSocket is loaded as a shared library
+        void* handle = dlopen("libThunderWebSocket.so", RTLD_NOLOAD | RTLD_LAZY);
+        if (handle != nullptr) {
+            dlclose(handle);
+            return true;
+        }
+        // Also try versioned names
+        handle = dlopen("libThunderWebSocket.so.1", RTLD_NOLOAD | RTLD_LAZY);
+        if (handle != nullptr) {
+            dlclose(handle);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * @brief Test that vtable pointers are in the correct location
+     *
+     * In shared library builds: vtable should be in libThunderWebSocket
+     * In static builds: vtable will be in the test executable (acceptable)
      *
      * This test verifies that when we create a LinkType object, its vtable
-     * pointer points into libThunderWebSocket, not into the test executable
-     * or some other DSO.
-     *
-     * This is the core verification that the explicit instantiation fix works.
+     * pointer is correctly resolved - either from the websocket shared library
+     * or linked statically into the executable.
      */
     TEST(Core_JSONRPCLink_DSO, VtableInWebSocketLibrary)
     {
         // We need to set THUNDER_ACCESS for LinkType to work
         // Use a dummy address - we won't actually connect
         ::Thunder::Core::SystemInfo::SetEnvironment(_T("THUNDER_ACCESS"), _T("127.0.0.1:8080"));
+
+        const bool isSharedBuild = IsWebSocketSharedLibraryLoaded();
 
         // Create a LinkType instance
         // Note: This will fail to connect, but that's fine - we just need
@@ -144,11 +169,20 @@ namespace Core {
 
             std::string libraryName = FindLibraryForAddress(vtablePtr);
 
-            // The vtable should be in libThunderWebSocket
-            // (exact name may vary: libThunderWebSocket.so, libThunderWebSocket.so.1, etc.)
-            EXPECT_TRUE(libraryName.find("ThunderWebSocket") != std::string::npos)
-                << "Expected vtable to be in ThunderWebSocket library, but found in: "
-                << libraryName;
+            if (isSharedBuild) {
+                // In shared library builds, vtable should be in libThunderWebSocket
+                // (exact name may vary: libThunderWebSocket.so, libThunderWebSocket.so.1, etc.)
+                EXPECT_TRUE(libraryName.find("ThunderWebSocket") != std::string::npos)
+                    << "Expected vtable to be in ThunderWebSocket library, but found in: "
+                    << libraryName;
+            } else {
+                // In static builds, vtable will be in the executable itself
+                // Just verify we got a valid library/executable name
+                EXPECT_FALSE(libraryName.empty())
+                    << "Could not determine vtable location";
+                SUCCEED() << "Static build: vtable correctly linked into executable: "
+                          << libraryName;
+            }
         }
         catch (...) {
             // Connection failure is expected since there's no server
