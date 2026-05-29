@@ -4617,21 +4617,7 @@
 
 <span class="p">}</span><span class="w"> </span><span class="c1">// namespace MyPlugin</span>
 </code></pre></div>
-<p>Then, announce the category during plugin initialization so that Thunder knows this plugin uses it. This is done by calling <code>TELEMETRY_ANNOUNCE</code> inside the plugin's <code>Initialize()</code> method:</p>
-<div class="highlight"><pre><span></span><code><span class="k">const</span><span class="w"> </span><span class="n">string</span><span class="w"> </span><span class="nf">MyPlugin::Initialize</span><span class="p">(</span><span class="n">PluginHost</span><span class="o">::</span><span class="n">IShell</span><span class="o">*</span><span class="w"> </span><span class="n">service</span><span class="p">)</span>
-<span class="p">{</span>
-<span class="w">    </span><span class="n">TELEMETRY_ANNOUNCE</span><span class="p">(</span><span class="n">MyPlugin</span><span class="o">::</span><span class="n">SessionCount</span><span class="p">);</span><span class="w"> </span><span class="c1">// (1)</span>
-<span class="w">    </span><span class="n">TELEMETRY_ANNOUNCE</span><span class="p">(</span><span class="n">MyPlugin</span><span class="o">::</span><span class="n">CpuLoad</span><span class="p">);</span><span class="w">      </span><span class="c1">// (2)</span>
-<span class="w">    </span><span class="n">TELEMETRY_ANNOUNCE</span><span class="p">(</span><span class="n">MyPlugin</span><span class="o">::</span><span class="n">LastErrorMessage</span><span class="p">);</span>
-
-<span class="w">    </span><span class="c1">// ... rest of initialization ...</span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="p">{};</span>
-<span class="p">}</span>
-</code></pre></div>
-<ol>
-<li>Registers the <code>SessionCount</code> category so it can be enabled or disabled through the messaging configuration</li>
-<li>Registers the <code>CpuLoad</code> category</li>
-</ol>
+<p>The category is automatically registered when the plugin library is loaded. No further setup is needed before emitting events.</p>
 <h3 id="emitting-a-telemetry-event">Emitting a telemetry event</h3>
 <p>Once a category is registered, events can be emitted anywhere in the plugin code using the <code>TELEMETRY</code> macro:</p>
 <div class="highlight"><pre><span></span><code><span class="n">TELEMETRY</span><span class="p">(</span><span class="n">MyPlugin</span><span class="o">::</span><span class="n">SessionCount</span><span class="p">,</span><span class="w"> </span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">uint32_t</span><span class="o">&gt;</span><span class="p">(</span><span class="n">activeSessions</span><span class="p">));</span><span class="w"> </span><span class="c1">// (1)</span>
