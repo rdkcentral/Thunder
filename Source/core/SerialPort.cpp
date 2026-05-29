@@ -934,8 +934,10 @@ void SerialPort::Read(const uint16_t readBytes)
 
         uint8_t* allocatedMemory = static_cast<uint8_t*>(::calloc(_sendBufferSize + _receiveBufferSize, 1));
 
-        _sendBuffer = allocatedMemory;
-        _receiveBuffer = &(allocatedMemory[_sendBufferSize]);
+        if (allocatedMemory != nullptr) {
+            _sendBuffer = allocatedMemory;
+            _receiveBuffer = &(allocatedMemory[_sendBufferSize]);
+        }
 
     }
 
