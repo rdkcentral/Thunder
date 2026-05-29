@@ -121,7 +121,7 @@ namespace Core {
     TEST(Core_Socket, StreamText)
     {
         constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 4, maxWaitTimeMs = 4000, maxInitTime = 2000;
-        constexpr uint8_t maxRetries = 3;
+        constexpr uint8_t maxRetries = 1;
 
         const std::string connector {"/tmp/wpestreamtext0"};
 
