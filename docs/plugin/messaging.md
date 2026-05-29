@@ -1069,7 +1069,7 @@ When the option is `OFF` (the default), CMake uses `find_package(telemetry_msgse
 
 ### Implementing a custom backend
 
-The backend interface is a set of three plain C functions declared in `ThunderNanoServicesRDK/MessageControl/TelemetryOutput.h`. Any library that implements these three functions can be used as a telemetry backend by building it as `telemetry_msgsender` and pointing CMake to it.
+The backend interface is a set of three plain C functions declared in the ThunderNanoServicesRDK repository (`MessageControl/TelemetryOutput.h`). Any library that implements these three functions can be used as a telemetry backend by building it as `telemetry_msgsender` and pointing CMake to it.
 
 ```c
 typedef enum {
