@@ -503,22 +503,7 @@ namespace MyPlugin {
 } // namespace MyPlugin
 ```
 
-Then, announce the category during plugin initialization so that Thunder knows this plugin uses it. This is done by calling `TELEMETRY_ANNOUNCE` inside the plugin's `Initialize()` method:
-
-```c++
-const string MyPlugin::Initialize(PluginHost::IShell* service)
-{
-    TELEMETRY_ANNOUNCE(MyPlugin::SessionCount); // (1)
-    TELEMETRY_ANNOUNCE(MyPlugin::CpuLoad);      // (2)
-    TELEMETRY_ANNOUNCE(MyPlugin::LastErrorMessage);
-
-    // ... rest of initialization ...
-    return {};
-}
-```
-
-1. Registers the `SessionCount` category so it can be enabled or disabled through the messaging configuration
-2. Registers the `CpuLoad` category
+The category is automatically registered when the plugin library is loaded. No further setup is needed before emitting events.
 
 ### Emitting a telemetry event
 
