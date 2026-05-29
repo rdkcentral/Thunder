@@ -4706,11 +4706,11 @@ Enable the category (e.g. via MessageControl configuration / JSON-RPC) before ex
 <p>At the same time, the <code>Data()</code> method — which all message types must implement — always returns a string representation of the value. This allows every existing publisher (Console, Syslog, File, UDP, WebSocket) to display telemetry events without any changes.</p>
 <p>A backend that understands typed data can call <code>RawValue()</code> instead, which returns a <code>const void*</code> pointer to the stored value:</p>
 <div class="highlight"><pre><span></span><code><span class="c1">// For TEXT, RawValue() returns a const char*</span>
-<span class="c1">// For numeric types, RawValue() returns a pointer into the internal union:</span>
-<span class="c1">//   IsSigned()        → const int64_t*</span>
-<span class="c1">//   IsUnsigned()      → const uint64_t*</span>
-<span class="c1">//   Type() == FLOAT32 → const float*</span>
-<span class="c1">//   Type() == FLOAT64 → const double*</span>
+<span class="c1">// For numeric types, RawValue() returns a pointer to the internal numeric union.</span>
+<span class="c1">// Interpret it based on Type():</span>
+<span class="c1">//   INT8/INT16/INT32/INT64     → const int64_t*</span>
+<span class="c1">//   UINT8/UINT16/UINT32/UINT64 → const uint64_t*</span>
+<span class="c1">//   FLOAT32 / FLOAT64          → const float* / const double*</span>
 <span class="k">const</span><span class="w"> </span><span class="kt">void</span><span class="o">*</span><span class="w"> </span><span class="n">raw</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">telemetryMessage</span><span class="p">.</span><span class="n">RawValue</span><span class="p">();</span>
 </code></pre></div>
 <p>The serialization format on the wire is: one byte for the <code>ValueType</code> tag, followed by the payload. Text is null-terminated; numeric types use their natural size (1, 2, 4 or 8 bytes) in big-endian byte order. This is always big-endian regardless of the host platform, because <code>FrameType&lt;0&gt;</code> uses <code>BIG_ENDIAN_ORDERING = true</code> by default and handles the byte-swap internally.</p>
