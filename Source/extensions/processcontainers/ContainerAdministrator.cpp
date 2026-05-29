@@ -64,7 +64,7 @@ namespace ProcessContainers {
             const uint32_t initResult = runtime.second->Initialize(specific.Value());
 
             if (initResult != Core::ERROR_NONE) {
-                TRACE(Trace::Error, (_T("Initialization failure")));
+                SYSLOG(Logging::Error, (_T("Container runtime system '%s' initialization failed with error [%u]"), value.Data(), initResult));
                 result = Core::ERROR_GENERAL;
             }
         }
@@ -140,14 +140,16 @@ namespace ProcessContainers {
                 if (container.IsValid() == true) {
                     TRACE(Trace::Information, (_T("Container '%s' created successfully (runtime system '%s')"),
                             container->Id().c_str(), value.Data()));
+                } else {
+                    SYSLOG(Logging::Error, (_T("Container '%s' creation failed using runtime system '%s'"), id.c_str(), value.Data()));
                 }
             }
             else {
-                TRACE(Trace::Error, (_T("Container runtime system '%s' is not enabled!"), value.Data()));
+                SYSLOG(Logging::Error, (_T("Container runtime system '%s' is not enabled for '%s'"), value.Data(), id.c_str()));
             }
         }
         else {
-            TRACE(Trace::Error, (_T("Container runtime system not specified for '%s'"), id.c_str()));
+            SYSLOG(Logging::Error, (_T("Container runtime system not specified for '%s'"), id.c_str()));
         }
 
         _adminLock.Unlock();

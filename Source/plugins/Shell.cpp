@@ -48,13 +48,16 @@ namespace PluginHost
                 RPC::IStringIterator* all_paths = GetLibrarySearchPaths(locator);
                 ASSERT(all_paths != nullptr);
 
+                string lastError;
+                string lastPath;
                 string element;
                 while ((all_paths->Next(element) == true) && (result == nullptr)) {
                     Core::File file(element.c_str());
                     if (file.Exists()) {
+                        lastPath = element;
 
                         Core::Library resource(element.c_str());
-			            const Core::IService* loader;
+                        const Core::IService* loader;
 
                         if ( (resource.IsLoaded()) && ((loader = Core::ServiceAdministrator::LibraryToService(resource)) != nullptr) ) {
 
@@ -63,13 +66,21 @@ namespace PluginHost
                                 className.c_str(),
                                 version,
                                 interface);
-			            }
+                        } else if (resource.IsLoaded() == false) {
+                            lastError = resource.Error();
+                        } else {
+                            lastError = _T("No service metadata found in library");
+                        }
                     }
                 }
                 all_paths->Release();
+
+                if (result == nullptr) {
+                    SYSLOG(Logging::Error, (_T("Root object [%s] for plugin [%s] could not be instantiated in process from locator [%s]. Last candidate [%s], error [%s]"), className.c_str(), Callsign().c_str(), locator.c_str(), lastPath.c_str(), lastError.c_str()));
+                }
             }
 
-            if (result == nullptr) {
+            if ((result == nullptr) && (locator.empty() == true)) {
                 SYSLOG(Logging::Error, (_T("Root object [%s] for plugin [%s] could not be instantiated in process from locator [%s]"), className.c_str(), Callsign().c_str(), locator.c_str()));
             }
         } else {
@@ -118,14 +129,11 @@ namespace PluginHost
                         rootConfig.Environment());
 
                     result = handler->Instantiate(definition, waitTime, pid);
-                    if (result == nullptr) {
-                        SYSLOG(Logging::Error, (_T("Root object [%s] for plugin [%s] could not be instantiated out-of-process, mode [%s], locator [%s]"), className.c_str(), Callsign().c_str(), rootConfig.Mode.Data(), locator.c_str()));
-                    }
                 } else {
                     SYSLOG(Logging::Error, (_T("Root object [%s] for plugin [%s] could not be instantiated out-of-process, ICOMLink is unavailable"), className.c_str(), Callsign().c_str()));
                 }
             } else {
-                SYSLOG(Logging::Error, (_T("Root object [%s] for plugin [%s] is not allowed to use root mode [%s]"), className.c_str(), Callsign().c_str(), rootConfig.Mode.Data()));
+                SYSLOG(Logging::Error, (_T("Root object [%s] for plugin [%s] configured root mode [%s], but this shell does not support it"), className.c_str(), Callsign().c_str(), rootConfig.Mode.Data()));
             }
         }
 
