@@ -186,7 +186,7 @@ jobs:
           -DCMAKE_PREFIX_PATH="${PWD}/${{matrix.build_type}}/install/usr" \
           -DPLUGIN_TESTPLUGIN=ON \
           -DTEST_PLUGIN_PATH="${PWD}/${{matrix.build_type}}/install/usr/lib/thunder/plugins"
-        cmake --build ${{matrix.build_type}}/build/ThunderNanoServicesTests --target install
+        cmake --build ${{matrix.build_type}}/build/ThunderNanoServicesTests
 
     - name: Run smoke test
       run: |
