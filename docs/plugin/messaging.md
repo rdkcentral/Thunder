@@ -523,7 +523,7 @@ The second argument to `TELEMETRY` is passed directly to a `TelemetryMessage` co
 
 | C++ type | `ValueType` | Notes |
 |---|---|---|
-| `string` / `const char*` | `TEXT` | Null-terminated string; no length limit |
+| `string` / `const char*` | `TEXT` | Null-terminated string; size limited by the messaging buffer (see `MessageUnit::MaxMessageSize`) |
 | `int8_t` | `INT8` | Signed 8-bit integer, range −128 to 127 |
 | `uint8_t` | `UINT8` | Unsigned 8-bit integer, range 0 to 255 |
 | `int16_t` | `INT16` | Signed 16-bit integer, range −32 768 to 32 767 |
