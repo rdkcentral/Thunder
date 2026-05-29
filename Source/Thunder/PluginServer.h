@@ -1522,15 +1522,20 @@ namespace PluginHost {
                                 lastError = newLib.Error().empty() == false ? newLib.Error() : _T("GetModuleServices symbol missing");
                             }
                         } else {
-                            lastError = newLib.Error();
+                            lastError = newLib.Error().empty() == false ? newLib.Error() : _T("Library load failed");
                         }
                     }
                 }
                 all_paths->Release();
 
                 if (result == nullptr) {
-                    SYSLOG(Logging::Startup, (_T("Loading library [%s] for plugin [%s] failed. Last candidate [%s], error [%s]"),
-                        name.c_str(), Callsign().c_str(), lastPath.c_str(), lastError.c_str()));
+                    if (lastPath.empty() == false) {
+                        SYSLOG(Logging::Startup, (_T("Loading library [%s] for plugin [%s] failed. Candidate [%s], error [%s]"),
+                            name.c_str(), Callsign().c_str(), lastPath.c_str(), lastError.c_str()));
+                    } else {
+                        SYSLOG(Logging::Startup, (_T("Loading library [%s] for plugin [%s] failed: no library candidate found"),
+                            name.c_str(), Callsign().c_str()));
+                    }
                 }
 
                 return (result);
