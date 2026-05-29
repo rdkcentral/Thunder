@@ -4617,7 +4617,8 @@
 
 <span class="p">}</span><span class="w"> </span><span class="c1">// namespace MyPlugin</span>
 </code></pre></div>
-<p>The category is automatically registered when the plugin library is loaded. No further setup is needed before emitting events.</p>
+<p>The category control is registered when the plugin library is loaded, but telemetry categories are <strong>disabled by default</strong>.
+Enable the category (e.g. via MessageControl configuration / JSON-RPC) before expecting <code>TELEMETRY()</code> to emit events.</p>
 <h3 id="emitting-a-telemetry-event">Emitting a telemetry event</h3>
 <p>Once a category is registered, events can be emitted anywhere in the plugin code using the <code>TELEMETRY</code> macro:</p>
 <div class="highlight"><pre><span></span><code><span class="n">TELEMETRY</span><span class="p">(</span><span class="n">MyPlugin</span><span class="o">::</span><span class="n">SessionCount</span><span class="p">,</span><span class="w"> </span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">uint32_t</span><span class="o">&gt;</span><span class="p">(</span><span class="n">activeSessions</span><span class="p">));</span><span class="w"> </span><span class="c1">// (1)</span>
