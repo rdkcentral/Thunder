@@ -505,6 +505,7 @@ namespace MyPlugin {
 
 The category control is registered when the plugin library is loaded, but telemetry categories are **disabled by default**.
 Enable the category (e.g. via MessageControl configuration / JSON-RPC) before expecting `TELEMETRY()` to emit events.
+
 ### Emitting a telemetry event
 
 Once a category is registered, events can be emitted anywhere in the plugin code using the `TELEMETRY` macro:
