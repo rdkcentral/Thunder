@@ -510,6 +510,8 @@ namespace Core {
         EXPECT_STREQ(sent.c_str(), StreamJSONTestServer::Messages()[0].c_str());
 
         ASSERT_EQ(::Thunder::Core::ERROR_NONE, server.Close(2000));
+
+        ::Thunder::Core::Singleton::Dispose();
     }
 
     // -------------------------------------------------------------------------
@@ -557,6 +559,8 @@ namespace Core {
         EXPECT_STREQ(s2.c_str(), messages[1].c_str());
 
         ASSERT_EQ(::Thunder::Core::ERROR_NONE, server.Close(2000));
+
+        ::Thunder::Core::Singleton::Dispose();
     }
 
     // -------------------------------------------------------------------------
@@ -586,6 +590,8 @@ namespace Core {
         EXPECT_EQ(0u, StreamJSONTestServer::ReceiveCount());
 
         ASSERT_EQ(::Thunder::Core::ERROR_NONE, server.Close(2000));
+
+        ::Thunder::Core::Singleton::Dispose();
     }
 
     // -------------------------------------------------------------------------
@@ -636,6 +642,8 @@ namespace Core {
         EXPECT_EQ(0u, StreamJSONTestServer::ReceiveCount());
 
         ASSERT_EQ(::Thunder::Core::ERROR_NONE, server.Close(2000));
+
+        ::Thunder::Core::Singleton::Dispose();
     }
 
     // -------------------------------------------------------------------------
@@ -691,6 +699,8 @@ namespace Core {
         EXPECT_STREQ(valid.c_str(), messages[0].c_str());
 
         ASSERT_EQ(::Thunder::Core::ERROR_NONE, server.Close(2000));
+
+        ::Thunder::Core::Singleton::Dispose();
     }
 
     // -------------------------------------------------------------------------
@@ -748,6 +758,7 @@ namespace Core {
         EXPECT_STREQ(valid.c_str(), StreamJSONTestServer::Messages()[0].c_str());
 
         ASSERT_EQ(::Thunder::Core::ERROR_NONE, server.Close(2000));
+        ::Thunder::Core::Singleton::Dispose();
     }
 
     // -------------------------------------------------------------------------
@@ -806,6 +817,7 @@ namespace Core {
         EXPECT_STREQ(valid.c_str(), StreamJSONTestServer::Messages()[0].c_str());
 
         ASSERT_EQ(::Thunder::Core::ERROR_NONE, server.Close(2000));
+        ::Thunder::Core::Singleton::Dispose();
     }
 
     // -------------------------------------------------------------------------
@@ -863,6 +875,7 @@ namespace Core {
         EXPECT_STREQ(s2.c_str(), messages[1].c_str());
 
         ASSERT_EQ(::Thunder::Core::ERROR_NONE, server.Close(2000));
+        ::Thunder::Core::Singleton::Dispose();
     }
 
     // -------------------------------------------------------------------------
@@ -909,6 +922,7 @@ namespace Core {
         EXPECT_STREQ(sent.c_str(), StreamJSONTestServer::Messages()[0].c_str());
 
         ASSERT_EQ(::Thunder::Core::ERROR_NONE, server.Close(2000));
+        ::Thunder::Core::Singleton::Dispose();
     }
 
     // -------------------------------------------------------------------------
@@ -961,6 +975,7 @@ namespace Core {
         EXPECT_STREQ(valid.c_str(), messages[0].c_str());
 
         ASSERT_EQ(::Thunder::Core::ERROR_NONE, server.Close(2000));
+        ::Thunder::Core::Singleton::Dispose();
     }
 
     // -------------------------------------------------------------------------
@@ -1024,6 +1039,7 @@ namespace Core {
         EXPECT_STREQ(valid.c_str(), StreamJSONTestServer::Messages()[0].c_str());
 
         ASSERT_EQ(::Thunder::Core::ERROR_NONE, server.Close(2000));
+        ::Thunder::Core::Singleton::Dispose();
     }
 
 #endif // __POSIX__
