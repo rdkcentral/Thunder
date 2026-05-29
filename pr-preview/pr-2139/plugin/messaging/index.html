@@ -5161,7 +5161,7 @@
 </code></pre></div>
 <p>When the option is <code>OFF</code> (the default), CMake uses <code>find_package(telemetry_msgsender)</code> to locate <code>libtelemetry_msgsender.so</code> on the system.</p>
 <h3 id="implementing-a-custom-backend">Implementing a custom backend</h3>
-<p>The backend interface is a set of three plain C functions declared in <code>ThunderNanoServicesRDK/MessageControl/TelemetryOutput.h</code>. Any library that implements these three functions can be used as a telemetry backend by building it as <code>telemetry_msgsender</code> and pointing CMake to it.</p>
+<p>The backend interface is a set of three plain C functions declared in the ThunderNanoServicesRDK repository (<code>MessageControl/TelemetryOutput.h</code>). Any library that implements these three functions can be used as a telemetry backend by building it as <code>telemetry_msgsender</code> and pointing CMake to it.</p>
 <div class="highlight"><pre><span></span><code><span class="k">typedef</span><span class="w"> </span><span class="k">enum</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">TELEMETRY_VALUE_TEXT</span><span class="w">    </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
 <span class="w">    </span><span class="n">TELEMETRY_VALUE_INT8</span><span class="w">    </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
