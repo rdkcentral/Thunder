@@ -585,6 +585,7 @@ namespace Core {
             }
 
             freeifaddrs(interfaces);
+        }
         return adapters.size();
     }
 
