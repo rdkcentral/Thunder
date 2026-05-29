@@ -883,10 +883,12 @@ namespace Thunder {
                 struct ifreq interface;
 #ifdef __APPLE__
                 strncpy(interface.ifr_name, specificInterface.c_str(), IFNAMSIZ - 1);
+                interface.ifr_name[IFNAMSIZ - 1] = '\0';
                 int index = if_nametoindex(interface.ifr_name);
                 if (::setsockopt(l_Result, IPPROTO_IP, IP_BOUND_IF, (const char*)&index, sizeof(index)) < 0) {
 #else
                 strncpy(interface.ifr_ifrn.ifrn_name, specificInterface.c_str(), IFNAMSIZ - 1);
+                interface.ifr_ifrn.ifrn_name[IFNAMSIZ - 1] = '\0';
 
                 if (::setsockopt(l_Result, SOL_SOCKET, SO_BINDTODEVICE, (const char*)&interface, sizeof(interface)) < 0) {
 #endif
