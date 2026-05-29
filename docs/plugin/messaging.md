@@ -512,7 +512,7 @@ Once a category is registered, events can be emitted anywhere in the plugin code
 ```c++
 TELEMETRY(MyPlugin::SessionCount, static_cast<uint32_t>(activeSessions)); // (1)
 TELEMETRY(MyPlugin::CpuLoad,      static_cast<float>(cpuPercent));        // (2)
-TELEMETRY(MyPlugin::LastErrorMessage, string(_T("decode_error")));        // (3)
+TELEMETRY(MyPlugin::LastErrorMessage, string("decode_error"));        // (3)
 ```
 
 1. Emits an unsigned 32-bit integer value
