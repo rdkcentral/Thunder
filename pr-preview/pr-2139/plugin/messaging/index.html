@@ -4702,7 +4702,7 @@ Enable the category (e.g. via MessageControl configuration / JSON-RPC) before ex
 <p>If you pass a plain integer literal such as <code>42</code> without a cast, the compiler will deduce <code>int</code> (which maps to <code>INT32</code> on most platforms). It is a good practice to use an explicit cast to make the intended type clear.</p>
 </div>
 <h3 id="value-types-and-precision">Value types and precision</h3>
-<p>The <code>TelemetryMessage</code> class (defined in <code>Source/core/Messaging.h</code>) stores the original value in its native type (in addition to keeping a string representation for <code>Data()</code>). This means that a <code>double</code> value stays a <code>double</code> all the way until it reaches the backend.</p>
+<p>The <code>TelemetryMessage</code> class (defined in <code>Source/core/Messaging.h</code>) stores values as typed numeric data plus a <code>ValueType</code> tag (in addition to keeping a string representation for <code>Data()</code>). Floating-point values stay <code>float</code>/<code>double</code>, while integers are stored in <code>int64_t</code>/<code>uint64_t</code> and serialized according to their <code>ValueType</code>.</p>
 <p>At the same time, the <code>Data()</code> method — which all message types must implement — always returns a string representation of the value. This allows every existing publisher (Console, Syslog, File, UDP, WebSocket) to display telemetry events without any changes.</p>
 <p>A backend that understands typed data can call <code>RawValue()</code> instead, which returns a <code>const void*</code> pointer to the stored value:</p>
 <div class="highlight"><pre><span></span><code><span class="c1">// For TEXT, RawValue() returns a const char*</span>
