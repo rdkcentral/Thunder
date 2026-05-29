@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 Metrological
+ * Copyright 2026 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,10 @@
 
 #pragma once
 
+#ifdef __WINDOWS__
+#pragma comment(lib, "common.lib")
+#endif
+
 #ifndef MODULE_NAME
 #error "Please define a MODULE_NAME that describes the binary/library you are building."
 #endif
@@ -28,17 +32,17 @@
 #define CORE_TRACE_NOT_ALLOWED
 
 #include "Module.h"
-#include "IController.h"
-#include "IPlugin.h"
-#include "IShell.h"
-#include "IStateControl.h"
-#include "ISubSystem.h"
-#include "IVirtualInput.h"
-#include "IStateController.h"
-#include "Types.h"
+#include "Config.h"
+#include "Channel.h"
+#include "Configuration.h"
+#include "JSONRPC.h"
+#include "Metadata.h"
+#include "Request.h"
+#include "Service.h"
+#include "StateControl.h"
+#include "SubSystem.h"
+#include "System.h"
+#include "VirtualInput.h"
 
-#ifdef __WINDOWS__
-#pragma comment(lib, "plugins.lib")
-#endif
-
+WPEFRAMEWORK_NESTEDNAMESPACE_COMPATIBILIY(Plugin)
 WPEFRAMEWORK_NESTEDNAMESPACE_COMPATIBILIY(PluginHost)

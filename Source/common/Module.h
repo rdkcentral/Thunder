@@ -20,23 +20,22 @@
 #pragma once
 
 #ifndef MODULE_NAME
-#define MODULE_NAME Application
+#define MODULE_NAME Common
 #endif
 
 #include <core/core.h>
+#include <com/com.h>
 #include <cryptalgo/cryptalgo.h>
-#include <plugins/plugins.h>
-#include <common/common.h>
 #include <websocket/websocket.h>
 #include <messaging/messaging.h>
 
 #ifdef __CORE_WARNING_REPORTING__
-#include <warningreporting/warningreporting.h>
+    #include <warningreporting/warningreporting.h>
 #endif
 
-#ifndef TREE_REFERENCE
-#define TREE_REFERENCE engineering_build_for_debug_purpose_only
-#endif
-
+#if defined(__WINDOWS__) && defined(COMMON_EXPORTS)
 #undef EXTERNAL
-#define EXTERNAL
+#define EXTERNAL EXTERNAL_EXPORT
+#endif
+
+// @insert <com/Ids.h>

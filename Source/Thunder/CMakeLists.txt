@@ -76,6 +76,7 @@ target_link_libraries(${TARGET}
           ${NAMESPACE}Messaging::${NAMESPACE}Messaging
           ${NAMESPACE}WebSocket::${NAMESPACE}WebSocket
           ${NAMESPACE}Plugins::${NAMESPACE}Plugins
+          ${NAMESPACE}Common::${NAMESPACE}Common
           ${NAMESPACE}COMProcess::${NAMESPACE}COMProcess  # For COM executable define
           Threads::Threads
         )

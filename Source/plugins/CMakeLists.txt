@@ -37,16 +37,7 @@ file(GLOB JSON_DATA_HEADERS "${CMAKE_CURRENT_BINARY_DIR}/json/JsonData_*.h" "${C
 list(APPEND JSON_CODE_HEADERS "${CMAKE_CURRENT_BINARY_DIR}/json/JStateController.h")
 
 add_library(${TARGET}
-        Channel.cpp
-        JSONRPC.cpp
-        Metadata.cpp
         Module.cpp
-        Service.cpp
-        Shell.cpp
-        StateControl.cpp
-        SubSystem.cpp
-        VirtualInput.cpp
-        System.cpp
         ${JSON_ENUM_SOURCES}
         )
 
@@ -61,27 +52,16 @@ add_library(${TARGET_PROXYSTUBS} SHARED
 target_compile_definitions(${TARGET_PROXYSTUBS} PRIVATE BUILD_SHARED_LIBS)
 
 set(PUBLIC_HEADERS
-        Channel.h
-        Config.h
-        Configuration.h
         IPlugin.h
         IShell.h
         IController.h
         IStateControl.h
         IStateController.h
-        StateControl.h
         ISubSystem.h
         IDispatcher.h
-        SubSystem.h
-        JSONRPC.h
-        Metadata.h
         plugins.h
-        Request.h
-        Service.h
-        System.h
-        Types.h
-        VirtualInput.h
         IVirtualInput.h
+        Types.h
         Module.h
         )
 
@@ -127,6 +107,8 @@ target_include_directories( ${TARGET_PROXYSTUBS}
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../>
         )
+
+target_compile_definitions(${TARGET} PRIVATE PLUGINS_EXPORTS)
 
 set_target_properties(${TARGET} PROPERTIES
         CXX_STANDARD ${CXX_STD}
