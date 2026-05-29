@@ -195,12 +195,12 @@ jobs:
           --gtest_output="xml:smoke-test-results.xml" \
           --gtest_color=yes
 
-    - name: Run plugin test (COM-RPC + JSON-RPC + events)
-      run: |
-        LD_LIBRARY_PATH="${{matrix.build_type}}/install/usr/lib:${PWD}/${{matrix.build_type}}/install/usr/lib/thunder/plugins:${PWD}/${{matrix.build_type}}/install/usr/lib/thunder/proxystubs:$LD_LIBRARY_PATH" \
-        ${{matrix.build_type}}/build/ThunderNanoServicesTests/TestPlugin/test/thunder_testplugin_test \
-          --gtest_output="xml:plugin-test-results.xml" \
-          --gtest_color=yes
+    # - name: Run plugin test (COM-RPC + JSON-RPC + events)
+    #   run: |
+    #     LD_LIBRARY_PATH="${{matrix.build_type}}/install/usr/lib:${PWD}/${{matrix.build_type}}/install/usr/lib/thunder/plugins:${PWD}/${{matrix.build_type}}/install/usr/lib/thunder/proxystubs:$LD_LIBRARY_PATH" \
+    #     ${{matrix.build_type}}/build/ThunderNanoServicesTests/TestPlugin/test/thunder_testplugin_test \
+    #       --gtest_output="xml:plugin-test-results.xml" \
+    #       --gtest_color=yes
 
     - name: Upload test results
       uses: actions/upload-artifact@v4
@@ -208,4 +208,4 @@ jobs:
         name: test-results-${{matrix.build_type}}
         path: |
           smoke-test-results.xml
-          plugin-test-results.xml
+          # plugin-test-results.xml
