@@ -449,7 +449,7 @@ namespace Core {
             const size_t nullTagLen = strlen(IElement::NullTag);
             ASSERT(offset < nullTagLen);
             while (offset < nullTagLen) {
-                if (loaded + 1 == maxLength) {
+                if (loaded >= maxLength) {
                     validity = ValueValidity::UNKNOWN;
                     break;
                 }
