@@ -548,11 +548,11 @@ A backend that understands typed data can call `RawValue()` instead, which retur
 
 ```c++
 // For TEXT, RawValue() returns a const char*
-// For numeric types, RawValue() returns a pointer into the internal union:
-//   IsSigned()        → const int64_t*
-//   IsUnsigned()      → const uint64_t*
-//   Type() == FLOAT32 → const float*
-//   Type() == FLOAT64 → const double*
+// For numeric types, RawValue() returns a pointer to the internal numeric union.
+// Interpret it based on Type():
+//   INT8/INT16/INT32/INT64     → const int64_t*
+//   UINT8/UINT16/UINT32/UINT64 → const uint64_t*
+//   FLOAT32 / FLOAT64          → const float* / const double*
 const void* raw = telemetryMessage.RawValue();
 ```
 
