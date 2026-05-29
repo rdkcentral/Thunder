@@ -4643,7 +4643,7 @@ Enable the category (e.g. via MessageControl configuration / JSON-RPC) before ex
 <tr>
 <td><code>string</code> / <code>const char*</code></td>
 <td><code>TEXT</code></td>
-<td>Null-terminated string; no length limit</td>
+<td>Null-terminated string; size limited by the messaging buffer (see <code>MessageUnit::MaxMessageSize</code>)</td>
 </tr>
 <tr>
 <td><code>int8_t</code></td>
