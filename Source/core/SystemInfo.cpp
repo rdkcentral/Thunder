@@ -147,7 +147,7 @@ namespace Core {
 #ifdef __APPLE__
         m_uptime = 0;
         m_totalram = 0;
-        m_pageSize = 0;
+        m_pageSize = static_cast<uint32_t>(sysconf(_SC_PAGESIZE));
         m_freeram = 0;
         m_totalswap=0;
         m_freeswap=0;
