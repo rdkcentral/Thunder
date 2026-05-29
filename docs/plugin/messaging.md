@@ -540,7 +540,7 @@ The second argument to `TELEMETRY` is passed directly to a `TelemetryMessage` co
 
 ### Value types and precision
 
-The `TelemetryMessage` class (defined in `Source/core/Messaging.h`) stores the original value in its native type (in addition to keeping a string representation for `Data()`). This means that a `double` value stays a `double` all the way until it reaches the backend.
+The `TelemetryMessage` class (defined in `Source/core/Messaging.h`) stores values as typed numeric data plus a `ValueType` tag (in addition to keeping a string representation for `Data()`). Floating-point values stay `float`/`double`, while integers are stored in `int64_t`/`uint64_t` and serialized according to their `ValueType`.
 
 At the same time, the `Data()` method — which all message types must implement — always returns a string representation of the value. This allows every existing publisher (Console, Syslog, File, UDP, WebSocket) to display telemetry events without any changes.
 
