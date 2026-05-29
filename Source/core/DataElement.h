@@ -953,7 +953,7 @@ POP_WARNING()
 
         inline uint64_t Size() const
         {
-            return (m_Offset - m_Buffer.Size());
+            return (m_Buffer.Size() - m_Offset);
         }
 
         inline void SkipBytes(const unsigned int bytes)
