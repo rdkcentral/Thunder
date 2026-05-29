@@ -4598,7 +4598,7 @@
 <span class="p">};</span>
 </code></pre></div>
 <h2 id="telemetry">Telemetry</h2>
-<p>Telemetry is the fourth message type in Thunder. While tracing, logging and warning reporting all produce human-readable text, telemetry is designed to carry <strong>typed, structured values</strong> — integers, floating-point numbers, or strings — that are forwarded to an external backend without any unnecessary conversion or precision loss.</p>
+<p>Telemetry is an additional message type in Thunder. While tracing, logging and warning reporting all produce human-readable text, telemetry is designed to carry <strong>typed, structured values</strong> — integers, floating-point numbers, or strings — that are forwarded to an external backend without any unnecessary conversion or precision loss.</p>
 <p>A typical use case is reporting device metrics to a cloud analytics system. In RDK devices, this backend is the <a href="https://github.com/rdkcentral/telemetry">Telemetry 2.0</a> service. However, the backend is a simple C interface, so any compatible implementation can be used.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
