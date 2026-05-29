@@ -42,7 +42,7 @@ namespace PluginHost
                 locator = (this->Locator());
             } 
 
-	    ASSERT(locator.empty() == false);
+	        ASSERT(locator.empty() == false);
 
             if (locator.empty() == false) {
                 RPC::IStringIterator* all_paths = GetLibrarySearchPaths(locator);
@@ -54,7 +54,7 @@ namespace PluginHost
                     if (file.Exists()) {
 
                         Core::Library resource(element.c_str());
-			const Core::IService* loader;
+			            const Core::IService* loader;
 
                         if ( (resource.IsLoaded()) && ((loader = Core::ServiceAdministrator::LibraryToService(resource)) != nullptr) ) {
 
@@ -63,10 +63,14 @@ namespace PluginHost
                                 className.c_str(),
                                 version,
                                 interface);
-			}
+			            }
                     }
                 }
                 all_paths->Release();
+            }
+
+            if (result == nullptr) {
+                SYSLOG(Logging::Error, (_T("Root object [%s] for plugin [%s] could not be instantiated in process from locator [%s]"), className.c_str(), Callsign().c_str(), locator.c_str()));
             }
         } else {
 
@@ -114,7 +118,14 @@ namespace PluginHost
                         rootConfig.Environment());
 
                     result = handler->Instantiate(definition, waitTime, pid);
+                    if (result == nullptr) {
+                        SYSLOG(Logging::Error, (_T("Root object [%s] for plugin [%s] could not be instantiated out-of-process, mode [%s], locator [%s]"), className.c_str(), Callsign().c_str(), rootConfig.Mode.Data(), locator.c_str()));
+                    }
+                } else {
+                    SYSLOG(Logging::Error, (_T("Root object [%s] for plugin [%s] could not be instantiated out-of-process, ICOMLink is unavailable"), className.c_str(), Callsign().c_str()));
                 }
+            } else {
+                SYSLOG(Logging::Error, (_T("Root object [%s] for plugin [%s] is not allowed to use root mode [%s]"), className.c_str(), Callsign().c_str(), rootConfig.Mode.Data()));
             }
         }
 
