@@ -61,6 +61,7 @@ set(PUBLIC_HEADERS
         IDispatcher.h
         plugins.h
         IVirtualInput.h
+        Types.h
         Module.h
         )
 

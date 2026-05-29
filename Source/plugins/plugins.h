@@ -35,6 +35,7 @@
 #include "ISubSystem.h"
 #include "IVirtualInput.h"
 #include "IStateController.h"
+#include "Types.h"
 
 #ifdef __WINDOWS__
 #pragma comment(lib, "plugins.lib")

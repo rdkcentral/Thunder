@@ -43,7 +43,6 @@
 		<ClInclude Include="StateControl.h" />
 		<ClInclude Include="SubSystem.h" />
 		<ClInclude Include="System.h" />
-		<ClInclude Include="Types.h" />
 		<ClInclude Include="VirtualInput.h" />
 	</ItemGroup>
 	<ItemGroup>

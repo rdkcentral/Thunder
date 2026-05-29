@@ -42,7 +42,6 @@
 #include "StateControl.h"
 #include "SubSystem.h"
 #include "System.h"
-#include "Types.h"
 #include "VirtualInput.h"
 
 WPEFRAMEWORK_NESTEDNAMESPACE_COMPATIBILIY(Plugin)

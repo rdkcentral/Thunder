@@ -70,6 +70,7 @@
     <ClInclude Include="IVirtualInput.h" />
     <ClInclude Include="Module.h" />
     <ClInclude Include="plugins.h" />
+    <ClInclude Include="Types.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="CMakeLists.txt" />

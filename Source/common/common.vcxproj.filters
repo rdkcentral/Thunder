@@ -69,9 +69,6 @@
     <ClInclude Include="System.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Types.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="VirtualInput.h">
       <Filter>Header Files</Filter>
     </ClInclude>

@@ -25,7 +25,6 @@ set(PUBLIC_HEADERS
         StateControl.h
         SubSystem.h
         System.h
-        Types.h
         VirtualInput.h
         Module.h
         )
