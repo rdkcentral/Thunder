@@ -990,7 +990,7 @@ In summary, the output of messages within Thunder is determined by the list of l
 
 ### TelemetryOutput publisher
 
-Besides the standard outputs (Console, Syslog, File, UDP, WebSocket), the `MessageControl` plugin can also route telemetry events to an external backend. This is done through the `TelemetryOutput` publisher, which is compiled in only when the `PLUGIN_MESSAGECONTROL_TELEMETRY_T2` CMake option is set to `ON`:
+Besides the standard outputs (Console, Syslog, File, UDP, WebSocket), the `MessageControl` plugin (in the ThunderNanoServicesRDK repository) can also route telemetry events to an external backend. This is done through the `TelemetryOutput` publisher, which is compiled in only when the `PLUGIN_MESSAGECONTROL_TELEMETRY_T2` CMake option is set to `ON`:
 
 ```cmake
 cmake -DPLUGIN_MESSAGECONTROL_TELEMETRY_T2=ON ...
