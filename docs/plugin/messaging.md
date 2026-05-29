@@ -523,17 +523,17 @@ The second argument to `TELEMETRY` is passed directly to a `TelemetryMessage` co
 
 | C++ type | `ValueType` | Notes |
 |---|---|---|
-| `string` / `const char*` | `TEXT` | Any text value |
-| `int8_t` | `INT8` | |
-| `uint8_t` | `UINT8` | |
-| `int16_t` | `INT16` | |
-| `uint16_t` | `UINT16` | |
-| `int32_t` | `INT32` | |
-| `uint32_t` | `UINT32` | |
-| `int64_t` | `INT64` | |
-| `uint64_t` | `UINT64` | |
-| `float` | `FLOAT32` | Single-precision IEEE 754 |
-| `double` | `FLOAT64` | Double-precision IEEE 754 |
+| `string` / `const char*` | `TEXT` | Null-terminated string; no length limit |
+| `int8_t` | `INT8` | Signed 8-bit integer, range −128 to 127 |
+| `uint8_t` | `UINT8` | Unsigned 8-bit integer, range 0 to 255 |
+| `int16_t` | `INT16` | Signed 16-bit integer, range −32 768 to 32 767 |
+| `uint16_t` | `UINT16` | Unsigned 16-bit integer, range 0 to 65 535 |
+| `int32_t` | `INT32` | Signed 32-bit integer |
+| `uint32_t` | `UINT32` | Unsigned 32-bit integer |
+| `int64_t` | `INT64` | Signed 64-bit integer |
+| `uint64_t` | `UINT64` | Unsigned 64-bit integer |
+| `float` | `FLOAT32` | Single-precision IEEE 754 (~7 significant decimal digits) |
+| `double` | `FLOAT64` | Double-precision IEEE 754 (~15 significant decimal digits) |
 
 !!! note
 	If you pass a plain integer literal such as `42` without a cast, the compiler will deduce `int` (which maps to `INT32` on most platforms). It is a good practice to use an explicit cast to make the intended type clear.
