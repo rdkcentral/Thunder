@@ -88,6 +88,8 @@ add_executable(${TEST_RUNNER_NAME}
    test_websockettext.cpp
    test_workerpool.cpp
    test_xgetopt.cpp
+   test_jsonrpc_websocket.cpp
+   test_jsonrpc_http.cpp
 )
 #[[
 target_sources(${TEST_RUNNER_NAME} PRIVATE test_message_unit.cpp)
