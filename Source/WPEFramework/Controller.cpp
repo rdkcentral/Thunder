@@ -25,7 +25,9 @@
 #include "JsonData_Discovery.h"
 
 #include "JDiscovery.h"
+PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE)
 #include "JConfiguration.h"
+POP_WARNING()
 #include "JSystemManagement.h"
 #include "JLifeTime.h"
 #include "JMetadata.h"
@@ -230,6 +232,7 @@ namespace Plugin {
     {
         ASSERT(_pluginServer != nullptr);
 
+#if defined(__DEBUG__) || defined(__ENABLE_PERSIST__)
         Core::hresult result = _pluginServer->Persist();
 
         // Normalise return code
@@ -238,7 +241,10 @@ namespace Plugin {
         }
 
         return result;
-
+#else
+        SYSLOG(Logging::Startup, (_T("Persist requested, but persistent configuration is disabled")));
+        return Core::ERROR_UNAVAILABLE;
+#endif
     }
 
     Core::hresult Controller::Delete(const string& path)
@@ -319,6 +325,8 @@ namespace Plugin {
             // Normalise return code
             if (result != Core::ERROR_NONE) {
                 result = Core::ERROR_GENERAL;
+            } else {
+                SYSLOG(Logging::Startup, (_T("Configuration override updated for plugin [%s]"), callsign.c_str()));
             }
         }
 
@@ -627,11 +635,16 @@ namespace Plugin {
                     result->Message = _T("Discovery cycle initiated");
                 }
             } else if (index.Current() == _T("Persist")) {
-                
-                _pluginServer->Persist();
 
+                Persist();
+
+#if defined(__DEBUG__) || defined(__ENABLE_PERSIST__)
                 result->ErrorCode = Web::STATUS_OK;
                 result->Message = _T("Current configuration stored");
+#else
+                result->ErrorCode = Web::STATUS_BAD_REQUEST;
+                result->Message = _T("Persistent configuration updates are disabled");
+#endif
             } else if (index.Current() == _T("Harakiri")) {
                 uint32_t status = Core::System::Reboot();
                 if (status == Core::ERROR_NONE) {
@@ -1022,10 +1035,12 @@ namespace Plugin {
         return (Reboot());
     }
 
+#if defined(__DEBUG__) || defined(__ENABLE_PERSIST__)
     Core::hresult Controller::Storeconfig()
     {
         return Persist();
     }
+#endif
 
     Core::hresult Controller::Proxies(string& response) const
     {

@@ -2285,6 +2285,7 @@ namespace PluginHost {
                 Core::File storage(_fileName);
 
                 if ((storage.Exists() == true) && (storage.Open(true) == true)) {
+                    SYSLOG(Logging::Startup, (_T("Loading persistent configuration override from [%s]"), _fileName.c_str()));
 
                     result = true;
 
@@ -4741,12 +4742,16 @@ POP_WARNING()
         void Open();
         void Close();
 
+#if defined(__DEBUG__) || defined(__ENABLE_PERSIST__)
         uint32_t Persist()
         {
-            Override infoBlob(_config, _services, Configuration().PersistentPath() + PluginOverrideFile);
+            const string fileName(Configuration().PersistentPath() + PluginOverrideFile);
+            SYSLOG(Logging::Startup, (_T("Persisting configuration override to [%s]"), fileName.c_str()));
 
+            Override infoBlob(_config, _services, fileName);
             return (infoBlob.Save());
         }
+#endif
         uint32_t Load()
         {
             Override infoBlob(_config, _services, Configuration().PersistentPath() + PluginOverrideFile);

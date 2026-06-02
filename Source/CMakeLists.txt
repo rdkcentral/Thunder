@@ -47,6 +47,8 @@ option(DEADLOCK_DETECTION
         "Enable deadlock detection tooling." OFF)
 option(DISABLE_USE_COMPLEMENTARY_CODE_SET
         "Disable the complementary code set" OFF)
+option(ENABLE_PERSIST
+        "Enable persistent runtime configuration updates." OFF)
 
 if(HIDE_NON_EXTERNAL_SYMBOLS)
     set(CMAKE_CXX_VISIBILITY_PRESET hidden)
@@ -114,4 +116,8 @@ endif()
 if(DISABLE_USE_COMPLEMENTARY_CODE_SET)
     add_definitions(-D__DISABLE_USE_COMPLEMENTARY_CODE_SET__)
     message(STATUS "complementary code set disabled")
+endif()
+
+if(ENABLE_PERSIST)
+    add_compile_definitions(__ENABLE_PERSIST__)
 endif()
