@@ -91,7 +91,11 @@ add_executable(${TEST_RUNNER_NAME}
    test_xgetopt.cpp
    test_jsonrpc_websocket.cpp
    test_jsonrpc_http.cpp
+   test_extensions_gap.cpp
 )
+
+target_include_directories(${TEST_RUNNER_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/Source/extensions)
+
 #[[
 target_sources(${TEST_RUNNER_NAME} PRIVATE test_message_unit.cpp)
 target_link_libraries(${TEST_RUNNER_NAME}
