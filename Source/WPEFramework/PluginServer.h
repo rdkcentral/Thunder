@@ -2287,7 +2287,7 @@ namespace PluginHost {
                 if ((storage.Exists() == true) && (storage.Open(true) == true)) {
                     CC_SYSLOG("Loading persistent configuration override from [%s]", _fileName.c_str());
 
-                    result = true;
+                    result = Core::ERROR_NONE;
 
                     // Clear all currently set values, they might be from the precious run.
                     Clear();
