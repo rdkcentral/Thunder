@@ -25,9 +25,7 @@
 #include "JsonData_Discovery.h"
 
 #include "JDiscovery.h"
-PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE)
 #include "JConfiguration.h"
-POP_WARNING()
 #include "JSystemManagement.h"
 #include "JLifeTime.h"
 #include "JMetadata.h"
