@@ -63,6 +63,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_rectangle.cpp
    test_rpc.cpp
    test_comrpc_gap.cpp
+   test_plugin_gap.cpp
    test_semaphore.cpp
    test_sharedbuffer.cpp
    test_singleton.cpp
@@ -171,6 +172,7 @@ target_link_libraries(${TEST_RUNNER_NAME}
     ${CMAKE_THREAD_LIBS_INIT}
     ${NAMESPACE}Core::${NAMESPACE}Core
     ${NAMESPACE}COM::${NAMESPACE}COM
+    ${NAMESPACE}Plugins::${NAMESPACE}Plugins
     ${NAMESPACE}WebSocket::${NAMESPACE}WebSocket
     ${NAMESPACE}Messaging::${NAMESPACE}Messaging
     ${NAMESPACE}Cryptalgo::${NAMESPACE}Cryptalgo
