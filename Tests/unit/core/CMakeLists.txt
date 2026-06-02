@@ -62,8 +62,8 @@ add_executable(${TEST_RUNNER_NAME}
    test_readwritelock.cpp
    test_rectangle.cpp
    test_rpc.cpp
-   test_comrpc_gap.cpp
-   test_plugin_gap.cpp
+   test_comrpc.cpp
+   test_plugin.cpp
    test_semaphore.cpp
    test_sharedbuffer.cpp
    test_singleton.cpp
@@ -91,10 +91,12 @@ add_executable(${TEST_RUNNER_NAME}
    test_xgetopt.cpp
    test_jsonrpc_websocket.cpp
    test_jsonrpc_http.cpp
-   test_extensions_gap.cpp
+   test_extensions.cpp
+   test_thunderhost_thunderplugin.cpp
 )
 
 target_include_directories(${TEST_RUNNER_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/Source/extensions)
+target_include_directories(${TEST_RUNNER_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/Source/Thunder)
 
 #[[
 target_sources(${TEST_RUNNER_NAME} PRIVATE test_message_unit.cpp)
