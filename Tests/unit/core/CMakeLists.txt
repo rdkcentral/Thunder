@@ -89,6 +89,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_websockettext.cpp
    test_workerpool.cpp
    test_xgetopt.cpp
+   test_jsonrpclink_dso.cpp
    test_jsonrpc_websocket.cpp
    test_jsonrpc_http.cpp
    test_extensions.cpp
@@ -155,6 +156,7 @@ add_executable(${TEST_RUNNER_NAME}
    #test_valuerecorder.cpp
    test_workerpool.cpp
    test_xgetopt.cpp
+   test_jsonrpclink_dso.cpp
 )
 endif()
 
