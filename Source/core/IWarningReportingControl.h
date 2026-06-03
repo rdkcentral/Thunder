@@ -30,7 +30,6 @@ namespace WarningReporting {
 
         virtual ~IWarningEvent() = default;
         virtual const char* Category() const = 0;
-        virtual Core::Messaging::OutputMode Routing() const { return (Core::Messaging::OutputMode::HANDLER); }
         virtual uint16_t Serialize(uint8_t[], const uint16_t) const = 0;
         virtual uint16_t Deserialize(const uint8_t[], const uint16_t) = 0;
         virtual void ToString(string& text) const = 0;

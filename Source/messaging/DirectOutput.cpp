@@ -28,18 +28,21 @@ namespace WPEFramework {
         */
         void DirectOutput::Output(const Core::Messaging::MessageInfo& messageInfo, const Core::Messaging::IEvent* message) const
         {
-            INTERNAL_ASSERT(message != nullptr);
+            ASSERT(message != nullptr);
             ASSERT(messageInfo.Type() != Core::Messaging::Metadata::type::INVALID);
+
+            string result = messageInfo.ToString(_abbreviate).c_str() +
+                            Core::Format("%s\n", message->Data().c_str());
 
 #ifndef __WINDOWS__
             if (_isSyslog == true) {
                 //use longer messages for syslog
-                syslog(LOG_NOTICE, "%s%s\n", messageInfo.ToString(_abbreviate).c_str(), message->Data().c_str());
+                syslog(LOG_NOTICE, "%s\n", result.c_str());
             }
             else
 #endif
             {
-                std::cout << messageInfo.ToString(_abbreviate).c_str() << message->Data() << std::endl;
+                std::cout << result << std::endl;
             }
         }
     } // namespace Messaging

@@ -29,5 +29,3 @@
 #ifdef __WINDOWS__
 #pragma comment(lib, "warningreporting.lib")
 #endif
-
-WPEFRAMEWORK_NESTEDNAMESPACE_COMPATIBILIY(WarningReporting)

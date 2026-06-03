@@ -20,6 +20,8 @@
 #pragma once
 
 #include "Module.h"
+#include "TextMessage.h"
+#include "MessageUnit.h"
 
 namespace WPEFramework {
 
@@ -36,7 +38,6 @@ namespace Messaging {
 
         ControlType(const bool enabled)
             : _enabled(0x02 | (enabled ? 0x01 : 0x00))
-            , _outputMode(Core::Messaging::OutputMode::HANDLER)
             , _metaData(CONTROLTYPE, Core::ClassNameOnly(typeid(CONTROLCATEGORY).name()).Text(), *CONTROLMODULENAME) {
             // Register Our trace control unit, so it can be influenced from the outside
             // if nessecary..
@@ -64,14 +65,6 @@ namespace Messaging {
             _enabled = (_enabled & 0xFE) | (enabled ? 0x01 : 0x00);
         }
 
-        Core::Messaging::OutputMode Routing() const override {
-            return (_outputMode);
-        }
-
-        void Routing(Core::Messaging::OutputMode routing) override {
-            _outputMode = routing;
-        }
-
         void Destroy() override
         {
             if ((_enabled & 0x02) != 0) {
@@ -82,7 +75,6 @@ namespace Messaging {
 
     private:
         uint8_t _enabled;
-        Core::Messaging::OutputMode _outputMode;
         Core::Messaging::Metadata _metaData;
     };
 
@@ -106,10 +98,6 @@ namespace Messaging {
 
         inline static void Enable(const bool enable) {
             _control.Enable(enable);
-        }
-
-        inline static Core::Messaging::OutputMode Routing() {
-            return (_control.Routing());
         }
         
         inline static const Core::Messaging::Metadata& Metadata() {

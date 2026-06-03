@@ -132,22 +132,18 @@ set(PUBLIC_HEADERS
         Time.h
         Timer.h
         Trace.h
-        TextStreamRedirectType.h
         TriState.h
         TypeTraits.h
         ValueRecorder.h
         XGetopt.h
         WorkerPool.h
-        AssertionControl.h
-        IAssertionControl.h
         IWarningReportingControl.h
-        Messaging.h
-        MessageStore.h
         WarningReportingControl.h
         WarningReportingCategories.h
         Module.h
         CallsignTLS.h
         TokenizedStringList.h
+        MessageStore.h
         ICustomErrorCode.h
         )
 
@@ -169,7 +165,7 @@ endif()
 
 if(MESSAGING)
     target_compile_definitions(${TARGET} PUBLIC __CORE_MESSAGING__)
-    target_sources(${TARGET} PRIVATE Messaging.cpp MessageStore.cpp AssertionControl.cpp)
+    target_sources(${TARGET} PRIVATE MessageStore.cpp)
     message(STATUS "Messaging enabled")
 endif()
 

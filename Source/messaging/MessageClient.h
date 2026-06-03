@@ -49,8 +49,7 @@ namespace Messaging {
         void SkipWaiting();
 
         void Enable(const Core::Messaging::Metadata& metadata, const bool enable);
-        void Modules(std::vector<string>& modules) const;
-        void Controls(Messaging::MessageUnit::Iterator& controls, const string& module) const;
+        void Controls(Messaging::MessageUnit::Iterator& controls) const;
 
         using MessageHandler = std::function<void(const Core::ProxyType<Core::Messaging::MessageInfo>&, const Core::ProxyType<Core::Messaging::IEvent>&)>;
         void PopMessagesAndCall(const MessageHandler& handler);
@@ -59,24 +58,16 @@ namespace Messaging {
         void RemoveFactory(Core::Messaging::Metadata::type type);
 
     private:
-        struct enumHash
-        {
-            template <typename T>
-            std::size_t operator()(T t) const
-            {
-                return static_cast<std::size_t>(t);
-            }
-        };
-
-        using Factories = std::unordered_map<Core::Messaging::Metadata::type, IEventFactory*, enumHash>;
+        using Factories = std::unordered_map<Core::Messaging::Metadata::type, IEventFactory*>;
         using Clients = std::map<uint32_t, MessageUnit::Client>;
 
         mutable Core::CriticalSection _adminLock;
         const string _identifier;
         const string _basePath;
         const uint16_t _socketPort;
-        const uint16_t _readBufferSize;
-        std::unique_ptr<uint8_t[]> _readBuffer;
+
+        mutable uint8_t _readBuffer[Messaging::MessageUnit::DataSize];
+        mutable uint8_t _writeBuffer[Messaging::MessageUnit::MetadataSize];
 
         Clients _clients;
         Factories _factories;

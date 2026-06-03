@@ -18,8 +18,7 @@
  */
 
 #pragma once
-
-#include "Module.h"
+#include "TextMessage.h"
 
 namespace WPEFramework {
 
@@ -32,7 +31,7 @@ namespace Messaging {
     };
 
     template<typename METADATA, typename EVENT>
-    class TraceFactoryType : public IEventFactory {
+    class EXTERNAL TraceFactoryType : public IEventFactory {
     public:
         TraceFactoryType(const TraceFactoryType<METADATA, EVENT>&) = delete;
         TraceFactoryType<METADATA, EVENT>& operator=(const TraceFactoryType<METADATA, EVENT>&) = delete;

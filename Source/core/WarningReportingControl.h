@@ -19,6 +19,10 @@
 
 #pragma once
 
+#include <inttypes.h>
+
+#include "CallsignTLS.h"
+#include "IWarningReportingControl.h"
 #include "Module.h"
 #include "Optional.h"
 #include "SystemInfo.h"
@@ -26,22 +30,10 @@
 #include "Time.h"
 #include "Trace.h"
 #include "TypeTraits.h"
-#include "CallsignTLS.h"
-#include "IWarningReportingControl.h"
-
-#include <inttypes.h>
 #include <unordered_set>
 #include <vector>
 
-#if defined(__GNUC__)
-    #pragma GCC system_header
-#elif defined(__clang__)
-    #pragma clang system_header
-#endif
-
 #ifndef __CORE_WARNING_REPORTING__
-
-#define ANNOUNCE_WARNING(CATEGORY)
 
 #define REPORT_WARNING(CATEGORY, ...)
 
@@ -396,7 +388,6 @@ namespace WarningReporting {
             WarningReportingControl()
                 : _categoryName(CallCategoryName())
                 , _enabled(0x03)
-                , _outputMode(WPEFramework::Core::Messaging::OutputMode::HANDLER)
                 , _metadata(WPEFramework::Core::Messaging::Metadata::type::REPORTING, _categoryName, WPEFramework::Core::Messaging::MODULE_REPORTING)
             {
                 // Register Our control unit, so it can be influenced from the outside
@@ -450,14 +441,6 @@ namespace WarningReporting {
             {
                 _enabled = (_enabled & 0xFE) | (enabled ? 0x01 : 0x00);
             }
-            WPEFramework::Core::Messaging::OutputMode Routing() const override
-            {
-                return (_outputMode);
-            }
-            void Routing(WPEFramework::Core::Messaging::OutputMode routing) override
-            {
-                _outputMode = routing;
-            }
             void Exclude(const string& toExclude) override
             {
                 WarningReportingUnitProxy::Instance().FillExcludedWarnings(toExclude, _excludedWarnings);
@@ -483,7 +466,6 @@ namespace WarningReporting {
         protected:
             const string _categoryName;
             uint8_t _enabled;
-            WPEFramework::Core::Messaging::OutputMode _outputMode;
             ExcludedWarnings _excludedWarnings;
             Core::Messaging::Metadata _metadata;
         };
@@ -531,11 +513,6 @@ namespace WarningReporting {
         inline static bool IsEnabled()
         {
             return _sWarningControl.IsEnabled();
-        }
-
-        Core::Messaging::OutputMode Routing() const override
-        {
-            return _sWarningControl.Routing();
         }
 
         inline static void Enable(const bool status)
@@ -588,21 +565,12 @@ namespace WarningReporting {
         static WarningReportingControl<CATEGORY> _sWarningControl;
     };
 
-    #ifdef __WINDOWS__
-    template <typename CATEGORY>
-    typename WarningReportingType<CATEGORY>::template WarningReportingControl<CATEGORY> WarningReportingType<CATEGORY>::_sWarningControl;
-    template <typename CONTROLCATEGORY>
-    std::atomic<uint32_t> WarningReportingBoundsCategory<CONTROLCATEGORY>::_reportingBound(CONTROLCATEGORY::DefaultReportBound);
-    template <typename CONTROLCATEGORY>
-    std::atomic<uint32_t> WarningReportingBoundsCategory<CONTROLCATEGORY>::_warningBound(CONTROLCATEGORY::DefaultWarningBound);
-    #else
     template <typename CATEGORY>
     EXTERNAL typename WarningReportingType<CATEGORY>::template WarningReportingControl<CATEGORY> WarningReportingType<CATEGORY>::_sWarningControl;
     template <typename CONTROLCATEGORY>
     EXTERNAL std::atomic<uint32_t> WarningReportingBoundsCategory<CONTROLCATEGORY>::_reportingBound(CONTROLCATEGORY::DefaultReportBound);
     template <typename CONTROLCATEGORY>
     EXTERNAL std::atomic<uint32_t> WarningReportingBoundsCategory<CONTROLCATEGORY>::_warningBound(CONTROLCATEGORY::DefaultWarningBound);
-    #endif
 }
 }
 

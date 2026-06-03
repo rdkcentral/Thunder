@@ -412,12 +412,6 @@ namespace Core {
 
                 _offset += _container->SetNullTerminatedText(_offset, text);
             }
-            void NullTerminatedText(const string& text, const SIZE_CONTEXT maxLength)
-            {
-                ASSERT(_container != nullptr);
-
-                _offset += _container->SetNullTerminatedText(_offset, text, maxLength);
-            }
 
         private:
             SIZE_CONTEXT _offset;
@@ -433,16 +427,6 @@ namespace Core {
             #ifndef __WINDOWS__
             static_assert(BLOCKSIZE != 0, "This method can only be called if you specify an initial blocksize");
             #endif
-        }
-        FrameType(const SIZE_CONTEXT length)
-            : _size(0)
-            , _data() {
-            // Pre-allocate capacity without setting logical size (same as master's FrameType(length)).
-            // _size stays 0; Deserialize's ASSERT(offset == _buffer.Size()) expects 0 on first call.
-            #ifndef __WINDOWS__
-            static_assert(BLOCKSIZE != 0, "This method can only be called if you specify an initial blocksize");
-            #endif
-            _data.Allocate(length);
         }
         FrameType(const FrameType<BLOCKSIZE, BIG_ENDIAN_ORDERING, SIZE_CONTEXT>& copy)
             : _size(copy._size)
@@ -552,19 +536,6 @@ namespace Core {
             }
 
             ::memcpy(&(_data[offset]), convertedText.c_str(), convertedText.length() + 1);
-
-            return (requiredLength);
-        }
-        SIZE_CONTEXT SetNullTerminatedText(const SIZE_CONTEXT offset, const string& value, const SIZE_CONTEXT maxLength)
-        {
-            std::string convertedText(Core::ToString(value).data(), (((maxLength != static_cast<SIZE_CONTEXT>(~0)) && ((value.length() + 1) > maxLength)) ? (maxLength - 1) : value.length()));
-            SIZE_CONTEXT requiredLength(static_cast<SIZE_CONTEXT>(convertedText.length() + 1));
-
-            if ((offset + requiredLength) >= _size) {
-                Size(offset + requiredLength);
-            }
-
-            ::memcpy(&(_data[offset]), convertedText.c_str(), requiredLength);
 
             return (requiredLength);
         }

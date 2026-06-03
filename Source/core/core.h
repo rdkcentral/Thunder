@@ -92,26 +92,20 @@
 #include "Time.h"
 #include "Timer.h"
 #include "Trace.h"
-#include "TextStreamRedirectType.h"
 #include "TriState.h"
 #include "TypeTraits.h"
 #include "ValueRecorder.h"
 #include "XGetopt.h"
 #include "WorkerPool.h"
-#include "AssertionControl.h"
-#include "IAssertionControl.h"
 #include "IWarningReportingControl.h"
-#include "Messaging.h"
-#include "MessageStore.h"
 #include "WarningReportingControl.h"
 #include "WarningReportingCategories.h"
 #include "CallsignTLS.h"
 #include "TokenizedStringList.h"
+#include "MessageStore.h"
 
 #ifdef __WINDOWS__
 #pragma comment(lib, "core.lib")
 #endif
-
-WPEFRAMEWORK_NESTEDNAMESPACE_COMPATIBILIY(Core)
 
 #endif

@@ -25,27 +25,14 @@ namespace WPEFramework {
 
 namespace Logging {
 
-    // -----------------------------------------------------------------
-    // REGISTRATION
-    // -----------------------------------------------------------------
-
-    namespace {
-
-        static class Instantiation {
-        public:
-            Instantiation()
-            {
-                SYSLOG_ANNOUNCE(Crash)
-                SYSLOG_ANNOUNCE(Startup)
-                SYSLOG_ANNOUNCE(Shutdown)
-                SYSLOG_ANNOUNCE(Fatal)
-                SYSLOG_ANNOUNCE(Error)
-                SYSLOG_ANNOUNCE(ParsingError)
-                SYSLOG_ANNOUNCE(Notification)
-            }
-        } ControlsRegistration;
-
-    }
+    // Announce upfront all SYSLOG categories...
+    SYSLOG_ANNOUNCE(Crash);
+    SYSLOG_ANNOUNCE(Startup);
+    SYSLOG_ANNOUNCE(Shutdown);
+    SYSLOG_ANNOUNCE(Fatal);
+    SYSLOG_ANNOUNCE(Error);
+    SYSLOG_ANNOUNCE(ParsingError);
+    SYSLOG_ANNOUNCE(Notification);
 
     static const TCHAR* UnknownCallsign = {_T("NoTLSCallsign") };
 
@@ -83,7 +70,7 @@ namespace Logging {
         }
     }
 
-    void DumpSystemFiles(const pid_t pid)
+    void DumpSystemFiles(const Core::process_t pid)
     {
         static auto logProcPath = [](const std::string& path) {
             std::ifstream fileStream(path);
