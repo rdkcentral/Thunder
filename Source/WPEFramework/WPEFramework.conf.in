@@ -134,6 +134,18 @@ if boolean('@MESSAGING@'):
   
   messaging.add("logging", __logging)
   
+ __info_PIS= {
+       "category" : "Information",
+       "module" : "Plugin_PluginInitializerService",
+       "enabled" : True
+      }
+
+  __warn_PIS= {
+       "category" : "Warning",
+       "module" : "Plugin_PluginInitializerService",
+       "enabled" : True
+      }
+
   __info_LS= {
        "category" : "Information",
        "module" : "Plugin_LocationSync",
