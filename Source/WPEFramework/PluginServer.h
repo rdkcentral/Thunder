@@ -1873,19 +1873,18 @@ namespace PluginHost {
             }
         private:
             Core::Library LoadLibrary(const string& name) {
-                uint8_t progressedState = 0;
                 Core::Library result;
+                string lastError;
+                string lastPath;
 
                 std::vector<string> all_paths = GetLibrarySearchPaths(name);
                 std::vector<string>::const_iterator iter = std::begin(all_paths);
 
-                while ( (iter != std::end(all_paths)) && (progressedState <= 2) ) {
+                while ((iter != std::end(all_paths)) && (result.IsLoaded() == false)) {
                     Core::File libraryToLoad(*iter);
 
                     if (libraryToLoad.Exists() == true) {
-                        if (progressedState == 0) {
-                            progressedState = 1;
-                        }
+                        lastPath = *iter;
 
                         // Loading a library, in the static initializers, might register Service::MetaData structures. As
                         // the dlopen has a process wide system lock, make sure that the, during open used lock of the 
@@ -1894,15 +1893,10 @@ namespace PluginHost {
                         Core::Library newLib = Core::ServiceAdministrator::Instance().LoadLibrary(iter->c_str());
 
                         if (newLib.IsLoaded() == true) {
-                            if (progressedState == 1) {
-                                progressedState = 2;
-                            }
-
                             Core::System::ModuleBuildRefImpl moduleBuildRef = reinterpret_cast<Core::System::ModuleBuildRefImpl>(newLib.LoadFunction(_T("ModuleBuildRef")));
                             Core::System::ModuleServiceMetadataImpl moduleServiceMetadata = reinterpret_cast<Core::System::ModuleServiceMetadataImpl>(newLib.LoadFunction(_T("ModuleServiceMetadata")));
                             if ((moduleBuildRef != nullptr) && (moduleServiceMetadata != nullptr)) {
                                 result = newLib;
-                                progressedState = 3;
                                 if (_metadata.IsValid() == false) {
                                     _metadata = moduleServiceMetadata();
                                     if (_metadata.IsValid() == true) {
@@ -1911,21 +1905,23 @@ namespace PluginHost {
                                     }
                                     _metadata.Hash(moduleBuildRef());
                                 }
+                            } else {
+                                lastError = _T("ModuleBuildRef/ModuleServiceMetadata symbol missing");
                             }
+                        } else {
+                            lastError = newLib.Error().empty() == false ? newLib.Error() : _T("Library load failed");
                         }
                     }
                     ++iter;
                 }
 
-                if (HasError() == false) {
-                    if (progressedState == 0) {
-                        ErrorMessage(_T("library does not exist"));
-                    }
-                    else if (progressedState == 2) {
-                        ErrorMessage(_T("library could not be loaded"));
-                    }
-                    else if (progressedState == 3) {
-                        ErrorMessage(_T("library does not contain the right methods"));
+                if (result.IsLoaded() == false) {
+                    if (lastPath.empty() == true) {
+                        CC_SYSLOG("Loading library [%s] for plugin [%s] failed: no library candidate found",
+                            name.c_str(), Callsign().c_str());
+                    } else {
+                        CC_SYSLOG("Loading library [%s] for plugin [%s] failed. Candidate [%s], error [%s]",
+                            name.c_str(), Callsign().c_str(), lastPath.c_str(), lastError.c_str());
                     }
                 }
 
