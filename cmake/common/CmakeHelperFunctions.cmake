@@ -31,7 +31,7 @@ function(_get_default_link_name lib name location)
     get_filename_component(_location "${_rel_location}" DIRECTORY)
     
     if(NOT "${_location}" STREQUAL "")   
-        string(REGEX REPLACE "^${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_PREFIX}" "" _location ${_location})
+        string(REGEX REPLACE "^${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}" "" _location ${_location})
         get_filename_component(_location "${_rel_location}" DIRECTORY)
     endif()
 
