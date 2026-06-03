@@ -221,7 +221,6 @@ namespace Plugin {
             , StartupOrder(50)
             , Startup(PluginHost::IShell::startup::DEACTIVATED)
             , Communicator()
-            , Extension(false)
         {
             Add(_T("callsign"), &Callsign);
             Add(_T("locator"), &Locator);
@@ -239,7 +238,6 @@ namespace Plugin {
             Add(_T("startuporder"), &StartupOrder);
             Add(_T("startmode"), &Startup);
             Add(_T("communicator"), &Communicator);
-            Add(_T("extension"), &Extension);
         }
         Config(const Config& copy)
             : Core::JSON::Container()
@@ -259,7 +257,6 @@ namespace Plugin {
             , StartupOrder(copy.StartupOrder)
             , Startup(copy.Startup)
             , Communicator(copy.Communicator)
-            , Extension(copy.Extension)
         {
             Add(_T("callsign"), &Callsign);
             Add(_T("locator"), &Locator);
@@ -277,7 +274,6 @@ namespace Plugin {
             Add(_T("startuporder"), &StartupOrder);
             Add(_T("startmode"), &Startup);
             Add(_T("communicator"), &Communicator);
-            Add(_T("extension"), &Extension);
         }
         ~Config() override = default;
 
@@ -299,7 +295,7 @@ namespace Plugin {
             StartupOrder = RHS.StartupOrder;
             Startup = RHS.Startup;
             Communicator = RHS.Communicator;
-            Extension = RHS.Extension;
+
             return (*this);
         }
 
@@ -332,7 +328,6 @@ namespace Plugin {
         Core::JSON::DecUInt32 StartupOrder;
         Core::JSON::EnumType<PluginHost::IShell::startup> Startup;
         Core::JSON::String Communicator;
-        Core::JSON::Boolean Extension;
 
         static Core::NodeId IPV4UnicastNode(const string& ifname);
 

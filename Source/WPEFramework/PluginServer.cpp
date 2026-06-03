@@ -1148,22 +1148,6 @@ POP_WARNING()
           {
             return lhs->StartupOrder() < rhs->StartupOrder();
           });
-        for (auto service : configured_services)
-        {
-            if (service->State() != PluginHost::Service::state::UNAVAILABLE) {
-                if (service->Extension() == true ) {
-                    if (service->Startup() == PluginHost::IShell::startup::ACTIVATED ) {
-                        SYSLOG(Logging::Startup, (_T("Activating Extension [%s]:[%s]"),
-                            service->ClassName().c_str(), service->Callsign().c_str()));
-                        service->Activate(PluginHost::IShell::STARTUP);
-                    }
-                    else {
-                        SYSLOG(Logging::Startup, (_T("Activation of Extension [%s]:[%s] delayed, autostart is false"),
-                            service->ClassName().c_str(), service->Callsign().c_str()));
-                    }
-                }
-            }
-        }
 
 #if 0
         for (auto service : configured_services)

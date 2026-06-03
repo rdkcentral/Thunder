@@ -134,18 +134,6 @@ if boolean('@MESSAGING@'):
   
   messaging.add("logging", __logging)
   
-  __info_PIS= {
-       "category" : "Information",
-       "module" : "Plugin_PluginInitializerService",
-       "enabled" : True
-      }
-
-  __warn_PIS= {
-       "category" : "Warning",
-       "module" : "Plugin_PluginInitializerService",
-       "enabled" : True
-      }
-
   __info_LS= {
        "category" : "Information",
        "module" : "Plugin_LocationSync",
@@ -173,8 +161,6 @@ if boolean('@MESSAGING@'):
   __tracing_settings = []
   __tracing_settings.append(__fatal)
   __tracing_settings.append(__error)
-  __tracing_settings.append(__warn_PIS)
-  __tracing_settings.append(__info_PIS)
   __tracing_settings.append(__warn_LS)
   __tracing_settings.append(__info_LS)
   __tracing_settings.append(__warn_MES)

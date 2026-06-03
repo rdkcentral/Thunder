@@ -1002,7 +1002,6 @@ POP_WARNING()
 
             SYSLOG(Logging::Startup, (_T("Accessor: %s"), _URL.c_str()));
             SYSLOG(Logging::Startup, (_T("Interface IP: %s"), hostaddress.c_str()));
-            SYSLOG(Logging::Startup, (_T("ThreadPool Count: %u"), THREADPOOL_COUNT));
 
         }
 
