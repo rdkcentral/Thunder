@@ -124,6 +124,8 @@ if boolean('@MESSAGING@'):
   __logging_settings.append(__startup)
   __logging_settings.append(__shutdown)
   __logging_settings.append(__error)
+  __tracing_settings.append(__warn_PIS)
+  __tracing_settings.append(__info_PIS)
   __logging_settings.append(__parsingError)
   __logging_settings.append(__crash)
   __logging_settings.append(__fatal)
@@ -134,7 +136,7 @@ if boolean('@MESSAGING@'):
   
   messaging.add("logging", __logging)
   
- __info_PIS= {
+  __info_PIS= {
        "category" : "Information",
        "module" : "Plugin_PluginInitializerService",
        "enabled" : True
