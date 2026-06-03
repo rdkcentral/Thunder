@@ -1027,7 +1027,7 @@ namespace Plugin {
         return (Reboot());
     }
 
-#if defined(__DEBUG__) || defined(__ENABLE_PERSIST__)
+#if defined(__DEBUG__) || defined(__ENABLE_CONFIG_OVERRIDE__)
     Core::hresult Controller::Storeconfig()
     {
         return Persist();

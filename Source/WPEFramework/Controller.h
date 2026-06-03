@@ -386,7 +386,7 @@ namespace Plugin {
         void Callstack(const ThreadId id, Core::JSON::ArrayType<PluginHost::CallstackData>& response) const;
         void SubSystems();
         uint32_t Harakiri();
-#if defined(__DEBUG__) || defined(__ENABLE_PERSIST__)
+#if defined(__DEBUG__) || defined(__ENABLE_CONFIG_OVERRIDE__)
         uint32_t Storeconfig();
 #endif
         uint32_t Clone(const string& basecallsign, const string& newcallsign);
