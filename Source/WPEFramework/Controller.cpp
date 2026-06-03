@@ -233,12 +233,10 @@ namespace Plugin {
         Core::hresult result = _pluginServer->Persist();
 
         // Normalise return code
-        if (result != Core::ERROR_NONE) {
+        if ((result != Core::ERROR_NONE) && (result != Core::ERROR_UNAVAILABLE)) {
             result = Core::ERROR_GENERAL;
         }
-
         return result;
-
     }
 
     Core::hresult Controller::Delete(const string& path)
@@ -319,6 +317,8 @@ namespace Plugin {
             // Normalise return code
             if (result != Core::ERROR_NONE) {
                 result = Core::ERROR_GENERAL;
+            } else {
+                SYSLOG(Logging::Startup, (_T("Configuration override updated for plugin [%s]"), callsign.c_str()));
             }
         }
 
@@ -627,11 +627,16 @@ namespace Plugin {
                     result->Message = _T("Discovery cycle initiated");
                 }
             } else if (index.Current() == _T("Persist")) {
-                
-                _pluginServer->Persist();
 
-                result->ErrorCode = Web::STATUS_OK;
-                result->Message = _T("Current configuration stored");
+                const Core::hresult status = Persist();
+
+                if (status == Core::ERROR_NONE) {
+                    result->ErrorCode = Web::STATUS_OK;
+                    result->Message = _T("Current configuration stored");
+                } else {
+                    result->ErrorCode = Web::STATUS_BAD_REQUEST;
+                    result->Message = (status == Core::ERROR_UNAVAILABLE ? _T("Persistent configuration updates are disabled") : _T("Could not store current configuration"));
+                }
             } else if (index.Current() == _T("Harakiri")) {
                 uint32_t status = Core::System::Reboot();
                 if (status == Core::ERROR_NONE) {
@@ -1022,10 +1027,12 @@ namespace Plugin {
         return (Reboot());
     }
 
+#if defined(__DEBUG__) || defined(__ENABLE_PERSIST__)
     Core::hresult Controller::Storeconfig()
     {
         return Persist();
     }
+#endif
 
     Core::hresult Controller::Proxies(string& response) const
     {
