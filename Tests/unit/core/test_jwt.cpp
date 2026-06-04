@@ -249,12 +249,17 @@ namespace Tests {
         jwt.Encode(token, static_cast<uint16_t>(payload.length()),
             reinterpret_cast<const uint8_t*>(payload.c_str()));
 
-        // Tamper the last character of the signature
-        char& lastChar = token.back();
-        if (lastChar == 'A') {
-            lastChar = 'B';
+        // Tamper a character in the middle of the signature
+        // (Avoid last char: its low bits are Base64 padding and may not
+        //  affect the decoded 32-byte HMAC.)
+        size_t lastDot = token.find_last_of('.');
+        ASSERT_NE(lastDot, string::npos);
+        size_t tamperPos = lastDot + 1 + 5; // 5 chars into signature
+        ASSERT_LT(tamperPos, token.length());
+        if (token[tamperPos] == 'A') {
+            token[tamperPos] = 'Z';
         } else {
-            lastChar = 'A';
+            token[tamperPos] = 'A';
         }
 
         uint8_t decoded[512] = {};

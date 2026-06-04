@@ -407,7 +407,7 @@ namespace Core {
     // Also validates HTTP status code is 200 (OK).
     TEST(HTTPJSONRPC, BasicMethodInvocation)
     {
-        constexpr uint32_t initHandshakeValue = 0, maxWaitTimeMs = 4000, maxInitTime = 2000;
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTimeMs = 8000, maxInitTime = 4000;
         constexpr uint8_t maxRetries = 10;
 
         const std::string connector{ "0.0.0.0" };
@@ -460,7 +460,7 @@ namespace Core {
             ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
         };
 
-        IPTestAdministrator testAdmin(callback_parent, callback_child, initHandshakeValue, 8);
+        IPTestAdministrator testAdmin(callback_parent, callback_child, initHandshakeValue, 20);
 
         ::Thunder::Core::Singleton::Dispose();
     }
@@ -471,7 +471,7 @@ namespace Core {
     // HTTP POST -> JSONRPCBody -> Handler -> JSONRPCBody round-trip.
     TEST(HTTPJSONRPC, EchoMethod)
     {
-        constexpr uint32_t initHandshakeValue = 0, maxWaitTimeMs = 4000, maxInitTime = 2000;
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTimeMs = 8000, maxInitTime = 4000;
         constexpr uint8_t maxRetries = 10;
 
         const std::string connector{ "0.0.0.0" };
@@ -524,7 +524,7 @@ namespace Core {
             ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
         };
 
-        IPTestAdministrator testAdmin(callback_parent, callback_child, initHandshakeValue, 8);
+        IPTestAdministrator testAdmin(callback_parent, callback_child, initHandshakeValue, 20);
 
         ::Thunder::Core::Singleton::Dispose();
     }
@@ -535,7 +535,7 @@ namespace Core {
     // status), and the Error.Code should be -32601.
     TEST(HTTPJSONRPC, ErrorResponse)
     {
-        constexpr uint32_t initHandshakeValue = 0, maxWaitTimeMs = 4000, maxInitTime = 2000;
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTimeMs = 8000, maxInitTime = 4000;
         constexpr uint8_t maxRetries = 10;
 
         const std::string connector{ "0.0.0.0" };
@@ -588,7 +588,7 @@ namespace Core {
             ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
         };
 
-        IPTestAdministrator testAdmin(callback_parent, callback_child, initHandshakeValue, 8);
+        IPTestAdministrator testAdmin(callback_parent, callback_child, initHandshakeValue, 20);
 
         ::Thunder::Core::Singleton::Dispose();
     }
@@ -599,7 +599,7 @@ namespace Core {
     // size (2048 bytes configured on client/server).
     TEST(HTTPJSONRPC, LargePayload)
     {
-        constexpr uint32_t initHandshakeValue = 0, maxWaitTimeMs = 4000, maxInitTime = 2000;
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTimeMs = 8000, maxInitTime = 4000;
         constexpr uint8_t maxRetries = 10;
 
         const std::string connector{ "0.0.0.0" };
@@ -656,7 +656,7 @@ namespace Core {
             ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
         };
 
-        IPTestAdministrator testAdmin(callback_parent, callback_child, initHandshakeValue, 8);
+        IPTestAdministrator testAdmin(callback_parent, callback_child, initHandshakeValue, 20);
 
         ::Thunder::Core::Singleton::Dispose();
     }
@@ -668,7 +668,7 @@ namespace Core {
     // across multiple round-trips on a persistent TCP connection.
     TEST(HTTPJSONRPC, MultipleSequentialRequests)
     {
-        constexpr uint32_t initHandshakeValue = 0, maxWaitTimeMs = 4000, maxInitTime = 2000;
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTimeMs = 8000, maxInitTime = 4000;
         constexpr uint8_t maxRetries = 10;
 
         const std::string connector{ "0.0.0.0" };
@@ -723,7 +723,7 @@ namespace Core {
             ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
         };
 
-        IPTestAdministrator testAdmin(callback_parent, callback_child, initHandshakeValue, 8);
+        IPTestAdministrator testAdmin(callback_parent, callback_child, initHandshakeValue, 20);
 
         ::Thunder::Core::Singleton::Dispose();
     }

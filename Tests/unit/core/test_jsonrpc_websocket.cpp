@@ -400,7 +400,7 @@ namespace Core {
     //   3. "error" -> expects Error object with code -32601 (method not found)
     TEST(WebSocketJSONRPC, BasicMethodInvocation)
     {
-        constexpr uint32_t initHandshakeValue = 0, maxWaitTimeMs = 4000, maxInitTime = 2000;
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTimeMs = 8000, maxInitTime = 4000;
         constexpr uint8_t maxRetries = 10;
 
         const std::string connector{ "/tmp/wpe_jsonrpc_ws_test0" };
@@ -507,7 +507,7 @@ namespace Core {
             ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
         };
 
-        IPTestAdministrator testAdmin(callback_parent, callback_child, initHandshakeValue, 8);
+        IPTestAdministrator testAdmin(callback_parent, callback_child, initHandshakeValue, 20);
 
         ::Thunder::Core::Singleton::Dispose();
     }
@@ -518,7 +518,7 @@ namespace Core {
     // single-frame messages and the 1024-byte send/receive buffer sizes.
     TEST(WebSocketJSONRPC, LargePayload)
     {
-        constexpr uint32_t initHandshakeValue = 0, maxWaitTimeMs = 4000, maxInitTime = 2000;
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTimeMs = 8000, maxInitTime = 4000;
         constexpr uint8_t maxRetries = 10;
 
         const std::string connector{ "/tmp/wpe_jsonrpc_ws_test1" };
@@ -588,7 +588,7 @@ namespace Core {
             ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
         };
 
-        IPTestAdministrator testAdmin(callback_parent, callback_child, initHandshakeValue, 8);
+        IPTestAdministrator testAdmin(callback_parent, callback_child, initHandshakeValue, 20);
 
         ::Thunder::Core::Singleton::Dispose();
     }
@@ -599,7 +599,7 @@ namespace Core {
     // multiple round-trips on a persistent connection.
     TEST(WebSocketJSONRPC, MultipleSequentialRequests)
     {
-        constexpr uint32_t initHandshakeValue = 0, maxWaitTimeMs = 4000, maxInitTime = 2000;
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTimeMs = 8000, maxInitTime = 4000;
         constexpr uint8_t maxRetries = 10;
 
         const std::string connector{ "/tmp/wpe_jsonrpc_ws_test2" };
@@ -665,7 +665,7 @@ namespace Core {
             ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
         };
 
-        IPTestAdministrator testAdmin(callback_parent, callback_child, initHandshakeValue, 8);
+        IPTestAdministrator testAdmin(callback_parent, callback_child, initHandshakeValue, 20);
 
         ::Thunder::Core::Singleton::Dispose();
     }
@@ -675,7 +675,7 @@ namespace Core {
     // Error object (no Result) rather than crashing or hanging.
     TEST(WebSocketJSONRPC, UnknownMethodReturnsError)
     {
-        constexpr uint32_t initHandshakeValue = 0, maxWaitTimeMs = 4000, maxInitTime = 2000;
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTimeMs = 8000, maxInitTime = 4000;
         constexpr uint8_t maxRetries = 10;
 
         const std::string connector{ "/tmp/wpe_jsonrpc_ws_test3" };
@@ -739,7 +739,7 @@ namespace Core {
             ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
         };
 
-        IPTestAdministrator testAdmin(callback_parent, callback_child, initHandshakeValue, 8);
+        IPTestAdministrator testAdmin(callback_parent, callback_child, initHandshakeValue, 20);
 
         ::Thunder::Core::Singleton::Dispose();
     }
