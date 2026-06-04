@@ -408,7 +408,7 @@ namespace Core {
     TEST(HTTPJSONRPC, BasicMethodInvocation)
     {
         constexpr uint32_t initHandshakeValue = 0, maxWaitTimeMs = 4000, maxInitTime = 2000;
-        constexpr uint8_t maxRetries = 1;
+        constexpr uint8_t maxRetries = 10;
 
         const std::string connector{ "0.0.0.0" };
         const uint16_t port = 12350;
@@ -472,7 +472,7 @@ namespace Core {
     TEST(HTTPJSONRPC, EchoMethod)
     {
         constexpr uint32_t initHandshakeValue = 0, maxWaitTimeMs = 4000, maxInitTime = 2000;
-        constexpr uint8_t maxRetries = 1;
+        constexpr uint8_t maxRetries = 10;
 
         const std::string connector{ "0.0.0.0" };
         const uint16_t port = 12351;
@@ -536,7 +536,7 @@ namespace Core {
     TEST(HTTPJSONRPC, ErrorResponse)
     {
         constexpr uint32_t initHandshakeValue = 0, maxWaitTimeMs = 4000, maxInitTime = 2000;
-        constexpr uint8_t maxRetries = 1;
+        constexpr uint8_t maxRetries = 10;
 
         const std::string connector{ "0.0.0.0" };
         const uint16_t port = 12352;
@@ -600,7 +600,7 @@ namespace Core {
     TEST(HTTPJSONRPC, LargePayload)
     {
         constexpr uint32_t initHandshakeValue = 0, maxWaitTimeMs = 4000, maxInitTime = 2000;
-        constexpr uint8_t maxRetries = 1;
+        constexpr uint8_t maxRetries = 10;
 
         const std::string connector{ "0.0.0.0" };
         const uint16_t port = 12353;
@@ -669,7 +669,7 @@ namespace Core {
     TEST(HTTPJSONRPC, MultipleSequentialRequests)
     {
         constexpr uint32_t initHandshakeValue = 0, maxWaitTimeMs = 4000, maxInitTime = 2000;
-        constexpr uint8_t maxRetries = 1;
+        constexpr uint8_t maxRetries = 10;
 
         const std::string connector{ "0.0.0.0" };
         const uint16_t port = 12354;

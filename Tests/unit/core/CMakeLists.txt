@@ -95,6 +95,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_extensions.cpp
    test_thunderhost_thunderplugin.cpp
    test_cryptalgo.cpp
+   test_jwt.cpp
 )
 
 target_include_directories(${TEST_RUNNER_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/Source/extensions)

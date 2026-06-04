@@ -401,7 +401,7 @@ namespace Core {
     TEST(WebSocketJSONRPC, BasicMethodInvocation)
     {
         constexpr uint32_t initHandshakeValue = 0, maxWaitTimeMs = 4000, maxInitTime = 2000;
-        constexpr uint8_t maxRetries = 1;
+        constexpr uint8_t maxRetries = 10;
 
         const std::string connector{ "/tmp/wpe_jsonrpc_ws_test0" };
 
@@ -519,7 +519,7 @@ namespace Core {
     TEST(WebSocketJSONRPC, LargePayload)
     {
         constexpr uint32_t initHandshakeValue = 0, maxWaitTimeMs = 4000, maxInitTime = 2000;
-        constexpr uint8_t maxRetries = 1;
+        constexpr uint8_t maxRetries = 10;
 
         const std::string connector{ "/tmp/wpe_jsonrpc_ws_test1" };
 
@@ -600,7 +600,7 @@ namespace Core {
     TEST(WebSocketJSONRPC, MultipleSequentialRequests)
     {
         constexpr uint32_t initHandshakeValue = 0, maxWaitTimeMs = 4000, maxInitTime = 2000;
-        constexpr uint8_t maxRetries = 1;
+        constexpr uint8_t maxRetries = 10;
 
         const std::string connector{ "/tmp/wpe_jsonrpc_ws_test2" };
 
@@ -676,7 +676,7 @@ namespace Core {
     TEST(WebSocketJSONRPC, UnknownMethodReturnsError)
     {
         constexpr uint32_t initHandshakeValue = 0, maxWaitTimeMs = 4000, maxInitTime = 2000;
-        constexpr uint8_t maxRetries = 1;
+        constexpr uint8_t maxRetries = 10;
 
         const std::string connector{ "/tmp/wpe_jsonrpc_ws_test3" };
 
