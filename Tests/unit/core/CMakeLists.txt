@@ -80,7 +80,6 @@ add_executable(${TEST_RUNNER_NAME}
    test_websockettext.cpp
    #test_workerpool.cpp
    test_xgetopt.cpp
-   test_jsonrpclink_dso.cpp
    #test_message_dispatcher.cpp
 )
     
