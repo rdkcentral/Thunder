@@ -1873,19 +1873,18 @@ namespace PluginHost {
             }
         private:
             Core::Library LoadLibrary(const string& name) {
-                uint8_t progressedState = 0;
                 Core::Library result;
+                string lastError;
+                string lastPath;
 
                 std::vector<string> all_paths = GetLibrarySearchPaths(name);
                 std::vector<string>::const_iterator iter = std::begin(all_paths);
 
-                while ( (iter != std::end(all_paths)) && (progressedState <= 2) ) {
+                while ((iter != std::end(all_paths)) && (result.IsLoaded() == false)) {
                     Core::File libraryToLoad(*iter);
 
                     if (libraryToLoad.Exists() == true) {
-                        if (progressedState == 0) {
-                            progressedState = 1;
-                        }
+                        lastPath = *iter;
 
                         // Loading a library, in the static initializers, might register Service::MetaData structures. As
                         // the dlopen has a process wide system lock, make sure that the, during open used lock of the 
@@ -1894,15 +1893,10 @@ namespace PluginHost {
                         Core::Library newLib = Core::ServiceAdministrator::Instance().LoadLibrary(iter->c_str());
 
                         if (newLib.IsLoaded() == true) {
-                            if (progressedState == 1) {
-                                progressedState = 2;
-                            }
-
                             Core::System::ModuleBuildRefImpl moduleBuildRef = reinterpret_cast<Core::System::ModuleBuildRefImpl>(newLib.LoadFunction(_T("ModuleBuildRef")));
                             Core::System::ModuleServiceMetadataImpl moduleServiceMetadata = reinterpret_cast<Core::System::ModuleServiceMetadataImpl>(newLib.LoadFunction(_T("ModuleServiceMetadata")));
                             if ((moduleBuildRef != nullptr) && (moduleServiceMetadata != nullptr)) {
                                 result = newLib;
-                                progressedState = 3;
                                 if (_metadata.IsValid() == false) {
                                     _metadata = moduleServiceMetadata();
                                     if (_metadata.IsValid() == true) {
@@ -1911,21 +1905,23 @@ namespace PluginHost {
                                     }
                                     _metadata.Hash(moduleBuildRef());
                                 }
+                            } else {
+                                lastError = _T("ModuleBuildRef/ModuleServiceMetadata symbol missing");
                             }
+                        } else {
+                            lastError = newLib.Error().empty() == false ? newLib.Error() : _T("Library load failed");
                         }
                     }
                     ++iter;
                 }
 
-                if (HasError() == false) {
-                    if (progressedState == 0) {
-                        ErrorMessage(_T("library does not exist"));
-                    }
-                    else if (progressedState == 2) {
-                        ErrorMessage(_T("library could not be loaded"));
-                    }
-                    else if (progressedState == 3) {
-                        ErrorMessage(_T("library does not contain the right methods"));
+                if (result.IsLoaded() == false) {
+                    if (lastPath.empty() == true) {
+                        CC_SYSLOG("Loading library [%s] for plugin [%s] failed: no library candidate found",
+                            name.c_str(), Callsign().c_str());
+                    } else {
+                        CC_SYSLOG("Loading library [%s] for plugin [%s] failed. Candidate [%s], error [%s]",
+                            name.c_str(), Callsign().c_str(), lastPath.c_str(), lastError.c_str());
                     }
                 }
 
@@ -2283,60 +2279,73 @@ namespace PluginHost {
                 uint32_t result = Core::ERROR_NONE;
 
                 Core::File storage(_fileName);
+                if (storage.Exists() == true) {
+#if !defined(__DEBUG__) && !defined(__ENABLE_CONFIG_OVERRIDE__)
+                    CC_SYSLOG("Persistent configuration override from [%s] refused, config override is disabled", _fileName.c_str());
+                    result = Core::ERROR_UNAVAILABLE;
+#else
+                    if (storage.Open(true) == true) {
+                        CC_SYSLOG("Loading persistent configuration override from [%s]", _fileName.c_str());
 
-                if ((storage.Exists() == true) && (storage.Open(true) == true)) {
+                        // Clear all currently set values, they might be from the precious run.
+                        Clear();
 
-                    result = true;
+                        // Read the file and parse it into this object.
+                        if (IElement::FromFile(storage) == true) {
+                            _serverconfig.SetPrefix(Prefix.Value());
+                            _serverconfig.SetIdleTime(IdleTime.Value());
+                            // Convey the real JSON struct information into the specific services.
+                            ServiceMap::Iterator index(_services.Services());
 
-                    // Clear all currently set values, they might be from the precious run.
-                    Clear();
+                            while (index.Next() == true) {
 
-                    // Red the file and parse it into this object.
-                    IElement::FromFile(storage);
+                                Callsigns::const_iterator current(_callsigns.find(index->Callsign()));
 
-                    _serverconfig.SetPrefix(Prefix.Value());
-                    _serverconfig.SetIdleTime(IdleTime.Value());
-                    // Convey the real JSON struct information into the specific services.
-                    ServiceMap::Iterator index(_services.Services());
+                                // ServiceMap should *NOT* change runtime...
+                                ASSERT(current != _callsigns.end());
 
-                    while (index.Next() == true) {
-
-                        Callsigns::const_iterator current(_callsigns.find(index->Callsign()));
-
-                        // ServiceMap should *NOT* change runtime...
-                        ASSERT(current != _callsigns.end());
-
-                        if (current->second.IsSet() == true) {
-                            if (current->second.Configuration.IsSet() == true) {
-                                (*index)->Configuration(current->second.Configuration.Value());
+                                if (current->second.IsSet() == true) {
+                                    if (current->second.Configuration.IsSet() == true) {
+                                        (*index)->Configuration(current->second.Configuration.Value());
+                                    }
+                                    if (current->second.SystemRootPath.IsSet() == true) {
+                                        (*index)->SystemRootPath(current->second.SystemRootPath.Value());
+                                    }
+                                    if (current->second.Startup.IsSet() == true) {
+                                        (*index)->Startup(current->second.Startup.Value());
+                                    }
+                                    if (current->second.Resumed.IsSet() == true) {
+                                        (*index)->Resumed(current->second.Resumed.Value());
+                                    }
+                                }
                             }
-                            if (current->second.SystemRootPath.IsSet() == true) {
-                                (*index)->SystemRootPath(current->second.SystemRootPath.Value());
-                            }
-                            if (current->second.Startup.IsSet() == true) {
-                                (*index)->Startup(current->second.Startup.Value());
-                            }
-                            if (current->second.Resumed.IsSet() == true) {
-                                (*index)->Resumed(current->second.Resumed.Value());
-                            }
+                        } else {
+                            CC_SYSLOG("Parsing persistent configuration override from [%s] failed", _fileName.c_str());
+                            result = Core::ERROR_BAD_REQUEST;
                         }
-                    }
 
-                    storage.Close();
-                } else {
-                    result = storage.ErrorCode();
+                        storage.Close();
+                    } else {
+                        result = storage.ErrorCode();
+                    }
+#endif
                 }
 
                 return (result);
             }
 
-            bool Save()
+            uint32_t Save()
             {
                 uint32_t result = Core::ERROR_NONE;
 
+#if !defined(__DEBUG__) && !defined(__ENABLE_CONFIG_OVERRIDE__)
+                CC_SYSLOG("Persist requested, but config override is disabled");
+                result = Core::ERROR_UNAVAILABLE;
+#else
                 Core::File storage(_fileName);
 
                 if (storage.Create() == true) {
+                    CC_SYSLOG("Persisting configuration override to [%s]", _fileName.c_str());
 
                     // Clear all currently set values, they might be from the precious run.
                     Clear();
@@ -2367,13 +2376,15 @@ namespace PluginHost {
                     }
 
                     // Persist the currently set information
-                    IElement::ToFile(storage);
+                    if (IElement::ToFile(storage) == false) {
+                        result = Core::ERROR_GENERAL;
+                    }
 
                     storage.Close();
                 } else {
                     result = storage.ErrorCode();
                 }
-
+#endif
                 return (result);
             }
 
@@ -4744,13 +4755,11 @@ POP_WARNING()
         uint32_t Persist()
         {
             Override infoBlob(_config, _services, Configuration().PersistentPath() + PluginOverrideFile);
-
             return (infoBlob.Save());
         }
         uint32_t Load()
         {
             Override infoBlob(_config, _services, Configuration().PersistentPath() + PluginOverrideFile);
-
             return (infoBlob.Load());
         }
 

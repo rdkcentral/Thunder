@@ -74,7 +74,7 @@ namespace Controller {
 
         // @alt storeconfig
         // @brief Stores the configuration to persistent memory
-        virtual Core::hresult Persist() = 0;
+        virtual DEPRECATED Core::hresult Persist() = 0;
 
         // @property
         // @brief Provides configuration value of a request service.

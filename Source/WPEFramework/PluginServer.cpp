@@ -285,7 +285,6 @@ namespace PluginHost
         auto index = _services.begin();
         while (index != _services.end()) {
 
-            auto index = _services.begin();
             Core::ProxyType<Service> service(index->second);
 
             ASSERT(service.IsValid());
