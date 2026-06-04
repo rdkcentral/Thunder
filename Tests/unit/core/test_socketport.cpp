@@ -1222,27 +1222,43 @@ namespace Core {
     // Error Path: TCP IPv4 connect to a port where nothing is listening
     // =========================================================================
 
-    TEST(test_socketport, open_tcp_ipv4_refused_connection_returns_error)
-    {
-        // Port 59876 on loopback — nothing is expected to be listening.
-        ::Thunder::Core::NodeId remote("127.0.0.1", 59876,
-                                       ::Thunder::Core::NodeId::TYPE_IPV4);
-        EchoConnector client(remote);
+TEST(test_socketport, open_tcp_ipv4_refused_connection_returns_error)
+{
+    // Reserve a guaranteed-non-listening local port.
+    SOCKET reserver = ::socket(AF_INET, SOCK_STREAM, 0);
+    ASSERT_NE(reserver, INVALID_SOCKET);
 
-        uint32_t result = client.Open(2000);
-        EXPECT_NE(result, ::Thunder::Core::ERROR_NONE);
+    sockaddr_in addr{};
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    addr.sin_port = 0; // ephemeral
 
-        client.Close(1000);
+    ASSERT_EQ(::bind(reserver, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)), 0);
 
-        uint32_t waited = 0;
-        while (!client.IsClosed() && waited < 2000) {
-            SleepMs(10);
-            waited += 10;
-        }
-        EXPECT_TRUE(client.IsClosed());
+    socklen_t addrLen = sizeof(addr);
+    ASSERT_EQ(::getsockname(reserver, reinterpret_cast<sockaddr*>(&addr), &addrLen), 0);
 
-        ::Thunder::Core::Singleton::Dispose();
+    const uint16_t port = ntohs(addr.sin_port);
+
+    ::Thunder::Core::NodeId remote("127.0.0.1", port, ::Thunder::Core::NodeId::TYPE_IPV4);
+    EchoConnector client(remote);
+
+    uint32_t result = client.Open(2000);
+    EXPECT_NE(result, ::Thunder::Core::ERROR_NONE);
+
+    ::close(reserver);
+
+    client.Close(1000);
+
+    uint32_t waited = 0;
+    while (!client.IsClosed() && waited < 2000) {
+        SleepMs(10);
+        waited += 10;
     }
+    EXPECT_TRUE(client.IsClosed());
+
+    ::Thunder::Core::Singleton::Dispose();
+}
 
     // =========================================================================
     // Error Path: TCP connect to unreachable (non-routable) network address
