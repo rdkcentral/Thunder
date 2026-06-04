@@ -93,7 +93,8 @@ namespace Core {
 
                 snprintf(procpath, sizeof(procpath), "/proc/%u/comm", pid);
 
-                if ((fd = open(procpath, O_RDONLY)) > 0) {
+                // coverity[tainted_string : FALSE_POSITIVE] pid is uint32_t formatted with %u, path traversal is impossible
+		if ((fd = open(procpath, O_RDONLY)) != -1) {
                     ssize_t size;
                     if ((size = read(fd, buffer, maxLength - 1)) > 0) {
                         if (buffer[size - 1] == '\n') {
