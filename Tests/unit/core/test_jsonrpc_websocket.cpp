@@ -19,6 +19,8 @@
 #include <condition_variable>
 #include <mutex>
 #include <queue>
+#include <thread>
+#include <atomic>
 
 #include <gtest/gtest.h>
 
@@ -28,8 +30,6 @@
 
 #include <core/core.h>
 #include <websocket/websocket.h>
-
-#include "../IPTestAdministrator.h"
 
 namespace Thunder {
 namespace Tests {
@@ -47,9 +47,8 @@ namespace Core {
     //   JSONRPC::Handler, and the response returned back to the client.
     //
     // Architecture:
-    //   - Each test uses IPTestAdministrator which fork()s into a child
-    //     (server) and parent (client) process, synchronized via shared-
-    //     memory futex handshakes.
+    //   - Each test runs a server in a background thread and client in the
+    //     test thread, synchronized via mutex/condition_variable.
     //   - Server: SocketServerType< JSONRPCWebSocketServer > listens on a
     //     Unix domain socket. On receiving a JSONRPC::Message it invokes
     //     the registered handler method and sends the response back.
@@ -63,12 +62,6 @@ namespace Core {
     //   "error"         - Always returns ERROR_UNKNOWN_METHOD
     //   "largeResponse" - Returns a 4096-byte string to test frame
     //                     fragmentation on WebSocket
-    //
-    // Response synchronization note:
-    //   StreamJSONType's deserializer can fire the Received() callback
-    //   with partially-parsed or empty JSON elements (e.g. when trailing
-    //   data follows a complete JSON object). The client filters these
-    //   spurious events by checking msg->JSONRPC.IsSet() before queuing.
     // =========================================================================
 
     // =========================================================================
@@ -382,65 +375,94 @@ namespace Core {
     };
 
     // =========================================================================
-    // WebSocket JSON-RPC Tests
-    //
-    // Each test follows the IPTestAdministrator fork() pattern:
-    //   - Child process: starts a WebSocket server on a unique Unix socket
-    //   - Parent process: connects a WebSocket client, sends requests,
-    //     validates responses
-    //   - Handshake signals coordinate startup/shutdown ordering
-    //
-    // Each test uses a unique socket path (/tmp/wpe_jsonrpc_ws_test<N>)
-    // to avoid conflicts when tests run in parallel.
+    // Helper: run server in background thread, wait for it to be ready,
+    // run client logic, then shut down.
     // =========================================================================
 
-    // Verifies basic JSON-RPC method dispatch over WebSocket:
-    //   1. "add" with {a:10, b:20} -> expects result "30"
-    //   2. "echo" with {message:"hello world"} -> expects params echoed back
-    //   3. "error" -> expects Error object with code -32601 (method not found)
-    TEST(WebSocketJSONRPC, BasicMethodInvocation)
+    static void RunWithServer(const std::string& connector,
+        std::function<void(JSONRPCWebSocketClient<::Thunder::Core::JSON::IElement>&)> clientLogic)
     {
-        constexpr uint32_t initHandshakeValue = 0, maxWaitTimeMs = 8000, maxInitTime = 4000;
-        constexpr uint8_t maxRetries = 10;
-
-        const std::string connector{ "/tmp/wpe_jsonrpc_ws_test0" };
+        constexpr uint32_t maxWaitTimeMs = 8000;
 
         JSONRPCWebSocketServer<::Thunder::Core::JSON::IElement>::Reset();
 
-        IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
+        std::mutex serverReadyMutex;
+        std::condition_variable serverReadyCV;
+        std::atomic<bool> serverReady{false};
+        std::atomic<bool> clientDone{false};
+
+        // Remove stale socket file
+        ::unlink(connector.c_str());
+
+        std::thread serverThread([&]() {
             ::Thunder::Core::SocketServerType<JSONRPCWebSocketServer<::Thunder::Core::JSON::IElement>> server(
                 ::Thunder::Core::NodeId(connector.c_str()));
 
             ASSERT_EQ(server.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
 
-            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
-
-            // Wait for server to be attached
+            // Signal that server is listening
             {
-                std::unique_lock<std::mutex> lk(JSONRPCWebSocketServer<::Thunder::Core::JSON::IElement>::_mutex);
-                while (!JSONRPCWebSocketServer<::Thunder::Core::JSON::IElement>::GetState()) {
-                    JSONRPCWebSocketServer<::Thunder::Core::JSON::IElement>::_cv.wait(lk);
-                }
+                std::lock_guard<std::mutex> lk(serverReadyMutex);
+                serverReady = true;
+            }
+            serverReadyCV.notify_one();
+
+            // Wait until client is done
+            while (!clientDone.load()) {
+                SleepMs(50);
             }
 
-            // Wait for client to finish all requests
-            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
-            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
-        };
+            // Brief pause to let final responses flush
+            SleepMs(200);
 
-        IPTestAdministrator::Callback callback_parent = [&](IPTestAdministrator& testAdmin) {
-            SleepMs(maxInitTime);
+            server.Close(maxWaitTimeMs);
+        });
 
-            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+        // Wait for server to be ready
+        {
+            std::unique_lock<std::mutex> lk(serverReadyMutex);
+            ASSERT_TRUE(serverReadyCV.wait_for(lk, std::chrono::seconds(10),
+                [&]{ return serverReady.load(); }));
+        }
 
-            JSONRPCWebSocketClient<::Thunder::Core::JSON::IElement> client(
-                ::Thunder::Core::NodeId(connector.c_str()));
+        // Brief pause to let server socket settle
+        SleepMs(100);
 
-            ASSERT_EQ(client.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
-            ASSERT_TRUE(client.IsOpen());
+        // Create client and connect
+        JSONRPCWebSocketClient<::Thunder::Core::JSON::IElement> client(
+            ::Thunder::Core::NodeId(connector.c_str()));
 
-            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+        ASSERT_EQ(client.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+        ASSERT_TRUE(client.IsOpen());
 
+        // Wait for server to register connection
+        {
+            std::unique_lock<std::mutex> lk(JSONRPCWebSocketServer<::Thunder::Core::JSON::IElement>::_mutex);
+            bool attached = JSONRPCWebSocketServer<::Thunder::Core::JSON::IElement>::_cv.wait_for(
+                lk, std::chrono::seconds(5),
+                []{ return JSONRPCWebSocketServer<::Thunder::Core::JSON::IElement>::GetState(); });
+            ASSERT_TRUE(attached);
+        }
+
+        // Run client test logic
+        clientLogic(client);
+
+        EXPECT_EQ(client.Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+
+        clientDone = true;
+        serverThread.join();
+
+        ::Thunder::Core::Singleton::Dispose();
+    }
+
+    // =========================================================================
+    // WebSocket JSON-RPC Tests
+    // =========================================================================
+
+    TEST(WebSocketJSONRPC, BasicMethodInvocation)
+    {
+        RunWithServer("/tmp/wpe_jsonrpc_ws_test0",
+            [](JSONRPCWebSocketClient<::Thunder::Core::JSON::IElement>& client) {
             // --- Test 1: Basic method invocation ("add") ---
             {
                 auto msg = client.CreateMessage();
@@ -501,144 +523,40 @@ namespace Core {
                 EXPECT_TRUE(response.Error.IsSet());
                 EXPECT_EQ(response.Error.Code.Value(), -32601);
             }
-
-            EXPECT_EQ(client.Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
-
-            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
-        };
-
-        IPTestAdministrator testAdmin(callback_parent, callback_child, initHandshakeValue, 20);
-
-        ::Thunder::Core::Singleton::Dispose();
+        });
     }
 
-    // Verifies that a large JSON-RPC response (4096 bytes of payload) is
-    // correctly transmitted over WebSocket. This exercises WebSocket frame
-    // fragmentation since the payload exceeds the 125-byte threshold for
-    // single-frame messages and the 1024-byte send/receive buffer sizes.
     TEST(WebSocketJSONRPC, LargePayload)
     {
-        constexpr uint32_t initHandshakeValue = 0, maxWaitTimeMs = 8000, maxInitTime = 4000;
-        constexpr uint8_t maxRetries = 10;
+        RunWithServer("/tmp/wpe_jsonrpc_ws_test1",
+            [](JSONRPCWebSocketClient<::Thunder::Core::JSON::IElement>& client) {
+            auto msg = client.CreateMessage();
+            msg->JSONRPC = _T("2.0");
+            msg->Id = 1;
+            msg->Designator = _T("largeResponse");
+            msg->Parameters = _T("{}");
 
-        const std::string connector{ "/tmp/wpe_jsonrpc_ws_test1" };
+            client.Submit(::Thunder::Core::ProxyType<::Thunder::Core::JSON::IElement>(msg));
 
-        JSONRPCWebSocketServer<::Thunder::Core::JSON::IElement>::Reset();
+            ASSERT_TRUE(client.WaitForResponse());
 
-        IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
-            ::Thunder::Core::SocketServerType<JSONRPCWebSocketServer<::Thunder::Core::JSON::IElement>> server(
-                ::Thunder::Core::NodeId(connector.c_str()));
+            ::Thunder::Core::JSONRPC::Message response;
+            client.RetrieveMessage(response);
 
-            ASSERT_EQ(server.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+            EXPECT_EQ(response.Id.Value(), 1u);
+            EXPECT_TRUE(response.Result.IsSet());
+            EXPECT_FALSE(response.Error.IsSet());
 
-            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
-
-            {
-                std::unique_lock<std::mutex> lk(JSONRPCWebSocketServer<::Thunder::Core::JSON::IElement>::_mutex);
-                while (!JSONRPCWebSocketServer<::Thunder::Core::JSON::IElement>::GetState()) {
-                    JSONRPCWebSocketServer<::Thunder::Core::JSON::IElement>::_cv.wait(lk);
-                }
-            }
-
-            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
-            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
-        };
-
-        IPTestAdministrator::Callback callback_parent = [&](IPTestAdministrator& testAdmin) {
-            SleepMs(maxInitTime);
-
-            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
-
-            JSONRPCWebSocketClient<::Thunder::Core::JSON::IElement> client(
-                ::Thunder::Core::NodeId(connector.c_str()));
-
-            ASSERT_EQ(client.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
-            ASSERT_TRUE(client.IsOpen());
-
-            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
-
-            // Test: Large response that exceeds single WebSocket frame (>125 bytes)
-            // This tests WebSocket frame fragmentation
-            {
-                auto msg = client.CreateMessage();
-                msg->JSONRPC = _T("2.0");
-                msg->Id = 1;
-                msg->Designator = _T("largeResponse");
-                msg->Parameters = _T("{}");
-
-                client.Submit(::Thunder::Core::ProxyType<::Thunder::Core::JSON::IElement>(msg));
-
-                ASSERT_TRUE(client.WaitForResponse());
-
-                ::Thunder::Core::JSONRPC::Message response;
-                client.RetrieveMessage(response);
-
-                EXPECT_EQ(response.Id.Value(), 1u);
-                EXPECT_TRUE(response.Result.IsSet());
-                EXPECT_FALSE(response.Error.IsSet());
-
-                // Verify the response contains 4096 'X' characters
-                ::Thunder::Core::JSON::String resultStr;
-                resultStr.FromString(response.Result.Value());
-                EXPECT_EQ(resultStr.Value().length(), 4096u);
-            }
-
-            EXPECT_EQ(client.Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
-
-            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
-        };
-
-        IPTestAdministrator testAdmin(callback_parent, callback_child, initHandshakeValue, 20);
-
-        ::Thunder::Core::Singleton::Dispose();
+            ::Thunder::Core::JSON::String resultStr;
+            resultStr.FromString(response.Result.Value());
+            EXPECT_EQ(resultStr.Value().length(), 4096u);
+        });
     }
 
-    // Sends 10 sequential "add" requests (i + i for i=1..10) over the same
-    // WebSocket connection. Validates that each response has the correct Id
-    // and result, ensuring request/response correlation is maintained across
-    // multiple round-trips on a persistent connection.
     TEST(WebSocketJSONRPC, MultipleSequentialRequests)
     {
-        constexpr uint32_t initHandshakeValue = 0, maxWaitTimeMs = 8000, maxInitTime = 4000;
-        constexpr uint8_t maxRetries = 10;
-
-        const std::string connector{ "/tmp/wpe_jsonrpc_ws_test2" };
-
-        JSONRPCWebSocketServer<::Thunder::Core::JSON::IElement>::Reset();
-
-        IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
-            ::Thunder::Core::SocketServerType<JSONRPCWebSocketServer<::Thunder::Core::JSON::IElement>> server(
-                ::Thunder::Core::NodeId(connector.c_str()));
-
-            ASSERT_EQ(server.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
-
-            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
-
-            {
-                std::unique_lock<std::mutex> lk(JSONRPCWebSocketServer<::Thunder::Core::JSON::IElement>::_mutex);
-                while (!JSONRPCWebSocketServer<::Thunder::Core::JSON::IElement>::GetState()) {
-                    JSONRPCWebSocketServer<::Thunder::Core::JSON::IElement>::_cv.wait(lk);
-                }
-            }
-
-            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
-            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
-        };
-
-        IPTestAdministrator::Callback callback_parent = [&](IPTestAdministrator& testAdmin) {
-            SleepMs(maxInitTime);
-
-            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
-
-            JSONRPCWebSocketClient<::Thunder::Core::JSON::IElement> client(
-                ::Thunder::Core::NodeId(connector.c_str()));
-
-            ASSERT_EQ(client.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
-            ASSERT_TRUE(client.IsOpen());
-
-            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
-
-            // Send multiple sequential requests to verify correct request/response pairing
+        RunWithServer("/tmp/wpe_jsonrpc_ws_test2",
+            [](JSONRPCWebSocketClient<::Thunder::Core::JSON::IElement>& client) {
             for (uint32_t i = 1; i <= 10; i++) {
                 auto msg = client.CreateMessage();
                 msg->JSONRPC = _T("2.0");
@@ -659,89 +577,30 @@ namespace Core {
                 EXPECT_TRUE(response.Result.IsSet());
                 EXPECT_STREQ(response.Result.Value().c_str(), std::to_string(i * 2).c_str());
             }
-
-            EXPECT_EQ(client.Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
-
-            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
-        };
-
-        IPTestAdministrator testAdmin(callback_parent, callback_child, initHandshakeValue, 20);
-
-        ::Thunder::Core::Singleton::Dispose();
+        });
     }
 
-    // Invokes a method ("nonExistentMethod") that is not registered on the
-    // server-side JSONRPC::Handler. Verifies the server responds with an
-    // Error object (no Result) rather than crashing or hanging.
     TEST(WebSocketJSONRPC, UnknownMethodReturnsError)
     {
-        constexpr uint32_t initHandshakeValue = 0, maxWaitTimeMs = 8000, maxInitTime = 4000;
-        constexpr uint8_t maxRetries = 10;
+        RunWithServer("/tmp/wpe_jsonrpc_ws_test3",
+            [](JSONRPCWebSocketClient<::Thunder::Core::JSON::IElement>& client) {
+            auto msg = client.CreateMessage();
+            msg->JSONRPC = _T("2.0");
+            msg->Id = 1;
+            msg->Designator = _T("nonExistentMethod");
+            msg->Parameters = _T("{}");
 
-        const std::string connector{ "/tmp/wpe_jsonrpc_ws_test3" };
+            client.Submit(::Thunder::Core::ProxyType<::Thunder::Core::JSON::IElement>(msg));
 
-        JSONRPCWebSocketServer<::Thunder::Core::JSON::IElement>::Reset();
+            ASSERT_TRUE(client.WaitForResponse());
 
-        IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
-            ::Thunder::Core::SocketServerType<JSONRPCWebSocketServer<::Thunder::Core::JSON::IElement>> server(
-                ::Thunder::Core::NodeId(connector.c_str()));
+            ::Thunder::Core::JSONRPC::Message response;
+            client.RetrieveMessage(response);
 
-            ASSERT_EQ(server.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
-
-            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
-
-            {
-                std::unique_lock<std::mutex> lk(JSONRPCWebSocketServer<::Thunder::Core::JSON::IElement>::_mutex);
-                while (!JSONRPCWebSocketServer<::Thunder::Core::JSON::IElement>::GetState()) {
-                    JSONRPCWebSocketServer<::Thunder::Core::JSON::IElement>::_cv.wait(lk);
-                }
-            }
-
-            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
-            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
-        };
-
-        IPTestAdministrator::Callback callback_parent = [&](IPTestAdministrator& testAdmin) {
-            SleepMs(maxInitTime);
-
-            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
-
-            JSONRPCWebSocketClient<::Thunder::Core::JSON::IElement> client(
-                ::Thunder::Core::NodeId(connector.c_str()));
-
-            ASSERT_EQ(client.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
-            ASSERT_TRUE(client.IsOpen());
-
-            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
-
-            // Call a method that doesn't exist on the server handler
-            {
-                auto msg = client.CreateMessage();
-                msg->JSONRPC = _T("2.0");
-                msg->Id = 1;
-                msg->Designator = _T("nonExistentMethod");
-                msg->Parameters = _T("{}");
-
-                client.Submit(::Thunder::Core::ProxyType<::Thunder::Core::JSON::IElement>(msg));
-
-                ASSERT_TRUE(client.WaitForResponse());
-
-                ::Thunder::Core::JSONRPC::Message response;
-                client.RetrieveMessage(response);
-
-                EXPECT_EQ(response.Id.Value(), 1u);
-                EXPECT_TRUE(response.Error.IsSet());
-                EXPECT_FALSE(response.Result.IsSet());
-            }
-
-            EXPECT_EQ(client.Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
-
-            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
-        };
-
-        IPTestAdministrator testAdmin(callback_parent, callback_child, initHandshakeValue, 20);
-
-        ::Thunder::Core::Singleton::Dispose();
+            EXPECT_EQ(response.Id.Value(), 1u);
+            EXPECT_TRUE(response.Error.IsSet());
+            EXPECT_FALSE(response.Result.IsSet());
+        });
     }
 
 } // Core
