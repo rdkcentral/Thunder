@@ -4483,6 +4483,9 @@ namespace PluginHost {
                     : _ID(~0)
                     , _server(nullptr)
                     , _service()
+#ifdef __CORE_WARNING_REPORTING__
+                    , _queuedTime(0)
+#endif
                 {
                 }
                 ~Job() override
@@ -4521,6 +4524,9 @@ namespace PluginHost {
                     if (_service.IsValid() == true) {
                         _service.Release();
                     }
+#ifdef __CORE_WARNING_REPORTING__
+                    _queuedTime = 0;
+#endif
                 }
                 void Set(const uint32_t id, Server* server, Core::ProxyType<Service>& service)
                 {
@@ -4531,6 +4537,9 @@ namespace PluginHost {
                     _ID = id;
                     _service = service;
                     _server = server;
+#ifdef __CORE_WARNING_REPORTING__
+                    _queuedTime = Core::Time::Now().Ticks();
+#endif
                 }
                 string Process(const string& message)
                 {
@@ -4545,6 +4554,16 @@ namespace PluginHost {
 
                     ASSERT(message.IsValid() == true);
                     ASSERT(_service.IsValid() == true);
+
+#ifdef __CORE_WARNING_REPORTING__
+                    if (_queuedTime != 0) {
+                        const uint32_t queueWaitMs = static_cast<uint32_t>(
+                            (Core::Time::Now().Ticks() - _queuedTime) / Core::Time::TicksPerMillisecond);
+                        REPORT_OUTOFBOUNDS_WARNING_EX(WarningReporting::JSONRPCQueueWait, _service->Callsign().c_str(),
+                            queueWaitMs, message->Designator.Value());
+                        _queuedTime = 0;
+                    }
+#endif
 
                     message->ImplicitCallsign(_service->Callsign());
 
@@ -4623,6 +4642,9 @@ namespace PluginHost {
                 uint32_t _ID;
                 Server* _server;
                 Core::ProxyType<Service> _service;
+#ifdef __CORE_WARNING_REPORTING__
+                uint64_t _queuedTime;
+#endif
             };
 
         private:

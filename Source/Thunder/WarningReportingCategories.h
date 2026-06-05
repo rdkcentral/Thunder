@@ -293,5 +293,88 @@ namespace WarningReporting {
         static constexpr uint32_t DefaultReportBound = { 1000 };
     };
 
+    class EXTERNAL TooManyParallelPluginActivations {
+    public:
+        TooManyParallelPluginActivations(const TooManyParallelPluginActivations&) = delete;
+        TooManyParallelPluginActivations& operator=(const TooManyParallelPluginActivations&) = delete;
+        TooManyParallelPluginActivations() = default;
+        ~TooManyParallelPluginActivations() = default;
+
+        // Nothing extra to serialize — bounds category carries the count as actualValue
+        uint16_t Serialize(uint8_t[], const uint16_t) const
+        {
+            return 0;
+        }
+
+        uint16_t Deserialize(const uint8_t[], const uint16_t)
+        {
+            return 0;
+        }
+
+        void ToString(string& visitor, const int64_t actualValue, const int64_t maxValue) const
+        {
+            visitor = Core::Format(_T("Too many plugins activating in parallel: %" PRId64 " concurrent activations"), actualValue);
+            visitor += Core::Format(_T(", value %" PRId64 " [parallel activations], max allowed %" PRId64), actualValue, maxValue);
+        };
+
+        // Report (info) at 4+, Warning at 6+ simultaneous plugin activations
+        static constexpr uint32_t DefaultWarningBound = { 6 };
+        static constexpr uint32_t DefaultReportBound = { 4 };
+    };
+
+    class EXTERNAL JSONRPCQueueWait {
+    public:
+        JSONRPCQueueWait(const JSONRPCQueueWait&) = delete;
+        JSONRPCQueueWait& operator=(const JSONRPCQueueWait&) = delete;
+
+        JSONRPCQueueWait()
+            : _designator()
+        {
+        }
+        ~JSONRPCQueueWait() = default;
+
+        // Captures the JSONRPC method designator for output (e.g. "Plugin.1.Method")
+        bool Analyze(const char[], const char[], const string& designator)
+        {
+            _designator = designator.substr(0, 64);
+            return true;
+        }
+
+        uint16_t Serialize(uint8_t buffer[], const uint16_t length) const
+        {
+            uint16_t len = static_cast<uint16_t>(_designator.size() + 1);
+            if (len <= length) {
+                std::copy(_designator.begin(), _designator.end(), buffer);
+                buffer[_designator.size()] = 0;
+                return len;
+            }
+            return 0;
+        }
+
+        uint16_t Deserialize(const uint8_t buffer[], const uint16_t length)
+        {
+            string designator = reinterpret_cast<const char*>(buffer);
+            uint16_t len = static_cast<uint16_t>(designator.size() + 1);
+            if (len <= length) {
+                _designator = designator;
+                return len;
+            }
+            return 0;
+        }
+
+        void ToString(string& visitor, const int64_t actualValue, const int64_t maxValue) const
+        {
+            visitor = Core::Format(_T("JSONRPC request [%s] waited too long in plugin dispatch queue"), _designator.c_str());
+            visitor += Core::Format(_T(", value %" PRId64 " [ms], max allowed %" PRId64 " [ms]"), actualValue, maxValue);
+        };
+
+        // Report at 100 ms, Warning at 200 ms queue wait
+        static constexpr uint32_t DefaultWarningBound = { 200 };
+        static constexpr uint32_t DefaultReportBound = { 100 };
+
+    private:
+        string _designator;
+    };
+
 }
 }

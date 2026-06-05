@@ -193,8 +193,8 @@ namespace WarningReporting {
             visitor += Core::Format(_T(", value %" PRId64 " [ms], max allowed %" PRId64 " [ms]"), actualValue, maxValue);
         };
 
-        static constexpr uint32_t DefaultWarningBound = { 400 };
-        static constexpr uint32_t DefaultReportBound = { 200 };
+        static constexpr uint32_t DefaultWarningBound = { 100 };
+        static constexpr uint32_t DefaultReportBound = { 50 };
     };
 
     class EXTERNAL TooLongDecrypt {
@@ -281,6 +281,63 @@ namespace WarningReporting {
             static constexpr uint32_t DefaultWarningBound = { 1000 };
             static constexpr uint32_t DefaultReportBound = { 1000 };
         };
+
+    class EXTERNAL WorkerPoolSaturation {
+    public:
+        WorkerPoolSaturation(const WorkerPoolSaturation&) = delete;
+        WorkerPoolSaturation& operator=(const WorkerPoolSaturation&) = delete;
+
+        WorkerPoolSaturation()
+            : _active(0)
+            , _total(0)
+        {
+        }
+        ~WorkerPoolSaturation() = default;
+
+        // Returns true only when all threads are busy (saturation confirmed)
+        bool Analyze(const char[], const char[], const uint8_t active, const uint8_t total)
+        {
+            _active = active;
+            _total = total;
+            return (active >= total);
+        }
+
+        uint16_t Serialize(uint8_t buffer[], const uint16_t length) const
+        {
+            if (static_cast<uint16_t>(sizeof(_active) + sizeof(_total)) <= length) {
+                memcpy(buffer, &_active, sizeof(_active));
+                memcpy(buffer + sizeof(_active), &_total, sizeof(_total));
+                return static_cast<uint16_t>(sizeof(_active) + sizeof(_total));
+            }
+            return 0;
+        }
+
+        uint16_t Deserialize(const uint8_t buffer[], const uint16_t length)
+        {
+            if (static_cast<uint16_t>(sizeof(_active) + sizeof(_total)) <= length) {
+                memcpy(&_active, buffer, sizeof(_active));
+                memcpy(&_total, buffer + sizeof(_active), sizeof(_total));
+                return static_cast<uint16_t>(sizeof(_active) + sizeof(_total));
+            }
+            return 0;
+        }
+
+        void ToString(string& visitor, const int64_t actualValue, const int64_t maxValue) const
+        {
+            visitor = Core::Format(_T("WorkerPool saturated: %u/%u threads busy, %" PRId64 " jobs pending in global queue"),
+                static_cast<uint32_t>(_active), static_cast<uint32_t>(_total), actualValue);
+            visitor += Core::Format(_T(", value %" PRId64 " [pending jobs], max allowed %" PRId64), actualValue, maxValue);
+        };
+
+        // Fires (report) when any job is already pending AND all threads are active.
+        // Fires (warning) when pending backlog exceeds 4 jobs under full saturation.
+        static constexpr uint32_t DefaultWarningBound = { 4 };
+        static constexpr uint32_t DefaultReportBound = { 0 };
+
+    private:
+        uint8_t _active;
+        uint8_t _total;
+    };
 
 }
 }

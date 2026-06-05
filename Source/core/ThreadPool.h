@@ -660,6 +660,22 @@ namespace Core {
             ASSERT(job.IsValid() == true);
             ASSERT(_queue.HasEntry(job) == false);
 
+#ifdef __CORE_WARNING_REPORTING__
+            {
+                uint32_t pending = Pending();
+                if (pending > 0) {
+                    uint8_t total = Count();
+                    uint8_t active = 0;
+                    std::list<Executor>::const_iterator it = _units.cbegin();
+                    while (it != _units.cend()) {
+                        if (it->IsActive()) { ++active; }
+                        ++it;
+                    }
+                    REPORT_OUTOFBOUNDS_WARNING(WarningReporting::WorkerPoolSaturation, pending, active, total);
+                }
+            }
+#endif
+
             thread_id threadId = Thread::ThreadId();
 
             if (threadId == ResourceMonitor::Instance().Id() || HasThreadID(threadId)) {

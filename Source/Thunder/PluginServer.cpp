@@ -56,6 +56,11 @@ namespace PluginHost {
     // STATIC declarations
     // -----------------------------------------------------------------------------------------------------------------------------------
 
+#ifdef __CORE_WARNING_REPORTING__
+    // Counts plugins currently going through Initialize() to detect burst-startup saturation.
+    static std::atomic<uint8_t> _sParallelActivations(0);
+#endif
+
     /* static */ Core::ProxyType<Web::Response> Server::Channel::_missingCallsign(Core::ProxyType<Web::Response>::Create());
     /* static */ Core::ProxyType<Web::Response> Server::Channel::_incorrectVersion(Core::ProxyType<Web::Response>::Create());
     /* static */ Core::ProxyType<Web::Response> Server::Channel::WebRequestJob::_missingResponse(Core::ProxyType<Web::Response>::Create());
@@ -427,7 +432,16 @@ namespace PluginHost {
 
                 Unlock();
 
+#ifdef __CORE_WARNING_REPORTING__
+                {
+                    const uint8_t activationCount = ++_sParallelActivations;
+                    REPORT_OUTOFBOUNDS_WARNING_EX(WarningReporting::TooManyParallelPluginActivations, callSign.c_str(), static_cast<uint32_t>(activationCount));
+                }
+#endif
                 REPORT_DURATION_WARNING( { ErrorMessage(_handler->Initialize(this)); }, WarningReporting::TooLongPluginState, WarningReporting::TooLongPluginState::StateChange::ACTIVATION, callSign.c_str());
+#ifdef __CORE_WARNING_REPORTING__
+                --_sParallelActivations;
+#endif
 
                 if (HasError() == true) {
                     result = Core::ERROR_GENERAL;
