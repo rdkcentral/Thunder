@@ -226,6 +226,7 @@ namespace RPC {
             const string& hostApplication,
             const string& persistentPath,
             const string& systemPath,
+            const string& extensionPath,            
             const string& dataPath,
             const string& volatilePath,
             const string& applicationPath,
@@ -235,7 +236,8 @@ namespace RPC {
             , _hostApplication(hostApplication)
             , _persistent(persistentPath)
             , _system(systemPath)
-            , _data(dataPath)
+            , _extension(extensionPath)
+             , _data(dataPath)
             , _volatile(volatilePath)
             , _application(applicationPath)
             , _proxyStub(proxyStubPath)
@@ -247,6 +249,7 @@ namespace RPC {
             , _hostApplication(copy._hostApplication)
             , _persistent(copy._persistent)
             , _system(copy._system)
+            , _extension(copy._extension)
             , _data(copy._data)
             , _volatile(copy._volatile)
             , _application(copy._application)
@@ -275,6 +278,10 @@ namespace RPC {
         {
             return (_system);
         }
+        inline const string& ExtensionPath() const
+        {
+            return (_extension);
+        }
         inline const string& DataPath() const
         {
             return (_data);
@@ -301,6 +308,7 @@ namespace RPC {
         string _hostApplication;
         string _persistent;
         string _system;
+        string _extension;
         string _data;
         string _volatile;
         string _application;
@@ -535,6 +543,9 @@ namespace RPC {
                 if (config.SystemPath().empty() == false) {
                     _options.Add(_T("-s")).Add('"' + config.SystemPath() + '"');
                 }
+                if (config.ExtensionPath().empty() == false) {
+                    _options.Add(_T("-X")).Add('"' + config.ExtensionPath() + '"');
+                }                
                 if (config.DataPath().empty() == false) {
                     _options.Add(_T("-d")).Add('"' + config.DataPath() + '"');
                 }
@@ -1013,11 +1024,15 @@ namespace RPC {
                         interfaceReturned = locator.first->second.Interface();
 
                         if (interfaceReturned != nullptr) {
-
                             id = result->Id();
                         }
 
                     } else {
+                        if (launchResult != Core::ERROR_NONE) {
+                            CC_SYSLOG("Failed to launch remote object [%s]:[%s], host type [%u], error [%u]", instance.ClassName().c_str(), instance.Callsign().c_str(), static_cast<uint32_t>(instance.Type()), launchResult);
+                        } else {
+                            CC_SYSLOG("Timed out waiting %u ms for remote object [%s]:[%s] to announce, host type [%u]", waitTime, instance.ClassName().c_str(), instance.Callsign().c_str(), static_cast<uint32_t>(instance.Type()));
+                        }
 
                         // Seems we could not start the application. Cleanout
                         result->Terminate();

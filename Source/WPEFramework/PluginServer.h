@@ -62,6 +62,7 @@ namespace PluginHost {
     public:
         static const TCHAR* ConfigFile;
         static const TCHAR* PluginOverrideFile;
+        static const TCHAR* ExtensionsConfigDirectory;        
         static const TCHAR* PluginConfigDirectory;
         static const TCHAR* CommunicatorConnector;
 
@@ -1207,7 +1208,7 @@ namespace PluginHost {
 
             Service(const PluginHost::Config& server, const Plugin::Config& plugin, ServiceMap& administrator, const mode type, const Core::ProxyType<RPC::InvokeServer>& handler)
                 : PluginHost::Service(plugin, server.WebPrefix(), server.PersistentPath(), server.DataPath(), server.VolatilePath())
-                , _mode(type)
+                , _type(type)
                 , _pluginHandling()
                 , _handler(nullptr)
                 , _extended(nullptr)
@@ -1257,6 +1258,9 @@ namespace PluginHost {
             }
 
         public:
+            inline mode Type() const {
+                return (_type);
+            }        
             inline const std::vector<PluginHost::ISubSystem::subsystem>& SubSystemControl() const {
                 return (_metadata.Control());
             }
@@ -1730,6 +1734,10 @@ namespace PluginHost {
             string SystemPath() const override {
                 return (_administrator.Configuration().SystemPath());
             }
+            virtual string ExtensionPath() const
+            {
+                return string();
+            }            
             string PluginPath() const override {
                 return (_administrator.Configuration().AppPath() + _T("Plugins/"));
             }
@@ -1756,7 +1764,7 @@ namespace PluginHost {
             {
                 ASSERT(_connection == nullptr);
 
-                void* result(_administrator.Instantiate(object, waitTime, sessionId, DataPath(), PersistentPath(), VolatilePath()));
+                void* result(_administrator.Instantiate(object, waitTime, sessionId, DataPath(), PersistentPath(), VolatilePath(), ExtensionPath()));
 
                 _connection = _administrator.RemoteConnection(sessionId);
 
@@ -1819,12 +1827,39 @@ namespace PluginHost {
                 }
             }
 
+            virtual bool Cloneable() const
+            {
+                return true;
+            }
+
+            virtual bool AllowedHibernate() const
+            {
+                return true;
+            }
+
+            virtual bool AllowedUnavailable() const
+            {
+                return true;
+            }
+
+            virtual bool PriorityStart() const
+            {
+                return false;
+            }
+
+             virtual bool AutoActivationAlwaysEnabled() const
+            {
+                return false;
+            }
+
         private:
             uint32_t Wakeup(const uint32_t timeout = 10000 /*ms*/);
 #ifdef HIBERNATE_SUPPORT_ENABLED
             uint32_t HibernateChildren(const Core::process_t parentPID, const uint32_t timeout);
             uint32_t WakeupChildren(const Core::process_t parentPID, const uint32_t timeout);
 #endif
+
+        public: // do not restrict visibility for a virtual in a derived class
             virtual std::vector<string> GetLibrarySearchPaths(const string& locator) const override
             {
                 std::vector<string> all_paths;
@@ -1866,21 +1901,20 @@ namespace PluginHost {
 
                 return all_paths;
             }
-
+        private:
             Core::Library LoadLibrary(const string& name) {
-                uint8_t progressedState = 0;
                 Core::Library result;
+                string lastError;
+                string lastPath;
 
                 std::vector<string> all_paths = GetLibrarySearchPaths(name);
                 std::vector<string>::const_iterator iter = std::begin(all_paths);
 
-                while ( (iter != std::end(all_paths)) && (progressedState <= 2) ) {
+                while ((iter != std::end(all_paths)) && (result.IsLoaded() == false)) {
                     Core::File libraryToLoad(*iter);
 
                     if (libraryToLoad.Exists() == true) {
-                        if (progressedState == 0) {
-                            progressedState = 1;
-                        }
+                        lastPath = *iter;
 
                         // Loading a library, in the static initializers, might register Service::MetaData structures. As
                         // the dlopen has a process wide system lock, make sure that the, during open used lock of the 
@@ -1889,15 +1923,10 @@ namespace PluginHost {
                         Core::Library newLib = Core::ServiceAdministrator::Instance().LoadLibrary(iter->c_str());
 
                         if (newLib.IsLoaded() == true) {
-                            if (progressedState == 1) {
-                                progressedState = 2;
-                            }
-
                             Core::System::ModuleBuildRefImpl moduleBuildRef = reinterpret_cast<Core::System::ModuleBuildRefImpl>(newLib.LoadFunction(_T("ModuleBuildRef")));
                             Core::System::ModuleServiceMetadataImpl moduleServiceMetadata = reinterpret_cast<Core::System::ModuleServiceMetadataImpl>(newLib.LoadFunction(_T("ModuleServiceMetadata")));
                             if ((moduleBuildRef != nullptr) && (moduleServiceMetadata != nullptr)) {
                                 result = newLib;
-                                progressedState = 3;
                                 if (_metadata.IsValid() == false) {
                                     _metadata = moduleServiceMetadata();
                                     if (_metadata.IsValid() == true) {
@@ -1906,21 +1935,23 @@ namespace PluginHost {
                                     }
                                     _metadata.Hash(moduleBuildRef());
                                 }
+                            } else {
+                                lastError = _T("ModuleBuildRef/ModuleServiceMetadata symbol missing");
                             }
+                        } else {
+                            lastError = newLib.Error().empty() == false ? newLib.Error() : _T("Library load failed");
                         }
                     }
                     ++iter;
                 }
 
-                if (HasError() == false) {
-                    if (progressedState == 0) {
-                        ErrorMessage(_T("library does not exist"));
-                    }
-                    else if (progressedState == 2) {
-                        ErrorMessage(_T("library could not be loaded"));
-                    }
-                    else if (progressedState == 3) {
-                        ErrorMessage(_T("library does not contain the right methods"));
+                if (result.IsLoaded() == false) {
+                    if (lastPath.empty() == true) {
+                        CC_SYSLOG("Loading library [%s] for plugin [%s] failed: no library candidate found",
+                            name.c_str(), Callsign().c_str());
+                    } else {
+                        CC_SYSLOG("Loading library [%s] for plugin [%s] failed. Candidate [%s], error [%s]",
+                            name.c_str(), Callsign().c_str(), lastPath.c_str(), lastError.c_str());
                     }
                 }
 
@@ -2058,8 +2089,17 @@ namespace PluginHost {
                 }
             }
 
+        protected:
+            ServiceMap& Administrator() {
+                return (_administrator);
+            }
+            const ServiceMap& Administrator() const
+            {
+                return (_administrator);
+            }
+
         private:
-            const mode _mode;
+            const mode _type;
             mutable Core::CriticalSection _pluginHandling;
 
             // The handlers that implement the actual logic behind the service
@@ -2087,6 +2127,91 @@ namespace PluginHost {
             static Core::ProxyType<Web::Response> _unavailableHandler;
             static Core::ProxyType<Web::Response> _missingHandler;
         };
+
+        class ThunderExtensionService : public Service {
+        public:
+            ThunderExtensionService() = delete;
+            ThunderExtensionService(ThunderExtensionService&&) = delete;
+            ThunderExtensionService(const ThunderExtensionService&) = delete;
+            ThunderExtensionService& operator=(ThunderExtensionService&&) = delete;
+            ThunderExtensionService& operator=(const ThunderExtensionService&) = delete;
+
+            ThunderExtensionService(const PluginHost::Config& server, const Plugin::Config& plugin, ServiceMap& administrator, const mode type, const Core::ProxyType<RPC::InvokeServer>& handler)
+                : Service(server, plugin, administrator, type, handler)
+            {
+            }
+
+            ~ThunderExtensionService() override = default;
+
+        public:
+
+            std::vector<string> GetLibrarySearchPaths(const string& locator) const override
+            {
+
+                // we allow all paths for normal plugins but also extensions. Extensions are not secure by definition (anybody who can put a file into a folder and change some configuration can make ny plugin to be an extension). But it is good enough
+                // and one could make a plugin locator point direclty to the extension folder if needed, but okay it will at least not work out of the box
+                std::vector<string> searchPaths;
+
+                bool valid = false;
+                const string normalized(Core::File::Normalize(locator, valid));
+                const string rootPath(Core::Directory::Normalize(PluginHost::Service::Configuration().SystemRootPath));
+                searchPaths.push_back(Core::Directory::Normalize(rootPath + ExtensionPath()) + normalized);
+                searchPaths.push_back(Core::Directory::Normalize(rootPath + Administrator().Configuration().AppPath() + _T("Extensions/")) + normalized);
+
+                std::vector<string> paths = Service::GetLibrarySearchPaths(locator);
+
+                searchPaths.reserve(searchPaths.size() + paths.size());
+
+                searchPaths.insert(searchPaths.end(), paths.begin(), paths.end() );
+
+                return searchPaths;
+            }
+
+            string ExtensionPath() const override
+            {
+                return (Administrator().Configuration().ExtensionPath());
+            }
+
+            bool Cloneable() const override
+            {
+                return false;
+            }
+
+            bool AllowedHibernate() const override
+            {
+                return false;
+            }
+
+            bool AllowedUnavailable() const override
+            {
+                return false;
+            }
+
+            bool PriorityStart() const override
+            {
+                return true;
+            }
+
+            bool AutoActivationAlwaysEnabled() const override
+            {
+                return true;
+            }
+
+        private:
+            bool AllowedLocal() const override
+            {
+                return true;
+            }
+            bool AllowedDistributed() const override
+            {
+                return false;
+            }
+            bool AllowedContainer() const override
+            {
+                return false;
+            }
+        };
+
         class Override : public Core::JSON::Container {
         private:
             class Plugin : public Core::JSON::Container {
@@ -2184,60 +2309,73 @@ namespace PluginHost {
                 uint32_t result = Core::ERROR_NONE;
 
                 Core::File storage(_fileName);
+                if (storage.Exists() == true) {
+#if !defined(__DEBUG__) && !defined(__ENABLE_CONFIG_OVERRIDE__)
+                    CC_SYSLOG("Persistent configuration override from [%s] refused, config override is disabled", _fileName.c_str());
+                    result = Core::ERROR_UNAVAILABLE;
+#else
+                    if (storage.Open(true) == true) {
+                        CC_SYSLOG("Loading persistent configuration override from [%s]", _fileName.c_str());
 
-                if ((storage.Exists() == true) && (storage.Open(true) == true)) {
+                        // Clear all currently set values, they might be from the precious run.
+                        Clear();
 
-                    result = true;
+                        // Read the file and parse it into this object.
+                        if (IElement::FromFile(storage) == true) {
+                            _serverconfig.SetPrefix(Prefix.Value());
+                            _serverconfig.SetIdleTime(IdleTime.Value());
+                            // Convey the real JSON struct information into the specific services.
+                            ServiceMap::Iterator index(_services.Services());
 
-                    // Clear all currently set values, they might be from the precious run.
-                    Clear();
+                            while (index.Next() == true) {
 
-                    // Red the file and parse it into this object.
-                    IElement::FromFile(storage);
+                                Callsigns::const_iterator current(_callsigns.find(index->Callsign()));
 
-                    _serverconfig.SetPrefix(Prefix.Value());
-                    _serverconfig.SetIdleTime(IdleTime.Value());
-                    // Convey the real JSON struct information into the specific services.
-                    ServiceMap::Iterator index(_services.Services());
+                                // ServiceMap should *NOT* change runtime...
+                                ASSERT(current != _callsigns.end());
 
-                    while (index.Next() == true) {
-
-                        Callsigns::const_iterator current(_callsigns.find(index->Callsign()));
-
-                        // ServiceMap should *NOT* change runtime...
-                        ASSERT(current != _callsigns.end());
-
-                        if (current->second.IsSet() == true) {
-                            if (current->second.Configuration.IsSet() == true) {
-                                (*index)->Configuration(current->second.Configuration.Value());
+                                if (current->second.IsSet() == true) {
+                                    if (current->second.Configuration.IsSet() == true) {
+                                        (*index)->Configuration(current->second.Configuration.Value());
+                                    }
+                                    if (current->second.SystemRootPath.IsSet() == true) {
+                                        (*index)->SystemRootPath(current->second.SystemRootPath.Value());
+                                    }
+                                    if (current->second.Startup.IsSet() == true) {
+                                        (*index)->Startup(current->second.Startup.Value());
+                                    }
+                                    if (current->second.Resumed.IsSet() == true) {
+                                        (*index)->Resumed(current->second.Resumed.Value());
+                                    }
+                                }
                             }
-                            if (current->second.SystemRootPath.IsSet() == true) {
-                                (*index)->SystemRootPath(current->second.SystemRootPath.Value());
-                            }
-                            if (current->second.Startup.IsSet() == true) {
-                                (*index)->Startup(current->second.Startup.Value());
-                            }
-                            if (current->second.Resumed.IsSet() == true) {
-                                (*index)->Resumed(current->second.Resumed.Value());
-                            }
+                        } else {
+                            CC_SYSLOG("Parsing persistent configuration override from [%s] failed", _fileName.c_str());
+                            result = Core::ERROR_BAD_REQUEST;
                         }
-                    }
 
-                    storage.Close();
-                } else {
-                    result = storage.ErrorCode();
+                        storage.Close();
+                    } else {
+                        result = storage.ErrorCode();
+                    }
+#endif
                 }
 
                 return (result);
             }
 
-            bool Save()
+            uint32_t Save()
             {
                 uint32_t result = Core::ERROR_NONE;
 
+#if !defined(__DEBUG__) && !defined(__ENABLE_CONFIG_OVERRIDE__)
+                CC_SYSLOG("Persist requested, but config override is disabled");
+                result = Core::ERROR_UNAVAILABLE;
+#else
                 Core::File storage(_fileName);
 
                 if (storage.Create() == true) {
+                    CC_SYSLOG("Persisting configuration override to [%s]", _fileName.c_str());
 
                     // Clear all currently set values, they might be from the precious run.
                     Clear();
@@ -2268,13 +2406,15 @@ namespace PluginHost {
                     }
 
                     // Persist the currently set information
-                    IElement::ToFile(storage);
+                    if (IElement::ToFile(storage) == false) {
+                        result = Core::ERROR_GENERAL;
+                    }
 
                     storage.Close();
                 } else {
                     result = storage.ErrorCode();
                 }
-
+#endif
                 return (result);
             }
 
@@ -2475,9 +2615,9 @@ namespace PluginHost {
                 }
 
             public:
-                void* Create(uint32_t& connectionId, const RPC::Object& instance, const uint32_t waitTime, const string& dataPath, const string& persistentPath, const string& volatilePath)
+                void* Create(uint32_t& connectionId, const RPC::Object& instance, const uint32_t waitTime, const string& dataPath, const string& persistentPath, const string& volatilePath, const string& extensionPath)
                 {
-                    return (RPC::Communicator::Create(connectionId, instance, RPC::Config(RPC::Communicator::Connector(), _application, persistentPath, _systemPath, dataPath, volatilePath, _appPath, RPC::Communicator::ProxyStubPath(), _postMortemPath), waitTime));
+                    return (RPC::Communicator::Create(connectionId, instance, RPC::Config(RPC::Communicator::Connector(), _application, persistentPath, _systemPath, extensionPath, dataPath, volatilePath, _appPath, RPC::Communicator::ProxyStubPath(), _postMortemPath), waitTime));
                 }
                 const string& PersistentPath() const
                 {
@@ -2760,7 +2900,7 @@ namespace PluginHost {
                     }
 
                     uint32_t id;
-                    RPC::Config config(_connector, _comms.Application(), persistentPath, _comms.SystemPath(), dataPath, volatilePath, _comms.AppPath(), _comms.ProxyStubPath(), _comms.PostMortemPath());
+                    RPC::Config config(_connector, _comms.Application(), persistentPath, _comms.SystemPath(), _T(""), dataPath, volatilePath, _comms.AppPath(), _comms.ProxyStubPath(), _comms.PostMortemPath());
                     RPC::Object instance(libraryName, className, callsign, interfaceId, version, user, group, threads, priority, RPC::Object::HostType::LOCAL, systemRootPath, _T(""), configuration);
 
                     RPC::Communicator::Process process(requestId, config, instance);
@@ -2923,12 +3063,17 @@ POP_WARNING()
                 , _authenticationHandler(nullptr)
                 , _configObserver(*this, server._config.PluginConfigPath())
                 , _compositPlugins()
+                , _disablePluginAutoActivation(server._config.DisablePluginAutoActivation())
+                , _prioritystartorder(server._config.AuthorizedExtensions())                
             {
                 if (server._config.PluginConfigPath().empty() == true) {
                     SYSLOG(Logging::Startup, (_T("Dynamic configs disabled.")));
                 } else if (_configObserver.IsValid() == false) {
                     SYSLOG(Logging::Startup, (_T("Dynamic configs failed. Can not observe: [%s]"), server._config.PluginConfigPath().c_str()));
                 }
+                if (_disablePluginAutoActivation == true) {
+                    SYSLOG(Logging::Startup, (_T("Plugin Auto Activation disabled.")));
+                }                
             }
             POP_WARNING();
             ~ServiceMap()
@@ -3123,9 +3268,9 @@ POP_WARNING()
                 _processAdministrator.Open();
             }
 
-            void* Instantiate(const RPC::Object& object, const uint32_t waitTime, uint32_t& sessionId, const string& dataPath, const string& persistentPath, const string& volatilePath)
+            void* Instantiate(const RPC::Object& object, const uint32_t waitTime, uint32_t& sessionId, const string& dataPath, const string& persistentPath, const string& volatilePath, const string& extensionPath)
             {
-                return (_processAdministrator.Create(sessionId, object, waitTime, dataPath, persistentPath, volatilePath));
+                return (_processAdministrator.Create(sessionId, object, waitTime, dataPath, persistentPath, volatilePath, extensionPath));
             }
             void Destroy(const uint32_t id) {
                 _processAdministrator.Destroy(id);
@@ -3163,20 +3308,33 @@ POP_WARNING()
 
                 _adminLock.Unlock();
             }
-            inline Core::ProxyType<Service> Insert(const Plugin::Config& configuration, const Service::mode mode)
+            inline Core::ProxyType<Service> Insert(const Plugin::Config& configuration, const Service::mode mode, const bool thunderExtension)
             {
                 // Whatever plugin is needse, we at least have our MetaData plugin available (as the first entry :-).
-                Core::ProxyType<Service> newService(Core::ProxyType<Service>::Create(Configuration(), configuration, *this, mode, _engine));
+                Core::ProxyType<Service> newService;
+                
+                if (thunderExtension == false) {
+                    newService = Core::ProxyType<Service>::Create(Configuration(), configuration, *this, mode, _engine);
+                }
+                else
+                {
+                    newService = Core::ProxyType<Service>(Core::ProxyType<ThunderExtensionService>::Create(Configuration(), configuration, *this, mode, _engine ));
+                }
 
                 if (newService.IsValid() == true) {
                     _adminLock.Lock();
 
-                    // Fire up the interface. Let it handle the messages.
-                    _services.insert(std::pair<const string, Core::ProxyType<Service>>(configuration.Callsign.Value(), newService));
-
-                    _adminLock.Unlock();
-                }
-
+                    // there cannot be a duplicate...
+                    if (_services.find(configuration.Callsign.Value()) == _services.end()) {
+                        // Fire up the interface. Let it handle the messages.
+                        _services.insert(std::pair<const string, Core::ProxyType<Service>>(configuration.Callsign.Value(), newService));
+                        _adminLock.Unlock();
+                    }
+                    else {
+                        _adminLock.Unlock();
+                        SYSLOG(Logging::Error, (_T("Plugin with callsign [%s] already exists, will be ignored"), configuration.Callsign.Value().c_str()));
+                    }
+               }
                 return (newService);
             }
 
@@ -3189,7 +3347,7 @@ POP_WARNING()
 
                 _adminLock.Lock();
 
-                if ((original.IsValid() == true) && (_services.find(newCallsign) == _services.end())) {
+                if ((original.IsValid() == true) && (_services.find(newCallsign) == _services.end()) && (original->Cloneable() == true)) {
                     // Copy original configuration
                     Plugin::Config newConfiguration(Core::ProxyType<PluginHost::Service>(original)->Configuration());
                     newConfiguration.Callsign = newCallsign;
@@ -3208,8 +3366,16 @@ POP_WARNING()
 
                         result = Core::ERROR_NONE;
                     }
+                    _adminLock.Unlock();
                 }
-                _adminLock.Unlock();
+                else {
+                    _adminLock.Unlock();
+                    string origname("unknown");
+                    if (original.IsValid() == true) {
+                        origname = original->Callsign();
+                    }
+                    SYSLOG(Logging::Error, (_T("Cannot clone plugin [%s] into [%s]"), origname.c_str(), newCallsign.c_str()));
+                }
 
                 return (result);
             }
@@ -3222,11 +3388,19 @@ POP_WARNING()
                 ServiceContainer::iterator index(_services.find(callSign));
 
                 if (index != _services.end()) {
-                    index->second->Destroy();
-                    _services.erase(index);
-                }
+                    if (index->second->Type() == Service::mode::CLONED) {
 
-                _adminLock.Unlock();
+                        index->second->Destroy();
+                        _services.erase(index);
+                        _adminLock.Unlock();
+                    } else {
+                        _adminLock.Unlock();
+                        SYSLOG(Logging::Error, (_T("Could not destroy plugin [%s], it was not cloned "), callSign.c_str()));
+                    }
+                } else {
+                    _adminLock.Unlock();
+                    SYSLOG(Logging::Error, (_T("Could not destroy plugin [%s], it was not found "), callSign.c_str()));                }
+
             }
             inline Iterator Services()
             {
@@ -3356,6 +3530,9 @@ POP_WARNING()
             uint32_t FromLocator(const string& identifier, Core::ProxyType<Service>& service, bool& serviceCall);
 
             void Destroy();
+            void Startup();
+            void ActivateService(Core::ProxyType<PluginHost::Server::Service>& service);
+            bool AutoActivateAllowed(Core::ProxyType<PluginHost::Server::Service>& service) const;
 
             inline const PluginHost::Config& Configuration() const
             {
@@ -3445,7 +3622,7 @@ POP_WARNING()
                                     pluginConfig.Callsign = Core::File::FileName(file.FileName());
                                 }
 
-                                Insert(pluginConfig, Service::mode::DYNAMIC);
+                                Insert(pluginConfig, Service::mode::DYNAMIC, false);
                             }
                             file.Close();
                         }
@@ -3530,6 +3707,8 @@ POP_WARNING()
             IAuthenticate* _authenticationHandler;
             ConfigObserver _configObserver;
             CompositPlugins _compositPlugins;
+            bool _disablePluginAutoActivation;
+            std::vector<string> _prioritystartorder;            
         };
 
         // Connection handler is the listening socket and keeps track of all open
@@ -4614,13 +4793,11 @@ POP_WARNING()
         uint32_t Persist()
         {
             Override infoBlob(_config, _services, Configuration().PersistentPath() + PluginOverrideFile);
-
             return (infoBlob.Save());
         }
         uint32_t Load()
         {
             Override infoBlob(_config, _services, Configuration().PersistentPath() + PluginOverrideFile);
-
             return (infoBlob.Load());
         }
 
@@ -4640,6 +4817,9 @@ POP_WARNING()
         void Closed(const uint32_t id) {
             _services.Closed(id);
         }
+
+  private:
+        void InsertLoadPluginConfig(Core::JSON::ArrayType<Plugin::Config>::Iterator index, Plugin::Config& metaDataConfig, const bool thunderextension, const bool background);
 
     private:
         Core::NodeId _accessor;

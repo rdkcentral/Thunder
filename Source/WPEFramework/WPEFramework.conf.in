@@ -10,11 +10,16 @@ volatilepath = '@VOLATILE_PATH@'
 datapath = '@DATA_PATH@'
 configs = '@CONFIG_PATH@'
 systempath = '@SYSTEM_PATH@'
+extensionpath = '@EXTENSION_PATH@'
 proxystubpath = '@PROXYSTUB_PATH@'
 postmortempath = '@POSTMORTEM_PATH@'
 redirect = '/Service/Controller/UI'
 ethernetcard = '@ETHERNETCARD_NAME@'
 communicator = '@COMMUNICATOR@'
+if boolean('@DISABLEPLUGINAUTOACTIVATION@'):
+  disablepluginautoactivation = '@DISABLEPLUGINAUTOACTIVATION@'
+__authorizedextensions = '@AUTHORIZEDEXTENSIONS@'
+authorizedextensions = __authorizedextensions.split(';')
 
 hibernate = JSON()
 hibernate.add("locator", '@LOCATOR@')
