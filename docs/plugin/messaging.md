@@ -19,6 +19,7 @@ Logging, tracing and warning reporting are important techniques often used in so
 * Tracing is meant for the developers and is dropped in production
 * Logging is not dropped in production and is used to indicate information vital to the user
 * Warning Reporting is only available if Thunder is compiled with the `WARNING_REPORTING` option and sends warnings only if a condition is met
+* Telemetry is used to send typed, structured data points to an external backend such as the RDK Telemetry 2.0 system
 
 !!! note
 	In `Production`, so when building with the `Min_Size_Rel` flag, the `TRACE` and `TRACE_GLOBAL` macros are declared empty and there is no way to enable tracing. This version of Thunder is meant to be used only by operators who want the smallest footprint on memory possible. In both `Debug` and `Release` versions, tracing is enabled. `Debug` is used by the developers, so all macros are enabled and it has no code optimization at all, whereas `Release` is used by most of our operators and the QA team - asserts off and some code optimization.
@@ -475,6 +476,105 @@ public:
 };
 ```
 
+## Telemetry
+
+Telemetry is an additional message type in Thunder. While tracing, logging and warning reporting all produce human-readable text, telemetry is designed to carry **typed, structured values** — integers, floating-point numbers, or strings — that are forwarded to an external backend without any unnecessary conversion or precision loss.
+
+A typical use case is reporting device metrics to a cloud analytics system. In RDK devices, this backend is the [Telemetry 2.0](https://github.com/rdkcentral/telemetry) service. However, the backend is a simple C interface, so any compatible implementation can be used.
+
+!!! note
+	Like logging, telemetry messages are **not dropped in production** builds. Unlike tracing, telemetry is intended for structured data rather than developer diagnostics.
+
+### Defining a telemetry category
+
+Before sending any telemetry events, a category must be defined. Each category acts as a named channel for a group of related events. The process is very similar to defining a trace category.
+
+First, declare the category in a header file. The `DEFINE_TELEMETRY_CATEGORY` macro takes care of all the required boilerplate:
+
+```c++
+#include <messaging/TelemetryControl.h>
+
+namespace MyPlugin {
+
+    DEFINE_TELEMETRY_CATEGORY(SessionCount);
+    DEFINE_TELEMETRY_CATEGORY(CpuLoad);
+    DEFINE_TELEMETRY_CATEGORY(LastErrorMessage);
+
+} // namespace MyPlugin
+```
+
+The category control is registered when the plugin library is loaded, but telemetry categories are **disabled by default**.
+Enable the category (e.g. via MessageControl configuration / JSON-RPC) before expecting `TELEMETRY()` to emit events.
+
+### Emitting a telemetry event
+
+Once a category is registered, events can be emitted anywhere in the plugin code using the `TELEMETRY` macro:
+
+```c++
+TELEMETRY(MyPlugin::SessionCount, static_cast<uint32_t>(activeSessions)); // (1)
+TELEMETRY(MyPlugin::CpuLoad,      static_cast<float>(cpuPercent));        // (2)
+TELEMETRY(MyPlugin::LastErrorMessage, string("decode_error"));        // (3)
+```
+
+1. Emits an unsigned 32-bit integer value
+2. Emits a single-precision floating-point value
+3. Emits a text string
+
+The second argument to `TELEMETRY` is passed directly to a `TelemetryMessage` constructor. The value type is deduced automatically at compile time based on the argument type. The table below shows which C++ type maps to which `ValueType`:
+
+| C++ type | `ValueType` | Notes |
+|---|---|---|
+| `string` / `const char*` | `TEXT` | Null-terminated string; size limited by the messaging buffer (see `MessageUnit::MaxMessageSize`) |
+| `int8_t` | `INT8` | Signed 8-bit integer, range −128 to 127 |
+| `uint8_t` | `UINT8` | Unsigned 8-bit integer, range 0 to 255 |
+| `int16_t` | `INT16` | Signed 16-bit integer, range −32 768 to 32 767 |
+| `uint16_t` | `UINT16` | Unsigned 16-bit integer, range 0 to 65 535 |
+| `int32_t` | `INT32` | Signed 32-bit integer |
+| `uint32_t` | `UINT32` | Unsigned 32-bit integer |
+| `int64_t` | `INT64` | Signed 64-bit integer |
+| `uint64_t` | `UINT64` | Unsigned 64-bit integer |
+| `float` | `FLOAT32` | Single-precision IEEE 754 (~7 significant decimal digits) |
+| `double` | `FLOAT64` | Double-precision IEEE 754 (~15 significant decimal digits) |
+
+!!! note
+	If you pass a plain integer literal such as `42` without a cast, the compiler will deduce `int` (which maps to `INT32` on most platforms). It is a good practice to use an explicit cast to make the intended type clear.
+
+### Value types and precision
+
+The `TelemetryMessage` class (defined in `Source/core/Messaging.h`) stores values as typed numeric data plus a `ValueType` tag (in addition to keeping a string representation for `Data()`). Floating-point values stay `float`/`double`, while integers are stored in `int64_t`/`uint64_t` and serialized according to their `ValueType`.
+
+At the same time, the `Data()` method — which all message types must implement — always returns a string representation of the value. This allows every existing publisher (Console, Syslog, File, UDP, WebSocket) to display telemetry events without any changes.
+
+A backend that understands typed data can call `RawValue()` instead, which returns a `const void*` pointer to the stored value:
+
+```c++
+// For TEXT, RawValue() returns a const char*
+// For numeric types, RawValue() returns a pointer to the internal numeric union.
+// Interpret it based on Type():
+//   INT8/INT16/INT32/INT64     → const int64_t*
+//   UINT8/UINT16/UINT32/UINT64 → const uint64_t*
+//   FLOAT32 / FLOAT64          → const float* / const double*
+const void* raw = telemetryMessage.RawValue();
+```
+
+The serialization format on the wire is: one byte for the `ValueType` tag, followed by the payload. Text is null-terminated; numeric types use their natural size (1, 2, 4 or 8 bytes) in big-endian byte order. This is always big-endian regardless of the host platform, because `FrameType<0>` uses `BIG_ENDIAN_ORDERING = true` by default and handles the byte-swap internally.
+
+### Data flow
+
+The path of a telemetry event from the macro call to the backend looks like this:
+
+```
+TELEMETRY(Category, value)
+  → TelemetryMessage(value)              — type deduced, value stored in union
+  → MessageUnit::Push()                  — serialized into the shared-memory ring buffer
+  → MessageClient::PopMessagesAndCall()  — deserialized by MessageControl plugin
+  → TelemetryOutput::Message()           — casts to TelemetryMessage, calls backend
+  → TelemetryBackend_Send()              — C function implemented by the backend library
+  → t2_event_s / t2_event_d / t2_event_f — T2 backend API (when T2 is enabled)
+```
+
+Every step up to `TelemetryOutput` is shared with the other message types. The only telemetry-specific part is the final dispatch to the backend.
+
 ## MessageControl plugin
 
 Now that we have explored the concepts of logging, tracing, and warning reporting in theory and their implementation within Thunder, we can delve into the significance of the `MessageControl` plugin. This plugin plays a vital role as it manages all message types seamlessly. In the subsequent sections, we will provide a more detailed explanation of how the plugin operates and the specific steps it undertakes.
@@ -888,3 +988,127 @@ string IStore::Tracing::ToString(const abbreviate abbreviate) const
 ```
 
 In summary, the output of messages within Thunder is determined by the list of listeners stored in the `_outputDirector` container. This list is populated through successive calls to the `Announce()` method, which can occur multiple times during the initialization of the `MessageControl` plugin, depending on the configuration. Each call to the `Announce()` method adds a new output listener to the `_outputDirector` list, configuring the desired destinations for message delivery.
+
+### TelemetryOutput publisher
+
+Besides the standard outputs (Console, Syslog, File, UDP, WebSocket), the `MessageControl` plugin (in the ThunderNanoServicesRDK repository) can also route telemetry events to an external backend. This is done through the `TelemetryOutput` publisher, which is compiled in only when the `PLUGIN_MESSAGECONTROL_TELEMETRY_T2` CMake option is set to `ON`:
+
+```cmake
+cmake -DPLUGIN_MESSAGECONTROL_TELEMETRY_T2=ON ...
+```
+
+When enabled, an instance of `TelemetryOutput` is added to the `_outputDirector` list during `Initialize()`. It only reacts to messages of type `TELEMETRY` and ignores all others, so tracing and logging are not affected.
+
+The `TelemetryOutput::Message()` implementation is intentionally simple. It casts the event to `TelemetryMessage`, then calls the C backend function with the category name, module name, timestamp, value type and a raw pointer to the value:
+
+```c++
+void Message(const Core::Messaging::MessageInfo& metadata,
+             const Core::Messaging::IEvent& event) override
+{
+    if (metadata.Type() == Core::Messaging::Metadata::type::TELEMETRY) {
+        const auto* t = static_cast<const Core::Messaging::TelemetryMessage*>(&event);
+        TelemetryBackend_Send(
+            metadata.Category().c_str(),
+            metadata.Module().c_str(),
+            metadata.TimeStamp(),
+            static_cast<TelemetryBackend_ValueType>(t->Type()), // (1)
+            t->RawValue()                                       // (2)
+        );
+    }
+}
+```
+
+1. The `TelemetryBackend_ValueType` enum values match `TelemetryMessage::ValueType` exactly, so a direct cast is safe
+2. For `TEXT` this is a `const char*`; for numeric types it is a pointer into the stored union
+
+### T2 backend
+
+The `TelemetryBackendT2` static library provides a backend implementation for the RDK Telemetry 2.0 (`t2`) API. It is located inside the `MessageControl` directory and is linked into `libThunderMessageControl.so` at build time when `PLUGIN_MESSAGECONTROL_TELEMETRY_T2=ON`.
+
+#### Configuration
+
+The backend is configured through the `telemetry` field in `MessageControl.json`:
+
+```json
+{
+    "telemetry": {
+        "component": "MyComponent" // (1)
+    }
+}
+```
+
+1. The component name passed to `t2_init()`. Defaults to `"Thunder"` if not set.
+
+#### Type mapping to T2 API
+
+The T2 API provides three event functions. The backend maps the eleven `ValueType` variants to these three functions as follows:
+
+| `ValueType` | T2 function | Notes |
+|---|---|---|
+| `TEXT` | `t2_event_s()` | String value passed directly |
+| `INT8`, `INT16`, `INT32` | `t2_event_d()` | Cast to `int` |
+| `INT64` | `t2_event_d()` | Only if value fits in `[INT_MIN, INT_MAX]`; dropped otherwise |
+| `UINT8`, `UINT16` | `t2_event_d()` | Cast to `int` |
+| `UINT32`, `UINT64` | `t2_event_d()` | Only if value ≤ `INT_MAX`; dropped otherwise |
+| `FLOAT32` | `t2_event_f()` | Widened to `double` |
+| `FLOAT64` | `t2_event_f()` | Passed directly |
+
+!!! warning
+	Large integer values that do not fit in a 32-bit signed `int` cannot be represented by the T2 API and are silently dropped. If you need to report values outside the `[INT_MIN, INT_MAX]` range, consider scaling them (for example, reporting kilobytes instead of bytes) or using a `TEXT` value instead.
+
+#### Using the real T2 library or the mock
+
+By default, CMake expects the real `telemetry_msgsender` library to be present on the system. If it is not found, the build will fail with an error. To use the mock library instead (which simply prints all events to the console and is useful for development or CI environments), set `TELEMETRY_BACKEND_T2_USE_MOCK=ON`:
+
+```cmake
+cmake -DPLUGIN_MESSAGECONTROL_TELEMETRY_T2=ON
+      -DTELEMETRY_BACKEND_T2_USE_MOCK=ON
+      ...
+```
+
+When the option is `OFF` (the default), CMake uses `find_package(telemetry_msgsender)` to locate `libtelemetry_msgsender.so` on the system.
+
+### Implementing a custom backend
+
+The backend interface is a set of three plain C functions declared in the ThunderNanoServicesRDK repository (`MessageControl/TelemetryOutput.h`). Any library that implements these three functions can be used as a telemetry backend by building it as `telemetry_msgsender` and pointing CMake to it.
+
+```c
+typedef enum {
+    TELEMETRY_VALUE_TEXT    = 0,
+    TELEMETRY_VALUE_INT8    = 1,
+    TELEMETRY_VALUE_UINT8   = 2,
+    TELEMETRY_VALUE_INT16   = 3,
+    TELEMETRY_VALUE_UINT16  = 4,
+    TELEMETRY_VALUE_INT32   = 5,
+    TELEMETRY_VALUE_UINT32  = 6,
+    TELEMETRY_VALUE_INT64   = 7,
+    TELEMETRY_VALUE_UINT64  = 8,
+    TELEMETRY_VALUE_FLOAT32 = 9,
+    TELEMETRY_VALUE_FLOAT64 = 10
+} TelemetryBackend_ValueType;
+
+// Called once at plugin startup with a null-terminated JSON configuration string.
+uint32_t TelemetryBackend_Configure(const char* configuration);
+
+// Called for every telemetry event. Return 0 on success.
+// - category: the name of the TELEMETRY category (e.g. "SessionCount")
+// - module:   the module name of the plugin that emitted the event
+// - timestamp: microseconds since Unix epoch
+// - type:     the ValueType of the event
+// - value:    for TEXT → const char*
+//             for INT8..INT64 → const int64_t*
+//             for UINT8..UINT64 → const uint64_t*
+//             for FLOAT32 → const float*
+//             for FLOAT64 → const double*
+uint32_t TelemetryBackend_Send(const char* category,
+                               const char* module,
+                               uint64_t timestamp,
+                               TelemetryBackend_ValueType type,
+                               const void* value);
+
+// Called once at plugin shutdown.
+uint32_t TelemetryBackend_Teardown(void);
+```
+
+!!! note
+	The interface is plain C (`extern "C"` linkage), so the backend library can be written in C or C++ and does not need to link against any Thunder headers.
