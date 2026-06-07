@@ -95,7 +95,7 @@ do {                                                                            
     ::fprintf(stderr, "[%s:%d](%s)<PID:%d><TID:%d>" fmt "\n",                                            \
                       &__FILE__[WPEFramework::Core::FileNameOffset(__FILE__)], __LINE__, __FUNCTION__, TRACE_PROCESS_ID, TRACE_THREAD_ID, ##__VA_ARGS__); \
     fflush(stderr);                                                                                                           \
-    }
+    }                                                                                                                          \
 }  while (0)
 #endif
 
