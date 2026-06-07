@@ -89,7 +89,7 @@ namespace WPEFramework {
         fflush(stderr);                                                                                                                     \
     } while (0)
 #else
-#define TRACE_FORMATTING_IMPL(fmt, ...)    
+#define TRACE_FORMATTING_IMPL(fmt, ...)                                                                                                    \
 do {                                                                                                 \
     if (0 == access(TRACE_LOG_FLAG, F_OK)) {                                                                                   \
     ::fprintf(stderr, "[%s:%d](%s)<PID:%d><TID:%d>" fmt "\n",                                            \
