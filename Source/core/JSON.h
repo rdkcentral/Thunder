@@ -4437,11 +4437,6 @@ namespace Core {
                 return Value();
             }
 
-            DEPRECATED inline const string Value() const
-            {
-                return JSON::String::Value();
-            }
-
             ArrayType<Variant> Array() const
             {
                 ArrayType<Variant> result;
