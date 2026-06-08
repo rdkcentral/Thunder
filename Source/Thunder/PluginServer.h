@@ -960,9 +960,10 @@ namespace PluginHost {
                 // It's reference counted, so just take it out of the list, state to DESTROYED
                 // Also unsubscribe all subscribers. They need to go..
                 State(DESTROYED);
-                _administrator.Destroyed(Callsign(), this);
 
                 Unlock();
+
+                _administrator.Destroyed(Callsign(), this);
             }
 
             // The service might be still alive and refered to in the request/links but they will
