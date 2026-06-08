@@ -25,6 +25,7 @@
 #include "IRemoteInstantiation.h"
 #include "WarningReportingCategories.h"
 #include "PostMortem.h"
+#include <atomic>
 
 #ifndef HOSTING_COMPROCESS
 #error "Please define the name of the COM process!!!"
@@ -163,8 +164,8 @@ namespace PluginHost {
             WorkerPoolImplementation& operator=(WorkerPoolImplementation&&) = delete;
             WorkerPoolImplementation& operator=(const WorkerPoolImplementation&) = delete;
 
-            WorkerPoolImplementation(const uint8_t threadCount, const uint32_t stackSize, const uint8_t lowPriorityThreadCount, const uint8_t mediumPriorityThreadCount)
-                : Core::WorkerPool(threadCount, stackSize, 8 * threadCount, &_dispatch, this, lowPriorityThreadCount, mediumPriorityThreadCount)
+            WorkerPoolImplementation(const uint8_t threadCount, const uint32_t stackSize, const uint32_t queueSize, const uint8_t lowPriorityThreadCount, const uint8_t mediumPriorityThreadCount)
+                : Core::WorkerPool(threadCount, stackSize, queueSize, &_dispatch, this, lowPriorityThreadCount, mediumPriorityThreadCount)
                 , _dispatch()
             {
                 SYSLOG(Logging::Startup, (_T("<PID:%d>: WorkerPool config: created threads=%d, low priority limit=%d, medium priority limit=%d"),
@@ -1490,6 +1491,8 @@ namespace PluginHost {
         private:
             const Core::IService* LoadLibrary(const string& name, Core::Library& library) {
                 Core::IService* result(nullptr);
+                string lastError;
+                string lastPath;
 
                 RPC::IStringIterator* all_paths = GetLibrarySearchPaths(name);
                 ASSERT(all_paths != nullptr);
@@ -1502,6 +1505,7 @@ namespace PluginHost {
                     Core::File libraryToLoad(element);
 
                     if (libraryToLoad.Exists() == true) {
+                        lastPath = element;
 
                         // Loading a library, in the static initializers, might register Service::Metadata structures. As
                         // the dlopen has a process wide system lock, make sure that the, during open used lock of the
@@ -1516,12 +1520,28 @@ namespace PluginHost {
                                 result = moduleServiceMetadata();
                                 if (result != nullptr) {
                                     library = std::move(newLib);
+                                } else {
+                                    lastError = _T("GetModuleServices returned no service metadata");
                                 }
+                            } else {
+                                lastError = newLib.Error().empty() == false ? newLib.Error() : _T("GetModuleServices symbol missing");
                             }
+                        } else {
+                            lastError = newLib.Error().empty() == false ? newLib.Error() : _T("Library load failed");
                         }
                     }
                 }
                 all_paths->Release();
+
+                if (result == nullptr) {
+                    if (lastPath.empty() == false) {
+                        SYSLOG(Logging::Startup, (_T("Loading library [%s] for plugin [%s] failed. Candidate [%s], error [%s]"),
+                            name.c_str(), Callsign().c_str(), lastPath.c_str(), lastError.c_str()));
+                    } else {
+                        SYSLOG(Logging::Startup, (_T("Loading library [%s] for plugin [%s] failed: no library candidate found"),
+                            name.c_str(), Callsign().c_str()));
+                    }
+                }
 
                 return (result);
             }
@@ -5358,11 +5378,8 @@ namespace PluginHost {
 
                 // If we are closing (or closed) do the clean up
                 if (IsOpen() == false) {
-                    if (_service.IsValid() == true) {
-                        _service->Detach(*this);
 
-                        _service.Release();
-                    }
+                    CleanupService();
 
                     State(CLOSED, false);
 
@@ -5432,11 +5449,24 @@ namespace PluginHost {
                 SetId(id);
             }
 
+            void CleanupService()
+            {
+                bool expected = false;
+                if (_serviceCleanedUp.compare_exchange_strong(expected, true, std::memory_order_acq_rel)) {
+                    if (_service.IsValid() == true) {
+                        _service->Unsubscribe(*this);
+                        _service->Detach(*this);
+                        _service.Release();
+                    }
+                }
+            }
+
             Server& _parent;
             PluginHost::ISecurity* _security;
             Core::ProxyType<Service> _service;
             bool _requestClose;
             Jobs _jobs;
+            std::atomic<bool> _serviceCleanedUp;
 
             // Factories for creating jobs that can be placed on the PluginHost Worker pool.
             static Core::ProxyPoolType<WebRequestJob> _webJobs;
