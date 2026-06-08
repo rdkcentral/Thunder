@@ -4382,7 +4382,7 @@ namespace Core {
             {
                 bool result = false;
                 if (_type == type::BOOLEAN) {
-                    result = (JSON::String::Value() == "true");
+                    result = (Value() == "true");
                 }
                 return result;
             }
@@ -4391,7 +4391,7 @@ namespace Core {
             {
                 int64_t result = 0;
                 if (_type == type::NUMBER) {
-                    result = Core::NumberType<int64_t>(JSON::String::Value().c_str(), static_cast<uint32_t>(JSON::String::Value().length()));
+                    result = Core::NumberType<int64_t>(Value().c_str(), static_cast<uint32_t>(Value().length()));
                 } else if (_type == type::FLOAT) {
                     result = static_cast<int64_t>(Float());
                 } else if (_type == type::DOUBLE) {
@@ -4407,7 +4407,7 @@ namespace Core {
                     result = static_cast<float>(Number());
                 } else if (_type == type::FLOAT) {
                     JSON::Float value;
-                    if (value.FromString(JSON::String::Value())) {
+                    if (value.FromString(Value())) {
                         result = value.Value();
                     }
                 } else if (_type == type::DOUBLE) {
@@ -4425,7 +4425,7 @@ namespace Core {
                     result = static_cast<double>(Float());
                 } else if (_type == type::DOUBLE) {
                     JSON::Double value;
-                    if (value.FromString(JSON::String::Value())) {
+                    if (value.FromString(Value())) {
                         result = value.Value();
                     }
                 }
@@ -4434,7 +4434,7 @@ namespace Core {
 
             const string String() const
             {
-                return JSON::String::Value();
+                return Value();
             }
 
             DEPRECATED inline const string Value() const
@@ -4446,7 +4446,7 @@ namespace Core {
             {
                 ArrayType<Variant> result;
 
-                result.FromString(JSON::String::Value());
+                result.FromString(Value());
 
                 return result;
             }
@@ -4942,7 +4942,7 @@ namespace Core {
         inline VariantContainer Variant::Object() const
         {
             VariantContainer result;
-            result.FromString(JSON::String::Value());
+            result.FromString(Value());
             return (result);
         }
 
@@ -4958,14 +4958,14 @@ namespace Core {
             case type::BOOLEAN: {
                 Core::OptionalType<JSON::Error> error;
                 JSON::Boolean stacked;
-                stacked.FromString(JSON::String::Value(), error);
+                stacked.FromString(Value(), error);
                 result = (error.IsSet() == false);
                 break;
             }
             case type::NUMBER: {
                 Core::OptionalType<JSON::Error> error;
                 JSON::DecUInt64 stacked;
-                stacked.FromString(JSON::String::Value(), error);
+                stacked.FromString(Value(), error);
                 result = (error.IsSet() == false);
                 break;
             }
@@ -4973,14 +4973,14 @@ namespace Core {
             case type::FLOAT: {
                 Core::OptionalType<JSON::Error> error;
                 JSON::Double stacked;
-                stacked.FromString(JSON::String::Value(), error);
+                stacked.FromString(Value(), error);
                 result = (error.IsSet() == false);
                 break;
             }
             case type::ARRAY: {
                 Core::OptionalType<JSON::Error> error;
                 Core::JSON::ArrayType<JSON::Variant> stacked;
-                stacked.FromString(JSON::String::Value(), error);
+                stacked.FromString(Value(), error);
                 result = (error.IsSet() == false);
                 Core::JSON::ArrayType<JSON::Variant>::ConstIterator index = static_cast<const Core::JSON::ArrayType<JSON::Variant>&>(stacked).Elements();
                 if ((result == true) && (index.Next() == true) && index.Current().IsValid()) {
@@ -4995,7 +4995,7 @@ namespace Core {
             case type::OBJECT: {
                 Core::OptionalType<JSON::Error> error;
                 VariantContainer stacked;
-                stacked.FromString(JSON::String::Value(), error);
+                stacked.FromString(Value(), error);
                 result = ((error.IsSet() == false) && (stacked.IsValid() == true));
                 break;
             }
@@ -5034,7 +5034,7 @@ namespace Core {
                     SetQuoted(quoted);
                     // If it is not quoted, it can be a boolean or a number...
                     if (quoted == false) {
-                        if ((JSON::String::Value() == _T("true")) || (JSON::String::Value() == _T("false"))) {
+                        if ((Value() == _T("true")) || (Value() == _T("false"))) {
                             _type = type::BOOLEAN;
                         } else if (IsNull() == false) {
                             _type = type::NUMBER;
