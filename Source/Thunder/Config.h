@@ -130,7 +130,7 @@ namespace PluginHost {
                     , StackSize(0)
                     , LowPriorityThreadCount(THREADPOOL_COUNT > 1 ? THREADPOOL_COUNT - 1 : 1)
                     , MediumPriorityThreadCount(THREADPOOL_COUNT > 1 ? THREADPOOL_COUNT - 1 : 1)
-                    , QueueSize(8 * THREADPOOL_COUNT)
+                    , QueueSize(64 * THREADPOOL_COUNT)
                     , Umask(1)
                 {
                     Add(_T("user"), &User);
@@ -719,7 +719,7 @@ namespace PluginHost {
             , _stackSize(0)
             , _lowPriorityThreadCount(THREADPOOL_COUNT > 1 ? THREADPOOL_COUNT - 1 : 1)
             , _mediumPriorityThreadCount(THREADPOOL_COUNT > 1 ? THREADPOOL_COUNT - 1 : 1)
-            , _queueSize(8 * THREADPOOL_COUNT)
+            , _queueSize(64 * THREADPOOL_COUNT)
             , _inputInfo()
             , _processInfo()
             , _plugins()
