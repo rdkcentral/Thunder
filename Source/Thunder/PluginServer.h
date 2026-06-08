@@ -3845,8 +3845,9 @@ namespace PluginHost {
                 _notificationLock.Unlock();
 
             }
-            void Register(PluginHost::IPlugin::INotification* sink, const Core::OptionalType<string>& callsign = {})
+            Core::hresult Register(PluginHost::IPlugin::INotification* sink, const Core::OptionalType<string>& callsign = {})
             {
+                Core::hresult result = Core::ERROR_DUPLICATE_KEY;
                 bool registered = false;
 
                 if (callsign.IsSet() == true) {
@@ -3857,14 +3858,20 @@ namespace PluginHost {
                 }
 
                 if (registered == true) {
+                    result = Core::ERROR_NONE;
+
                     if (Snapshot(sink, callsign) == false) {
                         if (callsign.IsSet() == true) {
                             _notifiers.Remove(sink, callsign.Value());
                         } else {
                             _notifiers.Remove(sink);
                         }
+
+                        result = Core::ERROR_CANCEL;
                     }
                 }
+
+                return result;
             }
             void Register(PluginHost::IPlugin::INotificationExtended* sink, const Core::OptionalType<string>& callsign = {})
             {
@@ -3891,13 +3898,20 @@ namespace PluginHost {
                     _extendedNotifiers.Remove(sink);
                 }
             }
-            void Register(IPlugin::INotification* sink, const uint32_t interface_id)
+            Core::hresult Register(IPlugin::INotification* sink, const uint32_t interface_id)
             {
+                Core::hresult result = Core::ERROR_DUPLICATE_KEY;
+
                 if( _notifiers.Add(sink, interface_id)  == true) {
+                    result = Core::ERROR_NONE;
+
                     if( Snapshot(sink, interface_id) == false) {
                         _notifiers.Remove(sink, interface_id);
+                        result = Core::ERROR_CANCEL;
                     }   
                 }
+
+                return result;
             }
             void Unregister(IPlugin::INotification* sink, const uint32_t interface_id)
             {
