@@ -873,6 +873,27 @@ namespace PluginHost {
                     Core::hresult Deactivate(StateMachine&, const reason) override;
                 };
 
+            private:
+                class TransitionSuspender {
+                public:
+                    TransitionSuspender(Core::CriticalSection& lock, std::atomic<Core::thread_id>& transitionThread)
+                        : _lock(lock)
+                        , _transitionThread(transitionThread)
+                    {
+                        _transitionThread = 0;
+                        _lock.Unlock();
+                    }
+
+                    ~TransitionSuspender() {
+                        _lock.Lock();
+                        _transitionThread = Core::Thread::ThreadId();
+                    }
+
+                private:
+                    Core::CriticalSection& _lock;
+                    std::atomic<Core::thread_id>& _transitionThread;
+                };
+
             public:
                 using Callback = std::function<void(const IShell::state)>;
 
@@ -918,41 +939,21 @@ namespace PluginHost {
                 void          Reevaluate()                      { ASSERT(_transitionThread != Core::Thread::ThreadId()); Core::SafeSyncType<Core::CriticalSection> guard(_transitionLock); _transitionThread = Core::Thread::ThreadId(); _current.load(std::memory_order_acquire)->Reevaluate(*this);                                       _transitionThread = 0; }
                 void*         QueryInterface(const uint32_t id, const bool asIUnknown) { return _current.load(std::memory_order_acquire)->QueryInterface(*this, id, asIUnknown); }
 
+            private:
                 // Internal triggers — no lock. Called by state class methods
                 // that are already executing under _transitionLock.
                 Core::hresult _Activate(const reason why)   { ASSERT(IsTransitionThread()); return _current.load(std::memory_order_acquire)->Activate(*this, why); }
                 Core::hresult _Deactivate(const reason why) { ASSERT(IsTransitionThread()); return _current.load(std::memory_order_acquire)->Deactivate(*this, why); }
 
-                struct TransitionYield {
-                    TransitionYield() = delete;
-                    TransitionYield(const TransitionYield&) = delete;
-                    TransitionYield(TransitionYield&&) = delete;
-                    TransitionYield& operator=(const TransitionYield&) = delete;
-                    TransitionYield& operator=(TransitionYield&&) = delete;
-
-                    explicit TransitionYield(StateMachine& sm)
-                        : _sm(sm)
-                    {
-                        _sm._transitionThread = 0;
-                        _sm._transitionLock.Unlock();
-                    }
-                    ~TransitionYield()
-                    {
-                        _sm._transitionLock.Lock();
-                        _sm._transitionThread = Core::Thread::ThreadId();
-                    }
-                    StateMachine& _sm;
-                };
-
                 // Called from within a state method to trigger cascading re-evaluation
                 // of dependent services. Temporarily yields _transitionLock via
-                // TransitionYield so RecursiveNotification can call Reevaluate() on
+                // TransitionSuspender so RecursiveNotification can call Reevaluate() on
                 // this service without deadlocking. Safe because SetState(DEACTIVATION)
                 // must be called before this — the transient state rejects all
-                // concurrent operations during the yield window.
+                // concurrent operations during the yield window
                 void Evaluate() {
                     ASSERT(IsTransitionThread());
-                    TransitionYield yield(*this);
+                    TransitionSuspender suspend(_transitionLock, _transitionThread);
                     _parent._administrator.Evaluate();
                 }
 
