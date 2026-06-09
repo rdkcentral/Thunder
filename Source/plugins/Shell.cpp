@@ -73,50 +73,93 @@ namespace PluginHost
 
             if (locator.empty() == true) {
                 result = Core::ServiceAdministrator::Instance().Instantiate(Core::Library(), className.c_str(), version, interface);
+                if (result == nullptr) {
+                    CC_SYSLOG("Root object [%s] for plugin [%s] could not be instantiated in process from global symbols: class/interface not found", className.c_str(), Callsign().c_str());
+                }
             } else {
                 std::vector<string> all_paths = GetLibrarySearchPaths(locator);
                 std::vector<string>::const_iterator index = all_paths.begin();
+                string lastError;
+                string lastPath;
                 while ((result == nullptr) && (index != all_paths.end())) {
                     Core::File file(index->c_str());
                     if (file.Exists()) {
+                        lastPath = *index;
 
                         Core::Library resource = Core::ServiceAdministrator::Instance().LoadLibrary(index->c_str());
-                        if (resource.IsLoaded())
+                        if (resource.IsLoaded() == true) {
                             result = Core::ServiceAdministrator::Instance().Instantiate(
                                 resource,
                                 className.c_str(),
                                 version,
                                 interface);
+                            if (result == nullptr) {
+                                lastError = _T("Class/interface not found in library");
+                            }
+                        } else if (resource.IsLoaded() == false) {
+                            lastError = resource.Error().empty() == false ? resource.Error() : _T("Library load failed");
+                        }
                     }
                     index++;
                 }
+
+                if (result == nullptr) {
+                    if (lastPath.empty() == false) {
+                        CC_SYSLOG("Root object [%s] for plugin [%s] could not be instantiated in process from locator [%s]. Candidate [%s], error [%s]", className.c_str(), Callsign().c_str(), locator.c_str(), lastPath.c_str(), lastError.c_str());
+                    } else {
+                        CC_SYSLOG("Root object [%s] for plugin [%s] could not be instantiated in process from locator [%s]: no library candidate found", className.c_str(), Callsign().c_str(), locator.c_str());
+                    }
+                }
             }
         } else {
-            ICOMLink* handler(COMLink());
-
-            // This method can only be used in the main process. Only this process, can instantiate a new process
-            ASSERT(handler != nullptr);
-
-            if (handler != nullptr) {
-                string locator(rootConfig.Locator.Value());
-                if (locator.empty() == true) {
-                    locator = Locator();
+            bool allowed = true;
+            switch (rootConfig.Mode) {
+                case Plugin::Config::RootConfig::ModeType::OFF:
+                    ASSERT(false);
+                    break;
+                case Plugin::Config::RootConfig::ModeType::LOCAL:
+                    allowed = AllowedLocal();
+                    break;
+                case Plugin::Config::RootConfig::ModeType::CONTAINER:
+                    allowed = AllowedContainer();
+                    break;
+                case Plugin::Config::RootConfig::ModeType::DISTRIBUTED:
+                    allowed = AllowedDistributed();
+                    break;
+                default:
+                    ASSERT(false);
+                    break;
                 }
-                RPC::Object definition(locator,
-                    className,
-                    Callsign(),
-                    interface,
-                    version,
-                    rootConfig.User.Value(),
-                    rootConfig.Group.Value(),
-                    rootConfig.Threads.Value(),
-                    rootConfig.Priority.Value(),
-                    rootConfig.HostType(),
-                    SystemRootPath(),
-                    rootConfig.RemoteAddress.Value(),
-                    rootConfig.Configuration.Value());
 
-                result = handler->Instantiate(definition, waitTime, pid);
+            if (allowed == true) {
+
+                ICOMLink* handler(COMLink());
+
+                if (handler != nullptr) {
+                    string locator(rootConfig.Locator.Value());
+                    if (locator.empty() == true) {
+                        locator = Locator();
+                    }
+                    RPC::Object definition(locator,
+                        className,
+                        Callsign(),
+                        interface,
+                        version,
+                        rootConfig.User.Value(),
+                        rootConfig.Group.Value(),
+                        rootConfig.Threads.Value(),
+                        rootConfig.Priority.Value(),
+                        rootConfig.HostType(),
+                        SystemRootPath(),
+                        rootConfig.RemoteAddress.Value(),
+                        rootConfig.Configuration.Value());
+
+                    result = handler->Instantiate(definition, waitTime, pid);
+                } else {
+                    CC_SYSLOG("Root object [%s] for plugin [%s] could not be instantiated out-of-process, ICOMLink is unavailable", className.c_str(), Callsign().c_str());
+                }
+            } else {
+                CC_SYSLOG("Root object [%s] for plugin [%s] configured root mode [%s], but this shell does not support it", className.c_str(), Callsign().c_str(), rootConfig.Mode.Data());
             }
         }
 

@@ -22,14 +22,16 @@ set(PUBLIC_HEADERS
         MessageUnit.h
         TraceCategories.h
         TraceControl.h
+        TelemetryControl.h
         Control.h
         Logging.h
         LoggingCategories.h
         DirectOutput.h
         Module.h
         TraceFactory.h
-        TextMessage.h
-        BaseCategory.h
+        ConsoleStreamRedirect.h
+        OperationalCategories.h
+        AssertionUnit.h
         )
 
 set(SOURCES 
@@ -39,6 +41,9 @@ set(SOURCES
         TraceCategories.cpp
         Logging.cpp
         DirectOutput.cpp
+        ConsoleStreamRedirect.cpp
+        OperationalCategories.cpp
+        AssertionUnit.cpp
 )
 
 

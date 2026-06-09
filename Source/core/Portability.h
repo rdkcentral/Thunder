@@ -949,6 +949,10 @@ namespace Core {
 
 #endif
     #undef ERROR_CODE
+
+    class TextFragment;
+    EXTERNAL TextFragment ClassName(const char name[]);
+    EXTERNAL TextFragment ClassNameOnly(const char name[]);
 }
 }
 
@@ -986,5 +990,7 @@ namespace std {
 #define THUNDER_VERSION 4
 #define THUNDER_VERSION_MAJOR 4
 #define THUNDER_VERSION_MINOR 4
+
+#define WPEFRAMEWORK_NESTEDNAMESPACE_COMPATIBILIY(NESTED_NAMESPACE)
 
 #endif // __PORTABILITY_H

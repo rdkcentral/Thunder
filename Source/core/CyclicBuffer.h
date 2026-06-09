@@ -212,6 +212,7 @@ namespace Core {
             return (_administration->_size);
         }        
         bool Validate();
+        inline bool Open() { return Validate(); }
       
         // THREAD SAFE
         // If there are threads blocked in the Lock, they can be relinquised by

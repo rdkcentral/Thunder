@@ -18,39 +18,53 @@
  */
 
 #include "MessageUnit.h"
+#include "ConsoleStreamRedirect.h"
 
 namespace WPEFramework {
 
+ENUM_CONVERSION_BEGIN(WPEFramework::Core::Messaging::OutputMode)
+    { WPEFramework::Core::Messaging::OutputMode::HANDLER, _TXT("handler") },
+    { WPEFramework::Core::Messaging::OutputMode::DIRECT,  _TXT("direct")  },
+    { WPEFramework::Core::Messaging::OutputMode::ALL,     _TXT("all")     },
+ENUM_CONVERSION_END(WPEFramework::Core::Messaging::OutputMode)
+
     namespace Messaging {
 
-        uint16_t MessageUnit::Serialize(uint8_t* buffer, const uint16_t length)
+        uint16_t MessageUnit::Serialize(uint8_t* buffer, const uint16_t length, const string& module)
         {
             class Handler : public Core::Messaging::IControl::IHandler {
             public:
                 Handler() = delete;
+                Handler(Handler&&) = delete;
                 Handler(const Handler&) = delete;
-                Handler& operator= (const Handler&) = delete;
+                Handler& operator=(Handler&&) = delete;
+                Handler& operator=(const Handler&) = delete;
 
-                Handler(uint8_t* buffer, const uint16_t length)
+                Handler(uint8_t* buffer, const uint16_t length, const string& module)
                     : _buffer(buffer)
                     , _length(length)
+                    , _module(module)
                     , _offset(0)
                 {
                 }
                 ~Handler() override = default;
 
             public:
-                void Handle (Core::Messaging::IControl* control) override
+                void Handle(Core::Messaging::IControl* control) override
                 {
-                    Control info(control->Metadata(), control->Enable());
+                    const Core::Messaging::Metadata& metadata = control->Metadata();
 
-                    uint16_t moved = info.Serialize(&(_buffer[_offset]), _length - _offset);
+                    if (_module.empty() || _module == metadata.Module()) {
+                        Control info(metadata, control->Enable());
 
-                    if (moved == 0) {
-                        TRACE_L1("Controls is cut, not enough memory to fit all controls (MetadataSize too small)");
-                    }
-                    else {
-                        _offset += moved;
+                        uint16_t moved = info.Serialize(&(_buffer[_offset]), _length - _offset);
+
+                        if (moved == 0) {
+                            TRACE_L1("Controls are cut, not enough memory to fit all controls (MetadataBufferSize too small)");
+                        }
+                        else {
+                            _offset += moved;
+                        }
                     }
                 }
 
@@ -60,13 +74,59 @@ namespace WPEFramework {
 
             private:
                 uint8_t* _buffer;
-                uint16_t _length;
+                const uint16_t _length;
+                const string& _module;
                 uint16_t _offset;
-            } handler (buffer, length);
+            } handler(buffer, length, module);
 
             Core::Messaging::IControl::Iterate(handler);
 
             return (handler.Offset());
+        }
+        
+        uint16_t MessageUnit::Serialize(uint8_t* buffer, const uint16_t length)
+        {
+            std::vector<string> modules;
+
+            class Handler : public Core::Messaging::IControl::IHandler {
+            public:
+                Handler() = delete;
+                Handler(const Handler&) = delete;
+                Handler& operator= (const Handler&) = delete;
+
+                Handler(std::vector<string>& modules)
+                    : _modules(modules)
+                {
+                }
+                ~Handler() override = default;
+
+            public:
+                void Handle(Core::Messaging::IControl* control) override
+                {
+                    const string& module = control->Metadata().Module();
+                    if (std::find(_modules.begin(), _modules.end(), module) == _modules.end()) {
+                        _modules.push_back(module);
+                    }
+                }
+
+            private:
+                std::vector<string>& _modules;
+            } handler(modules);
+
+            Core::Messaging::IControl::Iterate(handler);
+
+            Core::FrameType<0> frame(buffer, length, length);
+            Core::FrameType<0>::Writer writer(frame, 0);
+
+            ASSERT(modules.size() < 256);
+            writer.Number<uint8_t>(static_cast<uint8_t>(modules.size()));
+
+            std::vector<string>::const_iterator it;
+            for (it = modules.begin(); it != modules.end(); ++it){
+                writer.NullTerminatedText(*it);
+            }
+
+            return (writer.Offset());
         }
 
         void MessageUnit::Update(const Core::Messaging::Metadata& control, const bool enable)
@@ -74,8 +134,10 @@ namespace WPEFramework {
             class Handler : public Core::Messaging::IControl::IHandler {
             public:
                 Handler() = delete;
+                Handler(Handler&&) = delete;
                 Handler(const Handler&) = delete;
-                Handler& operator= (const Handler&) = delete;
+                Handler& operator=(Handler&&) = delete;
+                Handler& operator=(const Handler&) = delete;
 
                 Handler(const Core::Messaging::Metadata& info, const bool enable)
                     : _info(info)
@@ -85,7 +147,7 @@ namespace WPEFramework {
                 ~Handler() override = default;
 
             public:
-                void Handle (Core::Messaging::IControl* control) override
+                void Handle(Core::Messaging::IControl* control) override
                 {
                     if ( (_info.Applicable(control->Metadata()) == true) && (control->Enable() ^ _enable) ) {
                         control->Enable(_enable);
@@ -105,20 +167,24 @@ namespace WPEFramework {
             class Handler : public Core::Messaging::IControl::IHandler {
             public:
                 Handler() = delete;
+                Handler(Handler&&) = delete;
                 Handler(const Handler&) = delete;
-                Handler& operator= (const Handler&) = delete;
+                Handler& operator=(Handler&&) = delete;
+                Handler& operator=(const Handler&) = delete;
 
                 Handler(const Settings& settings) : _settings(settings) {}
                 ~Handler() override = default;
 
             public:
-                void Handle (Core::Messaging::IControl* control) override
+                void Handle(Core::Messaging::IControl* control) override
                 {
                     bool enabled = _settings.IsEnabled(control->Metadata());
-                    
+
                     if (enabled ^ control->Enable()) {
                         control->Enable(enabled);
                     }
+
+                    control->Routing(_settings.EffectiveOutput(control->Metadata()));
                 }
 
             private:
@@ -133,21 +199,22 @@ namespace WPEFramework {
         }
 
         /**
-        * @brief Open MessageUnit. This method is used on the WPEFramework side.
+        * @brief Open MessageUnit. This method is used on the Thunder side.
         *        This method:
         *        - sets env variables, so the OOP components will get information (eg. where to place its files)
         *        - create buffer where all InProcess components will write
         *
         * @param pathName volatile path (/tmp/ by default)
         */
-        uint32_t MessageUnit::Open(const string& pathName, const string& configuration, const bool background, const flush flushMode)
+        uint32_t MessageUnit::Open(const string& pathName, const Settings::Config& configuration, const bool background, const flush flushMode)
         {
             uint32_t result = Core::ERROR_OPENING_FAILED;
 
             string identifier = _T("md");
             _settings.Configure(pathName, identifier, configuration, background, flushMode);
 
-            ASSERT(_dispatcher == nullptr);
+            ASSERT(_metaDataBuffer == nullptr);
+            ASSERT(_dataBuffer == nullptr);
 
             if (Core::File(_settings.BasePath()).IsDirectory() == true) {
                 //if directory exists remove it to clear data (eg. sockets) that can remain after previous run
@@ -165,10 +232,17 @@ namespace WPEFramework {
             // Store it on an environment variable so other instances can pick this info up..
             _settings.Save();
 
-            _dispatcher.reset(new MessageDispatcher(*this, identifier, 0, _settings.BasePath().c_str(), _settings.SocketPort()));
-            ASSERT(_dispatcher != nullptr);
+            MessageFilenames filenames = PrepareFilenames(_settings.BasePath(), identifier, 0, _settings.SocketPort());
 
-            if ((_dispatcher != nullptr) && (_dispatcher->IsValid() == true)) {
+            _metaDataBuffer.reset(new MetaDataBuffer(*this, filenames.metaData));
+            ASSERT(_metaDataBuffer != nullptr);
+
+            if ((_metaDataBuffer != nullptr) && (_metaDataBuffer->IsOpen() == true)) {
+
+                if (_settings.DataSize() != 0) {
+                    _dataBuffer.reset(new MessageDataBuffer(identifier, 0, _settings.BasePath().c_str(), _settings.DataSize(), _settings.SocketPort(), true));
+                    ASSERT(_dataBuffer != nullptr);
+                }
 
                 _direct.Mode(_settings.IsBackground(), _settings.IsAbbreviated());
 
@@ -178,7 +252,28 @@ namespace WPEFramework {
                 // let all announced controls know, whether they should push messages
                 Update();
 
+                TRACE_L1("Messaging transport initialized: controls(metadata)=%s [buffer=%u], messages(data)=%s [buffer=%u], directOutput=%s",
+                    (_settings.MetadataBufferSize() == 0 ? _T("disabled") : _T("enabled")),
+                    static_cast<unsigned>(_settings.MetadataBufferSize()),
+                    (_settings.DataSize() == 0 ? _T("disabled") : _T("enabled")),
+                    static_cast<unsigned>(_settings.DataSize()),
+                    (_settings.IsDirect() ? _T("true") : _T("false")));
+
+                // Redirect the standard out and standard error if requested
+                if (_settings.HasRedirectedError() == true) {
+                    Messaging::ConsoleStandardError::Instance().Open();
+                }
+                if (_settings.HasRedirectedOut() == true) {
+                    // Line-buffering on text streams can still lead to messages not being displayed even if they end with a new line (only \n)
+                    // So we disable buffering for stdout (line-buffered by default), as we do it in ProcessBuffer() before outputting the message anyway
+                    ::setvbuf(stdout, NULL, _IONBF, 0);
+                    Messaging::ConsoleStandardOut::Instance().Open();
+                }
+ 
                 result = Core::ERROR_NONE;
+            }
+            else {
+                _metaDataBuffer.reset();
             }
 
             return (result);
@@ -192,15 +287,23 @@ namespace WPEFramework {
         {
             uint32_t result = Core::ERROR_OPENING_FAILED;
 
-            ASSERT(_dispatcher == nullptr);
+            ASSERT(_metaDataBuffer == nullptr);
+            ASSERT(_dataBuffer == nullptr);
 
             if (instanceId != static_cast<uint32_t>(~0)) {
                 _settings.Load();
 
-                _dispatcher.reset(new MessageDispatcher(*this, _settings.Identifier(), instanceId, _settings.BasePath(), _settings.SocketPort()));
-                ASSERT(_dispatcher != nullptr);
+                MessageFilenames filenames = PrepareFilenames(_settings.BasePath(), _settings.Identifier(), instanceId, _settings.SocketPort());
 
-                if ((_dispatcher != nullptr) && (_dispatcher->IsValid() == true)) {
+                _metaDataBuffer.reset(new MetaDataBuffer(*this, filenames.metaData));
+                ASSERT(_metaDataBuffer != nullptr);
+
+                if ((_metaDataBuffer != nullptr) && (_metaDataBuffer->IsOpen() == true)) {
+
+                    if (_settings.DataSize() != 0) {
+                        _dataBuffer.reset(new MessageDataBuffer(_settings.Identifier(), instanceId, _settings.BasePath(), _settings.DataSize(), _settings.SocketPort(), true));
+                        ASSERT(_dataBuffer != nullptr);
+                    }
 
                     _direct.Mode(_settings.IsBackground(), _settings.IsAbbreviated());
 
@@ -212,6 +315,9 @@ namespace WPEFramework {
 
                     result = Core::ERROR_NONE;
                 }
+                else {
+                    _metaDataBuffer.reset();
+                }
             }
 
             return (result);
@@ -222,8 +328,10 @@ namespace WPEFramework {
             class Handler : public Core::Messaging::IControl::IHandler {
             public:
                 Handler() = default;
+                Handler(Handler&&) = delete;
                 Handler(const Handler&) = delete;
-                Handler& operator= (const Handler&) = delete;
+                Handler& operator=(Handler&&) = delete;
+                Handler& operator=(const Handler&) = delete;
                 ~Handler() override = default;
 
             public:
@@ -233,12 +341,19 @@ namespace WPEFramework {
                 }
             } handler;
 
-            if (_dispatcher != nullptr) {
+            if (_metaDataBuffer != nullptr) {
+                if (_settings.HasRedirectedError() == true) {
+                    Messaging::ConsoleStandardError::Instance().Close();
+                }
+                if (_settings.HasRedirectedOut() == true) {
+                    Messaging::ConsoleStandardOut::Instance().Close();
+                }
                 Core::Messaging::IStore::Set(nullptr);
                 Core::Messaging::IControl::Iterate(handler);
 
                 _adminLock.Lock();
-                _dispatcher.reset(nullptr);
+                _dataBuffer.reset(nullptr);
+                _metaDataBuffer.reset(nullptr);
                 _adminLock.Unlock();
             }
         }
@@ -247,37 +362,50 @@ namespace WPEFramework {
             return (_settings.IsEnabled(control));
         }
 
+        /* virtual */ Core::Messaging::OutputMode MessageUnit::DefaultOutput(const Core::Messaging::Metadata& metadata) const {
+            return (_settings.EffectiveOutput(metadata));
+        }
+
         /**
         * @brief Push a message of any type and its information to a buffer
         */
-        /* virtual */ void MessageUnit::Push(const Core::Messaging::MessageInfo& messageInfo, const Core::Messaging::IEvent* message)
+        /* virtual */ void MessageUnit::Push(const Core::Messaging::MessageInfo& messageInfo, const Core::Messaging::IEvent* message, Core::Messaging::OutputMode outputMode)
         {
-#if 1
-            _direct.Mode(false, _settings.IsAbbreviated());
-            _direct.Output(messageInfo, message);
-#else
-            //logging messages can happen in Core, meaning, otherside plugin can be not started yet
-            //those should be just printed
-            if (_settings.IsDirect() == true) {
+            const bool sendDirect    = (outputMode == Core::Messaging::OutputMode::DIRECT) || (outputMode == Core::Messaging::OutputMode::ALL);
+            const bool sendToHandler = (outputMode == Core::Messaging::OutputMode::HANDLER) || (outputMode == Core::Messaging::OutputMode::ALL);
+
+            if (sendDirect == true) {
                 _direct.Output(messageInfo, message);
-            } else if (_dispatcher != nullptr) {
-                uint8_t serializationBuffer[DataSize];
-                uint16_t length = 0;
+            }
 
-                ASSERT(messageInfo.Type() != Core::Messaging::Metadata::type::INVALID);
+            if (sendToHandler == true) {
 
-                length = messageInfo.Serialize(serializationBuffer, sizeof(serializationBuffer));
+                if (_dataBuffer != nullptr) {
+                    const uint16_t messageSize = _settings.MessageSize();
+                    ASSERT(messageSize != 0);
+                    uint8_t* serializationBuffer = static_cast<uint8_t*>(ALLOCA(messageSize));
+                    uint16_t length = 0;
 
-                //only serialize message if the information could fit
-                if (length != 0) {
-                    length += message->Serialize(serializationBuffer + length, sizeof(serializationBuffer) - length);
+                    ASSERT(messageInfo.Type() != Core::Messaging::Metadata::type::INVALID);
 
-                    if (_dispatcher->PushData(length, serializationBuffer) != Core::ERROR_NONE) {
-                        TRACE_L1("Unable to push message data!");
+                    length = messageInfo.Serialize(serializationBuffer, messageSize);
+
+                    //only serialize message if the information could fit
+                    if (length != 0) {
+                        length += message->Serialize(serializationBuffer + length, messageSize - length);
+
+                        if (_dataBuffer->PushData(length, serializationBuffer) != Core::ERROR_NONE) {
+                            TRACE_L1("Unable to push message data!");
+                        }
+                    }
+                    else {
+                        TRACE_L1("Unable to push data, buffer is too small!");
                     }
                 }
-                else {
-                    TRACE_L1("Unable to push data, buffer is too small!");
+                else if (sendDirect == false) {
+                    // Buffer unavailable (early startup or DirectOutput mode without plugin overrides):
+                    // fall back to direct output if we haven't already sent it directly.
+                    _direct.Output(messageInfo, message);
                 }
             }
 #endif
