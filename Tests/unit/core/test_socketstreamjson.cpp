@@ -306,8 +306,7 @@ namespace Core {
     // which is what we need to reliably trigger the IsNullValue fragmentation
     // bug (issue #1963).
     //
-    // Ports 19274-19279 avoid conflict with PR #2129's GarbageTest (19273).
-    // =========================================================================
+    // Ports 19274-19285 avoid conflict with PR #2129's GarbageTest (19273).
 
 #ifdef __POSIX__
 
