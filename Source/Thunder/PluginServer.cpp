@@ -376,6 +376,7 @@ namespace PluginHost {
     Server::Service::StateMachine::DeactivationState Server::Service::StateMachine::_stateDeactivation;
     Server::Service::StateMachine::HibernatedState   Server::Service::StateMachine::_stateHibernated;
     Server::Service::StateMachine::UnavailableState  Server::Service::StateMachine::_stateUnavailable;
+    Server::Service::StateMachine::DestroyedState    Server::Service::StateMachine::_stateDestroyed;
 
     // -------------------------------------------------------------------------
     // DeactivatedState

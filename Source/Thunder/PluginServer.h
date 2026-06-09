@@ -882,6 +882,12 @@ namespace PluginHost {
                     Core::hresult Deactivate(StateMachine&, const reason) override;
                 };
 
+                class DestroyedState : public StateBase {
+                public:
+                    IShell::state Id() const override { return IShell::DESTROYED; }
+                    // All triggers inherit ERROR_ILLEGAL_STATE / nullptr from StateBase.
+                };
+
             private:
                 class TransitionSuspender {
                 public:
@@ -955,6 +961,7 @@ namespace PluginHost {
                 uint32_t      Suspend(const reason why)         { ASSERT(!IsTransitionThread()); Core::SafeSyncType<Core::CriticalSection> guard(_transitionLock); _transitionThread = Core::Thread::ThreadId(); uint32_t result = _current.load(std::memory_order_acquire)->Suspend(*this, why); _transitionThread = 0; return (result); }
                 void          Reevaluate()                      { ASSERT(_transitionThread != Core::Thread::ThreadId()); Core::SafeSyncType<Core::CriticalSection> guard(_transitionLock); _transitionThread = Core::Thread::ThreadId(); _current.load(std::memory_order_acquire)->Reevaluate(*this); _transitionThread = 0; }
                 void*         QueryInterface(const uint32_t id, const bool asIUnknown) { return _current.load(std::memory_order_acquire)->QueryInterface(*this, id, asIUnknown); }
+                void          Tombstone()                       { Core::SafeSyncType<Core::CriticalSection> guard(_transitionLock); _parent.Lock(); SetState(_stateDestroyed); _parent.Unlock(); }
 
             private:
                 // Internal triggers — no lock. Called by state class methods
@@ -983,6 +990,7 @@ namespace PluginHost {
                 static DeactivationState _stateDeactivation;
                 static HibernatedState   _stateHibernated;
                 static UnavailableState  _stateUnavailable;
+                static DestroyedState    _stateDestroyed;
 
             // State classes access Service members via _parent (C++11 nested class access rules)
             private:
@@ -1305,13 +1313,10 @@ namespace PluginHost {
             }
             void Destroy()
             {
-                Lock();
-
-                // It's reference counted, so just take it out of the list, state to DESTROYED
-                // Also unsubscribe all subscribers. They need to go..
-                State(DESTROYED);
-
-                Unlock();
+                // Tombstone the state machine first — waits for any in-flight transition
+                // to complete then atomically switches _current and _state to DESTROYED.
+                // After this returns, all triggers return ERROR_ILLEGAL_STATE / nullptr.
+                _stateMachine.Tombstone();
             }
 
             // The service might be still alive and refered to in the request/links but they will
