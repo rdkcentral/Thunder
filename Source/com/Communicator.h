@@ -1292,11 +1292,15 @@ namespace RPC {
                         interfaceReturned = locator.first->second.Interface();
 
                         if (interfaceReturned != nullptr) {
-
                             id = result->Id();
                         }
 
                     } else {
+                        if (launchResult != Core::ERROR_NONE) {
+                            SYSLOG(Logging::Error, (_T("Failed to launch remote object [%s]:[%s], host type [%u], error [%u]"), instance.ClassName().c_str(), instance.Callsign().c_str(), static_cast<uint32_t>(instance.Type()), launchResult));
+                        } else {
+                            SYSLOG(Logging::Error, (_T("Timed out waiting %u ms for remote object [%s]:[%s] to announce, host type [%u]"), waitTime, instance.ClassName().c_str(), instance.Callsign().c_str(), static_cast<uint32_t>(instance.Type())));
+                        }
 
                         // Seems we could not start the application. Cleanout
                         result->Terminate();

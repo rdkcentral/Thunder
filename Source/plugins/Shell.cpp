@@ -42,19 +42,22 @@ namespace PluginHost
                 locator = (this->Locator());
             } 
 
-	    ASSERT(locator.empty() == false);
-
-            if (locator.empty() == false) {
+            if (locator.empty() == true) {
+                SYSLOG(Logging::Error, (_T("Root object [%s] for plugin [%s] could not be instantiated in process: no locator configured"), className.c_str(), Callsign().c_str()));
+            } else {
                 RPC::IStringIterator* all_paths = GetLibrarySearchPaths(locator);
                 ASSERT(all_paths != nullptr);
 
+                string lastError;
+                string lastPath;
                 string element;
                 while ((all_paths->Next(element) == true) && (result == nullptr)) {
                     Core::File file(element.c_str());
                     if (file.Exists()) {
+                        lastPath = element;
 
                         Core::Library resource(element.c_str());
-			const Core::IService* loader;
+                        const Core::IService* loader;
 
                         if ( (resource.IsLoaded()) && ((loader = Core::ServiceAdministrator::LibraryToService(resource)) != nullptr) ) {
 
@@ -63,10 +66,25 @@ namespace PluginHost
                                 className.c_str(),
                                 version,
                                 interface);
-			}
+                            if (result == nullptr) {
+                                lastError = _T("Class/interface not found in library");
+                            }
+                        } else if (resource.IsLoaded() == false) {
+                            lastError = resource.Error().empty() == false ? resource.Error() : _T("Library load failed");
+                        } else {
+                            lastError = _T("No service metadata found in library");
+                        }
                     }
                 }
                 all_paths->Release();
+
+                if (result == nullptr) {
+                    if (lastPath.empty() == false) {
+                        SYSLOG(Logging::Error, (_T("Root object [%s] for plugin [%s] could not be instantiated in process from locator [%s]. Candidate [%s], error [%s]"), className.c_str(), Callsign().c_str(), locator.c_str(), lastPath.c_str(), lastError.c_str()));
+                    } else {
+                        SYSLOG(Logging::Error, (_T("Root object [%s] for plugin [%s] could not be instantiated in process from locator [%s]: no library candidate found"), className.c_str(), Callsign().c_str(), locator.c_str()));
+                    }
+                }
             }
         } else {
 
@@ -114,7 +132,11 @@ namespace PluginHost
                         rootConfig.Environment());
 
                     result = handler->Instantiate(definition, waitTime, pid);
+                } else {
+                    SYSLOG(Logging::Error, (_T("Root object [%s] for plugin [%s] could not be instantiated out-of-process, ICOMLink is unavailable"), className.c_str(), Callsign().c_str()));
                 }
+            } else {
+                SYSLOG(Logging::Error, (_T("Root object [%s] for plugin [%s] configured root mode [%s], but this shell does not support it"), className.c_str(), Callsign().c_str(), rootConfig.Mode.Data()));
             }
         }
 
