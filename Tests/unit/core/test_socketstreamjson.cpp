@@ -657,7 +657,7 @@ namespace Core {
     // sequence contains 2 'n' bytes → 2 spurious deliveries before the valid
     // message, so messages.size() == 3 instead of 1. The valid message IS
     // received last, but the extra spurious ones break the count assertion.
-    // Tracked as issue #<nr>.
+    // Tracked separately.
     // -------------------------------------------------------------------------
     TEST(Core_Socket, DISABLED_StreamJSON_GarbageFollowedByValid)
     {
