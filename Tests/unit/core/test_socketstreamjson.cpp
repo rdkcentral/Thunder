@@ -1013,7 +1013,7 @@ namespace Core {
         string valid; EXPECT_TRUE(cmd->ToString(valid));
 
         StreamJSONTestServer::Reset();
-        ::Thunder::Core::SocketServerType<StreamJSONTestServer> server(::Thunder::Core::NodeId("0.0.0.0", PORT));
+        ::Thunder::Core::SocketServerType<StreamJSONTestServer> server(::Thunder::Core::NodeId("127.0.0.1", PORT));
         ASSERT_EQ(::Thunder::Core::ERROR_NONE, server.Open(2000));
 
         {
