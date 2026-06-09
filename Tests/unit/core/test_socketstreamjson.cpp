@@ -421,6 +421,8 @@ namespace Core {
 
     } // anonymous namespace
 
+    
+
     // -------------------------------------------------------------------------
     // Test 2: null field fragmentation — the IsNullValue spin trigger
     //
@@ -444,7 +446,7 @@ namespace Core {
         constexpr uint16_t PORT = 19274;
 
         StreamJSONTestServer::Reset();
-        ::Thunder::Core::SocketServerType<StreamJSONTestServer> server(::Thunder::Core::NodeId("0.0.0.0", PORT));
+        ::Thunder::Core::SocketServerType<StreamJSONTestServer> server(::Thunder::Core::NodeId("127.0.0.1", PORT));
         ASSERT_EQ(::Thunder::Core::ERROR_NONE, server.Open(2000));
 
         {
@@ -537,7 +539,7 @@ namespace Core {
         string s2; EXPECT_TRUE(cmd2->ToString(s2));
 
         StreamJSONTestServer::Reset();
-        ::Thunder::Core::SocketServerType<StreamJSONTestServer> server(::Thunder::Core::NodeId("0.0.0.0", PORT));
+        ::Thunder::Core::SocketServerType<StreamJSONTestServer> server(::Thunder::Core::NodeId("127.0.0.1", PORT));
         ASSERT_EQ(::Thunder::Core::ERROR_NONE, server.Open(2000));
 
         {
@@ -574,7 +576,7 @@ namespace Core {
         constexpr uint16_t PORT = 19277;
 
         StreamJSONTestServer::Reset();
-        ::Thunder::Core::SocketServerType<StreamJSONTestServer> server(::Thunder::Core::NodeId("0.0.0.0", PORT));
+        ::Thunder::Core::SocketServerType<StreamJSONTestServer> server(::Thunder::Core::NodeId("127.0.0.1", PORT));
         ASSERT_EQ(::Thunder::Core::ERROR_NONE, server.Open(2000));
 
         {
@@ -614,7 +616,7 @@ namespace Core {
         constexpr uint16_t PORT = 19278;
 
         StreamJSONTestServer::Reset();
-        ::Thunder::Core::SocketServerType<StreamJSONTestServer> server(::Thunder::Core::NodeId("0.0.0.0", PORT));
+        ::Thunder::Core::SocketServerType<StreamJSONTestServer> server(::Thunder::Core::NodeId("127.0.0.1", PORT));
         ASSERT_EQ(::Thunder::Core::ERROR_NONE, server.Open(2000));
 
         {
@@ -672,7 +674,7 @@ namespace Core {
         EXPECT_TRUE(cmd->ToString(valid));
 
         StreamJSONTestServer::Reset();
-        ::Thunder::Core::SocketServerType<StreamJSONTestServer> server(::Thunder::Core::NodeId("0.0.0.0", PORT));
+        ::Thunder::Core::SocketServerType<StreamJSONTestServer> server(::Thunder::Core::NodeId("127.0.0.1", PORT));
         ASSERT_EQ(::Thunder::Core::ERROR_NONE, server.Open(2000));
 
         {
@@ -724,7 +726,7 @@ namespace Core {
         EXPECT_TRUE(cmd->ToString(valid));
 
         StreamJSONTestServer::Reset();
-        ::Thunder::Core::SocketServerType<StreamJSONTestServer> server(::Thunder::Core::NodeId("0.0.0.0", PORT));
+        ::Thunder::Core::SocketServerType<StreamJSONTestServer> server(::Thunder::Core::NodeId("127.0.0.1", PORT));
         ASSERT_EQ(::Thunder::Core::ERROR_NONE, server.Open(2000));
 
         {
@@ -781,7 +783,7 @@ namespace Core {
         EXPECT_TRUE(cmd->ToString(valid));
 
         StreamJSONTestServer::Reset();
-        ::Thunder::Core::SocketServerType<StreamJSONTestServer> server(::Thunder::Core::NodeId("0.0.0.0", PORT));
+        ::Thunder::Core::SocketServerType<StreamJSONTestServer> server(::Thunder::Core::NodeId("127.0.0.1", PORT));
         ASSERT_EQ(::Thunder::Core::ERROR_NONE, server.Open(2000));
 
         {
@@ -851,7 +853,7 @@ namespace Core {
         const size_t splitAt = s2.size() / 2;
 
         StreamJSONTestServer::Reset();
-        ::Thunder::Core::SocketServerType<StreamJSONTestServer> server(::Thunder::Core::NodeId("0.0.0.0", PORT));
+        ::Thunder::Core::SocketServerType<StreamJSONTestServer> server(::Thunder::Core::NodeId("127.0.0.1", PORT));
         ASSERT_EQ(::Thunder::Core::ERROR_NONE, server.Open(2000));
 
         {
@@ -951,7 +953,7 @@ namespace Core {
         std::vector<uint8_t> spam(210, 0x02);
 
         StreamJSONTestServer::Reset();
-        ::Thunder::Core::SocketServerType<StreamJSONTestServer> server(::Thunder::Core::NodeId("0.0.0.0", PORT));
+        ::Thunder::Core::SocketServerType<StreamJSONTestServer> server(::Thunder::Core::NodeId("127.0.0.1", PORT));
         ASSERT_EQ(::Thunder::Core::ERROR_NONE, server.Open(2000));
 
         {
