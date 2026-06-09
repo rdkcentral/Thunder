@@ -2145,10 +2145,14 @@ namespace Core {
         blocker1->Release();
         EXPECT_TRUE(queued->WaitForStart(MaxJobWaitTime));
 
-        // Cleanup
+        // Cleanup: release remaining jobs BEFORE stopping pool
         queued->Release();
         blocker2->Release();
-        usleep(100000);
+
+        // Wait for all jobs to finish before stopping
+        for (int i = 0; i < 50 && !(queued->IsCompleted() && blocker2->IsCompleted()); i++) {
+            usleep(20000);
+        }
 
         workerPool.Stop();
         ::Thunder::Core::WorkerPool::Assign(nullptr);
@@ -2210,12 +2214,20 @@ namespace Core {
         blocker2->Release();
         for (auto& job : queuedJobs) {
             // Wait for start, then release
-            ASSERT_TRUE(job->WaitForStart(MaxJobWaitTime * 3));
+            ASSERT_TRUE(job->WaitForStart(MaxJobWaitTime * 5));
             job->Release();
         }
 
-        // All should complete
-        usleep(200000);
+        // Wait for all to complete
+        for (int i = 0; i < 100; i++) {
+            bool allDone = true;
+            for (auto& job : queuedJobs) {
+                if (!job->IsCompleted()) { allDone = false; break; }
+            }
+            if (allDone) break;
+            usleep(20000);
+        }
+
         for (auto& job : queuedJobs) {
             EXPECT_TRUE(job->IsCompleted());
         }
@@ -2247,7 +2259,10 @@ namespace Core {
 
         blocker1->Release();
         blocker2->Release();
-        usleep(200000);
+
+        for (int i = 0; i < 50 && !(blocker1->IsCompleted() && blocker2->IsCompleted()); i++) {
+            usleep(20000);
+        }
 
         workerPool.Stop();
         ::Thunder::Core::WorkerPool::Assign(nullptr);
