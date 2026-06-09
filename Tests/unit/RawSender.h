@@ -77,9 +77,11 @@ namespace Tests {
             _fd = ::socket(AF_INET, SOCK_STREAM, 0);
             if (_fd < 0) return false;
 
-            int flag = 1;
-            ::setsockopt(_fd, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag));
-
+            const int flag = 1;
+            if (::setsockopt(_fd, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) != 0) {
+                Close();
+                return false;
+            }
             struct sockaddr_in addr{};
             addr.sin_family = AF_INET;
             addr.sin_port   = htons(port);
