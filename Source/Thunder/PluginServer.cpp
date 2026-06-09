@@ -332,47 +332,9 @@ namespace PluginHost {
         return _stateMachine.Activate(why);
     }
 
-    uint32_t Server::Service::Resume(const reason why) /* override */ {
-        uint32_t result = Core::ERROR_NONE;
-
-        // Read state snapshot and release Lock() before calling Activate().
-        // Holding Lock() across Activate() inverts the lock order:
-        //   Resume: Lock() → _transitionLock (via Activate)
-        //   Transitions: _transitionLock → Lock()
-        // That inversion is a deadlock. The snapshot is acceptable — Resume()
-        // was already operating on a snapshot since state could change between
-        // the check and the Activate() call anyway.
-        Lock();
-        IShell::state currentState(State());
-        Unlock();
-
-        if (currentState == IShell::state::ACTIVATION) {
-            result = Core::ERROR_INPROGRESS;
-        } else if ((currentState == IShell::state::DEACTIVATION) || (currentState == IShell::state::DESTROYED) || (currentState == IShell::state::HIBERNATED)) {
-            result = Core::ERROR_ILLEGAL_STATE;
-        } else if (currentState == IShell::state::DEACTIVATED) {
-            result = Activate(why);
-            Lock();
-            currentState = State();
-            Unlock();
-        }
-
-        if (currentState == IShell::ACTIVATED) {
-            Lock();
-            // See if we need can and should RESUME.
-            if (_stateControl == nullptr) {
-                result = Core::ERROR_BAD_REQUEST;
-            }
-            else {
-                // We have a StateControl interface, so at least start resuming, if not already resumed :-)
-                if (_stateControl->State() == PluginHost::IStateControl::SUSPENDED) {
-                    result = _stateControl->Request(PluginHost::IStateControl::RESUME);
-                }
-            }
-            Unlock();
-        }
-
-        return (result);
+    uint32_t Server::Service::Resume(const reason why) /* override */
+    {
+        return _stateMachine.Resume(why);
     }
 
     Core::hresult Server::Service::Deactivate(const reason why) /* override */
@@ -380,47 +342,26 @@ namespace PluginHost {
         return _stateMachine.Deactivate(why);
     }
 
-    uint32_t Server::Service::Suspend(const reason why) {
-
+    uint32_t Server::Service::Suspend(const reason why) /* override */
+    {
         uint32_t result = Core::ERROR_NONE;
 
         if (StartMode() == PluginHost::IShell::startmode::DEACTIVATED) {
-            // We need to shutdown completely
-            result = Deactivate(why);
-        }
-        else {
-            Lock();
-
-            IShell::state currentState(State());
-
-            if (currentState == IShell::state::DEACTIVATION) {
-                result = Core::ERROR_INPROGRESS;
-            } else if ((currentState == IShell::state::ACTIVATION) || (currentState == IShell::state::DESTROYED) || (currentState == IShell::state::HIBERNATED)) {
-                result = Core::ERROR_ILLEGAL_STATE;
-            } else if ((currentState == IShell::state::ACTIVATED) || (currentState == IShell::state::PRECONDITION)) {
-                // See if we need can and should SUSPEND.
-                if (_stateControl == nullptr) {
-                    result = Core::ERROR_BAD_REQUEST;
-                }
-                else {
-                    // We have a StateControl interface, so at least start suspending, if not already suspended :-)
-                    if (_stateControl->State() == PluginHost::IStateControl::RESUMED) {
-                        result = _stateControl->Request(PluginHost::IStateControl::SUSPEND);
-                    }
-                }
-            }
-
-            Unlock();
+            result = _stateMachine.Deactivate(why);
+        } else {
+            result = _stateMachine.Suspend(why);
         }
 
         return (result);
     }
 
-    Core::hresult Server::Service::Unavailable(const reason why) /* override */ {
+    Core::hresult Server::Service::Unavailable(const reason why) /* override */
+    {
         return _stateMachine.Unavailable(why);
     }
 
-    Core::hresult Server::Service::Hibernate(const uint32_t timeout VARIABLE_IS_NOT_USED) /* override */ {
+    Core::hresult Server::Service::Hibernate(const uint32_t timeout VARIABLE_IS_NOT_USED) /* override */
+    {
         return _stateMachine.Hibernate(timeout);
     }
 
@@ -506,6 +447,16 @@ namespace PluginHost {
         return Core::ERROR_NONE;
     }
 
+    uint32_t Server::Service::StateMachine::DeactivatedState::Resume(StateMachine & sm, const reason why)
+    {
+        Core::hresult result = sm._Activate(why);
+        if (result != Core::ERROR_NONE) {
+            return result;
+        }
+
+        return sm._current.load(std::memory_order_relaxed)->Resume(sm, why);
+    }
+
     // -------------------------------------------------------------------------
     // PreconditionState
     // -------------------------------------------------------------------------
@@ -522,6 +473,16 @@ namespace PluginHost {
 
         sm._callback(finalState);
         return Core::ERROR_NONE;
+    }
+
+    uint32_t Server::Service::StateMachine::PreconditionState::Resume(StateMachine & sm, const reason /* why */)
+    {
+        return sm._parent.RequestResume();
+    }
+
+    uint32_t Server::Service::StateMachine::PreconditionState::Suspend(StateMachine& sm, const reason /* why */)
+    {
+        return sm._parent.RequestSuspend();
     }
 
     void Server::Service::StateMachine::PreconditionState::Reevaluate(StateMachine& sm)
@@ -698,6 +659,16 @@ namespace PluginHost {
         }
 
         return result;
+    }
+
+    uint32_t Server::Service::StateMachine::ActivatedState::Resume(StateMachine & sm, const reason why VARIABLE_IS_NOT_USED)
+    {
+        return sm._parent.RequestResume();
+    }
+
+    uint32_t Server::Service::StateMachine::ActivatedState::Suspend(StateMachine & sm, const reason /* why */)
+    {
+        return sm._parent.RequestSuspend();
     }
 
     void Server::Service::StateMachine::ActivatedState::Reevaluate(StateMachine& sm)
@@ -948,6 +919,54 @@ namespace PluginHost {
                 sink->Release();
             }
         }
+    }
+
+    uint32_t Server::Service::RequestResume()
+    {
+        ASSERT(_stateMachine.IsTransitionThread());
+
+        uint32_t result = Core::ERROR_NONE;
+        PluginHost::IStateControl* stateControl = nullptr;
+
+        Lock();
+        if (_stateControl == nullptr) {
+            result = Core::ERROR_BAD_REQUEST;
+        } else {
+            stateControl = _stateControl;
+        }
+        Unlock();
+
+        if (stateControl != nullptr) {
+            if (stateControl->State() == PluginHost::IStateControl::SUSPENDED) {
+                result = stateControl->Request(PluginHost::IStateControl::RESUME);
+            }
+        }
+
+        return result;
+    }
+
+    uint32_t Server::Service::RequestSuspend()
+    {
+        ASSERT(_stateMachine.IsTransitionThread());
+
+        uint32_t result = Core::ERROR_NONE;
+        PluginHost::IStateControl* stateControl = nullptr;
+
+        Lock();
+        if (_stateControl == nullptr) {
+            result = Core::ERROR_BAD_REQUEST;
+        } else {
+            stateControl = _stateControl;
+        }
+        Unlock();
+
+        if (stateControl != nullptr) {
+            if (stateControl->State() == PluginHost::IStateControl::RESUMED) {
+                result = stateControl->Request(PluginHost::IStateControl::SUSPEND);
+            }
+        }
+
+        return result;
     }
 
     uint32_t Server::Service::Wakeup(const uint32_t timeout VARIABLE_IS_NOT_USED) {

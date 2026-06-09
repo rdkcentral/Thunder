@@ -815,6 +815,8 @@ namespace PluginHost {
                     virtual Core::hresult        Deactivate(StateMachine&, const reason)               { return Core::ERROR_ILLEGAL_STATE; }
                     virtual Core::hresult        Hibernate(StateMachine&, const uint32_t)              { return Core::ERROR_ILLEGAL_STATE; }
                     virtual Core::hresult        Unavailable(StateMachine&, const reason)              { return Core::ERROR_ILLEGAL_STATE; }
+                    virtual uint32_t             Resume(StateMachine&, const reason)                   { return Core::ERROR_ILLEGAL_STATE; }
+                    virtual uint32_t             Suspend(StateMachine&, const reason)                  { return Core::ERROR_ILLEGAL_STATE; }
                     virtual void                 Reevaluate(StateMachine&)                             {}
                     virtual void*                QueryInterface(StateMachine&, const uint32_t, const bool) { return nullptr; }
                 };
@@ -824,12 +826,15 @@ namespace PluginHost {
                     IShell::state Id() const override { return IShell::DEACTIVATED; }
                     Core::hresult Activate(StateMachine&, const reason) override;
                     Core::hresult Unavailable(StateMachine&, const reason) override;
+                    uint32_t      Resume(StateMachine&, const reason) override;
                 };
 
                 class PreconditionState : public StateBase {
                 public:
                     IShell::state Id() const override { return IShell::PRECONDITION; }
                     Core::hresult Deactivate(StateMachine&, const reason) override;
+                    uint32_t      Resume(StateMachine&, const reason) override;
+                    uint32_t      Suspend(StateMachine&, const reason) override;
                     void          Reevaluate(StateMachine&) override;
                 };
 
@@ -840,6 +845,7 @@ namespace PluginHost {
                     Core::hresult Deactivate(StateMachine&, const reason) override;
                     Core::hresult Hibernate(StateMachine&, const uint32_t) override { return Core::ERROR_INPROGRESS; }
                     Core::hresult Unavailable(StateMachine&, const reason) override { return Core::ERROR_INPROGRESS; }
+                    uint32_t      Resume(StateMachine&, const reason) override { return Core::ERROR_INPROGRESS; }
                 };
 
                 class ActivatedState : public StateBase {
@@ -847,6 +853,8 @@ namespace PluginHost {
                     IShell::state Id() const override { return IShell::ACTIVATED; }
                     Core::hresult Deactivate(StateMachine&, const reason) override;
                     Core::hresult Hibernate(StateMachine&, const uint32_t timeout) override;
+                    uint32_t      Resume(StateMachine&, const reason) override;
+                    uint32_t      Suspend(StateMachine&, const reason) override;
                     void          Reevaluate(StateMachine&) override;
                     void*         QueryInterface(StateMachine&, const uint32_t id, const bool asIUnknown) override;
                 };
@@ -858,6 +866,7 @@ namespace PluginHost {
                     Core::hresult Deactivate(StateMachine&, const reason) override   { return Core::ERROR_INPROGRESS; }
                     Core::hresult Hibernate(StateMachine&, const uint32_t) override  { return Core::ERROR_INPROGRESS; }
                     Core::hresult Unavailable(StateMachine&, const reason) override  { return Core::ERROR_INPROGRESS; }
+                    uint32_t      Suspend(StateMachine&, const reason) override      { return Core::ERROR_INPROGRESS; }
                 };
 
                 class HibernatedState : public StateBase {
@@ -876,6 +885,12 @@ namespace PluginHost {
             private:
                 class TransitionSuspender {
                 public:
+                    TransitionSuspender() = delete;
+                    TransitionSuspender(const TransitionSuspender&) = delete;
+                    TransitionSuspender(TransitionSuspender&&) = delete;
+                    TransitionSuspender& operator=(const TransitionSuspender&) = delete;
+                    TransitionSuspender& operator=(TransitionSuspender&&) = delete;
+
                     TransitionSuspender(Core::CriticalSection& lock, std::atomic<Core::thread_id>& transitionThread)
                         : _lock(lock)
                         , _transitionThread(transitionThread)
@@ -936,7 +951,9 @@ namespace PluginHost {
                 Core::hresult Deactivate(const reason why)      { ASSERT(!IsTransitionThread()); Core::SafeSyncType<Core::CriticalSection> guard(_transitionLock); _transitionThread = Core::Thread::ThreadId(); Core::hresult result = _Deactivate(why);     _transitionThread = 0; return result; }
                 Core::hresult Hibernate(const uint32_t timeout) { ASSERT(!IsTransitionThread()); Core::SafeSyncType<Core::CriticalSection> guard(_transitionLock); _transitionThread = Core::Thread::ThreadId(); Core::hresult result = _current.load(std::memory_order_acquire)->Hibernate(*this, timeout); _transitionThread = 0; return result; }
                 Core::hresult Unavailable(const reason why)     { ASSERT(!IsTransitionThread()); Core::SafeSyncType<Core::CriticalSection> guard(_transitionLock); _transitionThread = Core::Thread::ThreadId(); Core::hresult result = _current.load(std::memory_order_acquire)->Unavailable(*this, why);  _transitionThread = 0; return result; }
-                void          Reevaluate()                      { ASSERT(_transitionThread != Core::Thread::ThreadId()); Core::SafeSyncType<Core::CriticalSection> guard(_transitionLock); _transitionThread = Core::Thread::ThreadId(); _current.load(std::memory_order_acquire)->Reevaluate(*this);                                       _transitionThread = 0; }
+                uint32_t      Resume(const reason why)          { ASSERT(!IsTransitionThread()); Core::SafeSyncType<Core::CriticalSection> guard(_transitionLock); _transitionThread = Core::Thread::ThreadId(); uint32_t result = _current.load(std::memory_order_acquire)->Resume(*this, why); _transitionThread = 0; return result; }
+                uint32_t      Suspend(const reason why)         { ASSERT(!IsTransitionThread()); Core::SafeSyncType<Core::CriticalSection> guard(_transitionLock); _transitionThread = Core::Thread::ThreadId(); uint32_t result = _current.load(std::memory_order_acquire)->Suspend(*this, why); _transitionThread = 0; return (result); }
+                void          Reevaluate()                      { ASSERT(_transitionThread != Core::Thread::ThreadId()); Core::SafeSyncType<Core::CriticalSection> guard(_transitionLock); _transitionThread = Core::Thread::ThreadId(); _current.load(std::memory_order_acquire)->Reevaluate(*this); _transitionThread = 0; }
                 void*         QueryInterface(const uint32_t id, const bool asIUnknown) { return _current.load(std::memory_order_acquire)->QueryInterface(*this, id, asIUnknown); }
 
             private:
@@ -1751,6 +1768,8 @@ namespace PluginHost {
             void UnloadPlugin();              // ReleaseInterfaces
             void Attach();                    // WebServer + JSONRPC + external connector + StateControl
             void Detach();                    // reverse of Attach
+            uint32_t RequestSuspend();        // _stateControl->Request(SUSPEND) if RESUMED
+            uint32_t RequestResume();         // _stateControl->Request(RESUME)  if SUSPENDED
 
             uint32_t Wakeup(const uint32_t timeout);
 
