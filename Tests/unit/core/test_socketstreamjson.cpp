@@ -437,7 +437,7 @@ namespace Core {
     // _current released → message lost, no Received() call.
     // Root cause: DeserializerImpl needs to preserve _current and _offset when
     // UNKNOWN is returned so multi-byte tokens ("null") can be reassembled
-    // across chunk boundaries. Tracked as issue #<nr>.
+    // across chunk boundaries. Tracked separately.
     // -------------------------------------------------------------------------
     TEST(Core_Socket, DISABLED_StreamJSON_NullFieldFragmented)
     {
