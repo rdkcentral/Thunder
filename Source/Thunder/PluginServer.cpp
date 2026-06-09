@@ -321,7 +321,9 @@ namespace PluginHost {
         if (_administrator.Register(sink, callsign) == Core::ERROR_NONE) {
             IPlugin::INotificationExtended* extended = sink->QueryInterface<IPlugin::INotificationExtended>();
             if (extended != nullptr) {
-                _administrator.Register(extended, callsign);
+                if (_administrator.Register(extended, callsign) != Core::ERROR_NONE) {
+                    _administrator.Unregister(sink, callsign);
+                }
                 extended->Release();
             }
         }
@@ -343,7 +345,9 @@ namespace PluginHost {
         if (_administrator.Register(sink, interface_id) == Core::ERROR_NONE) {
             IPlugin::INotificationExtended* extended = sink->QueryInterface<IPlugin::INotificationExtended>();
             if (extended != nullptr) {
-                _administrator.Register(extended, interface_id);
+                if (_administrator.Register(extended, interface_id) != Core::ERROR_NONE) {
+                    _administrator.Unregister(sink, interface_id);
+                }
                 extended->Release();
             }
         }
