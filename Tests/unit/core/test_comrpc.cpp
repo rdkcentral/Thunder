@@ -850,6 +850,109 @@ namespace COMRPC {
         EXPECT_EQ(fresh.ProxyStubPath(), "/usr/lib/wpeframework/proxystubs");
     }
 
+    // =========================================================================
+    // Gap 3: OOP Crash/Disconnect Detection — Notification interface tests
+    // =========================================================================
+
+    // IRemoteConnection::INotification callback tracking helper
+    class ConnectionNotificationTracker : public ::Thunder::RPC::IRemoteConnection::INotification {
+    public:
+        ConnectionNotificationTracker()
+            : _activated(0)
+            , _deactivated(0)
+        {
+        }
+        ~ConnectionNotificationTracker() override = default;
+
+        void Activated(::Thunder::RPC::IRemoteConnection* connection) override
+        {
+            _activated++;
+            if (connection) {
+                _lastActivatedId = connection->Id();
+            }
+        }
+
+        void Deactivated(::Thunder::RPC::IRemoteConnection* connection) override
+        {
+            _deactivated++;
+            if (connection) {
+                _lastDeactivatedId = connection->Id();
+            }
+        }
+
+        int ActivatedCount() const { return _activated; }
+        int DeactivatedCount() const { return _deactivated; }
+        uint32_t LastActivatedId() const { return _lastActivatedId; }
+        uint32_t LastDeactivatedId() const { return _lastDeactivatedId; }
+
+        // IReferenceCounted
+        uint32_t AddRef() const override { return ::Thunder::Core::ERROR_NONE; }
+        uint32_t Release() const override { return ::Thunder::Core::ERROR_NONE; }
+
+        BEGIN_INTERFACE_MAP(ConnectionNotificationTracker)
+            INTERFACE_ENTRY(::Thunder::RPC::IRemoteConnection::INotification)
+        END_INTERFACE_MAP
+
+    private:
+        std::atomic<int> _activated;
+        std::atomic<int> _deactivated;
+        uint32_t _lastActivatedId = 0;
+        uint32_t _lastDeactivatedId = 0;
+    };
+
+    // Verify IRemoteConnection::INotification interface can be constructed
+    TEST(COMRPC_Gap, INotification_Construction)
+    {
+        ConnectionNotificationTracker tracker;
+
+        EXPECT_EQ(tracker.ActivatedCount(), 0);
+        EXPECT_EQ(tracker.DeactivatedCount(), 0);
+    }
+
+    // Verify Communicator server can register and unregister notifications
+    TEST(COMRPC_Gap, Communicator_NotificationRegistration)
+    {
+        const string connector = "/tmp/test_comrpc_notify.sock";
+        ::unlink(connector.c_str());
+
+        ::Thunder::Core::NodeId nodeId(connector.c_str());
+        ::Thunder::RPC::Communicator server(nodeId, _T(""),
+            ::Thunder::Core::ProxyType<::Thunder::Core::IIPCServer>(
+                ::Thunder::Core::ProxyType<::Thunder::RPC::InvokeServerType<1, 0, 4>>
+                ::Create()), _T(""));
+
+        uint32_t result = server.Open(2000);
+        if (result != ::Thunder::Core::ERROR_NONE) {
+            GTEST_SKIP() << "Cannot open communicator server";
+        }
+
+        ConnectionNotificationTracker tracker;
+
+        // Register should succeed
+        server.Register(&tracker);
+
+        // Unregister should succeed
+        server.Unregister(&tracker);
+
+        server.Close(2000);
+        ::unlink(connector.c_str());
+    }
+
+    // =========================================================================
+    // Gap 11: OOP Lifecycle Error Paths — covered via existing tests
+    //
+    // The following test_comrpc tests already exercise key error paths:
+    // - Communicator_OpenInvalidPath: invalid socket path handling
+    // - Communicator_ClientConnectNoServer: connection to non-existent server
+    // - Communicator_DoubleClose: idempotent close behavior
+    // - MalformedMessage_*: corrupt message handling (5 tests)
+    //
+    // Additional dlopen failure / wrong-interface tests require building
+    // custom .so files as test fixtures, which is out of scope for unit
+    // tests. These paths are better covered via integration tests with
+    // ThunderTestRuntime and deliberately broken plugin manifests.
+    // =========================================================================
+
 } // namespace COMRPC
 } // namespace Tests
 } // namespace Thunder

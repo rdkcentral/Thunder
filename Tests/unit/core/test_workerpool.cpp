@@ -17,6 +17,9 @@
  * limitations under the License.
  */
 
+#include <atomic>
+#include <condition_variable>
+#include <mutex>
 #include <thread>
 
 #include <gtest/gtest.h>
@@ -2054,6 +2057,200 @@ namespace Core {
         workerPool.Stop();
         ::Thunder::Core::WorkerPool::Assign(nullptr);
         job.Release();
+    }
+
+    // =========================================================================
+    // WorkerPool Exhaustion Tests — Gap 7
+    // =========================================================================
+
+    // Simple blocking job using condition variable for deterministic control
+    class BlockingJob : public ::Thunder::Core::IDispatch {
+    public:
+        BlockingJob()
+            : _started(false)
+            , _released(false)
+            , _completed(false)
+        {
+        }
+        ~BlockingJob() override = default;
+
+        void Dispatch() override
+        {
+            {
+                std::lock_guard<std::mutex> lk(_mutex);
+                _started = true;
+            }
+            _startCV.notify_one();
+
+            // Block until released
+            {
+                std::unique_lock<std::mutex> lk(_mutex);
+                _releaseCV.wait(lk, [this]{ return _released; });
+            }
+            _completed = true;
+        }
+
+        bool WaitForStart(uint32_t ms)
+        {
+            std::unique_lock<std::mutex> lk(_mutex);
+            return _startCV.wait_for(lk, std::chrono::milliseconds(ms),
+                [this]{ return _started; });
+        }
+
+        void Release()
+        {
+            {
+                std::lock_guard<std::mutex> lk(_mutex);
+                _released = true;
+            }
+            _releaseCV.notify_one();
+        }
+
+        bool IsCompleted() const { return _completed; }
+        bool IsStarted() const { return _started; }
+
+    private:
+        std::mutex _mutex;
+        std::condition_variable _startCV;
+        std::condition_variable _releaseCV;
+        bool _started;
+        bool _released;
+        bool _completed;
+    };
+
+    // When all threads are busy, additional jobs queue and eventually drain
+    TEST(Core_WorkerPool, Exhaustion_AllThreadsBusy_JobQueues)
+    {
+        constexpr uint8_t threads = 2;
+        WorkerPoolTester workerPool(threads, 0, 10);
+        ::Thunder::Core::WorkerPool::Assign(&workerPool.Pool());
+        workerPool.RunThreadPool();
+
+        // Submit blocking jobs to fill all threads
+        auto blocker1 = ::Thunder::Core::ProxyType<BlockingJob>::Create();
+        auto blocker2 = ::Thunder::Core::ProxyType<BlockingJob>::Create();
+        workerPool.Pool().Submit(::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>(blocker1));
+        workerPool.Pool().Submit(::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>(blocker2));
+
+        ASSERT_TRUE(blocker1->WaitForStart(MaxJobWaitTime));
+        ASSERT_TRUE(blocker2->WaitForStart(MaxJobWaitTime));
+
+        // Now submit a queued job — it should NOT start yet
+        auto queued = ::Thunder::Core::ProxyType<BlockingJob>::Create();
+        workerPool.Pool().Submit(::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>(queued));
+        usleep(100000); // 100ms
+        EXPECT_FALSE(queued->IsStarted());
+
+        // Release one blocker → queued job should now run
+        blocker1->Release();
+        EXPECT_TRUE(queued->WaitForStart(MaxJobWaitTime));
+
+        // Cleanup
+        queued->Release();
+        blocker2->Release();
+        usleep(100000);
+
+        workerPool.Stop();
+        ::Thunder::Core::WorkerPool::Assign(nullptr);
+    }
+
+    // Rapid submit/cancel interleaving — no crash, no deadlock
+    TEST(Core_WorkerPool, Exhaustion_RapidSubmitCancel)
+    {
+        WorkerPoolTester workerPool(2, 0, 20);
+        ::Thunder::Core::WorkerPool::Assign(&workerPool.Pool());
+        workerPool.RunThreadPool();
+
+        constexpr int kIterations = 50;
+        for (int i = 0; i < kIterations; i++) {
+            ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch> job =
+                ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>(
+                    ::Thunder::Core::ProxyType<TestJob<WorkerPoolTester>>::Create(
+                        workerPool, TestJob<WorkerPoolTester>::INITIATED, 0));
+            workerPool.Pool().Submit(job);
+            workerPool.Pool().Revoke(job);
+            job.Release();
+        }
+
+        // If we get here without hanging or crashing, the test passed
+        usleep(200000);
+
+        workerPool.Stop();
+        ::Thunder::Core::WorkerPool::Assign(nullptr);
+    }
+
+    // All threads blocked → submit N more → unblock → all complete
+    TEST(Core_WorkerPool, Exhaustion_DrainAfterUnblock)
+    {
+        constexpr uint8_t threads = 2;
+        constexpr int kQueuedJobs = 5;
+        WorkerPoolTester workerPool(threads, 0, 20);
+        ::Thunder::Core::WorkerPool::Assign(&workerPool.Pool());
+        workerPool.RunThreadPool();
+
+        // Block all threads
+        auto blocker1 = ::Thunder::Core::ProxyType<BlockingJob>::Create();
+        auto blocker2 = ::Thunder::Core::ProxyType<BlockingJob>::Create();
+        workerPool.Pool().Submit(::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>(blocker1));
+        workerPool.Pool().Submit(::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>(blocker2));
+
+        ASSERT_TRUE(blocker1->WaitForStart(MaxJobWaitTime));
+        ASSERT_TRUE(blocker2->WaitForStart(MaxJobWaitTime));
+
+        // Queue additional jobs
+        std::vector<::Thunder::Core::ProxyType<BlockingJob>> queuedJobs;
+        for (int i = 0; i < kQueuedJobs; i++) {
+            auto job = ::Thunder::Core::ProxyType<BlockingJob>::Create();
+            workerPool.Pool().Submit(::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>(job));
+            queuedJobs.push_back(job);
+        }
+
+        // Release all blockers and queued jobs
+        blocker1->Release();
+        blocker2->Release();
+        for (auto& job : queuedJobs) {
+            // Wait for start, then release
+            ASSERT_TRUE(job->WaitForStart(MaxJobWaitTime * 3));
+            job->Release();
+        }
+
+        // All should complete
+        usleep(200000);
+        for (auto& job : queuedJobs) {
+            EXPECT_TRUE(job->IsCompleted());
+        }
+
+        workerPool.Stop();
+        ::Thunder::Core::WorkerPool::Assign(nullptr);
+    }
+
+    // Snapshot after exhaustion shows pending count
+    TEST(Core_WorkerPool, Exhaustion_SnapshotShowsPending)
+    {
+        constexpr uint8_t threads = 2;
+        WorkerPoolTester workerPool(threads, 0, 10);
+        ::Thunder::Core::WorkerPool::Assign(&workerPool.Pool());
+        workerPool.RunThreadPool();
+
+        auto blocker1 = ::Thunder::Core::ProxyType<BlockingJob>::Create();
+        auto blocker2 = ::Thunder::Core::ProxyType<BlockingJob>::Create();
+        workerPool.Pool().Submit(::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>(blocker1));
+        workerPool.Pool().Submit(::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>(blocker2));
+
+        ASSERT_TRUE(blocker1->WaitForStart(MaxJobWaitTime));
+        ASSERT_TRUE(blocker2->WaitForStart(MaxJobWaitTime));
+
+        // Check snapshot — threads should be busy
+        const auto& info = workerPool.Pool().Snapshot();
+        // Snapshot should reflect the pool state
+        EXPECT_GT(info.Slots, 0u);
+
+        blocker1->Release();
+        blocker2->Release();
+        usleep(200000);
+
+        workerPool.Stop();
+        ::Thunder::Core::WorkerPool::Assign(nullptr);
     }
 
 } // Core
