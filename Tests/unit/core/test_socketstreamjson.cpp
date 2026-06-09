@@ -607,7 +607,7 @@ namespace Core {
     // Received() with an empty object — one spurious call per 'n' byte in the
     // input. The garbage array contains 7 'n' bytes → 7 spurious deliveries.
     // Root cause: same as NullFieldFragmented — UNKNOWN must not trigger
-    // Received(). Tracked as issue #<nr>.
+    // Received(). Tracked separately.
     // -------------------------------------------------------------------------
     TEST(Core_Socket, DISABLED_StreamJSON_GarbageSpam)
     {
