@@ -2107,7 +2107,7 @@ namespace Core {
                     ::Thunder::Core::ProxyType<TestJob<WorkerPoolTester>>::Create(
                         workerPool, TestJob<WorkerPoolTester>::INITIATED, 0));
             workerPool.Pool().Submit(job);
-            workerPool.Pool().Revoke(job);
+            workerPool.Pool().Revoke(job, 0);
             job.Release();
         }
 
