@@ -220,6 +220,7 @@ if(ENABLE_TEST_RUNTIME)
 
     add_executable(${CONTROLLER_TEST_NAME}
         test_controller.cpp
+        ../Module.cpp
     )
 
     target_compile_definitions(${CONTROLLER_TEST_NAME}
