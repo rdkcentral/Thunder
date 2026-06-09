@@ -292,6 +292,7 @@ namespace Core {
             , _responseFactory(5)
             , _jsonrpcBodyFactory(5)
             , _httpStatusCode(0)
+            , _responseReceived(false)
         {
         }
 
@@ -317,9 +318,14 @@ namespace Core {
                     body->ToString(text);
                     std::lock_guard<std::mutex> lock(_responseMutex);
                     _responseQueue.push(text);
-                    _responseCV.notify_one();
                 }
             }
+
+            {
+                std::lock_guard<std::mutex> lock(_responseMutex);
+                _responseReceived = true;
+            }
+            _responseCV.notify_one();
         }
 
         virtual void Send(const ::Thunder::Core::ProxyType<Web::Request>& request VARIABLE_IS_NOT_USED)
@@ -334,7 +340,13 @@ namespace Core {
         {
             std::unique_lock<std::mutex> lock(_responseMutex);
             return _responseCV.wait_for(lock, std::chrono::milliseconds(timeout_ms),
-                [this]{ return !_responseQueue.empty(); });
+                [this]{ return _responseReceived; });
+        }
+
+        void ResetResponse()
+        {
+            std::lock_guard<std::mutex> lock(_responseMutex);
+            _responseReceived = false;
         }
 
         void RetrieveMessage(::Thunder::Core::JSONRPC::Message& message)
@@ -383,6 +395,7 @@ namespace Core {
     private:
         string _dataReceived;
         uint16_t _httpStatusCode;
+        bool _responseReceived;
         ::Thunder::Core::ProxyPoolType<Web::Response> _responseFactory;
         ::Thunder::Core::ProxyPoolType<JSONRPCBody> _jsonrpcBodyFactory;
         std::queue<string> _responseQueue;
