@@ -176,7 +176,7 @@ namespace Core {
         const int nTimeSecs = 5;
         timespec structTime;
 
-        clock_gettime(CLOCK_REALTIME, &structTime);
+        clock_gettime(CLOCK_MONOTONIC, &structTime);
         structTime.tv_sec += nTimeSecs;
 
         // MF2018 please note: sem_timedwait is not compatible with CLOCK_MONOTONIC.

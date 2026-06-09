@@ -125,6 +125,18 @@ namespace Core {
                         Code = Core::ERROR_HIBERNATED;
                         Text = _T("The service is in an Hibernated state!!!.");
                         break;
+                    case Core::ERROR_INVALID_DEVICENAME:
+                        Code = -32001; // Invalid device name
+                        break;
+                    case Core::ERROR_INVALID_MOUNTPOINT:
+                        Code = -32002; // Invalid mount path
+                        break;
+                    case Core::ERROR_FIRMWAREUPDATE_INPROGRESS:
+                        Code = -32003; // Firmware update inprogress
+                        break;
+                    case Core::ERROR_FIRMWAREUPDATE_UPTODATE:
+                        Code = -32004; // Firmware upto date
+                        break;
                     default:
                         if ((frameworkError & 0x80000000) == 0) {
 
@@ -139,7 +151,7 @@ namespace Core {
                                 Code = (customcode == std::numeric_limits<int32_t>::max() ? 0 : customcode);
                             } else
 #endif
-                            if (frameworkError <= 999) {
+                            if( frameworkError <= 999  || frameworkError > 2000 ) {
                                 Code = static_cast<int32_t>(frameworkError);
                             } else {
                                 Code = -31000 - static_cast<int32_t>(frameworkError);

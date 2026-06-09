@@ -28,6 +28,7 @@
 namespace WPEFramework {
 
 namespace PluginHost {
+namespace {
 
   namespace {
 

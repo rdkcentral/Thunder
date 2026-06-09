@@ -417,6 +417,7 @@ namespace WPEFramework {
             }
 
             ::free(m_SendBuffer);
+            m_SendBuffer = nullptr;
         }
 
         //////////////////////////////////////////////////////////////////////

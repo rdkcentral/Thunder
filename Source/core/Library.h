@@ -42,6 +42,8 @@ namespace Core {
         typedef void (*ModuleUnload)();
 
     public:
+        typedef void (*LibraryLoadCallback)();
+        static void RegisterLibraryLoadCallback(LibraryLoadCallback callback);
         Library();
         Library(const void* functionInLibrary);
         Library(const TCHAR fileName[]);
@@ -49,6 +51,7 @@ namespace Core {
         Library(const Library& copy);
         ~Library();
 
+        Library& operator=(Library&& RHS);
         Library& operator=(const Library& RHS);
 
     public:
@@ -75,6 +78,7 @@ namespace Core {
     private:
         RefCountedHandle* _refCountedHandle;
         string _error;
+        static LibraryLoadCallback g_loadCallback;
     };
 }
 } // namespace Core

@@ -1753,13 +1753,6 @@ namespace Core {
                 if ((_flagsAndCounters & (SetBit | QuoteFoundBit | QuotedSerializeBit)) == (SetBit | QuoteFoundBit)) {
                     return (Core::ToQuotedString('\"', _value));
                 }
-                else {
-                    return (RawString());
-                }
-            }
-
-            inline const string RawString() const
-            {
                 return (((_flagsAndCounters & (SetBit | NullBit)) == SetBit) ? Core::ToString(_value.c_str()) : Core::ToString(_default.c_str()));
             }
 
@@ -2120,13 +2113,9 @@ namespace Core {
                     offset += static_cast<uint32_t>(_value.length()) ;
                 } else {
                     offset = 0;
-                    _flagsAndCounters |= SetBit;
+                    _flagsAndCounters |= (_value == IElement::NullTag ? NullBit|SetBit : SetBit);
 
                     if ((_flagsAndCounters & QuoteFoundBit) == 0) {
-                        if (_value == IElement::NullTag) {
-                            _flagsAndCounters |= NullBit;
-                        }
-
                         // Right-trim the non-string value, it's always left-trimmed already
                         _value.erase(std::find_if(_value.rbegin(), _value.rend(), [](const unsigned char ch) { return (!std::isspace(static_cast<uint8_t>(ch))); }).base(), _value.end());
                     }
@@ -4282,7 +4271,7 @@ namespace Core {
                 : JSON::String(false)
                 , _type(type::EMPTY)
             {
-                String::operator=(_T("null"));
+                String::operator=("null");
             }
 
             Variant(const int32_t value)
@@ -4393,7 +4382,7 @@ namespace Core {
             {
                 bool result = false;
                 if (_type == type::BOOLEAN) {
-                    result = (String() == _T("true"));
+                    result = (Value() == "true");
                 }
                 return result;
             }
@@ -4402,7 +4391,7 @@ namespace Core {
             {
                 int64_t result = 0;
                 if (_type == type::NUMBER) {
-                    result = Core::NumberType<int64_t>(String().c_str(), static_cast<uint32_t>(String().length()));
+                    result = Core::NumberType<int64_t>(Value().c_str(), static_cast<uint32_t>(Value().length()));
                 } else if (_type == type::FLOAT) {
                     result = static_cast<int64_t>(Float());
                 } else if (_type == type::DOUBLE) {
@@ -4418,7 +4407,7 @@ namespace Core {
                     result = static_cast<float>(Number());
                 } else if (_type == type::FLOAT) {
                     JSON::Float value;
-                    if (value.FromString(String())) {
+                    if (value.FromString(Value())) {
                         result = value.Value();
                     }
                 } else if (_type == type::DOUBLE) {
@@ -4436,7 +4425,7 @@ namespace Core {
                     result = static_cast<double>(Float());
                 } else if (_type == type::DOUBLE) {
                     JSON::Double value;
-                    if (value.FromString(String())) {
+                    if (value.FromString(Value())) {
                         result = value.Value();
                     }
                 }
@@ -4445,7 +4434,7 @@ namespace Core {
 
             const string String() const
             {
-                return RawString();
+                return Value();
             }
 
             DEPRECATED inline const string Value() const
@@ -4457,7 +4446,7 @@ namespace Core {
             {
                 ArrayType<Variant> result;
 
-                result.FromString(String());
+                result.FromString(Value());
 
                 return result;
             }
@@ -4894,7 +4883,7 @@ namespace Core {
             }
             string GetDebugString(int indent = 0) const;
 
-            void Remove(const TCHAR label[])
+            /*void Remove(const TCHAR label[])
             {
                 Elements::iterator index = Find(label);
                 if (index != _elements.end()) {
@@ -4902,7 +4891,7 @@ namespace Core {
                 }
 
                 Container::Remove(label);
-            }
+            }*/
 
         private:
             Elements::iterator Find(const TCHAR fieldName[])
@@ -4953,7 +4942,7 @@ namespace Core {
         inline VariantContainer Variant::Object() const
         {
             VariantContainer result;
-            result.FromString(String());
+            result.FromString(Value());
             return (result);
         }
 
@@ -4969,14 +4958,14 @@ namespace Core {
             case type::BOOLEAN: {
                 Core::OptionalType<JSON::Error> error;
                 JSON::Boolean stacked;
-                stacked.FromString(String(), error);
+                stacked.FromString(Value(), error);
                 result = (error.IsSet() == false);
                 break;
             }
             case type::NUMBER: {
                 Core::OptionalType<JSON::Error> error;
                 JSON::DecUInt64 stacked;
-                stacked.FromString(String(), error);
+                stacked.FromString(Value(), error);
                 result = (error.IsSet() == false);
                 break;
             }
@@ -4984,14 +4973,14 @@ namespace Core {
             case type::FLOAT: {
                 Core::OptionalType<JSON::Error> error;
                 JSON::Double stacked;
-                stacked.FromString(String(), error);
+                stacked.FromString(Value(), error);
                 result = (error.IsSet() == false);
                 break;
             }
             case type::ARRAY: {
                 Core::OptionalType<JSON::Error> error;
                 Core::JSON::ArrayType<JSON::Variant> stacked;
-                stacked.FromString(String(), error);
+                stacked.FromString(Value(), error);
                 result = (error.IsSet() == false);
                 Core::JSON::ArrayType<JSON::Variant>::ConstIterator index = static_cast<const Core::JSON::ArrayType<JSON::Variant>&>(stacked).Elements();
                 if ((result == true) && (index.Next() == true) && index.Current().IsValid()) {
@@ -5006,7 +4995,7 @@ namespace Core {
             case type::OBJECT: {
                 Core::OptionalType<JSON::Error> error;
                 VariantContainer stacked;
-                stacked.FromString(String(), error);
+                stacked.FromString(Value(), error);
                 result = ((error.IsSet() == false) && (stacked.IsValid() == true));
                 break;
             }
@@ -5018,33 +5007,39 @@ namespace Core {
 
         inline uint16_t Variant::Deserialize(const char stream[], const uint16_t maxLength, uint32_t& offset, Core::OptionalType<Error>& error)
         {
-            uint16_t result = String::Deserialize(stream, maxLength, offset, error);
-
-            // If we are complete, try to guess what it was that we received...
-            if (offset == 0) {
-                if (IsQuoted() == false) {
-                    const string base = JSON::String::RawString();
-                    if (IsNull() == true) {
-                        _type = type::EMPTY;
-                    }
-                    else if (base[0] == '{') {
+            uint16_t result = 0;
+            if (stream[0] == '{' || stream[0] == '[') {
+                uint16_t endIndex = FindEndOfScope(stream, maxLength);
+                if (endIndex > 0 && endIndex < maxLength) {
+                    result = endIndex + 1;
+                    SetQuoted(false);
+                    string str(stream, endIndex + 1);
+                    if (stream[0] == '{') {
                         _type = type::OBJECT;
-                    }
-                    else if (base[0] == '[') {
+                        String::operator=(str);
+                    } else {
                         _type = type::ARRAY;
-                    }
-                    else if ((base == _T("true")) || (base == _T("false"))) {
-                        _type = type::BOOLEAN;
-                    }
-                    else if (base.find('.') != std::string::npos) {
-                        _type = type::DOUBLE;
-                    }
-                    else {
-                        _type = type::NUMBER;
+                        String::operator=(str);
                     }
                 }
-                else {
-                    _type = type::STRING;
+            }
+            if (result == 0) {
+                result = String::Deserialize(stream, maxLength, offset, error);
+
+                _type = type::STRING;
+
+                // If we are complete, try to guess what it was that we received...
+                if (offset == 0) {
+                    bool quoted = IsQuoted();
+                    SetQuoted(quoted);
+                    // If it is not quoted, it can be a boolean or a number...
+                    if (quoted == false) {
+                        if ((Value() == _T("true")) || (Value() == _T("false"))) {
+                            _type = type::BOOLEAN;
+                        } else if (IsNull() == false) {
+                            _type = type::NUMBER;
+                        }
+                    }
                 }
             }
             return (result);

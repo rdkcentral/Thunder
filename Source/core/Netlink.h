@@ -394,6 +394,9 @@ namespace Core {
 
         virtual uint16_t Deserialize(const uint8_t dataFrame[], const uint16_t receivedSize) = 0;
 
+    protected:
+        virtual uint32_t Initialize() override;
+
     private:
         // Methods to extract and insert data into the socket buffers
         virtual uint16_t SendData(uint8_t* dataFrame, const uint16_t maxSendSize) override;

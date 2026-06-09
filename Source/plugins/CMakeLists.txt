@@ -168,7 +168,7 @@ InstallPackageConfig(
         DESCRIPTION "Basic library to realize the glue between a proprietary plugin and the framework host.")
 
 InstallCMakeConfig(
-        EXTRA_DEPENDENCIES "ConfigGenerator"
+        EXTRA_DEPENDENCIES "WPEFramework;ConfigGenerator"
         TARGETS ${TARGET})
 
 InstallCMakeConfig(TARGETS ${TARGET_PROXYSTUBS})

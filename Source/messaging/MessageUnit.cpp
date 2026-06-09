@@ -408,6 +408,7 @@ ENUM_CONVERSION_END(WPEFramework::Core::Messaging::OutputMode)
                     _direct.Output(messageInfo, message);
                 }
             }
+#endif
         }
     } // namespace Messaging
 }

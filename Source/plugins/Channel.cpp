@@ -26,7 +26,7 @@ namespace PluginHost {
 
 PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
     Channel::Channel(const SOCKET& connector, const Core::NodeId& remoteId)
-        : BaseClass(true, false, 5, _requestAllocator, false, connector, remoteId, 1024, 1024)
+        : BaseClass(true, false, 5, _requestAllocator, false, connector, remoteId, 1024, -1)
         , _ID(0)
         , _nameOffset(~0)
         , _state(WEB)

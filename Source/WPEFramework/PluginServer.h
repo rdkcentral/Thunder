@@ -1451,12 +1451,16 @@ namespace PluginHost {
                 Core::ProxyType<Core::JSONRPC::Message> response;
 
                 Lock();
-
-                if ( (_jsonrpc == nullptr) || (IsActive() == false) ) {
+                if ( (_jsonrpc == nullptr) || (IsActive() == false
+#ifdef HIBERNATE_SUPPORT_AUTOWAKEUP_ENABLED
+                 && IsHibernated() == false
+#endif
+                 ) ) {
+                    bool isHibernated = IsHibernated();
                     Unlock();
 
                     response = Core::ProxyType<Core::JSONRPC::Message>(IFactories::Instance().JSONRPC());
-                    if(IsHibernated() == true)
+                    if(isHibernated)
                     {
                         response->Error.SetError(Core::ERROR_HIBERNATED);
                         response->Error.Text = _T("Service is hibernated");
@@ -1469,6 +1473,12 @@ namespace PluginHost {
                     response->Id = message.Id;
                 }
                 else {
+#ifdef HIBERNATE_SUPPORT_AUTOWAKEUP_ENABLED
+                    if (IsHibernated())
+                    {
+                        Wakeup();
+                    }
+#endif
                     Unlock();
 
 #if THUNDER_RUNTIME_STATISTICS
@@ -1530,6 +1540,26 @@ namespace PluginHost {
                                 case Core::ERROR_FAILED_UNREGISTERED:
                                     response->Error.SetError(Core::ERROR_UNKNOWN_KEY);
                                     response->Error.Text = _T("Unregister was already done!!!.");
+                                    break;
+                                case Core::ERROR_INVALID_PARAMETER:
+                                    response->Error.SetError(Core::ERROR_INVALID_SIGNATURE);
+                                    response->Error.Text = _T("Invalid Parameter");
+                                    break;
+                                case Core::ERROR_INVALID_DEVICENAME:
+                                    response->Error.SetError(Core::ERROR_INVALID_DEVICENAME);
+                                    response->Error.Text = _T("Invalid device name");
+                                    break;
+                                case Core::ERROR_INVALID_MOUNTPOINT:
+                                    response->Error.SetError(Core::ERROR_INVALID_MOUNTPOINT);
+                                    response->Error.Text = _T("Invalid mount path");
+                                    break;
+                                case Core::ERROR_FIRMWAREUPDATE_INPROGRESS:
+                                    response->Error.SetError(Core::ERROR_FIRMWAREUPDATE_INPROGRESS);
+                                    response->Error.Text = _T("Firmware update already in progress");
+                                    break;
+                                case Core::ERROR_FIRMWAREUPDATE_UPTODATE:
+                                    response->Error.SetError(Core::ERROR_FIRMWAREUPDATE_UPTODATE);
+                                    response->Error.Text = _T("Firmware is already upto date");
                                     break;
                                 default:
                                     response->Error.SetError(result);
@@ -1823,7 +1853,7 @@ namespace PluginHost {
             }
 
         private:
-            uint32_t Wakeup(const uint32_t timeout);
+            uint32_t Wakeup(const uint32_t timeout = 10000 /*ms*/);
 #ifdef HIBERNATE_SUPPORT_ENABLED
             uint32_t HibernateChildren(const Core::process_t parentPID, const uint32_t timeout);
             uint32_t WakeupChildren(const Core::process_t parentPID, const uint32_t timeout);
@@ -4695,6 +4725,12 @@ POP_WARNING()
                 std::list<Core::callstack_info> stackList;
 
                 ::DumpCallStack(static_cast<ThreadId>(index.Current().Id.Value()), stackList);
+                for(const Core::callstack_info& entry : stackList)
+                {
+                    std::string symbol = entry.function.empty() ? "Unknown symbol" : entry.function;
+                    fprintf(stderr, "[%s]:[%s]:[%d]:[%p]\n",entry.module.c_str(), symbol.c_str(),entry.line,entry.address);
+                }
+                fflush(stderr);
 
                 PostMortemData::Callstack dump;
                 dump.Id = index.Current().Id.Value();
@@ -4706,11 +4742,13 @@ POP_WARNING()
                 data.Callstacks.Add(dump);
             }
 
-            // Drop the workerpool info (what is currently running and what is pending) to a file..
-            Core::File dumpFile(_config.PostMortemPath() + "ThunderInternals.json");
-            if (dumpFile.Create(false) == true) {
-                data.IElement::ToFile(dumpFile);
-            }
+            // Drop the workerpool info (what is currently running and what is pending) to a wpeframework.log
+            string jsonContent;
+            data.IElement::ToString(jsonContent);
+            SYSLOG(Logging::Shutdown, (_T("!!!!!!WPEFramework/Thunder Workerpool info started!!!!!!\n")));
+            SYSLOG(Logging::Shutdown, (_T("[%s]\n"), jsonContent.c_str()));
+            SYSLOG(Logging::Shutdown, (_T("!!!!!!WPEFramework/Thunder Workerpool info Ended!!!!!!\n")));
+            fflush(stderr);
         }
         inline ServiceMap& Services()
         {
