@@ -130,9 +130,13 @@ namespace Tests {
             while (sent < length) {
                 uint32_t chunk = (chunkSize > (length - sent)) ? (length - sent) : chunkSize;
 
-                ssize_t result = ::send(_fd, data + sent, chunk, 0);
+                int flags = 0;
+#if defined(MSG_NOSIGNAL)
+                flags |= MSG_NOSIGNAL;
+#endif
+                const ssize_t result = ::send(_fd, data + sent, chunk, flags);
                 if (result <= 0) {
-                    _connected = false;
+                    Close();
                     break;
                 }
 
