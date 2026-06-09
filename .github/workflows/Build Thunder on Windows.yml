@@ -27,7 +27,12 @@ env:
 
 jobs:
   Thunder:
-    runs-on: windows-latest
+    # windows-latest runs VS2026 since june 2026, this workflow uses VS2022. 
+    # To avoid breaking changes, for now use windows-2022 until a windows guru can 
+    # update the workflow to support VS2026 safely. -- linux-boi out...
+    # Details:
+    # https://github.com/actions/runner-images/issues/14017
+    runs-on: windows-2022 
 
     strategy:
       matrix:
