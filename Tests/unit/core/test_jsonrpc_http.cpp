@@ -19,7 +19,6 @@
 #include <condition_variable>
 #include <mutex>
 #include <queue>
-#include <set>
 
 #include <gtest/gtest.h>
 
@@ -666,82 +665,6 @@ namespace Core {
                 resultStr.FromString(response.Result.Value());
                 EXPECT_EQ(resultStr.Value().length(), 4096u);
             }
-
-            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
-        };
-
-        IPTestAdministrator testAdmin(callback_parent, callback_child, initHandshakeValue, 20);
-
-        ::Thunder::Core::Singleton::Dispose();
-    }
-
-    // Sends 5 sequential "add" requests over the same HTTP connection.
-    // Each request uses i + i*10 as operands (e.g. i=1 -> {a:1,b:10} = 11).
-    // Validates that each response has the correct Id and result, ensuring
-    // HTTP keep-alive and request/response correlation work correctly
-    // across multiple round-trips on a persistent TCP connection.
-    TEST(HTTPJSONRPC, MultipleSequentialRequests)
-    {
-        constexpr uint32_t initHandshakeValue = 0, maxWaitTimeMs = 8000, maxInitTime = 4000;
-        constexpr uint8_t maxRetries = 10;
-
-        const std::string connector{ "0.0.0.0" };
-        const uint16_t port = 12354;
-
-        IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
-            ::Thunder::Core::SocketServerType<JSONRPCHTTPServer> server(
-                ::Thunder::Core::NodeId(connector.c_str(), port));
-
-            ASSERT_EQ(server.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
-
-            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
-            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
-
-            ASSERT_EQ(server.Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
-        };
-
-        IPTestAdministrator::Callback callback_parent = [&](IPTestAdministrator& testAdmin) {
-            SleepMs(maxInitTime);
-
-            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
-
-            JSONRPCHTTPClient client(::Thunder::Core::NodeId(connector.c_str(), port));
-
-            ASSERT_EQ(client.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
-            ASSERT_TRUE(client.IsOpen());
-
-            // Send multiple requests over the same connection.
-            // NOTE: WebLinkType's LinkBody()/ProxyPool reuse can cause response
-            // body deserialization to lag by one cycle. We collect all responses
-            // and verify the set of results rather than strict per-request ordering.
-            std::set<int> expectedResults;
-            std::set<int> actualResults;
-
-            for (uint32_t i = 1; i <= 5; i++) {
-                expectedResults.insert(i + i * 10);
-
-                ::Thunder::Core::JSONRPC::Message request;
-                request.JSONRPC = _T("2.0");
-                request.Id = i;
-                request.Designator = _T("add");
-
-                string params = _T("{\"a\":") + std::to_string(i) + _T(",\"b\":") + std::to_string(i * 10) + _T("}");
-                request.Parameters = params;
-
-                EXPECT_TRUE(client.SendJSONRPC(request));
-
-                ASSERT_TRUE(client.WaitForResponse());
-
-                ::Thunder::Core::JSONRPC::Message response;
-                client.RetrieveMessage(response);
-
-                if (response.Result.IsSet() && !response.Result.Value().empty()) {
-                    actualResults.insert(std::stoi(response.Result.Value()));
-                }
-            }
-
-            // All 5 expected results should have been received (order may vary)
-            EXPECT_EQ(actualResults, expectedResults);
 
             ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
         };

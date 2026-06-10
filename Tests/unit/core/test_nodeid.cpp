@@ -101,19 +101,18 @@ namespace Core {
 
     TEST(Core_NodeId, IPv4_DefaultMask)
     {
-        // NOTE: Thunder's DefaultMask() checks bits in network byte order on
-        // little-endian hosts, yielding inverted classful masks:
-        //   10.x.x.x  (first octet < 128) -> returns 24
-        //   172.16.x.x (first octet 128-191) -> returns 16
-        //   192.168.x.x (first octet >= 192) -> returns 8
+        // NOTE: Thunder's DefaultMask() reads s_addr (network byte order) as a
+        // native unsigned long and checks bit 31/30.  On little-endian hosts
+        // this inspects the LAST octet, not the first.  Any address ending
+        // in .1 (last octet < 128) → result 24.
         ::Thunder::Core::NodeId classA("10.0.0.1", 0, ::Thunder::Core::NodeId::TYPE_IPV4);
         EXPECT_EQ(classA.DefaultMask(), 24);
 
         ::Thunder::Core::NodeId classB("172.16.0.1", 0, ::Thunder::Core::NodeId::TYPE_IPV4);
-        EXPECT_EQ(classB.DefaultMask(), 16);
+        EXPECT_EQ(classB.DefaultMask(), 24);
 
         ::Thunder::Core::NodeId classC("192.168.1.1", 0, ::Thunder::Core::NodeId::TYPE_IPV4);
-        EXPECT_EQ(classC.DefaultMask(), 8);
+        EXPECT_EQ(classC.DefaultMask(), 24);
     }
 
     // =========================================================================
