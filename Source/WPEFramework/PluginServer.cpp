@@ -1253,6 +1253,11 @@ POP_WARNING()
         Dispatcher().Open(MAX_EXTERNAL_WAITS);
 
         _services.Startup();
+
+#ifdef SYSTEMD_FOUND
+        SYSLOG(Logging::Startup, (_T("Notify that WPEFramework Systemd Service is Ready")));
+        sd_notify(0, "READY=1");
+#endif /* SYSTEMD_FOUND */
     }
 
     void Server::Close()

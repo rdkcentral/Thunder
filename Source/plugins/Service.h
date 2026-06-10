@@ -319,11 +319,6 @@ namespace PluginHost {
         {
             return (_config.Configuration().StartupOrder.Value());
         }
-
-        bool Extension() const
-        {
-            return (_config.Configuration().Extension.Value());
-        }
         inline bool IsActive() const
         {
             return (_state == ACTIVATED);

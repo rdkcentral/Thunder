@@ -28,7 +28,17 @@
 namespace WPEFramework {
 
 namespace PluginHost {
-namespace {
+
+  namespace {
+
+        static string Pack(const string& event, const string& index)
+        {
+            string packed = event;
+            if (index.empty() == false) {
+                packed += TCHAR('@') + index;
+            }
+            return packed;
+        }
 
   namespace {
 

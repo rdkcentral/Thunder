@@ -89,14 +89,14 @@ namespace WPEFramework {
         fflush(stderr);                                                                                                                     \
     } while (0)
 #else
-#define TRACE_FORMATTING_IMPL(fmt, ...)                                                                                                     \
-    do {                                                                                                                                    \
-        if (0 == access(TRACE_LOG_FLAG, F_OK)) {                                                                                   \
-            ::fprintf(stderr, "[%s:%d](%s)<PID:%d><TID:%d>" fmt "\n",                                            \
+#define TRACE_FORMATTING_IMPL(fmt, ...)                                                                                                    \
+do {                                                                                                 \
+    if (0 == access(TRACE_LOG_FLAG, F_OK)) {                                                                                   \
+    ::fprintf(stderr, "[%s:%d](%s)<PID:%d><TID:%d>" fmt "\n",                                            \
                       &__FILE__[WPEFramework::Core::FileNameOffset(__FILE__)], __LINE__, __FUNCTION__, TRACE_PROCESS_ID, TRACE_THREAD_ID, ##__VA_ARGS__); \
-            fflush(stderr);                                                                                                           \
-        }                                                                                                                         \
-    } while (0)
+    fflush(stderr);                                                                                                           \
+    }                                                                                                                          \
+}  while (0)
 #endif
 
 #endif
@@ -290,21 +290,12 @@ namespace WPEFramework {
             Core::LogMessage(Core::ToString(__FILE__).c_str(), __LINE__, MESSAGE)); \
     }
 
-#define CC_SYSLOG_COMMON(format, ...)                                       \
+#define CC_SYSLOG(format, ...)                                       \
     do {                                                                    \
         fprintf(stderr, "CRITICAL CONDITION! " format "\n", ##__VA_ARGS__); \
         fflush(stderr);                                                     \
     } while(0)
 
-#ifdef __WINDOWS__
-    #define CC_SYSLOG(format, ...) CC_SYSLOG_COMMON(format, ##__VA_ARGS__)
-#else
-    #define CC_SYSLOG(format, ...)                                          \
-        do {                                                                \
-            syslog(LOG_ERR, "CRITICAL CONDITION! " format, ##__VA_ARGS__);  \
-            CC_SYSLOG_COMMON(format, ##__VA_ARGS__);                        \
-        } while(0)
-#endif
 
 namespace WPEFramework {
 namespace Core {
