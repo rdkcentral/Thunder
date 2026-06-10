@@ -92,17 +92,17 @@ namespace WPEFramework {
 #define TRACE_FORMATTING_IMPL(fmt, ...)                                                                                                    \
 do {                                                                                                 \
     if (0 == access(TRACE_LOG_FLAG, F_OK)) {                                                                                   \
-    ::fprintf(stderr, "[%s:%d](%s)<PID:%d><TID:%d>" fmt "\n",                                            \
+    ::fprintf(stderr, "[%s:%d](%s)<PID:%d><TID:%PRId64 >" fmt "\n",                                            \
                       &__FILE__[WPEFramework::Core::FileNameOffset(__FILE__)], __LINE__, __FUNCTION__, TRACE_PROCESS_ID, TRACE_THREAD_ID, ##__VA_ARGS__); \
-    fflush(stderr);                                                                                                           \
+    fflush(stderr);                                   PRId64                                                                         \
     }                                                                                                                          \
 }  while (0)
 #endif
-
+#
 #endif
 
 #if defined(CORE_TRACE_NOT_ALLOWED) && !defined(__WINDOWS__) 
-#define TRACE_FORMATTING(fmt, ...)                                                                            \
+#define TRACE_FORMATTING(fmt, ...)                                                                            \                         \
     TRACE_FORMATTING_IMPL(fmt, ##__VA_ARGS__)
 #else
 #define TRACE_FORMATTING(fmt, ...)                                                                            \
