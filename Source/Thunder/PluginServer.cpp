@@ -1463,9 +1463,13 @@ namespace PluginHost {
 
     void Server::Notification(const string& callsign, const string& event, const string& parameters)
     {
-        ASSERT((_controller.IsValid() == true) && (_controller->ClassType<Plugin::Controller>() != nullptr));
+        ASSERT(_controller.IsValid() == true);
 
         Plugin::Controller* controller = _controller->ClassType<Plugin::Controller>();
+
+        // controller may be nullptr here: a statechange notification can be delivered
+        // after the Controller has released its handler during shutdown deactivation.
+        // The guard below already handles that case as a no-op — it is not an error.
 
         // Break a recursive loop, if it tries to arise ;-)
         if ( (controller != nullptr) && (callsign != controller->Callsign()) ) {
