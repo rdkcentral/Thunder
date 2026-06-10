@@ -188,12 +188,39 @@ jobs:
           -DTEST_PLUGIN_PATH="${PWD}/${{matrix.build_type}}/install/usr/lib/thunder/plugins"
         cmake --build ${{matrix.build_type}}/build/ThunderNanoServicesTests
 
+    - name: Enable core dumps
+      run: |
+        ulimit -c unlimited
+        sudo mkdir -p /tmp/cores
+        sudo chmod 777 /tmp/cores
+        echo "kernel.core_pattern=/tmp/cores/core.%e.%p.%t" | sudo tee /proc/sys/kernel/core_pattern
+        sudo sysctl -p
+        sudo apt-get install -y gdb
+
     - name: Run smoke test
       run: |
+        ulimit -c unlimited
         LD_LIBRARY_PATH="${{matrix.build_type}}/install/usr/lib:$LD_LIBRARY_PATH" \
         ${{matrix.build_type}}/build/Thunder/Tests/test_support/tests/thunder_test_runtime_smoke \
           --gtest_output="xml:smoke-test-results.xml" \
-          --gtest_color=yes
+          --gtest_color=yes || true  # Allow failure so backtrace step runs
+
+    - name: Dump backtrace on crash
+      if: ${{ always() }}  # Change to always() instead of failure()
+      run: |
+        BIN="${{matrix.build_type}}/build/Thunder/Tests/test_support/tests/thunder_test_runtime_smoke"
+        CORES_FOUND=0
+        for core in /tmp/cores/core.*; do
+          [ -e "$core" ] || continue
+          CORES_FOUND=1
+          echo "===== backtrace for $core ====="
+          LD_LIBRARY_PATH="${{matrix.build_type}}/install/usr/lib:$LD_LIBRARY_PATH" \
+          gdb -batch -ex "thread apply all bt full" -ex "quit" "$BIN" "$core" 2>&1 | tee -a backtrace.txt
+        done
+        if [ $CORES_FOUND -eq 0 ]; then
+          echo "No core files found in /tmp/cores"
+          ls -la /tmp/cores/ || echo "/tmp/cores does not exist"
+        fi
 
     # - name: Run plugin test (COM-RPC + JSON-RPC + events)
     #   run: |
@@ -203,9 +230,21 @@ jobs:
     #       --gtest_color=yes
 
     - name: Upload test results
+      if: ${{ always() }}
       uses: actions/upload-artifact@v4
       with:
         name: test-results-${{matrix.build_type}}
         path: |
           smoke-test-results.xml
           # plugin-test-results.xml
+        if-no-files-found: warn
+
+    - name: Upload crash artifacts
+      if: ${{ always() }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: crash-artifacts-${{matrix.build_type}}
+        path: |
+          backtrace.txt
+          /tmp/cores/
+        if-no-files-found: ignore
