@@ -27,12 +27,7 @@ env:
 
 jobs:
   Thunder:
-    # windows-latest runs VS2026 since june 2026, this workflow uses VS2022. 
-    # To avoid breaking changes, for now use windows-2022 until a windows guru can 
-    # update the workflow to support VS2026 safely. -- linux-boi out...
-    # Details:
-    # https://github.com/actions/runner-images/issues/14017
-    runs-on: windows-2022 
+    runs-on: windows-latest 
 
     strategy:
       matrix:
@@ -129,12 +124,18 @@ jobs:
 
     - name: Build Thunder
       shell: cmd
-      run: >
+      run: |
+        for /f "usebackq tokens=*" %%i in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -requires Microsoft.VisualStudio.Component.CoreEditor -property productPath`) do set "VS_PATH=%%i"
+        if not defined VS_PATH (echo ERROR: Visual Studio not found && exit /b 1)
+        
+        set "devEnv=%VS_PATH:.exe=.com%"
+        set "CoreConsole=__CORE_WARNING_REPORTING__"
         cd ThunderOnWindows
-        && set CoreConsole="__CORE_WARNING_REPORTING__"
-        && "%devEnv%" "%solution%" /Build "${{matrix.type}}|x${{matrix.version}}" /Project "%bridge%"
-        && "%devEnv%" "%solution%" /Build "${{matrix.type}}|x${{matrix.version}}" /Project "%comProcess%"
-        && "%devEnv%" "%solution%" /Build "${{matrix.type}}|x${{matrix.version}}" /Project "%warningReporting%"
+        
+        for %%P in ("%bridge%" "%comProcess%" "%warningReporting%") do (
+          "%devEnv%" "%solution%" /Build "${{matrix.type}}|x${{matrix.version}}" /Project %%P
+          if errorlevel 1 exit /b 1
+        )
 
     - name: Tar files
       run: tar -czvf ${{matrix.type}}${{matrix.version}}.tar.gz artifacts
