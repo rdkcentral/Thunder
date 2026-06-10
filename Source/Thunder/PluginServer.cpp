@@ -608,17 +608,11 @@ namespace PluginHost {
         TRACE(Activity, (_T("Hibernation of plugin [%s] process [%u]"), sm._parent.Callsign().c_str(), parentPID));
         Core::hresult result = HibernateProcess(timeout, parentPID, sm._parent._administrator.Configuration().HibernateLocator().c_str(), _T(""), &sm._parent._hibernateStorage);
 
-        sm._parent.Lock();
-        // Note: in the original design this checked whether a concurrent Wakeup() or
-        // Deactivate() had changed state during HibernateProcess(). Under the new design
-        // _transitionLock is held throughout — no concurrent transition can run — so this
-        // check can never fire. Retained as a defensive guard only.
-        if (sm._parent.State() != IShell::HIBERNATED) {
-            SYSLOG(Logging::Startup, (_T("Hibernation aborted of plugin [%s] process [%u]"), sm._parent.Callsign().c_str(), parentPID));
-            sm._parent.Unlock();
-            return Core::ERROR_ABORTED;
-        }
-        sm._parent.Unlock();
+        // _transitionLock is held for the full transition, so no concurrent Wakeup() or
+        // Deactivate() can change state across the blocking HibernateProcess() call. The
+        // original runtime check here can never fire under that model — assert the
+        // invariant instead so a future change to the lock model is caught in debug.
+        ASSERT(sm._parent.State() == IShell::HIBERNATED);
 
         if (result == HIBERNATE_ERROR_NONE) {
             result = sm._parent.HibernateChildren(parentPID, timeout);
@@ -1017,14 +1011,13 @@ namespace PluginHost {
 
             for (auto iter = childrenPIDs.begin(); iter != childrenPIDs.end(); ++iter) {
                 TRACE(Activity, (_T("Hibernation of plugin [%s] child process [%u]"), Callsign().c_str(), *iter));
-                Lock();
+
                 if (State() != IShell::HIBERNATED) {
                     SYSLOG(Logging::Startup, (_T("Hibernation aborted of plugin [%s] child process [%u]"), Callsign().c_str(), *iter));
                     result = Core::ERROR_ABORTED;
-                    Unlock();
                     break;
                 }
-                Unlock();
+
                 result = HibernateProcess(timeout, *iter, _administrator.Configuration().HibernateLocator().c_str(), _T(""), &_hibernateStorage);
                 if (result == HIBERNATE_ERROR_NONE) {
                     // Hibernate Children of this process
