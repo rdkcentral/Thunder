@@ -970,49 +970,36 @@ namespace PluginHost {
         return result;
     }
 
-    uint32_t Server::Service::Wakeup(const uint32_t timeout VARIABLE_IS_NOT_USED) {
+    uint32_t Server::Service::Wakeup(const uint32_t timeout VARIABLE_IS_NOT_USED)
+    {
+        ASSERT(_stateMachine.IsTransitionThread());
+        ASSERT(_connection != nullptr);
+
         Core::hresult result = Core::ERROR_NONE;
 
-        IShell::state currentState(State());
+        RPC::IMonitorableProcess* local = _connection->QueryInterface<RPC::IMonitorableProcess>();
 
-        if (currentState != IShell::state::HIBERNATED) {
-            result = Core::ERROR_ILLEGAL_STATE;
+        if (local == nullptr) {
+            result = Core::ERROR_BAD_REQUEST;
         }
         else {
-            ASSERT(_connection != nullptr);
-
-            // Oke we have an Connection so there is something to Wakeup..
-            RPC::IMonitorableProcess* local = _connection->QueryInterface< RPC::IMonitorableProcess>();
-
-            if (local == nullptr) {
-                result = Core::ERROR_BAD_REQUEST;
-            }
-            else {
 #ifdef HIBERNATE_SUPPORT_ENABLED
-                pid_t parentPID = local->ParentPID();
+            pid_t parentPID = local->ParentPID();
 
-                // There is no recovery path while doing Wakeup, don't care about errors
-                WakeupChildren(parentPID, timeout);
+            // There is no recovery path while doing Wakeup, don't care about errors
+            WakeupChildren(parentPID, timeout);
 
-                TRACE(Activity, (_T("Wakeup of plugin [%s] process [%u]"), Callsign().c_str(), parentPID));
-                result = WakeupProcess(timeout, parentPID, _administrator.Configuration().HibernateLocator().c_str(), _T(""), &_hibernateStorage);
-#else
-                result = Core::ERROR_NONE;
+            TRACE(Activity, (_T("Wakeup of plugin [%s] process [%u]"), Callsign().c_str(), parentPID));
+            result = WakeupProcess(timeout, parentPID, _administrator.Configuration().HibernateLocator().c_str(), _T(""), &_hibernateStorage);
 #endif
-                if (result == Core::ERROR_NONE) {
-                    // Updates base class _state only — _current in StateMachine is NOT updated.
-                    // Callers (HibernatedState::Activate and HibernatedState::Deactivate) are
-                    // responsible for calling SetState(_stateActivated) immediately after Wakeup()
-                    // returns to close the window where State() == ACTIVATED but _current still
-                    // points to HibernatedState (which returns nullptr from QueryInterface).
-                    State(ACTIVATED);
-                    SYSLOG(Logging::Startup, (_T("Activated plugin from hibernation [%s]:[%s]"), ClassName().c_str(), Callsign().c_str()));
-                }
-                local->Release();
+            if (result == Core::ERROR_NONE) {
+                SYSLOG(Logging::Startup, (_T("Activated plugin from hibernation [%s]:[%s]"), ClassName().c_str(), Callsign().c_str()));
             }
+
+            local->Release();
         }
 
-        return (result);
+        return result;
     }
 
 #ifdef HIBERNATE_SUPPORT_ENABLED
