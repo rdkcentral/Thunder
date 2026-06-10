@@ -202,10 +202,10 @@ jobs:
         LD_LIBRARY_PATH="${{matrix.build_type}}/install/usr/lib:$LD_LIBRARY_PATH" \
         ${{matrix.build_type}}/build/Thunder/Tests/test_support/tests/thunder_test_runtime_smoke \
           --gtest_output="xml:smoke-test-results.xml" \
-          --gtest_color=yes || true  # Allow failure so backtrace step runs
+          --gtest_color=yes
 
     - name: Dump backtrace on crash
-      if: ${{ always() }}  # Change to always() instead of failure()
+      if: ${{ always() }}
       run: |
         BIN="${{matrix.build_type}}/build/Thunder/Tests/test_support/tests/thunder_test_runtime_smoke"
         CORES_FOUND=0
