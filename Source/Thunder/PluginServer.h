@@ -742,7 +742,10 @@ namespace PluginHost {
             //
             //   Internal triggers (_Activate, _Deactivate) bypass _transitionLock and
             //   are only legal from within an active transition (state class methods).
-            //   ASSERT(_transitionThread == Core::Thread::ThreadId()) guards misuse.
+            //   IsTransitionThread() detects re-entry on the same thread and the public
+            //   triggers reject it with ERROR_ILLEGAL_STATE. This guard is active in all
+            //   builds, not just debug — _transitionLock is recursive and does not block
+            //   same-thread re-entry on its own.
             //
             //   QueryInterface never holds _transitionLock and is never blocked by
             //   an active transition. It uses _pluginHandling only.
@@ -897,6 +900,11 @@ namespace PluginHost {
                 };
 
             private:
+                // Temporarily yields _transitionLock from within a transition (used by
+                // Evaluate()). Clears the active flag during the yield so a re-entrant
+                // trigger on this thread is not mistaken for ongoing ownership, then
+                // republishes owner + flag on relock. Mirrors the entry/exit ordering
+                // contract documented on the member fields.
                 class TransitionSuspender {
                 public:
                     TransitionSuspender() = delete;
@@ -905,22 +913,57 @@ namespace PluginHost {
                     TransitionSuspender& operator=(const TransitionSuspender&) = delete;
                     TransitionSuspender& operator=(TransitionSuspender&&) = delete;
 
-                    TransitionSuspender(Core::CriticalSection& lock, std::atomic<Core::thread_id>& transitionThread)
+                    TransitionSuspender(Core::CriticalSection& lock, std::atomic<bool>& active, std::atomic<Core::thread_id>& owner)
                         : _lock(lock)
-                        , _transitionThread(transitionThread)
+                        , _active(active)
+                        , _owner(owner)
                     {
-                        _transitionThread = 0;
+                        _active.store(false, std::memory_order_release);
                         _lock.Unlock();
                     }
 
                     ~TransitionSuspender() {
                         _lock.Lock();
-                        _transitionThread = Core::Thread::ThreadId();
+                        _owner.store(Core::Thread::ThreadId(), std::memory_order_relaxed);
+                        _active.store(true, std::memory_order_release);
                     }
 
                 private:
                     Core::CriticalSection& _lock;
-                    std::atomic<Core::thread_id>& _transitionThread;
+                    std::atomic<bool>& _active;
+                    std::atomic<Core::thread_id>& _owner;
+                };
+
+                // RAII ownership of a transition. Publishes owner + active flag on
+                // construction following the documented ordering, and clears the flag on
+                // destruction — including when a state method throws, which is why the
+                // owner reset cannot live inline in the triggers. Constructed only after
+                // _transitionLock is held.
+                class TransitionScope {
+                public:
+                    TransitionScope() = delete;
+                    TransitionScope(const TransitionScope&) = delete;
+                    TransitionScope(TransitionScope&&) = delete;
+                    TransitionScope& operator=(const TransitionScope&) = delete;
+                    TransitionScope& operator=(TransitionScope&&) = delete;
+
+                    TransitionScope(std::atomic<bool>& active, std::atomic<Core::thread_id>& owner)
+                        : _active(active)
+                    {
+                        // Owner first (relaxed), then flag (release): a concurrent reader
+                        // that sees active==true is guaranteed to see this owner.
+                        owner.store(Core::Thread::ThreadId(), std::memory_order_relaxed);
+                        _active.store(true, std::memory_order_release);
+                    }
+
+                    ~TransitionScope() {
+                        // Flag down (release). Owner is left as-is — it is only read while
+                        // active, so it needs no reset.
+                        _active.store(false, std::memory_order_release);
+                    }
+
+                private:
+                    std::atomic<bool>& _active;
                 };
 
             public:
@@ -936,7 +979,8 @@ namespace PluginHost {
                     : _parent(parent)
                     , _callback(std::move(callback))
                     , _transitionLock()
-                    , _transitionThread(0)
+                    , _transitionActive(false)
+                    , _transitionOwner()
                     , _current(&_stateDeactivated)
                 {
                 }
@@ -954,22 +998,94 @@ namespace PluginHost {
                     _parent.State(newState.Id());
                 }
 
-                inline bool IsTransitionThread() const {
-                    return _transitionThread.load(std::memory_order_acquire) == Core::Thread::ThreadId();
+                inline bool IsTransitionThread() const
+                {
+                    // Read the flag first (acquire). _transitionOwner is only valid while
+                    // active, and the entry ordering guarantees a published owner is visible
+                    // once active reads true.
+                    return _transitionActive.load(std::memory_order_acquire)
+                        && (_transitionOwner.load(std::memory_order_relaxed) == Core::Thread::ThreadId());
                 }
 
                 // Public triggers — acquire transition lock before dispatching.
                 // Guarantees exactly one transition executor at a time.
                 // QueryInterface intentionally does NOT take this lock.
-                Core::hresult Activate(const reason why)        { ASSERT(!IsTransitionThread()); Core::SafeSyncType<Core::CriticalSection> guard(_transitionLock); _transitionThread = Core::Thread::ThreadId(); Core::hresult result = _Activate(why);       _transitionThread = 0; return result; }
-                Core::hresult Deactivate(const reason why)      { ASSERT(!IsTransitionThread()); Core::SafeSyncType<Core::CriticalSection> guard(_transitionLock); _transitionThread = Core::Thread::ThreadId(); Core::hresult result = _Deactivate(why);     _transitionThread = 0; return result; }
-                Core::hresult Hibernate(const uint32_t timeout) { ASSERT(!IsTransitionThread()); Core::SafeSyncType<Core::CriticalSection> guard(_transitionLock); _transitionThread = Core::Thread::ThreadId(); Core::hresult result = _current.load(std::memory_order_acquire)->Hibernate(*this, timeout); _transitionThread = 0; return result; }
-                Core::hresult Unavailable(const reason why)     { ASSERT(!IsTransitionThread()); Core::SafeSyncType<Core::CriticalSection> guard(_transitionLock); _transitionThread = Core::Thread::ThreadId(); Core::hresult result = _current.load(std::memory_order_acquire)->Unavailable(*this, why);  _transitionThread = 0; return result; }
-                uint32_t      Resume(const reason why)          { ASSERT(!IsTransitionThread()); Core::SafeSyncType<Core::CriticalSection> guard(_transitionLock); _transitionThread = Core::Thread::ThreadId(); uint32_t result = _current.load(std::memory_order_acquire)->Resume(*this, why); _transitionThread = 0; return result; }
-                uint32_t      Suspend(const reason why)         { ASSERT(!IsTransitionThread()); Core::SafeSyncType<Core::CriticalSection> guard(_transitionLock); _transitionThread = Core::Thread::ThreadId(); uint32_t result = _current.load(std::memory_order_acquire)->Suspend(*this, why); _transitionThread = 0; return (result); }
-                void          Reevaluate()                      { ASSERT(_transitionThread != Core::Thread::ThreadId()); Core::SafeSyncType<Core::CriticalSection> guard(_transitionLock); _transitionThread = Core::Thread::ThreadId(); _current.load(std::memory_order_acquire)->Reevaluate(*this); _transitionThread = 0; }
-                void*         QueryInterface(const uint32_t id, const bool asIUnknown) { return _current.load(std::memory_order_acquire)->QueryInterface(*this, id, asIUnknown); }
-                void          Tombstone()                       { Core::SafeSyncType<Core::CriticalSection> guard(_transitionLock); ASSERT(_current.load(std::memory_order_acquire) == &_stateDeactivated); _parent.Lock(); SetState(_stateDestroyed); _parent.Unlock(); }
+                Core::hresult Activate(const reason why)
+                {
+                    if (IsTransitionThread()) {
+                        return Core::ERROR_ILLEGAL_STATE;
+                    }
+                    Core::SafeSyncType<Core::CriticalSection> guard(_transitionLock);
+                    TransitionScope scope(_transitionActive, _transitionOwner);
+                    return _Activate(why);
+                }
+                Core::hresult Deactivate(const reason why)
+                {
+                    if (IsTransitionThread()) {
+                        return Core::ERROR_ILLEGAL_STATE;
+                    }
+                    Core::SafeSyncType<Core::CriticalSection> guard(_transitionLock);
+                    TransitionScope scope(_transitionActive, _transitionOwner);
+                    return _Deactivate(why);
+                }
+                Core::hresult Hibernate(const uint32_t timeout)
+                {
+                    if (IsTransitionThread()) {
+                        return Core::ERROR_ILLEGAL_STATE;
+                    }
+                    Core::SafeSyncType<Core::CriticalSection> guard(_transitionLock);
+                    TransitionScope scope(_transitionActive, _transitionOwner);
+                    return _current.load(std::memory_order_acquire)->Hibernate(*this, timeout);
+                }
+                Core::hresult Unavailable(const reason why)
+                {
+                    if (IsTransitionThread()) {
+                        return Core::ERROR_ILLEGAL_STATE;
+                    }
+                    Core::SafeSyncType<Core::CriticalSection> guard(_transitionLock);
+                    TransitionScope scope(_transitionActive, _transitionOwner);
+                    return _current.load(std::memory_order_acquire)->Unavailable(*this, why);
+                }
+                uint32_t Resume(const reason why)
+                {
+                    if (IsTransitionThread()) {
+                        return Core::ERROR_ILLEGAL_STATE;
+                    }
+                    Core::SafeSyncType<Core::CriticalSection> guard(_transitionLock);
+                    TransitionScope scope(_transitionActive, _transitionOwner);
+                    return _current.load(std::memory_order_acquire)->Resume(*this, why);
+                }
+                uint32_t Suspend(const reason why)
+                {
+                    if (IsTransitionThread()) {
+                        return Core::ERROR_ILLEGAL_STATE;
+                    }
+                    Core::SafeSyncType<Core::CriticalSection> guard(_transitionLock);
+                    TransitionScope scope(_transitionActive, _transitionOwner);
+                    return _current.load(std::memory_order_acquire)->Suspend(*this, why);
+                }
+                void Reevaluate()
+                {
+                    if (IsTransitionThread()) {
+                        return;
+                    }
+                    Core::SafeSyncType<Core::CriticalSection> guard(_transitionLock);
+                    TransitionScope scope(_transitionActive, _transitionOwner);
+                    _current.load(std::memory_order_acquire)->Reevaluate(*this);
+                }
+
+                void* QueryInterface(const uint32_t id, const bool asIUnknown)
+                {
+                    return _current.load(std::memory_order_acquire)->QueryInterface(*this, id, asIUnknown);
+                }
+                void Tombstone()
+                {
+                    Core::SafeSyncType<Core::CriticalSection> guard(_transitionLock);
+                    ASSERT(_current.load(std::memory_order_acquire) == &_stateDeactivated);
+                    _parent.Lock();
+                    SetState(_stateDestroyed);
+                    _parent.Unlock();
+                }
 
             private:
                 // Internal triggers — no lock. Called by state class methods
@@ -985,7 +1101,7 @@ namespace PluginHost {
                 // concurrent operations during the yield window
                 void Evaluate() {
                     ASSERT(IsTransitionThread());
-                    TransitionSuspender suspend(_transitionLock, _transitionThread);
+                    TransitionSuspender suspend(_transitionLock, _transitionActive, _transitionOwner);
                     _parent._administrator.Evaluate();
                 }
 
@@ -1005,13 +1121,25 @@ namespace PluginHost {
                 Service& _parent;
                 Callback _callback;
                 mutable Core::CriticalSection _transitionLock;
-                // Debug: tracks which thread owns the current transition.
-                // ASSERT fires if a public trigger is called re-entrantly
-                // from within a callback or state method on the same thread.
-                // Atomic because the ASSERT reads it before _transitionLock
-                // is acquired — concurrent writes from other threads must be safe.
-                // Compiled out in release builds.
-                std::atomic<Core::thread_id> _transitionThread;
+                // Re-entrancy guard — active in ALL builds, not just debug. _transitionLock
+                // is a recursive mutex (PTHREAD_MUTEX_RECURSIVE), so it does NOT block a
+                // re-entrant Lock() from the same thread. A callback or plugin that triggers
+                // a transition on its own Service would otherwise nest two transitions on one
+                // thread and corrupt _current. This guard detects that and returns
+                // ERROR_ILLEGAL_STATE instead.
+                //
+                // Two fields because Core::thread_id (pthread_t) has no portable "no thread"
+                // sentinel — comparing against 0 is a glibc/musl assumption. _transitionOwner
+                // is only meaningful while _transitionActive is true; its value is ignored
+                // otherwise, so it never needs a sentinel.
+                //
+                // Ordering contract (see triggers): on entry, write _transitionOwner first
+                // (relaxed) then _transitionActive=true (release); on exit, write
+                // _transitionActive=false (release) and leave _transitionOwner untouched.
+                // Readers load _transitionActive (acquire) and only read _transitionOwner
+                // when it is true.
+                std::atomic<bool> _transitionActive;
+                std::atomic<Core::thread_id> _transitionOwner;
                 // Atomic pointer — written by SetState() during transitions,
                 // read concurrently by QueryInterface() and trigger methods.
                 // Preserves State pattern dispatch without a mutex on reads.
