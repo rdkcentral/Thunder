@@ -975,8 +975,7 @@ namespace PluginHost {
 
         if (local == nullptr) {
             result = Core::ERROR_BAD_REQUEST;
-        }
-        else {
+        } else {
 #ifdef HIBERNATE_SUPPORT_ENABLED
             pid_t parentPID = local->ParentPID();
 

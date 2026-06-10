@@ -821,15 +821,15 @@ namespace PluginHost {
                 class StateBase {
                 public:
                     virtual ~StateBase() = default;
-                    virtual IShell::state        Id()                                            const = 0;
-                    virtual Core::hresult        Activate(StateMachine&, const reason)                 { return Core::ERROR_ILLEGAL_STATE; }
-                    virtual Core::hresult        Deactivate(StateMachine&, const reason)               { return Core::ERROR_ILLEGAL_STATE; }
-                    virtual Core::hresult        Hibernate(StateMachine&, const uint32_t)              { return Core::ERROR_ILLEGAL_STATE; }
-                    virtual Core::hresult        Unavailable(StateMachine&, const reason)              { return Core::ERROR_ILLEGAL_STATE; }
-                    virtual uint32_t             Resume(StateMachine&, const reason)                   { return Core::ERROR_ILLEGAL_STATE; }
-                    virtual uint32_t             Suspend(StateMachine&, const reason)                  { return Core::ERROR_ILLEGAL_STATE; }
-                    virtual void                 Reevaluate(StateMachine&)                             {}
-                    virtual void*                QueryInterface(StateMachine&, const uint32_t, const bool) { return nullptr; }
+                    virtual IShell::state Id() const = 0;
+                    virtual Core::hresult Activate(StateMachine&, const reason) { return Core::ERROR_ILLEGAL_STATE; }
+                    virtual Core::hresult Deactivate(StateMachine&, const reason) { return Core::ERROR_ILLEGAL_STATE; }
+                    virtual Core::hresult Hibernate(StateMachine&, const uint32_t) { return Core::ERROR_ILLEGAL_STATE; }
+                    virtual Core::hresult Unavailable(StateMachine&, const reason) { return Core::ERROR_ILLEGAL_STATE; }
+                    virtual uint32_t Resume(StateMachine&, const reason) { return Core::ERROR_ILLEGAL_STATE; }
+                    virtual uint32_t Suspend(StateMachine&, const reason) { return Core::ERROR_ILLEGAL_STATE; }
+                    virtual void Reevaluate(StateMachine&) {}
+                    virtual void* QueryInterface(StateMachine&, const uint32_t, const bool) { return nullptr; }
                 };
 
                 class DeactivatedState : public StateBase {
@@ -837,26 +837,26 @@ namespace PluginHost {
                     IShell::state Id() const override { return IShell::DEACTIVATED; }
                     Core::hresult Activate(StateMachine&, const reason) override;
                     Core::hresult Unavailable(StateMachine&, const reason) override;
-                    uint32_t      Resume(StateMachine&, const reason) override;
+                    uint32_t Resume(StateMachine&, const reason) override;
                 };
 
                 class PreconditionState : public StateBase {
                 public:
                     IShell::state Id() const override { return IShell::PRECONDITION; }
                     Core::hresult Deactivate(StateMachine&, const reason) override;
-                    uint32_t      Resume(StateMachine&, const reason) override;
-                    uint32_t      Suspend(StateMachine&, const reason) override;
-                    void          Reevaluate(StateMachine&) override;
+                    uint32_t Resume(StateMachine&, const reason) override;
+                    uint32_t Suspend(StateMachine&, const reason) override;
+                    void Reevaluate(StateMachine&) override;
                 };
 
                 class ActivationState : public StateBase {
                 public:
                     IShell::state Id() const override { return IShell::ACTIVATION; }
-                    Core::hresult Activate(StateMachine&, const reason) override   { return Core::ERROR_INPROGRESS; }
+                    Core::hresult Activate(StateMachine&, const reason) override { return Core::ERROR_INPROGRESS; }
                     Core::hresult Deactivate(StateMachine&, const reason) override;
                     Core::hresult Hibernate(StateMachine&, const uint32_t) override { return Core::ERROR_INPROGRESS; }
                     Core::hresult Unavailable(StateMachine&, const reason) override { return Core::ERROR_INPROGRESS; }
-                    uint32_t      Resume(StateMachine&, const reason) override { return Core::ERROR_INPROGRESS; }
+                    uint32_t Resume(StateMachine&, const reason) override { return Core::ERROR_INPROGRESS; }
                 };
 
                 class ActivatedState : public StateBase {
@@ -864,20 +864,20 @@ namespace PluginHost {
                     IShell::state Id() const override { return IShell::ACTIVATED; }
                     Core::hresult Deactivate(StateMachine&, const reason) override;
                     Core::hresult Hibernate(StateMachine&, const uint32_t timeout) override;
-                    uint32_t      Resume(StateMachine&, const reason) override;
-                    uint32_t      Suspend(StateMachine&, const reason) override;
-                    void          Reevaluate(StateMachine&) override;
-                    void*         QueryInterface(StateMachine&, const uint32_t id, const bool asIUnknown) override;
+                    uint32_t Resume(StateMachine&, const reason) override;
+                    uint32_t Suspend(StateMachine&, const reason) override;
+                    void Reevaluate(StateMachine&) override;
+                    void* QueryInterface(StateMachine&, const uint32_t id, const bool asIUnknown) override;
                 };
 
                 class DeactivationState : public StateBase {
                 public:
                     IShell::state Id() const override { return IShell::DEACTIVATION; }
-                    Core::hresult Activate(StateMachine&, const reason) override    { return Core::ERROR_INPROGRESS; }
-                    Core::hresult Deactivate(StateMachine&, const reason) override   { return Core::ERROR_INPROGRESS; }
-                    Core::hresult Hibernate(StateMachine&, const uint32_t) override  { return Core::ERROR_INPROGRESS; }
-                    Core::hresult Unavailable(StateMachine&, const reason) override  { return Core::ERROR_INPROGRESS; }
-                    uint32_t      Suspend(StateMachine&, const reason) override      { return Core::ERROR_INPROGRESS; }
+                    Core::hresult Activate(StateMachine&, const reason) override { return Core::ERROR_INPROGRESS; }
+                    Core::hresult Deactivate(StateMachine&, const reason) override { return Core::ERROR_INPROGRESS; }
+                    Core::hresult Hibernate(StateMachine&, const uint32_t) override { return Core::ERROR_INPROGRESS; }
+                    Core::hresult Unavailable(StateMachine&, const reason) override { return Core::ERROR_INPROGRESS; }
+                    uint32_t Suspend(StateMachine&, const reason) override { return Core::ERROR_INPROGRESS; }
                 };
 
                 class HibernatedState : public StateBase {
@@ -922,7 +922,8 @@ namespace PluginHost {
                         _lock.Unlock();
                     }
 
-                    ~TransitionSuspender() {
+                    ~TransitionSuspender()
+                    {
                         _lock.Lock();
                         _owner.store(Core::Thread::ThreadId(), std::memory_order_relaxed);
                         _active.store(true, std::memory_order_release);
@@ -956,7 +957,8 @@ namespace PluginHost {
                         _active.store(true, std::memory_order_release);
                     }
 
-                    ~TransitionScope() {
+                    ~TransitionScope()
+                    {
                         // Flag down (release). Owner is left as-is — it is only read while
                         // active, so it needs no reset.
                         _active.store(false, std::memory_order_release);
@@ -1088,8 +1090,16 @@ namespace PluginHost {
             private:
                 // Internal triggers — no lock. Called by state class methods
                 // that are already executing under _transitionLock.
-                Core::hresult _Activate(const reason why)   { ASSERT(IsTransitionThread()); return _current.load(std::memory_order_acquire)->Activate(*this, why); }
-                Core::hresult _Deactivate(const reason why) { ASSERT(IsTransitionThread()); return _current.load(std::memory_order_acquire)->Deactivate(*this, why); }
+                Core::hresult _Activate(const reason why)
+                {
+                    ASSERT(IsTransitionThread());
+                    return _current.load(std::memory_order_acquire)->Activate(*this, why);
+                }
+                Core::hresult _Deactivate(const reason why)
+                {
+                    ASSERT(IsTransitionThread());
+                    return _current.load(std::memory_order_acquire)->Deactivate(*this, why);
+                }
 
                 // Called from within a state method to trigger cascading re-evaluation
                 // of dependent services. Temporarily yields _transitionLock via
@@ -1097,7 +1107,8 @@ namespace PluginHost {
                 // this service without deadlocking. Safe because SetState(DEACTIVATION)
                 // must be called before this — the transient state rejects all
                 // concurrent operations during the yield window
-                void Evaluate() {
+                void Evaluate()
+                {
                     ASSERT(IsTransitionThread());
                     TransitionSuspender suspend(_transitionLock, _transitionActive, _transitionOwner);
                     _parent._administrator.Evaluate();
@@ -1105,16 +1116,16 @@ namespace PluginHost {
 
                 // Static state instances — shared across all plugins.
                 // Safe because state objects carry no per-plugin data.
-                static DeactivatedState  _stateDeactivated;
+                static DeactivatedState _stateDeactivated;
                 static PreconditionState _statePrecondition;
-                static ActivationState   _stateActivation;
-                static ActivatedState    _stateActivated;
+                static ActivationState _stateActivation;
+                static ActivatedState _stateActivated;
                 static DeactivationState _stateDeactivation;
-                static HibernatedState   _stateHibernated;
-                static UnavailableState  _stateUnavailable;
-                static DestroyedState    _stateDestroyed;
+                static HibernatedState _stateHibernated;
+                static UnavailableState _stateUnavailable;
+                static DestroyedState _stateDestroyed;
 
-            // State classes access Service members via _parent (C++11 nested class access rules)
+                // State classes access Service members via _parent (C++11 nested class access rules)
             private:
                 Service& _parent;
                 Callback _callback;
