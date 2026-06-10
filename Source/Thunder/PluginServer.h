@@ -699,6 +699,10 @@ namespace PluginHost {
             //     HIBERNATED   — OOP process is frozen. Interfaces are valid but
             //                    the process is suspended.
             //     UNAVAILABLE  — explicitly marked not available. _handler is nullptr.
+            //     DESTROYED    — terminal tombstone state. All triggers return
+            //                    ERROR_ILLEGAL_STATE. QueryInterface returns nullptr.
+            //                    Reached via Tombstone() which requires the service to
+            //                    be DEACTIVATED first — enforced by ASSERT in debug builds.
             //
             //   Transient states (in-progress guards):
             //     ACTIVATION   — Initialize() is running. All triggers return
@@ -733,8 +737,8 @@ namespace PluginHost {
             //
             // REENTRANCY
             //   Public triggers (Activate, Deactivate, Hibernate, Unavailable,
-            //   Reevaluate) are serialized by _transitionLock. At most one transition
-            //   executor exists per Service at any time.
+            //   Resume, Suspend, Reevaluate) are serialized by _transitionLock.
+            //   At most one transition executor exists per Service at any time.
             //
             //   Internal triggers (_Activate, _Deactivate) bypass _transitionLock and
             //   are only legal from within an active transition (state class methods).
@@ -775,10 +779,14 @@ namespace PluginHost {
             // Three locks are in play within Service. They must always be acquired
             // in the order listed below. Acquiring in any other order is a deadlock.
             //
+            //   0. ServiceMap::_adminLock
+            //      Outermost of all. Held by ServiceMap::Destroy() across the
+            //      Tombstone() call. Never acquired from within a transition.
+            //
             //   1. _transitionLock  (StateMachine)
-            //      Outermost. Held for the full duration of a lifecycle transition
-            //      including the post-transition callback. Ensures exactly one
-            //      transition executor exists at any time.
+            //      Held for the full duration of a lifecycle transition including
+            //      the post-transition callback. Ensures exactly one transition
+            //      executor exists at any time.
             //      NOT held during QueryInterface.
             //
             //   2. Service::Lock()  (_adminLock in PluginHost::Service base)
