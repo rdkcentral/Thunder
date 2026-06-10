@@ -961,7 +961,7 @@ namespace PluginHost {
                 uint32_t      Suspend(const reason why)         { ASSERT(!IsTransitionThread()); Core::SafeSyncType<Core::CriticalSection> guard(_transitionLock); _transitionThread = Core::Thread::ThreadId(); uint32_t result = _current.load(std::memory_order_acquire)->Suspend(*this, why); _transitionThread = 0; return (result); }
                 void          Reevaluate()                      { ASSERT(_transitionThread != Core::Thread::ThreadId()); Core::SafeSyncType<Core::CriticalSection> guard(_transitionLock); _transitionThread = Core::Thread::ThreadId(); _current.load(std::memory_order_acquire)->Reevaluate(*this); _transitionThread = 0; }
                 void*         QueryInterface(const uint32_t id, const bool asIUnknown) { return _current.load(std::memory_order_acquire)->QueryInterface(*this, id, asIUnknown); }
-                void          Tombstone()                       { Core::SafeSyncType<Core::CriticalSection> guard(_transitionLock); _parent.Lock(); SetState(_stateDestroyed); _parent.Unlock(); }
+                void          Tombstone()                       { Core::SafeSyncType<Core::CriticalSection> guard(_transitionLock); ASSERT(_current.load(std::memory_order_acquire) == &_stateDeactivated); _parent.Lock(); SetState(_stateDestroyed); _parent.Unlock(); }
 
             private:
                 // Internal triggers — no lock. Called by state class methods
