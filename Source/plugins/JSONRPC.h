@@ -40,17 +40,6 @@ namespace PluginHost {
             return packed;
         }
 
-  namespace {
-
-        static string Pack(const string& event, const string& index)
-        {
-            string packed = event;
-            if (index.empty() == false) {
-                packed += TCHAR('@') + index;
-            }
-            return packed;
-        }
-
         template<typename JSONRPCERRORASSESSORTYPE>
         uint32_t InvokeOnHandler(const Core::JSONRPC::Context& context, const string& method, const string& parameters, string& response, Core::JSONRPC::Handler& handler, JSONRPCERRORASSESSORTYPE errorhandler) 
         {

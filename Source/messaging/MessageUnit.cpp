@@ -199,7 +199,7 @@ ENUM_CONVERSION_END(WPEFramework::Core::Messaging::OutputMode)
         }
 
         /**
-        * @brief Open MessageUnit. This method is used on the Thunder side.
+        * @brief Open MessageUnit. This method is used on the WPEFramework side.
         *        This method:
         *        - sets env variables, so the OOP components will get information (eg. where to place its files)
         *        - create buffer where all InProcess components will write
