@@ -455,7 +455,7 @@ namespace PluginHost {
             return result;
         }
 
-        return sm._current.load(std::memory_order_relaxed)->Resume(sm, why);
+        return sm._current.load(std::memory_order_acquire)->Resume(sm, why);
     }
 
     // -------------------------------------------------------------------------
