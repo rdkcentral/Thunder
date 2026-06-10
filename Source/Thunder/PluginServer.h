@@ -815,7 +815,7 @@ namespace PluginHost {
             //     only, and only ActivatedState::QueryInterface reaches plugin code.
             // -----------------------------------------------------------------------
             class StateMachine {
-            public:
+            private:
                 // Base state — default implementations return ERROR_ILLEGAL_STATE.
                 // Concrete states only override what is legal for them.
                 class StateBase {
@@ -986,18 +986,16 @@ namespace PluginHost {
                 }
                 ~StateMachine() = default;
 
-            public:
-                inline IShell::state Current() const {
-                    return _current.load(std::memory_order_acquire)->Id();
-                }
-
-                inline void SetState(StateBase& newState) {
+            private:
+                inline void SetState(StateBase& newState)
+                {
                     _current.store(&newState, std::memory_order_release);
                     // PluginHost::Service::State(value) is a plain _state = value assignment
                     // with no lock — calling this while holding _parent.Lock() is safe.
                     _parent.State(newState.Id());
                 }
 
+            public:
                 inline bool IsTransitionThread() const
                 {
                     // Read the flag first (acquire). _transitionOwner is only valid while
