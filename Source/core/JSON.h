@@ -144,17 +144,19 @@ namespace Core {
                     }
                     handled += loaded;
 
-                    // If offset returned to FIND_MARKER (0) AND the deserialiser consumed
-                    // fewer bytes than were available, the top-level element has been fully
-                    // parsed (it stopped at the closing token before exhausting the buffer).
-                    // Break here to avoid re-entering Deserialize with trailing whitespace or
-                    // the null-terminator that FromString injects via the +1.
-                    //
-                    // If offset == 0 but loaded == payload the buffer was exhausted without
-                    // completing the element (e.g. the first 65535+ bytes are all whitespace
-                    // preceding the actual JSON).  In that case the loop must continue.
-                    if ((offset == 0) && (loaded < payload)) {
-                        break;
+                    // If offset returned to FIND_MARKER (0) then the element is either fully parsed
+                    // or we are still skipping leading whitespace.
+                    // If we ended before exhausting the available buffer, the element is definitely complete.
+                    // If we exactly exhausted the buffer, treat it as complete only if we ended on a non-whitespace character.
+                    if (offset == 0) {
+                        const bool endedBeforeBufferEnd = (loaded < payload);
+                        const bool endedAtBufferEndOnNonWhitespace =
+                            (loaded == payload) && (handled > 0) && (handled <= size) &&
+                            (::isspace(static_cast<uint8_t>(text[handled - 1])) == 0);
+
+                        if (endedBeforeBufferEnd || endedAtBufferEndOnNonWhitespace) {
+                            break;
+                        }
                     }
                 }
 
