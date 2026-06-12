@@ -507,6 +507,7 @@ namespace Thunder {
             m_SendOffset = 0;
 
             if ((m_State.load(Core::memory_order::memory_order_relaxed) & (SocketPort::LINK | SocketPort::OPEN | SocketPort::MONITOR)) == (SocketPort::LINK | SocketPort::OPEN)) {
+
                 if (Initialize() != Core::ERROR_NONE) {
                     nStatus = Core::ERROR_ABORTED;
                 }
