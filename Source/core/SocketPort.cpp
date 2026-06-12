@@ -507,8 +507,6 @@ namespace Thunder {
             m_SendOffset = 0;
 
             if ((m_State.load(Core::memory_order::memory_order_relaxed) & (SocketPort::LINK | SocketPort::OPEN | SocketPort::MONITOR)) == (SocketPort::LINK | SocketPort::OPEN)) {
-                m_closeEvent.ResetEvent();
-
                 if (Initialize() != Core::ERROR_NONE) {
                     nStatus = Core::ERROR_ABORTED;
                 }
@@ -594,6 +592,8 @@ namespace Thunder {
             }
 
             if ((nStatus == Core::ERROR_NONE) || (nStatus == Core::ERROR_INPROGRESS)) {
+
+                m_closeEvent.ResetEvent();
 
                 ResourceMonitor::Instance().Register(*this);
 
