@@ -147,7 +147,7 @@ namespace Core {
                     // If offset returned to FIND_MARKER (0) then the element is either fully parsed
                     // or we are still skipping leading whitespace.
                     // If we ended before exhausting the available buffer, the element is definitely complete.
-                    // If we exactly exhausted the buffer, treat it as complete only if we ended on a non-whitespace character.
+                    // If we exactly exhausted the buffer, treat it as complete only if we ended on a non-whitespace character.(this could happen if the parsed buffer contained only whitespaces and the actual element is in the remaining data)
                     if (offset == 0) {
                         const bool endedBeforeBufferEnd = (loaded < payload);
                         const bool endedAtBufferEndOnNonWhitespace =
