@@ -123,7 +123,8 @@ jobs:
         -DSYSTEM_PATH="${PWD}/${{matrix.build_type}}/install/usr/lib/wpeframework/plugins" \
         -DVOLATILE_PATH="tmp" \
         -DSECURE_SOCKET=ON \
-        -DBUILD_TESTS=ON
+        -DBUILD_TESTS=ON \
+        -DENABLE_TEST_RUNTIME=ON
         cmake --build ${{matrix.build_type}}/build/Thunder --target install
 
 # ----- Running tests -----
@@ -132,6 +133,13 @@ jobs:
 
     - name: Run core unit tests
       run: ${{env.path}} ${{env.lib}} Thunder_test_core
+
+    - name: Run controller tests
+      if: ${{matrix.shared_libs == 'ON'}}
+      run: |
+        ${{env.lib}} ${{matrix.build_type}}/build/Thunder/Tests/unit/core/thunder_test_controller \
+          --gtest_output="xml:controller-test-results.xml" \
+          --gtest_color=yes
 
 # ----- Uploading artifact -----
     - name: Tar files

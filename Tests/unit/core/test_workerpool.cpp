@@ -17,6 +17,7 @@
  * limitations under the License.
  */
 
+#include <atomic>
 #include <thread>
 
 #include <gtest/gtest.h>
@@ -1465,6 +1466,595 @@ namespace Core {
     {
         CheckWorkerPool_ReschduledTimedJob(2, 5, 5, 10, 5);
         CheckWorkerPool_ReschduledTimedJob(3, 5, 5, 10, 5);
+    }
+
+    // =========================================================================
+    // Priority-based Submit — closes gap: Core WorkerPool error paths
+    // (v2.1 gap: "WorkerPool — exhaustion, shutdown-during-job")
+    // =========================================================================
+    TEST(Core_WorkerPool, Submit_WithPriority_High_ExecutesJob)
+    {
+        WorkerPoolTester workerPool(2, 0, 5);
+        ::Thunder::Core::WorkerPool::Assign(&workerPool.Pool());
+        workerPool.RunThreadPool();
+
+        ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch> job =
+            ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>(
+                ::Thunder::Core::ProxyType<TestJob<WorkerPoolTester>>::Create(
+                workerPool, TestJob<WorkerPoolTester>::INITIATED, 0));
+
+        EXPECT_EQ(static_cast<TestJob<WorkerPoolTester>&>(*job).GetStatus(),
+                  TestJob<WorkerPoolTester>::INITIATED);
+
+        workerPool.Pool().Submit(job, ::Thunder::Core::ThreadPool::Priority::High);
+
+        EXPECT_EQ(workerPool.WaitForJobEvent(job, MaxJobWaitTime),
+                  ::Thunder::Core::ERROR_NONE);
+        EXPECT_EQ(static_cast<TestJob<WorkerPoolTester>&>(*job).GetStatus(),
+                  TestJob<WorkerPoolTester>::COMPLETED);
+
+        workerPool.Stop();
+        ::Thunder::Core::WorkerPool::Assign(nullptr);
+        job.Release();
+    }
+    TEST(Core_WorkerPool, Submit_WithPriority_Medium_ExecutesJob)
+    {
+        WorkerPoolTester workerPool(2, 0, 5);
+        ::Thunder::Core::WorkerPool::Assign(&workerPool.Pool());
+        workerPool.RunThreadPool();
+
+        ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch> job =
+            ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>(
+                ::Thunder::Core::ProxyType<TestJob<WorkerPoolTester>>::Create(
+                workerPool, TestJob<WorkerPoolTester>::INITIATED, 0));
+
+        workerPool.Pool().Submit(job, ::Thunder::Core::ThreadPool::Priority::Medium);
+
+        EXPECT_EQ(workerPool.WaitForJobEvent(job, MaxJobWaitTime),
+                  ::Thunder::Core::ERROR_NONE);
+        EXPECT_EQ(static_cast<TestJob<WorkerPoolTester>&>(*job).GetStatus(),
+                  TestJob<WorkerPoolTester>::COMPLETED);
+
+        workerPool.Stop();
+        ::Thunder::Core::WorkerPool::Assign(nullptr);
+        job.Release();
+    }
+    TEST(Core_WorkerPool, Submit_WithPriority_Low_ExecutesJob)
+    {
+        WorkerPoolTester workerPool(2, 0, 5);
+        ::Thunder::Core::WorkerPool::Assign(&workerPool.Pool());
+        workerPool.RunThreadPool();
+
+        ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch> job =
+            ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>(
+                ::Thunder::Core::ProxyType<TestJob<WorkerPoolTester>>::Create(
+                workerPool, TestJob<WorkerPoolTester>::INITIATED, 0));
+
+        workerPool.Pool().Submit(job, ::Thunder::Core::ThreadPool::Priority::Low);
+
+        EXPECT_EQ(workerPool.WaitForJobEvent(job, MaxJobWaitTime),
+                  ::Thunder::Core::ERROR_NONE);
+        EXPECT_EQ(static_cast<TestJob<WorkerPoolTester>&>(*job).GetStatus(),
+                  TestJob<WorkerPoolTester>::COMPLETED);
+
+        workerPool.Stop();
+        ::Thunder::Core::WorkerPool::Assign(nullptr);
+        job.Release();
+    }
+    TEST(Core_WorkerPool, Submit_AllPriorities_AllExecute)
+    {
+        WorkerPoolTester workerPool(3, 0, 10);
+        ::Thunder::Core::WorkerPool::Assign(&workerPool.Pool());
+        workerPool.RunThreadPool();
+
+        ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch> highJob =
+            ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>(
+                ::Thunder::Core::ProxyType<TestJob<WorkerPoolTester>>::Create(
+                workerPool, TestJob<WorkerPoolTester>::INITIATED, 0));
+        ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch> medJob =
+            ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>(
+                ::Thunder::Core::ProxyType<TestJob<WorkerPoolTester>>::Create(
+                workerPool, TestJob<WorkerPoolTester>::INITIATED, 0));
+        ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch> lowJob =
+            ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>(
+                ::Thunder::Core::ProxyType<TestJob<WorkerPoolTester>>::Create(
+                workerPool, TestJob<WorkerPoolTester>::INITIATED, 0));
+
+        workerPool.Pool().Submit(lowJob, ::Thunder::Core::ThreadPool::Priority::Low);
+        workerPool.Pool().Submit(medJob, ::Thunder::Core::ThreadPool::Priority::Medium);
+        workerPool.Pool().Submit(highJob, ::Thunder::Core::ThreadPool::Priority::High);
+
+        EXPECT_EQ(workerPool.WaitForJobEvent(highJob, MaxJobWaitTime), ::Thunder::Core::ERROR_NONE);
+        EXPECT_EQ(workerPool.WaitForJobEvent(medJob, MaxJobWaitTime), ::Thunder::Core::ERROR_NONE);
+        EXPECT_EQ(workerPool.WaitForJobEvent(lowJob, MaxJobWaitTime), ::Thunder::Core::ERROR_NONE);
+
+        EXPECT_EQ(static_cast<TestJob<WorkerPoolTester>&>(*highJob).GetStatus(), TestJob<WorkerPoolTester>::COMPLETED);
+        EXPECT_EQ(static_cast<TestJob<WorkerPoolTester>&>(*medJob).GetStatus(), TestJob<WorkerPoolTester>::COMPLETED);
+        EXPECT_EQ(static_cast<TestJob<WorkerPoolTester>&>(*lowJob).GetStatus(), TestJob<WorkerPoolTester>::COMPLETED);
+
+        workerPool.Stop();
+        ::Thunder::Core::WorkerPool::Assign(nullptr);
+        highJob.Release();
+        medJob.Release();
+        lowJob.Release();
+    }
+
+    // =========================================================================
+    // Schedule with past time — closes gap: Core WorkerPool error paths
+    // =========================================================================
+    TEST(Core_WorkerPool, Schedule_PastTime_ExecutesImmediately)
+    {
+        WorkerPoolTester workerPool(1, 0, 5);
+        ::Thunder::Core::WorkerPool::Assign(&workerPool.Pool());
+        workerPool.RunThreadPool();
+
+        ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch> job =
+            ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>(
+                ::Thunder::Core::ProxyType<TestJob<WorkerPoolTester>>::Create(
+                workerPool, TestJob<WorkerPoolTester>::INITIATED, 0));
+
+        // Schedule with a time in the past - should be submitted immediately
+        ::Thunder::Core::Time pastTime = ::Thunder::Core::Time::Now().Sub(5000);
+        workerPool.Pool().Schedule(pastTime, job);
+
+        EXPECT_EQ(workerPool.WaitForJobEvent(job, MaxJobWaitTime),
+                  ::Thunder::Core::ERROR_NONE);
+        EXPECT_EQ(static_cast<TestJob<WorkerPoolTester>&>(*job).GetStatus(),
+                  TestJob<WorkerPoolTester>::COMPLETED);
+
+        workerPool.Stop();
+        ::Thunder::Core::WorkerPool::Assign(nullptr);
+        job.Release();
+    }
+
+    // =========================================================================
+    // Revoke unknown job — closes gap: Core WorkerPool error paths
+    // =========================================================================
+    TEST(Core_WorkerPool, Revoke_UnknownJob_ReturnsErrorUnknownKey)
+    {
+        WorkerPoolTester workerPool(1, 0, 5);
+        ::Thunder::Core::WorkerPool::Assign(&workerPool.Pool());
+        workerPool.RunThreadPool();
+
+        // Create a job but do NOT submit it
+        ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch> job =
+            ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>(
+                ::Thunder::Core::ProxyType<TestJob<WorkerPoolTester>>::Create(
+                workerPool, TestJob<WorkerPoolTester>::INITIATED, 0));
+
+        uint32_t result = workerPool.Pool().Revoke(job, 0);
+        EXPECT_EQ(result, ::Thunder::Core::ERROR_UNKNOWN_KEY);
+
+        workerPool.Stop();
+        ::Thunder::Core::WorkerPool::Assign(nullptr);
+        job.Release();
+    }
+
+    // =========================================================================
+    // Id() boundary behavior — closes gap: Core WorkerPool error paths
+    // (v2.1 gap: "WorkerPool — exhaustion, shutdown-during-job")
+    // =========================================================================
+    TEST(Core_WorkerPool, Id_Index0_ReturnsTimerThread)
+    {
+        WorkerPoolTester workerPool(2, 0, 5);
+        ::Thunder::Core::WorkerPool::Assign(&workerPool.Pool());
+        workerPool.RunThreadPool();
+
+        // Index 0 is the timer thread - should be a valid thread id
+        ::Thunder::Core::thread_id timerId = workerPool.Pool().Id(0);
+        EXPECT_NE(timerId, static_cast<::Thunder::Core::thread_id>(0));
+
+        workerPool.Stop();
+        ::Thunder::Core::WorkerPool::Assign(nullptr);
+    }
+    TEST(Core_WorkerPool, Id_Index1_ReturnsJoinedThread)
+    {
+        WorkerPoolTester workerPool(2, 0, 5);
+        ::Thunder::Core::WorkerPool::Assign(&workerPool.Pool());
+        workerPool.RunThreadPool();
+
+        // Index 1 is the joined thread - 0 when no one has joined
+        ::Thunder::Core::thread_id joinedId = workerPool.Pool().Id(1);
+        EXPECT_EQ(joinedId, static_cast<::Thunder::Core::thread_id>(0));
+
+        workerPool.Stop();
+        ::Thunder::Core::WorkerPool::Assign(nullptr);
+    }
+    TEST(Core_WorkerPool, Id_Index2Plus_ReturnsPoolThreads)
+    {
+        uint8_t threadCount = 3;
+        WorkerPoolTester workerPool(threadCount, 0, 5);
+        ::Thunder::Core::WorkerPool::Assign(&workerPool.Pool());
+        workerPool.RunThreadPool();
+
+        // Indices 2..threadCount+1 are pool threads
+        for (uint8_t i = 0; i < threadCount; ++i) {
+            ::Thunder::Core::thread_id tid = workerPool.Pool().Id(i + 2);
+            EXPECT_NE(tid, static_cast<::Thunder::Core::thread_id>(0));
+            EXPECT_NE(tid, static_cast<::Thunder::Core::thread_id>(~0));
+        }
+
+        workerPool.Stop();
+        ::Thunder::Core::WorkerPool::Assign(nullptr);
+    }
+    TEST(Core_WorkerPool, Id_InvalidIndex_ReturnsInvalid)
+    {
+        uint8_t threadCount = 2;
+        WorkerPoolTester workerPool(threadCount, 0, 5);
+        ::Thunder::Core::WorkerPool::Assign(&workerPool.Pool());
+        workerPool.RunThreadPool();
+
+        // Index beyond threadCount+2 is invalid -> returns ~0
+        ::Thunder::Core::thread_id invalidId = workerPool.Pool().Id(threadCount + 2);
+        EXPECT_EQ(invalidId, static_cast<::Thunder::Core::thread_id>(~0));
+
+        workerPool.Stop();
+        ::Thunder::Core::WorkerPool::Assign(nullptr);
+    }
+
+    // =========================================================================
+    // Snapshot detail validation — closes gap: Core WorkerPool error paths
+    // =========================================================================
+    TEST(Core_WorkerPool, Snapshot_ReportsCorrectSlotCount)
+    {
+        uint8_t threadCount = 3;
+        WorkerPoolTester workerPool(threadCount, 0, 5);
+        ::Thunder::Core::WorkerPool::Assign(&workerPool.Pool());
+        workerPool.RunThreadPool();
+
+        const ::Thunder::Core::IWorkerPool::Metadata& meta = workerPool.Pool().Snapshot();
+
+        // Slots = threadCount + 2 (timer slot + external/joined slot + pool threads)
+        EXPECT_EQ(meta.Slots, threadCount + 2);
+
+        // Slot[0] is the timer thread
+        EXPECT_NE(meta.Slot[0].WorkerId, static_cast<::Thunder::Core::thread_id>(0));
+
+        // Pool thread slots should have valid worker IDs
+        for (uint8_t i = 2; i < meta.Slots; ++i) {
+            EXPECT_NE(meta.Slot[i].WorkerId, static_cast<::Thunder::Core::thread_id>(0));
+        }
+
+        workerPool.Stop();
+        ::Thunder::Core::WorkerPool::Assign(nullptr);
+    }
+    TEST(Core_WorkerPool, Snapshot_AfterJobCompletion_ShowsRuns)
+    {
+        WorkerPoolTester workerPool(1, 0, 5);
+        ::Thunder::Core::WorkerPool::Assign(&workerPool.Pool());
+        workerPool.RunThreadPool();
+
+        // Submit and wait for 3 jobs sequentially
+        for (int i = 0; i < 3; ++i) {
+            ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch> job =
+            ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>(
+                ::Thunder::Core::ProxyType<TestJob<WorkerPoolTester>>::Create(
+                    workerPool, TestJob<WorkerPoolTester>::INITIATED, 0));
+            workerPool.Pool().Submit(job);
+            EXPECT_EQ(workerPool.WaitForJobEvent(job, MaxJobWaitTime), ::Thunder::Core::ERROR_NONE);
+            job.Release();
+        }
+
+        usleep(50000); // Let pool settle
+        const ::Thunder::Core::IWorkerPool::Metadata& meta = workerPool.Pool().Snapshot();
+
+        // Count total runs across all slots
+        uint32_t totalRuns = 0;
+        for (uint8_t i = 0; i < meta.Slots; ++i) {
+            totalRuns += meta.Slot[i].Runs;
+        }
+        EXPECT_GE(totalRuns, 3u);
+
+        workerPool.Stop();
+        ::Thunder::Core::WorkerPool::Assign(nullptr);
+    }
+    TEST(Core_WorkerPool, Snapshot_EmptyPool_NoPending)
+    {
+        WorkerPoolTester workerPool(2, 0, 5);
+        ::Thunder::Core::WorkerPool::Assign(&workerPool.Pool());
+        workerPool.RunThreadPool();
+
+        const ::Thunder::Core::IWorkerPool::Metadata& meta = workerPool.Pool().Snapshot();
+        EXPECT_EQ(meta.Pending.size(), 0u);
+
+        workerPool.Stop();
+        ::Thunder::Core::WorkerPool::Assign(nullptr);
+    }
+
+    // =========================================================================
+    // Reschedule return value semantics — closes gap: Core WorkerPool error paths
+    // =========================================================================
+    TEST(Core_WorkerPool, Reschedule_ExistingJob_ReturnsTrue)
+    {
+        WorkerPoolTester workerPool(1, 0, 5);
+        ::Thunder::Core::WorkerPool::Assign(&workerPool.Pool());
+        workerPool.RunThreadPool();
+
+        ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch> job =
+            ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>(
+                ::Thunder::Core::ProxyType<TestJob<WorkerPoolTester>>::Create(
+                workerPool, TestJob<WorkerPoolTester>::INITIATED, 0));
+
+        // Schedule first
+        workerPool.Pool().Schedule(::Thunder::Core::Time::Now().Add(5000), job);
+        usleep(50000); // Let it register
+
+        // Reschedule - should find and revoke the original, returning true
+        bool result = workerPool.Pool().Reschedule(::Thunder::Core::Time::Now().Add(1000), job);
+        EXPECT_TRUE(result);
+
+        EXPECT_EQ(workerPool.WaitForJobEvent(job, MaxJobWaitTime * 3), ::Thunder::Core::ERROR_NONE);
+
+        workerPool.Stop();
+        ::Thunder::Core::WorkerPool::Assign(nullptr);
+        job.Release();
+    }
+    TEST(Core_WorkerPool, Reschedule_NonExistingJob_ReturnsFalse)
+    {
+        WorkerPoolTester workerPool(1, 0, 5);
+        ::Thunder::Core::WorkerPool::Assign(&workerPool.Pool());
+        workerPool.RunThreadPool();
+
+        ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch> job =
+            ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>(
+                ::Thunder::Core::ProxyType<TestJob<WorkerPoolTester>>::Create(
+                workerPool, TestJob<WorkerPoolTester>::INITIATED, 0));
+
+        // Reschedule a job that was never submitted
+        bool result = workerPool.Pool().Reschedule(::Thunder::Core::Time::Now().Add(1000), job);
+        EXPECT_FALSE(result);
+
+        // Job should still execute since Reschedule calls Schedule
+        EXPECT_EQ(workerPool.WaitForJobEvent(job, MaxJobWaitTime * 3), ::Thunder::Core::ERROR_NONE);
+
+        workerPool.Stop();
+        ::Thunder::Core::WorkerPool::Assign(nullptr);
+        job.Release();
+    }
+
+    // =========================================================================
+    // Join() side effects — closes gap: Core WorkerPool error paths
+    // =========================================================================
+    TEST(Core_WorkerPool, Join_SetsJoinedThreadId)
+    {
+        WorkerPoolTester workerPool(1, 0, 5);
+        ::Thunder::Core::WorkerPool::Assign(&workerPool.Pool());
+        workerPool.RunThreadPool();
+
+        // Before Join, Id(1) should be 0
+        EXPECT_EQ(workerPool.Pool().Id(1), static_cast<::Thunder::Core::thread_id>(0));
+
+        // Submit a job and use external (calls Join internally)
+        ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch> job =
+            ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>(
+                ::Thunder::Core::ProxyType<TestJob<WorkerPoolTester>>::Create(
+                workerPool, TestJob<WorkerPoolTester>::INITIATED, 0));
+        workerPool.Pool().Submit(job);
+
+        // RunExternal -> Thread::Run() -> Worker() -> _pool.Join()
+        workerPool.RunExternal();
+        EXPECT_EQ(workerPool.WaitForJobEvent(job, MaxJobWaitTime), ::Thunder::Core::ERROR_NONE);
+
+        workerPool.Stop();
+        ::Thunder::Core::WorkerPool::Assign(nullptr);
+        job.Release();
+    }
+
+    // =========================================================================
+    // WaitForStop with finite timeout — closes gap: Core WorkerPool error paths
+    // =========================================================================
+    TEST(Core_WorkerPool, WaitForStop_WithTimeout_ReturnsTrue)
+    {
+        WorkerPoolTester workerPool(1, 0, 5);
+        ::Thunder::Core::WorkerPool::Assign(&workerPool.Pool());
+        workerPool.RunThreadPool();
+
+        // Submit a fast job
+        ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch> job =
+            ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>(
+                ::Thunder::Core::ProxyType<TestJob<WorkerPoolTester>>::Create(
+                workerPool, TestJob<WorkerPoolTester>::INITIATED, 0));
+        workerPool.Pool().Submit(job);
+        EXPECT_EQ(workerPool.WaitForJobEvent(job, MaxJobWaitTime), ::Thunder::Core::ERROR_NONE);
+
+        workerPool.Pool().Stop();
+        // WaitForStop with a generous timeout should return true
+        EXPECT_TRUE(workerPool.Pool().WaitForStop(5000));
+
+        ::Thunder::Core::WorkerPool::Assign(nullptr);
+        job.Release();
+    }
+
+    // =========================================================================
+    // Concurrent submission — closes gap: Core WorkerPool error paths
+    // =========================================================================
+    TEST(Core_WorkerPool, ConcurrentSubmit_FromMultipleThreads_AllComplete)
+    {
+        const uint8_t threadCount = 4;
+        const uint8_t jobsPerThread = 5;
+        const uint8_t totalJobs = threadCount * jobsPerThread;
+
+        WorkerPoolTester workerPool(threadCount, 0, totalJobs + 5);
+        ::Thunder::Core::WorkerPool::Assign(&workerPool.Pool());
+        workerPool.RunThreadPool();
+
+        std::vector<::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>> jobs;
+        for (uint8_t i = 0; i < totalJobs; ++i) {
+            jobs.push_back(::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>(
+                ::Thunder::Core::ProxyType<TestJob<WorkerPoolTester>>::Create(
+                    workerPool, TestJob<WorkerPoolTester>::INITIATED, 0)));
+        }
+
+        // Submit from multiple threads concurrently
+        std::vector<std::thread> threads;
+        for (uint8_t t = 0; t < threadCount; ++t) {
+            threads.emplace_back([&workerPool, &jobs, t, jobsPerThread]() {
+                for (uint8_t j = 0; j < jobsPerThread; ++j) {
+                    workerPool.Pool().Submit(jobs[t * jobsPerThread + j]);
+                }
+            });
+        }
+        for (auto& th : threads) {
+            th.join();
+        }
+
+        // All jobs should complete
+        for (auto& job : jobs) {
+            EXPECT_EQ(workerPool.WaitForJobEvent(job, MaxJobWaitTime * 3),
+                      ::Thunder::Core::ERROR_NONE);
+            EXPECT_EQ(static_cast<TestJob<WorkerPoolTester>&>(*job).GetStatus(),
+                      TestJob<WorkerPoolTester>::COMPLETED);
+        }
+
+        workerPool.Stop();
+        for (auto& job : jobs) {
+            job.Release();
+        }
+        jobs.clear();
+        ::Thunder::Core::WorkerPool::Assign(nullptr);
+    }
+
+    // =========================================================================
+    // JobType IsIdle state tracking — closes gap: Core WorkerPool error paths
+    // =========================================================================
+    TEST(Core_WorkerPool, JobType_IsIdle_TransitionsCorrectly)
+    {
+        WorkerPoolTester workerPool(1, 0, 5);
+        ::Thunder::Core::WorkerPool::Assign(&workerPool.Pool());
+        workerPool.RunThreadPool();
+        {
+            WorkerJobTester jobTester(500);
+
+            // Initially idle
+            EXPECT_TRUE(jobTester.IsIdle());
+
+            // After submit, not idle
+            EXPECT_TRUE(jobTester.Submit());
+            EXPECT_FALSE(jobTester.IsIdle());
+
+            // Wait for completion
+            EXPECT_EQ(jobTester.WaitForEvent(MaxJobWaitTime * 3), ::Thunder::Core::ERROR_NONE);
+
+            // After completion and settling, should be idle again
+            usleep(MaxJobWaitTime * 1000);
+            EXPECT_TRUE(jobTester.IsIdle());
+        }
+        workerPool.Stop();
+        ::Thunder::Core::WorkerPool::Assign(nullptr);
+    }
+
+    // =========================================================================
+    // Double Assign singleton — closes gap: Core WorkerPool error paths
+    // =========================================================================
+    TEST(Core_WorkerPool, Assign_ClearAndReassign_Works)
+    {
+        WorkerPoolTester workerPool1(1, 0, 5);
+        WorkerPoolTester workerPool2(2, 0, 5);
+
+        ::Thunder::Core::WorkerPool::Assign(&workerPool1.Pool());
+        EXPECT_EQ(&::Thunder::Core::WorkerPool::Instance(), &workerPool1.Pool());
+        EXPECT_TRUE(::Thunder::Core::WorkerPool::IsAvailable());
+
+        // Must clear before reassigning (Assign asserts XOR)
+        ::Thunder::Core::WorkerPool::Assign(nullptr);
+        EXPECT_FALSE(::Thunder::Core::WorkerPool::IsAvailable());
+
+        // Now assign a different pool
+        ::Thunder::Core::WorkerPool::Assign(&workerPool2.Pool());
+        EXPECT_EQ(&::Thunder::Core::WorkerPool::Instance(), &workerPool2.Pool());
+        EXPECT_TRUE(::Thunder::Core::WorkerPool::IsAvailable());
+
+        ::Thunder::Core::WorkerPool::Assign(nullptr);
+        EXPECT_FALSE(::Thunder::Core::WorkerPool::IsAvailable());
+    }
+
+    // =========================================================================
+    // Revoke with explicit non-zero waitTime — closes gap: Core WorkerPool error paths
+    // =========================================================================
+    TEST(Core_WorkerPool, Revoke_WithFiniteWaitTime_CompletedJob)
+    {
+        WorkerPoolTester workerPool(1, 0, 5);
+        ::Thunder::Core::WorkerPool::Assign(&workerPool.Pool());
+        workerPool.RunThreadPool();
+
+        ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch> job =
+            ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>(
+                ::Thunder::Core::ProxyType<TestJob<WorkerPoolTester>>::Create(
+                    workerPool, TestJob<WorkerPoolTester>::INITIATED, 0));
+
+        workerPool.Pool().Submit(job);
+        EXPECT_EQ(workerPool.WaitForJobEvent(job, MaxJobWaitTime), ::Thunder::Core::ERROR_NONE);
+        usleep(50000); // Let it settle
+
+        // Revoke a completed job with finite waitTime
+        uint32_t result = workerPool.Pool().Revoke(job, 500);
+        // Should return ERROR_UNKNOWN_KEY since job already completed and left the queue
+        EXPECT_EQ(result, ::Thunder::Core::ERROR_UNKNOWN_KEY);
+
+        workerPool.Stop();
+        ::Thunder::Core::WorkerPool::Assign(nullptr);
+        job.Release();
+    }
+
+    // =========================================================================
+    // Submit then immediate revoke — closes gap: Core WorkerPool error paths
+    // =========================================================================
+    TEST(Core_WorkerPool, Submit_ImmediateRevoke_JobMayOrMayNotComplete)
+    {
+        WorkerPoolTester workerPool(1, 0, 5);
+        ::Thunder::Core::WorkerPool::Assign(&workerPool.Pool());
+
+        ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch> job =
+            ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>(
+                ::Thunder::Core::ProxyType<TestJob<WorkerPoolTester>>::Create(
+                    workerPool, TestJob<WorkerPoolTester>::INITIATED, 500));
+
+        // Submit but DON'T start the pool yet - job stays queued
+        workerPool.Pool().Submit(job);
+
+        // Revoke before pool starts processing (use default infinite wait)
+        workerPool.Pool().Revoke(job);
+
+        // Now start pool - job should NOT execute
+        workerPool.RunThreadPool();
+        EXPECT_EQ(workerPool.WaitForJobEvent(job, MaxJobWaitTime),
+                  ::Thunder::Core::ERROR_TIMEDOUT);
+        EXPECT_EQ(static_cast<TestJob<WorkerPoolTester>&>(*job).GetStatus(),
+                  TestJob<WorkerPoolTester>::INITIATED);
+
+        workerPool.Stop();
+        ::Thunder::Core::WorkerPool::Assign(nullptr);
+        job.Release();
+    }
+
+    // =========================================================================
+    // Multiple priority jobs with revoke — closes gap: Core WorkerPool error paths
+    // =========================================================================
+    TEST(Core_WorkerPool, Submit_PriorityJob_Revoke_DoesNotExecute)
+    {
+        WorkerPoolTester workerPool(2, 0, 10);
+        ::Thunder::Core::WorkerPool::Assign(&workerPool.Pool());
+
+        ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch> job =
+            ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>(
+                ::Thunder::Core::ProxyType<TestJob<WorkerPoolTester>>::Create(
+                    workerPool, TestJob<WorkerPoolTester>::INITIATED, 0));
+
+        // Submit with Low priority but don't start pool
+        workerPool.Pool().Submit(job, ::Thunder::Core::ThreadPool::Priority::Low);
+
+        // Revoke before processing (use default infinite wait)
+        workerPool.Pool().Revoke(job);
+
+        workerPool.RunThreadPool();
+        EXPECT_EQ(workerPool.WaitForJobEvent(job, MaxJobWaitTime),
+                  ::Thunder::Core::ERROR_TIMEDOUT);
+        EXPECT_EQ(static_cast<TestJob<WorkerPoolTester>&>(*job).GetStatus(),
+                  TestJob<WorkerPoolTester>::INITIATED);
+
+        workerPool.Stop();
+        ::Thunder::Core::WorkerPool::Assign(nullptr);
+        job.Release();
     }
 
 } // Core

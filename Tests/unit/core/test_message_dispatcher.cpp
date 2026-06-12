@@ -322,6 +322,114 @@ namespace Core {
         EXPECT_EQ(readData[3], testData2[3]);
     }
 
+    // =========================================================================
+    // Gap 10: Cross-Process Messaging E2E — Buffer-level coverage
+    // =========================================================================
+
+    // High volume: rapid sequential push/pop — no data loss
+    TEST_F(Core_MessageDispatcher, HighVolume_RapidPushPop)
+    {
+        constexpr int kIterations = 100;
+
+        for (int i = 0; i < kIterations; i++) {
+            uint8_t writeData[4] = {
+                static_cast<uint8_t>(i & 0xFF),
+                static_cast<uint8_t>((i >> 8) & 0xFF),
+                static_cast<uint8_t>(42),
+                static_cast<uint8_t>(i % 7)
+            };
+            uint8_t readData[4] = {};
+            uint16_t readLength = sizeof(readData);
+
+            ASSERT_EQ(_dispatcher->PushData(sizeof(writeData), writeData), ::Thunder::Core::ERROR_NONE)
+                << "PushData failed at iteration " << i;
+            ASSERT_EQ(_dispatcher->PopData(readLength, readData), ::Thunder::Core::ERROR_NONE)
+                << "PopData failed at iteration " << i;
+
+            EXPECT_EQ(readLength, sizeof(writeData));
+            EXPECT_EQ(readData[0], writeData[0]);
+            EXPECT_EQ(readData[1], writeData[1]);
+            EXPECT_EQ(readData[2], writeData[2]);
+            EXPECT_EQ(readData[3], writeData[3]);
+        }
+    }
+
+    // Multiple messages queued before reading
+    TEST_F(Core_MessageDispatcher, MultipleMessages_QueuedThenRead)
+    {
+        uint8_t msg1[] = { 0xAA, 0xBB };
+        uint8_t msg2[] = { 0xCC, 0xDD };
+        uint8_t msg3[] = { 0xEE, 0xFF };
+
+        ASSERT_EQ(_dispatcher->PushData(sizeof(msg1), msg1), ::Thunder::Core::ERROR_NONE);
+        ASSERT_EQ(_dispatcher->PushData(sizeof(msg2), msg2), ::Thunder::Core::ERROR_NONE);
+        ASSERT_EQ(_dispatcher->PushData(sizeof(msg3), msg3), ::Thunder::Core::ERROR_NONE);
+
+        uint8_t readData[2] = {};
+        uint16_t readLength = sizeof(readData);
+
+        // Read in order
+        EXPECT_EQ(_dispatcher->PopData(readLength, readData), ::Thunder::Core::ERROR_NONE);
+        EXPECT_EQ(readData[0], msg1[0]);
+        EXPECT_EQ(readData[1], msg1[1]);
+
+        readLength = sizeof(readData);
+        EXPECT_EQ(_dispatcher->PopData(readLength, readData), ::Thunder::Core::ERROR_NONE);
+        EXPECT_EQ(readData[0], msg2[0]);
+        EXPECT_EQ(readData[1], msg2[1]);
+
+        readLength = sizeof(readData);
+        EXPECT_EQ(_dispatcher->PopData(readLength, readData), ::Thunder::Core::ERROR_NONE);
+        EXPECT_EQ(readData[0], msg3[0]);
+        EXPECT_EQ(readData[1], msg3[1]);
+    }
+
+    // Variable-length messages
+    TEST_F(Core_MessageDispatcher, VariableLengthMessages)
+    {
+        uint8_t short_msg[] = { 0x01 };
+        uint8_t medium_msg[] = { 0x02, 0x03, 0x04, 0x05 };
+        uint8_t long_msg[64];
+        for (size_t i = 0; i < sizeof(long_msg); i++) {
+            long_msg[i] = static_cast<uint8_t>(i);
+        }
+
+        ASSERT_EQ(_dispatcher->PushData(sizeof(short_msg), short_msg), ::Thunder::Core::ERROR_NONE);
+        ASSERT_EQ(_dispatcher->PushData(sizeof(medium_msg), medium_msg), ::Thunder::Core::ERROR_NONE);
+        ASSERT_EQ(_dispatcher->PushData(sizeof(long_msg), long_msg), ::Thunder::Core::ERROR_NONE);
+
+        uint8_t readBuf[64] = {};
+        uint16_t readLen;
+
+        readLen = sizeof(readBuf);
+        EXPECT_EQ(_dispatcher->PopData(readLen, readBuf), ::Thunder::Core::ERROR_NONE);
+        EXPECT_EQ(readLen, sizeof(short_msg));
+        EXPECT_EQ(readBuf[0], 0x01);
+
+        readLen = sizeof(readBuf);
+        EXPECT_EQ(_dispatcher->PopData(readLen, readBuf), ::Thunder::Core::ERROR_NONE);
+        EXPECT_EQ(readLen, sizeof(medium_msg));
+        EXPECT_EQ(readBuf[0], 0x02);
+
+        readLen = sizeof(readBuf);
+        EXPECT_EQ(_dispatcher->PopData(readLen, readBuf), ::Thunder::Core::ERROR_NONE);
+        EXPECT_EQ(readLen, sizeof(long_msg));
+        EXPECT_EQ(readBuf[0], 0x00);
+        EXPECT_EQ(readBuf[63], 63);
+    }
+
+    // Pop from empty buffer returns appropriate error
+    TEST_F(Core_MessageDispatcher, PopFromEmptyBuffer)
+    {
+        uint8_t readData[4] = {};
+        uint16_t readLength = sizeof(readData);
+
+        // Nothing was pushed — pop should indicate no data
+        uint32_t result = _dispatcher->PopData(readLength, readData);
+        // Empty pop should return ERROR_READ_ERROR or similar
+        EXPECT_NE(result, ::Thunder::Core::ERROR_NONE);
+    }
+
 } // Core
 } // Tests
 } // Thunder
