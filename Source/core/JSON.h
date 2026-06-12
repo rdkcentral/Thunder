@@ -143,6 +143,28 @@ namespace Core {
                         break;
                     }
                     handled += loaded;
+
+                    // If offset returned to FIND_MARKER (0) then the element is either fully parsed
+                    // or we are still skipping leading whitespace.
+                    // If we ended before exhausting the available buffer, the element is definitely complete.
+                    // If we exactly exhausted the buffer, treat it as complete only if we ended on a non-whitespace character.(this could happen if the parsed buffer contained only whitespaces and the actual element is in the remaining data)
+                    if (offset == 0) {
+                        const bool endedBeforeBufferEnd = (loaded < payload);
+                        const bool endedAtBufferEndOnNonWhitespace =
+                            (loaded == payload) && (handled > 0) && (handled <= size) &&
+                            (::isspace(static_cast<uint8_t>(text[handled - 1])) == 0);
+
+                        if (endedBeforeBufferEnd || endedAtBufferEndOnNonWhitespace) {
+                            break;
+                        }
+                    }
+                }
+
+                // Consume any trailing whitespace that legitimately follows a complete JSON value.
+                if ((error.IsSet() == false) && (offset == 0) && (handled > 0)) {
+                    while ((handled < size) && ::isspace(static_cast<uint8_t>(text[handled]))) {
+                        handled++;
+                    }
                 }
 
                 if (((offset != 0) || (handled < size)) && (error.IsSet() == false)) {
