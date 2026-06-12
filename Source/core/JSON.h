@@ -144,11 +144,16 @@ namespace Core {
                     }
                     handled += loaded;
 
-                    // If offset returned to FIND_MARKER (0) the top-level element has been
-                    // fully parsed.  Stop here; trailing bytes will be validated below rather
-                    // than feeding them back into a fresh Deserialize call, which would fail
-                    // on trailing whitespace / the null-terminator that FromString appends.
-                    if (offset == 0) {
+                    // If offset returned to FIND_MARKER (0) AND the deserialiser consumed
+                    // fewer bytes than were available, the top-level element has been fully
+                    // parsed (it stopped at the closing token before exhausting the buffer).
+                    // Break here to avoid re-entering Deserialize with trailing whitespace or
+                    // the null-terminator that FromString injects via the +1.
+                    //
+                    // If offset == 0 but loaded == payload the buffer was exhausted without
+                    // completing the element (e.g. the first 65535+ bytes are all whitespace
+                    // preceding the actual JSON).  In that case the loop must continue.
+                    if ((offset == 0) && (loaded < payload)) {
                         break;
                     }
                 }
