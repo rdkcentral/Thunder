@@ -143,6 +143,21 @@ namespace Core {
                         break;
                     }
                     handled += loaded;
+
+                    // If offset returned to FIND_MARKER (0) the top-level element has been
+                    // fully parsed.  Stop here; trailing bytes will be validated below rather
+                    // than feeding them back into a fresh Deserialize call, which would fail
+                    // on trailing whitespace / the null-terminator that FromString appends.
+                    if (offset == 0) {
+                        break;
+                    }
+                }
+
+                // Consume any trailing whitespace that legitimately follows a complete JSON value.
+                if ((error.IsSet() == false) && (offset == 0) && (handled > 0)) {
+                    while ((handled < size) && ::isspace(static_cast<uint8_t>(text[handled]))) {
+                        handled++;
+                    }
                 }
 
                 if (((offset != 0) || (handled < size)) && (error.IsSet() == false)) {

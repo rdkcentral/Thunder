@@ -28,19 +28,21 @@
 //   cmake -DSTREAMJSON_GARBAGE_TEST=ON ...
 //   make StreamJSONGarbageTest
 //
-// Expected output WITHOUT the fix:
-//   [Server] Connection accepted
-//   [Server] State -> OPEN
-//   [Main]   Sending garbage: "dfsda" (5 bytes)
+// Expected output WITHOUT the infinite-loop fix:
 //   [Server] Received() called  x4  (bytes 'd','f','s','d' processed, each fires Received)
-//   [Main]   Waiting up to 3000 ms for server connection-close event ...
 //   [Main]   FAIL: Timed out — server is stuck in ReceiveData() infinite loop
 //            (IsNullValue returned UNKNOWN without consuming the last byte 'a')
 //
-// Expected output WITH the fix (IsNullValue guard changed to loaded >= maxLength):
-//   [Server] Received() called  x5
+// Expected output WITH both fixes applied (PR #2129 + PR #2133):
+//   [Server] CRITICAL CONDITION! StreamJSONType failed: ...  (x5, one per garbage byte)
+//   [Server] VALID   Received()   payload: {"jsonrpc":"2.0",...}
 //   [Server] State -> CLOSED
-//   [Main]   PASS: Server processed close normally within the timeout
+//   [Main]   PASS
+//
+// Note: PR #2133 (log json parse error) changed DeserializerImpl to only call
+// Received() on a SUCCESSFUL parse, not on the error path. As a result, garbage
+// bytes are now silently discarded (with SYSLOG error) rather than triggering a
+// spurious Received() delivery. Spurious count is therefore 0 in the current code.
 //
 
 #include "Module.h"
@@ -48,6 +50,8 @@
 #include <cstdio>
 #include <cstring>
 #include <atomic>
+
+#include <core/JSONRPC.h>
 
 #ifdef __POSIX__
 #include <unistd.h>
@@ -125,17 +129,42 @@ namespace Test {
         ~JSONServer() = default;
 
     public:
-        // Called every time the deserialiser completes one JSON element.
-        // With the bug this fires in a tight loop for the last garbage byte;
-        // with the fix it fires once for each successfully parsed object.
+        // Called every time the deserialiser successfully parses one JSON element.
+        //
+        // After PR #2133, DeserializerImpl only calls Received() on a SUCCESSFUL parse.
+        // Garbage bytes that cause a parse error are discarded with an error log;
+        // Received() is NOT invoked for them. Only genuine, fully-parsed JSON objects
+        // arrive here.
+        //
+        // NOTE: element->IsSet() is NOT reliable to distinguish valid vs spurious
+        //     deliveries even if spurious ones did occur. JSONRPC::Message::Clear()
+        //     always reassigns JSONRPC = DefaultVersion ("2.0"), so Container::IsSet()
+        //     returns true even for a freshly-cleared element. Use Designator.IsSet()
+        //     (which is only true when a "method" or "result" field was parsed) to
+        //     classify deliveries in test scenarios where spurious calls may appear.
         void Received(::Thunder::Core::ProxyType<::Thunder::Core::JSON::IElement>& element) override
         {
-            uint32_t n = ++s_receivedCount;
-            string text;
-            element->ToString(text);
-            fprintf(stdout, "[Server] Received() called  (total so far: %u)  payload: %s\n",
-                    n, text.c_str());
-            if (!text.empty() && text[0] == '{') {
+            ++s_receivedCount;
+
+            // Downcast to JSONRPC::Message to inspect individual fields.
+            auto* msg = dynamic_cast<::Thunder::Core::JSONRPC::Message*>(element.operator->());
+            bool hasMethod = (msg != nullptr && msg->Designator.IsSet());
+
+            if (!hasMethod) {
+                // Spurious delivery: element was cleared by the error path.
+                // Only the default JSONRPC="2.0" field is present.
+                uint32_t n = ++s_spuriousCount;
+                string text;
+                element->ToString(text);
+                fprintf(stdout,
+                        "[Server] SPURIOUS Received()  #%u  "
+                        "(garbage byte — Designator not set, text: %s)\n", n, text.c_str());
+            } else {
+                // Genuine delivery: Designator carries the parsed method name.
+                string text;
+                element->ToString(text);
+                fprintf(stdout,
+                        "[Server] VALID   Received()   payload: %s\n", text.c_str());
                 s_validMessageReceived.store(true);
             }
             fflush(stdout);
@@ -154,13 +183,15 @@ namespace Test {
 
     public:
         // Shared across all accepted connections (only one expected in this test).
-        static std::atomic<uint32_t>  s_receivedCount;
+        static std::atomic<uint32_t>  s_receivedCount;   // total Received() calls
+        static std::atomic<uint32_t>  s_spuriousCount;   // calls with IsSet()==false (garbage bytes)
         static std::atomic<bool>      s_validMessageReceived;
         static ::Thunder::Core::Event s_closedEvent;
         static JSONFactory            s_factory;
     };
 
     std::atomic<uint32_t>  JSONServer::s_receivedCount{ 0 };
+    std::atomic<uint32_t>  JSONServer::s_spuriousCount{ 0 };
     std::atomic<bool>       JSONServer::s_validMessageReceived{ false };
     ::Thunder::Core::Event  JSONServer::s_closedEvent{ false, true };
     JSONFactory             JSONServer::s_factory{ 2 };
@@ -256,35 +287,55 @@ int main()
     uint32_t waitResult = JSONServer::s_closedEvent.Lock(WAIT_MS);
 
     // ---- 4. Report result --------------------------------------------------
-    fprintf(stdout, "\n--- Result ---\n");
-    uint32_t received    = JSONServer::s_receivedCount.load();
-    bool     validParsed = JSONServer::s_validMessageReceived.load();
-    fprintf(stdout, "Received() was called %u time(s) total\n", received);
-    fprintf(stdout, "Valid JSON message parsed: %s\n", validParsed ? "YES" : "NO");
+    // Payload "dfsda{...}" has 5 garbage bytes before the valid JSON object.
+    // After PR #2133, garbage bytes are discarded with an error log and do NOT
+    // trigger Received() — so we expect 0 spurious and exactly 1 valid delivery.
+    constexpr uint32_t EXPECTED_SPURIOUS = 0;
+    constexpr uint32_t EXPECTED_VALID    = 1;
 
-    if ((waitResult == ::Thunder::Core::ERROR_NONE) && validParsed) {
+    fprintf(stdout, "\n--- Result ---\n");
+    uint32_t totalReceived = JSONServer::s_receivedCount.load();
+    uint32_t spurious      = JSONServer::s_spuriousCount.load();
+    uint32_t valid         = totalReceived - spurious;
+    bool     validParsed   = JSONServer::s_validMessageReceived.load();
+
+    fprintf(stdout, "Received() total calls  : %u\n",  totalReceived);
+    fprintf(stdout, "  Spurious (garbage)    : %u  (expected %u)\n", spurious, EXPECTED_SPURIOUS);
+    fprintf(stdout, "  Valid    (parsed JSON): %u  (expected %u)\n", valid,    EXPECTED_VALID);
+    fprintf(stdout, "Connection closed       : %s\n",
+            waitResult == ::Thunder::Core::ERROR_NONE ? "YES" : "NO (timed out)");
+
+    if (spurious > 0) {
         fprintf(stdout,
-                "PASS: Server processed close normally AND parsed the valid JSON\n"
-                "      that followed the garbage input.\n");
-    } else {
+                "NOTE: %u spurious Received() call(s) detected.\n"
+                "      This would indicate a regression in DeserializerImpl —\n"
+                "      Received() should only be called on successful parses.\n",
+                spurious);
+    }
+
+    bool pass = (waitResult == ::Thunder::Core::ERROR_NONE)
+             && validParsed
+             && (spurious == EXPECTED_SPURIOUS)
+             && (valid    == EXPECTED_VALID);
+
+    if (pass) {
+        fprintf(stdout,
+                "PASS: connection closed normally; no spurious deliveries, %u valid delivery.\n",
+                valid);
+    } else if (waitResult != ::Thunder::Core::ERROR_NONE) {
         fprintf(stdout,
                 "FAIL: Timed out after %u ms — server never signalled connection-close.\n",
                 WAIT_MS);
-        if (received >= SPIN_THRESHOLD) {
+        if (totalReceived >= SPIN_THRESHOLD) {
             fprintf(stdout,
-                    "      Received() has been called %u times, indicating the\n"
-                    "      ReceiveData() loop is spinning on the last byte.\n"
-                    "      Root cause: IsNullValue() (JSON.h) returns UNKNOWN\n"
-                    "      without consuming the byte when maxLength == 1,\n"
-                    "      because the guard `loaded + 1 == maxLength` fires\n"
-                    "      when loaded==0 and maxLength==1.\n",
-                    received);
-        } else {
-            fprintf(stdout,
-                    "      Received() count is low (%u); the loop may not have\n"
-                    "      started yet — try increasing WAIT_MS.\n",
-                    received);
+                    "      Received() has been called %u times — ReceiveData() is\n"
+                    "      spinning on the last byte (infinite loop bug still present).\n",
+                    totalReceived);
         }
+    } else {
+        fprintf(stdout,
+                "FAIL: unexpected delivery counts (spurious=%u, valid=%u).\n",
+                spurious, valid);
     }
     fflush(stdout);
 
