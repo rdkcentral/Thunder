@@ -848,6 +848,9 @@ void SerialPort::Read(const uint16_t readBytes)
                 if (_sendOffset < _sendBytes) {
                     uint32_t sendSize;
 
+                    // coverity[overflow_sink] - False positive: _sendBytes and _sendOffset are uint16_t (max 65535),
+                    // SendData() returns uint16_t, and POSIX guarantees write() returns at most count bytes.
+                    // The guard above ensures _sendBytes > _sendOffset, so neither subtraction nor addition can overflow.
                     sendSize = write(_descriptor, reinterpret_cast<const char*>(&_sendBuffer[_sendOffset]),
                         _sendBytes - _sendOffset);
 
@@ -888,6 +891,9 @@ void SerialPort::Read(const uint16_t readBytes)
                 uint32_t size = ::read(_descriptor, reinterpret_cast<char*>(&_receiveBuffer[_readBytes]), _receiveBufferSize - _readBytes);
 
                 if ((size != static_cast<uint32_t>(~0)) && (size != 0)) {
+                    // coverity[INTEGER_OVERFLOW] - Intentional: POSIX read() returns at most the requested count
+                    // (_receiveBufferSize - _readBytes), which is a uint16_t difference and thus <= UINT16_MAX.
+                    // The sum _readBytes + size therefore never exceeds _receiveBufferSize, so no overflow occurs.
                     _readBytes += size;
 
                     if (_readBytes != 0) {
