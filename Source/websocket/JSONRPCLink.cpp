@@ -21,6 +21,19 @@
 
 namespace WPEFramework {
 
+namespace JSONRPC {
+
+    // Shared channel map stored in the library's data segment.
+    // This ensures all DSOs using JSONRPCLink share the same map instance,
+    // preventing crashes when plugins unload while others still hold references.
+    Core::ProxyMapType<string, CommunicationChannelBase>& GetChannelMap()
+    {
+        static Core::ProxyMapType<string, CommunicationChannelBase> channelMap;
+        return channelMap;
+    }
+
+} // namespace JSONRPC
+
 ENUM_CONVERSION_BEGIN(WPEFramework::JSONRPC::JSONPluginState)
 
     { WPEFramework::JSONRPC::DEACTIVATED, _TXT("Deactivated") },

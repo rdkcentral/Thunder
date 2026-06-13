@@ -28,12 +28,21 @@ namespace WPEFramework {
 
 		using namespace Core::TypeTraits;
 
+		// Base class for CommunicationChannel to allow shared storage across DSO boundaries
+		class EXTERNAL CommunicationChannelBase {
+		public:
+			virtual ~CommunicationChannelBase() = default;
+		};
+
+		// Returns the shared channel map stored in the library's data segment
+		EXTERNAL Core::ProxyMapType<string, CommunicationChannelBase>& GetChannelMap();
+
 		template<typename INTERFACE>
 		class EXTERNAL LinkType {
 		private:
 			typedef std::function<void(const Core::JSONRPC::Message&)> CallbackFunction;
 
-			class CommunicationChannel {
+			class CommunicationChannel : public CommunicationChannelBase {
 			private:
 				// -----------------------------------------------------------------------------------------------
 				// Create a resource allocator for all JSON objects used in these tests
@@ -198,14 +207,13 @@ namespace WPEFramework {
 				}
 
 			public:
-				virtual ~CommunicationChannel() = default;
+				~CommunicationChannel() override = default;
 				static Core::ProxyType<CommunicationChannel> Instance(const Core::NodeId& remoteNode, const string& callsign, const string& query)
 				{
-					static Core::ProxyMapType<string, CommunicationChannel> channelMap;
+					// Use type-discriminated key to prevent collisions between different INTERFACE types
+					string searchLine = remoteNode.HostAddress() + '@' + callsign + '@' + typeid(INTERFACE).name();
 
-					string searchLine = remoteNode.HostAddress() + '@' + callsign;
-
-					return (channelMap.template Instance<CommunicationChannel>(searchLine, remoteNode, callsign, query));
+					return Core::ProxyType<CommunicationChannel>(GetChannelMap().template Instance<CommunicationChannel>(searchLine, remoteNode, callsign, query));
 				}
 
 			public:
