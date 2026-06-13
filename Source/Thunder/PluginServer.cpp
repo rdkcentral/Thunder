@@ -318,20 +318,48 @@ namespace PluginHost {
 
     void Server::Service::Register(IPlugin::INotification * sink, const Core::OptionalType<string>& callsign) /* override */
     {
-        _administrator.Register(sink, callsign);
+        if (_administrator.Register(sink, callsign) == Core::ERROR_NONE) {
+            IPlugin::INotificationExtended* extended = sink->QueryInterface<IPlugin::INotificationExtended>();
+            if (extended != nullptr) {
+                if (_administrator.Register(extended, callsign) != Core::ERROR_NONE) {
+                    _administrator.Unregister(sink, callsign);
+                }
+                extended->Release();
+            }
+        }
     }
 
     void Server::Service::Unregister(IPlugin::INotification * sink, const Core::OptionalType<string>& callsign) /* override */
     {
+        IPlugin::INotificationExtended* extended = sink->QueryInterface<IPlugin::INotificationExtended>();
+        if (extended != nullptr) {
+            _administrator.Unregister(extended, callsign);
+            extended->Release();
+        }
+
         _administrator.Unregister(sink, callsign);
     }
 
     void Server::Service::Register(IPlugin::INotification * sink, const uint32_t interface_id)
     {
-        _administrator.Register(sink, interface_id);
+        if (_administrator.Register(sink, interface_id) == Core::ERROR_NONE) {
+            IPlugin::INotificationExtended* extended = sink->QueryInterface<IPlugin::INotificationExtended>();
+            if (extended != nullptr) {
+                if (_administrator.Register(extended, interface_id) != Core::ERROR_NONE) {
+                    _administrator.Unregister(sink, interface_id);
+                }
+                extended->Release();
+            }
+        }
     }
     void Server::Service::Unregister(IPlugin::INotification * sink, const uint32_t interface_id)
     {
+        IPlugin::INotificationExtended* extended = sink->QueryInterface<IPlugin::INotificationExtended>();
+        if (extended != nullptr) {
+            _administrator.Unregister(extended, interface_id);
+            extended->Release();
+        }
+
         _administrator.Unregister(sink, interface_id);
     }
 
@@ -797,6 +825,7 @@ namespace PluginHost {
                     // Both branches are reachable when HIBERNATE_ENABLED is defined.
                     if (result == Core::ERROR_NONE) {
                         if (State() == IShell::state::HIBERNATED) {
+                            _administrator.Hibernated(Callsign(), this);
                             SYSLOG(Logging::Startup, ("Hibernated plugin [%s]:[%s]", ClassName().c_str(), Callsign().c_str()));
                         } else {
                             // wakeup occured right after hibernation finished
