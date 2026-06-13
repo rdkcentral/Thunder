@@ -52,12 +52,10 @@ namespace Core {
             {
                 if (_buffer != nullptr) {
                     _buffer[0] = 1;
-PUSH_WARNING(DISABLE_WARNING_CONSTANT_LOGICAL_OPERAND)
                     _buffer[1] = (length & 0xFF);
-                    _buffer[2] = ((length >> 8) && 0xFF);
+                    _buffer[2] = ((length >> 8) & 0xFF);
                     _buffer[3] = (length & 0xFF);
-                    _buffer[4] = ((length >> 8) && 0xFF);
-POP_WARNING()
+                    _buffer[4] = ((length >> 8) & 0xFF);
                 }
             }
             Buffer(const Buffer& copy)
@@ -134,7 +132,7 @@ POP_WARNING()
             {
                 if (_buffer != nullptr) {
                     if (_buffer[0] == 1) {
-                        delete _buffer;
+                        delete[] _buffer;
                     } else {
                         _buffer[0] = _buffer[0] - 1;
                     }

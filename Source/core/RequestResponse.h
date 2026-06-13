@@ -81,7 +81,7 @@ namespace Platform {
     public:
         inline RequestResponseState State() const
         {
-            return (m_Responded);
+            return (m_State);
         }
 
         inline REQUEST& Request()
@@ -91,7 +91,7 @@ namespace Platform {
 
         inline RESPONSE& Response()
         {
-            return (*m_Request);
+            return (*m_Response);
         }
 
     private:
