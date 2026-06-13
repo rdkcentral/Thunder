@@ -39,6 +39,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_iterator.cpp
    test_jsonobject.cpp
    test_jsonparser.cpp
+   test_jsonrpc_handler.cpp
    test_jsonstring.cpp
    test_keyvalue.cpp
    test_library.cpp
@@ -47,6 +48,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_memberavailability.cpp
    test_message_dispatcher.cpp
    test_messageException.cpp
+   test_serviceadministrator.cpp
    test_networkinfo.cpp
    test_nodeid.cpp
    test_numbertype.cpp
@@ -54,11 +56,14 @@ add_executable(${TEST_RUNNER_NAME}
    test_parser.cpp
    test_portability.cpp
    test_processinfo.cpp
+   test_proxytype.cpp
    test_queue.cpp
    test_rangetype.cpp
    test_readwritelock.cpp
    test_rectangle.cpp
    test_rpc.cpp
+   test_comrpc.cpp
+   test_plugin.cpp
    test_semaphore.cpp
    test_sharedbuffer.cpp
    test_singleton.cpp
@@ -85,7 +90,17 @@ add_executable(${TEST_RUNNER_NAME}
    test_workerpool.cpp
    test_xgetopt.cpp
    test_jsonrpclink_dso.cpp
+   test_jsonrpc_websocket.cpp
+   test_jsonrpc_http.cpp
+   test_extensions.cpp
+   test_thunderhost_thunderplugin.cpp
+   test_cryptalgo.cpp
+   test_jwt.cpp
 )
+
+target_include_directories(${TEST_RUNNER_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/Source/extensions)
+target_include_directories(${TEST_RUNNER_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/Source/Thunder)
+
 #[[
 target_sources(${TEST_RUNNER_NAME} PRIVATE test_message_unit.cpp)
 target_link_libraries(${TEST_RUNNER_NAME}
@@ -107,6 +122,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_iterator.cpp
    test_jsonobject.cpp
    test_jsonparser.cpp
+   test_jsonrpc_handler.cpp
    test_jsonstring.cpp
    test_keyvalue.cpp
    test_library.cpp
@@ -114,6 +130,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_measurementtype.cpp
    test_memberavailability.cpp
    test_messageException.cpp
+   test_serviceadministrator.cpp
    test_networkinfo.cpp
    test_nodeid.cpp
    test_numbertype.cpp
@@ -165,6 +182,7 @@ target_link_libraries(${TEST_RUNNER_NAME}
     ${CMAKE_THREAD_LIBS_INIT}
     ${NAMESPACE}Core::${NAMESPACE}Core
     ${NAMESPACE}COM::${NAMESPACE}COM
+    ${NAMESPACE}Plugins::${NAMESPACE}Plugins
     ${NAMESPACE}WebSocket::${NAMESPACE}WebSocket
     ${NAMESPACE}Messaging::${NAMESPACE}Messaging
     ${NAMESPACE}Cryptalgo::${NAMESPACE}Cryptalgo
