@@ -307,6 +307,7 @@ POP_WARNING()
             uint16_t m_SendOffset;
             uint32_t m_Interface;
             bool m_SystemdSocket;
+            mutable Event m_closeEvent;
         };
 
         class EXTERNAL SocketStream : public SocketPort {
