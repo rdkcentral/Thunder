@@ -68,11 +68,13 @@ set(PUBLIC_HEADERS
 target_link_libraries(${TARGET}
         PUBLIC
           ${NAMESPACE}Core::${NAMESPACE}Core
+          ${NAMESPACE}COM::${NAMESPACE}COM
+        INTERFACE
+          ${NAMESPACE}Common
+        PRIVATE
           ${NAMESPACE}Cryptalgo::${NAMESPACE}Cryptalgo
           ${NAMESPACE}Messaging::${NAMESPACE}Messaging
-          ${NAMESPACE}COM::${NAMESPACE}COM
           ${NAMESPACE}WebSocket::${NAMESPACE}WebSocket
-        PRIVATE
           CompileSettingsDebug::CompileSettingsDebug
         )
 
@@ -98,6 +100,7 @@ target_link_libraries(${TARGET_PROXYSTUBS}
 target_include_directories( ${TARGET}
         PUBLIC
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../>
           $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/../>
           $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}>
         )
@@ -173,7 +176,7 @@ InstallPackageConfig(
         DESCRIPTION "Basic library to realize the glue between a proprietary plugin and the framework host.")
 
 InstallCMakeConfig(
-        EXTRA_DEPENDENCIES "ConfigGenerator"
+        EXTRA_DEPENDENCIES "ConfigGenerator;${NAMESPACE}Common"
         TARGETS ${TARGET})
 
 InstallCMakeConfig(TARGETS ${TARGET_PROXYSTUBS})

@@ -36,6 +36,7 @@
 #include "IVirtualInput.h"
 #include "IStateController.h"
 #include "Types.h"
+#include <common/common.h>
 
 #ifdef __WINDOWS__
 #pragma comment(lib, "plugins.lib")

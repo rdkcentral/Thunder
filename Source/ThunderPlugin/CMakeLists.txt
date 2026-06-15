@@ -42,7 +42,6 @@ target_link_libraries(${TARGET}
           ${NAMESPACE}Core::${NAMESPACE}Core
           ${NAMESPACE}Messaging::${NAMESPACE}Messaging
           ${NAMESPACE}Plugins::${NAMESPACE}Plugins
-          ${NAMESPACE}Common::${NAMESPACE}Common
           ${NAMESPACE}WebSocket::${NAMESPACE}WebSocket
           ${NAMESPACE}COM::${NAMESPACE}COM
         )

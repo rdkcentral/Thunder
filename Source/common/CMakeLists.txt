@@ -31,13 +31,13 @@ set(PUBLIC_HEADERS
 
 target_link_libraries(${TARGET}
         PUBLIC
-          ${NAMESPACE}Plugins::${NAMESPACE}Plugins
           ${NAMESPACE}Core::${NAMESPACE}Core
           ${NAMESPACE}Cryptalgo::${NAMESPACE}Cryptalgo
           ${NAMESPACE}Messaging::${NAMESPACE}Messaging
           ${NAMESPACE}COM::${NAMESPACE}COM
           ${NAMESPACE}WebSocket::${NAMESPACE}WebSocket
         PRIVATE
+          ${NAMESPACE}Plugins::${NAMESPACE}Plugins
           CompileSettingsDebug::CompileSettingsDebug
         )
 
