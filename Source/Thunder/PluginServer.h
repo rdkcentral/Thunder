@@ -1293,6 +1293,10 @@ namespace PluginHost {
             void Unregister(IPlugin::INotification* sink, const Core::OptionalType<string>& callsign) override;
             void Register(IPlugin::INotification* sink, const uint32_t interface_id) override;
             void Unregister(IPlugin::INotification* sink, const uint32_t interface_id) override;
+            void Register(IPlugin::INotificationExtended* sink, const Core::OptionalType<string>& callsign) override;
+            void Unregister(IPlugin::INotificationExtended* sink, const Core::OptionalType<string>& callsign) override;
+            void Register(IPlugin::INotificationExtended* sink, const uint32_t interface_id) override;
+            void Unregister(IPlugin::INotificationExtended* sink, const uint32_t interface_id) override;
 
             string Model() const override {
                 return (_administrator.Configuration().Model());
@@ -2786,10 +2790,8 @@ namespace PluginHost {
 
                     _notificationLock.Unlock();
                 }
-                std::vector<Core::IUnknown*> Notify(const string& callsign, PluginHost::IShell* entry, Core::hresult (NOTIFICATION::*notificatonmethod)(const string& callsign, IShell* plugin))
+                void Notify(const string& callsign, PluginHost::IShell* entry, Core::hresult (NOTIFICATION::*notificatonmethod)(const string& callsign, IShell* plugin))
                 {
-                    std::vector<Core::IUnknown*> cancelled;
-
                     _notificationLock.Lock();
 
                     auto it = _notifiers.begin();
@@ -2797,10 +2799,6 @@ namespace PluginHost {
                         if (it->second.SendNotification(callsign, entry) == true) {
                             Core::hresult result = (it->first->*notificatonmethod)(callsign, entry);
                             if (result == Core::ERROR_CANCEL) {
-                                Core::IUnknown* cancelledNotification = static_cast<Core::IUnknown*>(it->first);
-                                cancelledNotification->AddRef();
-                                cancelled.push_back(cancelledNotification);
-
                                 NOTIFICATION* foundnotification = it->first;
                                 it = _notifiers.erase(it);
                                 foundnotification->Release();
@@ -2814,7 +2812,6 @@ namespace PluginHost {
                     }
 
                     _notificationLock.Unlock();
-                    return cancelled;
                 }
 
                 void Notify(const string& callsign, PluginHost::IShell* entry, void (PluginHost::IPlugin::ILifeTime::*notificatonmethod)(const string& callsign, IShell* plugin)) const
@@ -3835,23 +3832,23 @@ namespace PluginHost {
             }
             void Activated(const string& callsign, PluginHost::IShell* entry)
             {
-                RemoveExtended(_notifiers.Notify(callsign, entry, &PluginHost::IPlugin::INotification::CancelableActivated));
+                _notifiers.Notify(callsign, entry, &PluginHost::IPlugin::INotification::CancelableActivated);
             }
             void Deactivated(const string& callsign, PluginHost::IShell* entry)
             {
-                RemoveExtended(_notifiers.Notify(callsign, entry, &PluginHost::IPlugin::INotification::CancelableDeactivated));
+                _notifiers.Notify(callsign, entry, &PluginHost::IPlugin::INotification::CancelableDeactivated);
             }
             void Unavailable(const string& callsign, PluginHost::IShell* entry)
             {
-                RemoveExtended(_notifiers.Notify(callsign, entry, &PluginHost::IPlugin::INotification::CancelableUnavailable));
+                _notifiers.Notify(callsign, entry, &PluginHost::IPlugin::INotification::CancelableUnavailable);
             }
             void Hibernated(const string& callsign, PluginHost::IShell* entry)
             {
-                RemoveBase(_extendedNotifiers.Notify(callsign, entry, &PluginHost::IPlugin::INotificationExtended::CancelableHibernated));
+                _extendedNotifiers.Notify(callsign, entry, &PluginHost::IPlugin::INotificationExtended::CancelableHibernated);
             }
             void Destroyed(const string& callsign, PluginHost::IShell* entry)
             {
-                RemoveBase(_extendedNotifiers.Notify(callsign, entry, &PluginHost::IPlugin::INotificationExtended::CancelableDestroyed));
+                _extendedNotifiers.Notify(callsign, entry, &PluginHost::IPlugin::INotificationExtended::CancelableDestroyed);
             }
             void StateControlStateChange(const string& callsign, const IStateControl::state state)
             {
@@ -3872,9 +3869,8 @@ namespace PluginHost {
                 _notificationLock.Unlock();
 
             }
-            Core::hresult Register(PluginHost::IPlugin::INotification* sink, const Core::OptionalType<string>& callsign = {})
+            void Register(PluginHost::IPlugin::INotification* sink, const Core::OptionalType<string>& callsign = {})
             {
-                Core::hresult result = Core::ERROR_DUPLICATE_KEY;
                 bool registered = false;
 
                 if (callsign.IsSet() == true) {
@@ -3885,31 +3881,23 @@ namespace PluginHost {
                 }
 
                 if (registered == true) {
-                    result = Core::ERROR_NONE;
-
                     if (Snapshot(sink, callsign) == false) {
                         if (callsign.IsSet() == true) {
                             _notifiers.Remove(sink, callsign.Value());
                         } else {
                             _notifiers.Remove(sink);
                         }
-
-                        result = Core::ERROR_CANCEL;
                     }
                 }
-
-                return result;
             }
-            Core::hresult Register(PluginHost::IPlugin::INotificationExtended* sink, const Core::OptionalType<string>& callsign = {})
+            void Register(PluginHost::IPlugin::INotificationExtended* sink, const Core::OptionalType<string>& callsign = {})
             {
-                bool registered = false;
                 if (callsign.IsSet() == true) {
-                    registered = _extendedNotifiers.Add(sink, callsign.Value());
+                    _extendedNotifiers.Add(sink, callsign.Value());
                 }
                 else {
-                    registered = _extendedNotifiers.Add(sink);
+                    _extendedNotifiers.Add(sink);
                 }
-                return (registered == true ? Core::ERROR_NONE : Core::ERROR_DUPLICATE_KEY);
             }
             void Unregister(const PluginHost::IPlugin::INotification* sink, const Core::OptionalType<string>& callsign = {})
             {
@@ -3927,28 +3915,21 @@ namespace PluginHost {
                     _extendedNotifiers.Remove(sink);
                 }
             }
-            Core::hresult Register(IPlugin::INotification* sink, const uint32_t interface_id)
+            void Register(IPlugin::INotification* sink, const uint32_t interface_id)
             {
-                Core::hresult result = Core::ERROR_DUPLICATE_KEY;
-
                 if( _notifiers.Add(sink, interface_id)  == true) {
-                    result = Core::ERROR_NONE;
-
                     if( Snapshot(sink, interface_id) == false) {
                         _notifiers.Remove(sink, interface_id);
-                        result = Core::ERROR_CANCEL;
                     }   
                 }
-
-                return result;
             }
             void Unregister(IPlugin::INotification* sink, const uint32_t interface_id)
             {
                 _notifiers.Remove(sink, interface_id);
             }
-            Core::hresult Register(IPlugin::INotificationExtended* sink, const uint32_t interface_id)
+            void Register(IPlugin::INotificationExtended* sink, const uint32_t interface_id)
             {
-                return (_extendedNotifiers.Add(sink, interface_id) == true ? Core::ERROR_NONE : Core::ERROR_DUPLICATE_KEY);
+                _extendedNotifiers.Add(sink, interface_id);
             }
             void Unregister(IPlugin::INotificationExtended* sink, const uint32_t interface_id)
             {
@@ -3970,22 +3951,6 @@ namespace PluginHost {
                 }
 
                 return (result);
-            }
-
-            void RemoveExtended(std::vector<Core::IUnknown*>&& cancelled)
-            {
-                for (Core::IUnknown* sink : cancelled) {
-                    _extendedNotifiers.RemoveAll(sink);
-                    sink->Release();
-                }
-            }
-
-            void RemoveBase(std::vector<Core::IUnknown*>&& cancelled)
-            {
-                for (Core::IUnknown* sink : cancelled) {
-                    _notifiers.RemoveAll(sink);
-                    sink->Release();
-                }
             }
 
             void* Instantiate(RPC::Object& object, const uint32_t waitTime, uint32_t& sessionId, const string& dataPath, const string& persistentPath, const string& volatilePath, const string& extensionPath, const std::vector<string>& linkerPaths)
