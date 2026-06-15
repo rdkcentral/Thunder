@@ -336,12 +336,12 @@ namespace PluginHost {
         _administrator.Unregister(sink, interface_id);
     }
 
-    void Server::Service::Register(IPlugin::INotificationExtended* sink, const Core::OptionalType<string>& callsign) /* override */
+    void Server::Service::Register(IPlugin::INotificationExtended* sink, const Core::OptionalType<string>& callsign)
     {
         _administrator.Register(sink, callsign);
     }
 
-    void Server::Service::Unregister(IPlugin::INotificationExtended* sink, const Core::OptionalType<string>& callsign) /* override */
+    void Server::Service::Unregister(IPlugin::INotificationExtended* sink, const Core::OptionalType<string>& callsign)
     {
         _administrator.Unregister(sink, callsign);
     }
