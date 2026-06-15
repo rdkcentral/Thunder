@@ -1998,7 +1998,7 @@ namespace Core {
     // =========================================================================
     // Submit then immediate revoke — closes gap: Core WorkerPool error paths
     // =========================================================================
-    TEST(Core_WorkerPool, Submit_ImmediateRevoke_JobMayOrMayNotComplete)
+    TEST(Core_WorkerPool, Submit_ImmediateRevoke_BeforePoolStart_JobDoesNotExecute)
     {
         WorkerPoolTester workerPool(1, 0, 5);
         ::Thunder::Core::WorkerPool::Assign(&workerPool.Pool());
