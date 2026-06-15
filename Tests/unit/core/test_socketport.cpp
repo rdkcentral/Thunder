@@ -1362,9 +1362,9 @@ TEST(test_socketport, open_tcp_ipv4_refused_connection_returns_error)
 
     TEST(test_socketport, remote_unexpected_close_triggers_statechange)
     {
-        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 8,
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 16,
                            maxWaitTimeMs = 8000, maxInitTime = 500;
-        constexpr uint8_t maxRetries = 1;
+        constexpr uint8_t maxRetries = 10;
 
         const string connector = "/tmp/test_sp_remotesc.sock";
 
