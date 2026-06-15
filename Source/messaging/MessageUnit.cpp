@@ -244,7 +244,8 @@ ENUM_CONVERSION_END(WPEFramework::Core::Messaging::OutputMode)
                     ASSERT(_dataBuffer != nullptr);
                 }
 
-                _direct.Mode(_settings.IsBackground(), _settings.IsAbbreviated());
+                //_direct.Mode(_settings.IsBackground(), _settings.IsAbbreviated());
+                _direct.Mode(false, _settings.IsAbbreviated());
 
                 Core::Messaging::IStore::Set(this);
 
@@ -305,7 +306,8 @@ ENUM_CONVERSION_END(WPEFramework::Core::Messaging::OutputMode)
                         ASSERT(_dataBuffer != nullptr);
                     }
 
-                    _direct.Mode(_settings.IsBackground(), _settings.IsAbbreviated());
+                    //_direct.Mode(_settings.IsBackground(), _settings.IsAbbreviated());
+                    _direct.Mode(false, _settings.IsAbbreviated()); // This is temporary for 4.4.6 Release. Should be reverted back to the above line after necessary study.
 
                     Core::Messaging::IStore::Set(this);
 
@@ -376,6 +378,8 @@ ENUM_CONVERSION_END(WPEFramework::Core::Messaging::OutputMode)
             _direct.Output(messageInfo, message);
 #else
             const bool sendDirect    = (outputMode == Core::Messaging::OutputMode::DIRECT) || (outputMode == Core::Messaging::OutputMode::ALL);
+            // const bool sendDirect    = (outputMode == Core::Messaging::OutputMode::DIRECT) || (outputMode == Core::Messaging::OutputMode::ALL);
+            const bool sendDirect    = true; // This is temporary for 4.4.6 Release. Should be reverted back to the above line after necessary study.
             const bool sendToHandler = (outputMode == Core::Messaging::OutputMode::HANDLER) || (outputMode == Core::Messaging::OutputMode::ALL);
 
             if (sendDirect == true) {
