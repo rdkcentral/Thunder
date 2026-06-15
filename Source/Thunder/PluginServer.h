@@ -1864,7 +1864,7 @@ namespace PluginHost {
                         ASSERT (loadedLib.IsLoaded() == true);
                         Core::System::ModuleBuildRefImpl moduleBuildRef(reinterpret_cast<Core::System::ModuleBuildRefImpl>(loadedLib.LoadFunction(_T("ModuleBuildRef"))));
                         if (moduleBuildRef != nullptr) {
-			    _metadata.Hash(moduleBuildRef());
+			                _metadata.Hash(moduleBuildRef());
                         }
                         _metadata = service;
                         if (_metadata.IsValid() == true) {

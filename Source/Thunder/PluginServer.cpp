@@ -492,6 +492,7 @@ namespace PluginHost {
         const uint32_t subsystems(sm._parent._administrator.SubSystemInfo().Value());
 
         if ((sm._parent._precondition.Evaluate(subsystems) == true) && (sm._parent._precondition.IsMet() == true)) {
+            sm.SetState(_stateDeactivated);   // re-enter the activation path via DeactivatedState::Activate
             sm._parent.Unlock();
             sm._Activate(sm._parent._reason);
         } else {
