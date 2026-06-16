@@ -4,7 +4,7 @@
 #include <PluginServer.h>
 #include <cstdlib>
 #include <fstream>
-#include <plugins/Configuration.h>
+#include <common/Configuration.h>
 
 namespace Thunder {
 namespace TestCore {
