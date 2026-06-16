@@ -91,9 +91,11 @@ namespace Core {
             } else {
                 int fd;
 
+                
                 snprintf(procpath, sizeof(procpath), "/proc/%u/comm", pid);
 
-                // coverity[path_manipulation_sink : FALSE_POSITIVE] pid is uint32_t formatted with %u, path traversal is impossible
+                // FALSE_POSITIVE: pid is uint32_t formatted with %u, path traversal is impossible
+                // codeql[cpp/path-injection]
 		if ((fd = open(procpath, O_RDONLY)) != -1) {
                     ssize_t size;
                     if ((size = read(fd, buffer, maxLength - 1)) > 0) {
