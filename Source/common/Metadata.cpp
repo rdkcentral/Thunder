@@ -19,8 +19,8 @@
 
 #include "Module.h"
 #include "Metadata.h"
-#include "IStateControl.h"
-#include "ISubSystem.h"
+#include <plugins/IStateControl.h>
+#include <plugins/ISubSystem.h>
 
 namespace Thunder {
 
