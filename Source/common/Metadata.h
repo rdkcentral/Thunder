@@ -22,7 +22,7 @@
 #include "Module.h"
 #include "Configuration.h"
 
-#include "IController.h"
+#include <plugins/IController.h>
 #include <plugins/json/JsonData_Metadata.h>
 #include <plugins/json/JsonData_Discovery.h>
 
