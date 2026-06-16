@@ -355,6 +355,7 @@ namespace Thunder {
             , m_SendOffset(0)
             , m_Interface(~0)
             , m_SystemdSocket(false)
+            , m_closeEvent(false, true)
         {
             TRACE_L5("Constructor SocketPort (NodeId&) <%p>", (this));
         }
@@ -395,6 +396,7 @@ namespace Thunder {
             , m_SendOffset(0)
             , m_Interface(~0)
             , m_SystemdSocket(false)
+            , m_closeEvent(false, true)
         {
             NodeId::SocketInfo localAddress;
             socklen_t localSize = sizeof(localAddress);
@@ -582,6 +584,8 @@ namespace Thunder {
             }
 
             if ((nStatus == Core::ERROR_NONE) || (nStatus == Core::ERROR_INPROGRESS)) {
+
+                m_closeEvent.ResetEvent();
 
                 ResourceMonitor::Instance().Register(*this);
 
@@ -1029,8 +1033,8 @@ namespace Thunder {
 
                 m_syncAdmin.Unlock();
 
-                // Right, lets sleep in slices of <= SLEEPSLOT_POLLING_TIME ms
-                SleepMs(sleepSlot);
+                // Wait for close signal or timeout in slices of <= SLEEPSLOT_POLLING_TIME ms
+                m_closeEvent.Lock(sleepSlot);
 
                 m_syncAdmin.Lock();
 
@@ -1356,6 +1360,8 @@ namespace Thunder {
                     }
     #endif
                 }
+
+                m_closeEvent.SetEvent();
             }
 
 
