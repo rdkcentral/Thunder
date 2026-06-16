@@ -5,7 +5,7 @@
 #include <core/Services.h>
 #include <plugins/IShell.h>
 #include <plugins/IDispatcher.h>
-#include <plugins/Configuration.h>
+#include <common/Configuration.h>
 #include <string>
 #include <vector>
 #include <functional>

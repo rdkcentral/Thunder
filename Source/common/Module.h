@@ -20,26 +20,22 @@
 #pragma once
 
 #ifndef MODULE_NAME
-#error "Please define a MODULE_NAME that describes the binary/library you are building."
+#define MODULE_NAME Common
 #endif
 
-// Since this header is included, the code using it is external to Thunder core.
-// So therefore it should use the correct Tracing functionality and not TRACE_L# (which are just fancy printfs).
-#define CORE_TRACE_NOT_ALLOWED
+#include <core/core.h>
+#include <com/com.h>
+#include <cryptalgo/cryptalgo.h>
+#include <websocket/websocket.h>
+#include <messaging/messaging.h>
 
-#include "Module.h"
-#include "IController.h"
-#include "IPlugin.h"
-#include "IShell.h"
-#include "IStateControl.h"
-#include "ISubSystem.h"
-#include "IVirtualInput.h"
-#include "IStateController.h"
-#include "Types.h"
-#include <common/common.h>
-
-#ifdef __WINDOWS__
-#pragma comment(lib, "plugins.lib")
+#ifdef __CORE_WARNING_REPORTING__
+    #include <warningreporting/warningreporting.h>
 #endif
 
-WPEFRAMEWORK_NESTEDNAMESPACE_COMPATIBILIY(PluginHost)
+#if defined(__WINDOWS__) && defined(COMMON_EXPORTS)
+#undef EXTERNAL
+#define EXTERNAL EXTERNAL_EXPORT
+#endif
+
+// @insert <com/Ids.h>

@@ -86,6 +86,7 @@ endif()
 
 if(PLUGINS)
     add_subdirectory(plugins)
+    add_subdirectory(common)
 endif()
 
 if(PROCESS)

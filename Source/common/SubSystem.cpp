@@ -17,29 +17,9 @@
  * limitations under the License.
  */
 
-#pragma once
-
-#ifndef MODULE_NAME
-#error "Please define a MODULE_NAME that describes the binary/library you are building."
-#endif
-
-// Since this header is included, the code using it is external to Thunder core.
-// So therefore it should use the correct Tracing functionality and not TRACE_L# (which are just fancy printfs).
-#define CORE_TRACE_NOT_ALLOWED
-
 #include "Module.h"
-#include "IController.h"
-#include "IPlugin.h"
-#include "IShell.h"
-#include "IStateControl.h"
-#include "ISubSystem.h"
-#include "IVirtualInput.h"
-#include "IStateController.h"
-#include "Types.h"
-#include <common/common.h>
+#include <plugins/ISubSystem.h>
 
-#ifdef __WINDOWS__
-#pragma comment(lib, "plugins.lib")
-#endif
+namespace Thunder {
 
-WPEFRAMEWORK_NESTEDNAMESPACE_COMPATIBILIY(PluginHost)
+} // namespace Thunder
