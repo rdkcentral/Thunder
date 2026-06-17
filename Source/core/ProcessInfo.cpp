@@ -91,8 +91,6 @@ namespace Core {
             } else {
                 int fd;
 
-                
-                
                 snprintf(procpath, sizeof(procpath), "/proc/%u/comm", pid);
 
                 // FALSE_POSITIVE: pid is uint32_t formatted with %u, path traversal is impossible
