@@ -17,9 +17,14 @@
  * limitations under the License.
  */
 
+#pragma once
+
 #include "Module.h"
-#include "ISubSystem.h"
+#include <plugins/IStateControl.h>
 
 namespace Thunder {
 
-} // namespace Thunder
+ENUM_CONVERSION_HANDLER(PluginHost::IStateControl::command)
+ENUM_CONVERSION_HANDLER(PluginHost::IStateControl::state)
+
+}

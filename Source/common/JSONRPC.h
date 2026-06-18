@@ -21,9 +21,9 @@
 
 #include "Module.h"
 #include "System.h"
-#include "IShell.h"
-#include "IPlugin.h"
-#include "IDispatcher.h"
+#include <plugins/IShell.h>
+#include <plugins/IPlugin.h>
+#include <plugins/IDispatcher.h>
 
 namespace Thunder {
 
@@ -1975,4 +1975,3 @@ namespace PluginHost {
 
 } // namespace Thunder::PluginHost
 }
-
