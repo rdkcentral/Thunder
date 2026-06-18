@@ -118,17 +118,16 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
         {
             Core::ServiceAdministrator::Instance().Callback(&_sink);
 
-            SYSLOG(Logging::Notification, (_T("<PID:%d>: WorkerPool config: created threads=%d, additional threads=%d, total thread capacity=%d, low priority limit=%d, medium priority limit=%d"),
+            SYSLOG(Logging::Startup, (_T("<PID:%d>: WorkerPool config: callsign=%s, created threads=%d, additional threads=%d, total thread capacity=%d, queue size=%u, stack size=%u, low priority limit=%d, medium priority limit=%d"),
                 Core::ProcessInfo().Id(),
+                callsign.c_str(),
                 static_cast<uint8_t>(threads - additionalThreads),
                 additionalThreads,
                 threads,
+                queueSize,
+                stackSize,
                 (threads > 2 ? (threads - 1) : threads),
                 (threads > 2 ? (threads - 1) : threads)));
-
-            if (threads > 1) {
-                SYSLOG(Logging::Notification, ("Spawned: %d additional minions.", threads - 1));
-            }
         }
 POP_WARNING()
 
