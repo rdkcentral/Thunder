@@ -19,7 +19,6 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Channel.cpp" />
     <ClCompile Include="json\JsonEnum_Configuration.cpp" />
     <ClCompile Include="json\JsonEnum_Discovery.cpp" />
     <ClCompile Include="json\JsonEnum_LifeTime.cpp" />
@@ -27,20 +26,9 @@
     <ClCompile Include="json\JsonEnum_System.cpp" />
     <ClCompile Include="json\JsonEnum_Events.cpp" />
     <ClCompile Include="json\JsonEnum_Subsystems.cpp" />
-    <ClCompile Include="Metadata.cpp" />
     <ClCompile Include="Module.cpp" />
-    <ClCompile Include="Service.cpp" />
-    <ClCompile Include="Shell.cpp" />
-    <ClCompile Include="JSONRPC.cpp" />
-    <ClCompile Include="StateControl.cpp" />
-    <ClCompile Include="SubSystem.cpp" />
-    <ClCompile Include="System.cpp" />
-    <ClCompile Include="VirtualInput.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Channel.h" />
-    <ClInclude Include="Config.h" />
-    <ClInclude Include="Configuration.h" />
     <CustomBuild Include="IController.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</DeploymentContent>
@@ -79,16 +67,10 @@
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">python "$(ToolPath)\JsonGenerator\JsonGenerator.py" -I "$(FrameworkPath)\" --case-convention legacy --no-includes --keep-empty -c --namespace Thunder::PluginHost -o "$(ProjectDir)/json" "%(FullPath)" --force</Command>
     </CustomBuild>
     <ClInclude Include="ISubSystem.h" />
-    <ClInclude Include="JSONRPC.h" />
-    <ClInclude Include="Metadata.h" />
+    <ClInclude Include="IVirtualInput.h" />
     <ClInclude Include="Module.h" />
     <ClInclude Include="plugins.h" />
-    <ClInclude Include="Request.h" />
-    <ClInclude Include="Service.h" />
-    <ClInclude Include="SubSystem.h" />
-    <ClInclude Include="System.h" />
     <ClInclude Include="Types.h" />
-    <ClInclude Include="VirtualInput.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="CMakeLists.txt" />
