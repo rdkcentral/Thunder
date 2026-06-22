@@ -5640,6 +5640,69 @@ namespace PluginHost {
         inline void DumpMetadata() {
             PostMortemData data;
             _dispatcher.Snapshot(data.WorkerPool);
+            string readableDump;
+
+            auto appendLine = [&readableDump](const string& line) {
+                readableDump += line;
+                readableDump += '\n';
+            };
+
+            auto writeText = [](Core::File& file, const string& text) {
+                uint32_t offset = 0;
+                uint32_t remaining = static_cast<uint32_t>(text.length());
+
+                while (remaining > 0) {
+                    const uint32_t written = file.Write(reinterpret_cast<const uint8_t*>(text.c_str() + offset), remaining);
+                    if (written == 0) {
+                        break;
+                    }
+
+                    offset += written;
+                    remaining -= written;
+                }
+            };
+
+            auto appendReadableStack = [&appendLine](const Metadata::Server::Minion& thread, const std::list<Core::callstack_info>& stackList) {
+                const Core::instance_id threadId = thread.Id.Value();
+
+                appendLine(EMPTY_STRING);
+                appendLine(Core::Format(_T("Thread 0x%" PRIx64 "%s"), static_cast<uint64_t>(threadId), threadId == 0 ? _T(" (invalid thread fallback)") : _T("")));
+                appendLine(Core::Format(_T("  job: %s"), ((thread.Job.IsSet() == true) && (thread.Job.Value().empty() == false)) ? thread.Job.Value().c_str() : _T("<none>")));
+                appendLine(Core::Format(_T("  runs: %u"), thread.Runs.Value()));
+                appendLine(EMPTY_STRING);
+
+                if (stackList.empty() == true) {
+                    appendLine(_T("  <no stack available>"));
+                }
+                else {
+                    uint8_t counter = 0;
+
+                    for (const Core::callstack_info& entry : stackList) {
+                        if (entry.line != static_cast<uint32_t>(~0)) {
+                            appendLine(Core::Format(_T("  #%02u [%p] %s %s [%u]"), counter, entry.address, entry.module.c_str(), entry.function.c_str(), entry.line));
+                        }
+                        else {
+                            appendLine(Core::Format(_T("  #%02u [%p] %s %s"), counter, entry.address, entry.module.c_str(), entry.function.c_str()));
+                        }
+
+                        ++counter;
+                    }
+                }
+            };
+
+            appendLine(_T("Thunder Worker Pool Post-Mortem"));
+            appendLine(EMPTY_STRING);
+
+            appendLine(_T("Pending requests:"));
+            if (data.WorkerPool.PendingRequests.Length() == 0) {
+                appendLine(_T("  <none>"));
+            }
+            else {
+                Core::JSON::ArrayType<Core::JSON::String>::Iterator pending(data.WorkerPool.PendingRequests.Elements());
+                while (pending.Next() == true) {
+                    appendLine(Core::Format(_T("  %s"), pending.Current().Value().c_str()));
+                }
+            }
 
             Core::JSON::ArrayType<Metadata::Server::Minion>::Iterator index(data.WorkerPool.ThreadPoolRuns.Elements());
 
@@ -5656,12 +5719,18 @@ namespace PluginHost {
                 }
 
                 data.Callstacks.Add(dump);
+                appendReadableStack(index.Current(), stackList);
             }
 
             // Drop the workerpool info (what is currently running and what is pending) to a file..
             Core::File dumpFile(_config.PostMortemPath() + "ThunderInternals.json");
             if (dumpFile.Create(false) == true) {
                 data.IElement::ToFile(dumpFile);
+            }
+
+            Core::File readableDumpFile(_config.PostMortemPath() + "ThunderInternals.txt");
+            if (readableDumpFile.Create(false) == true) {
+                writeText(readableDumpFile, readableDump);
             }
         }
         inline ServiceMap& Services()
