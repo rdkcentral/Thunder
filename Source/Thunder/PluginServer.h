@@ -824,7 +824,11 @@ namespace PluginHost {
                     virtual IShell::state Id() const = 0;
                     virtual Core::hresult Activate(StateMachine&, const reason) { return Core::ERROR_ILLEGAL_STATE; }
                     virtual Core::hresult Deactivate(StateMachine&, const reason) { return Core::ERROR_ILLEGAL_STATE; }
+#ifdef HIBERNATE_SUPPORT_ENABLED
                     virtual Core::hresult Hibernate(StateMachine&, const uint32_t) { return Core::ERROR_ILLEGAL_STATE; }
+#else 
+                    virtual Core::hresult Hibernate(StateMachine&, const uint32_t) { return Core::ERROR_NOT_SUPPORTED; }
+#endif
                     virtual Core::hresult Unavailable(StateMachine&, const reason) { return Core::ERROR_ILLEGAL_STATE; }
                     virtual uint32_t Resume(StateMachine&, const reason) { return Core::ERROR_ILLEGAL_STATE; }
                     virtual uint32_t Suspend(StateMachine&, const reason) { return Core::ERROR_ILLEGAL_STATE; }
@@ -854,7 +858,9 @@ namespace PluginHost {
                     IShell::state Id() const override { return IShell::ACTIVATION; }
                     Core::hresult Activate(StateMachine&, const reason) override { return Core::ERROR_INPROGRESS; }
                     Core::hresult Deactivate(StateMachine&, const reason) override;
+#ifdef HIBERNATE_SUPPORT_ENABLED
                     Core::hresult Hibernate(StateMachine&, const uint32_t) override { return Core::ERROR_INPROGRESS; }
+#endif
                     Core::hresult Unavailable(StateMachine&, const reason) override { return Core::ERROR_INPROGRESS; }
                     uint32_t Resume(StateMachine&, const reason) override { return Core::ERROR_INPROGRESS; }
                 };
@@ -863,7 +869,9 @@ namespace PluginHost {
                 public:
                     IShell::state Id() const override { return IShell::ACTIVATED; }
                     Core::hresult Deactivate(StateMachine&, const reason) override;
+#ifdef HIBERNATE_SUPPORT_ENABLED
                     Core::hresult Hibernate(StateMachine&, const uint32_t timeout) override;
+#endif
                     uint32_t Resume(StateMachine&, const reason) override;
                     uint32_t Suspend(StateMachine&, const reason) override;
                     void Reevaluate(StateMachine&, const bool preconditionChanged, const bool terminationChanged) override;
@@ -875,18 +883,22 @@ namespace PluginHost {
                     IShell::state Id() const override { return IShell::DEACTIVATION; }
                     Core::hresult Activate(StateMachine&, const reason) override { return Core::ERROR_INPROGRESS; }
                     Core::hresult Deactivate(StateMachine&, const reason) override { return Core::ERROR_INPROGRESS; }
+#ifdef HIBERNATE_SUPPORT_ENABLED
                     Core::hresult Hibernate(StateMachine&, const uint32_t) override { return Core::ERROR_INPROGRESS; }
+#endif
                     Core::hresult Unavailable(StateMachine&, const reason) override { return Core::ERROR_INPROGRESS; }
                     uint32_t Suspend(StateMachine&, const reason) override { return Core::ERROR_INPROGRESS; }
                     void* QueryInterface(StateMachine&, const uint32_t id, const bool asIUnknown) override;
                 };
 
+#ifdef HIBERNATE_SUPPORT_ENABLED
                 class HibernatedState : public StateBase {
                 public:
                     IShell::state Id() const override { return IShell::HIBERNATED; }
                     Core::hresult Activate(StateMachine&, const reason) override;
                     Core::hresult Deactivate(StateMachine&, const reason) override;
                 };
+#endif
 
                 class UnavailableState : public StateBase {
                 public:
@@ -1029,6 +1041,7 @@ namespace PluginHost {
                     TransitionScope scope(_transitionActive, _transitionOwner);
                     return _Deactivate(why);
                 }
+#ifdef HIBERNATE_SUPPORT_ENABLED
                 Core::hresult Hibernate(const uint32_t timeout)
                 {
                     if (IsTransitionThread()) {
@@ -1038,6 +1051,7 @@ namespace PluginHost {
                     TransitionScope scope(_transitionActive, _transitionOwner);
                     return _current.load(std::memory_order_acquire)->Hibernate(*this, timeout);
                 }
+#endif
                 Core::hresult Unavailable(const reason why)
                 {
                     if (IsTransitionThread()) {
@@ -1166,7 +1180,9 @@ namespace PluginHost {
                 static ActivationState _stateActivation;
                 static ActivatedState _stateActivated;
                 static DeactivationState _stateDeactivation;
+#ifdef HIBERNATE_SUPPORT_ENABLED
                 static HibernatedState _stateHibernated;
+#endif
                 static UnavailableState _stateUnavailable;
                 static DestroyedState _stateDestroyed;
 
@@ -1966,12 +1982,11 @@ namespace PluginHost {
             uint32_t RequestSuspend();        // _stateControl->Request(SUSPEND) if RESUMED
             uint32_t RequestResume();         // _stateControl->Request(RESUME)  if SUSPENDED
 
+#ifdef HIBERNATE_SUPPORT_ENABLED
             uint32_t Wakeup(const uint32_t timeout);
-
-            #ifdef HIBERNATE_SUPPORT_ENABLED
             uint32_t HibernateChildren(const pid_t parentPID, const uint32_t timeout);
             uint32_t WakeupChildren(const pid_t parentPID, const uint32_t timeout);
-            #endif
+#endif
 
         public: // do not restrict visibility for a virtual in a derived class
 

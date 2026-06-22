@@ -362,7 +362,11 @@ namespace PluginHost {
 
     Core::hresult Server::Service::Hibernate(const uint32_t timeout VARIABLE_IS_NOT_USED) /* override */
     {
+#ifdef HIBERNATE_SUPPORT_ENABLED
         return _stateMachine.Hibernate(timeout);
+#else
+        return Core::ERROR_NOT_SUPPORTED;
+#endif
     }
 
     // -------------------------------------------------------------------------
@@ -374,7 +378,9 @@ namespace PluginHost {
     Server::Service::StateMachine::ActivationState   Server::Service::StateMachine::_stateActivation;
     Server::Service::StateMachine::ActivatedState    Server::Service::StateMachine::_stateActivated;
     Server::Service::StateMachine::DeactivationState Server::Service::StateMachine::_stateDeactivation;
+#ifdef HIBERNATE_SUPPORT_ENABLED
     Server::Service::StateMachine::HibernatedState   Server::Service::StateMachine::_stateHibernated;
+#endif
     Server::Service::StateMachine::UnavailableState  Server::Service::StateMachine::_stateUnavailable;
     Server::Service::StateMachine::DestroyedState    Server::Service::StateMachine::_stateDestroyed;
 
@@ -582,6 +588,7 @@ namespace PluginHost {
         return Core::ERROR_NONE;
     }
 
+#ifdef HIBERNATE_SUPPORT_ENABLED
     Core::hresult Server::Service::StateMachine::ActivatedState::Hibernate(StateMachine& sm, const uint32_t timeout VARIABLE_IS_NOT_USED)
     {
         if (sm._parent.AllowedHibernate() == false) {
@@ -608,7 +615,6 @@ namespace PluginHost {
         // more accurate but requires an IShell::state enum change (tracked as debt).
         sm.SetState(_stateHibernated);
 
-#ifdef HIBERNATE_SUPPORT_ENABLED
         pid_t parentPID = local->ParentPID();
         local->Release();
         sm._parent.Unlock();
@@ -633,10 +639,6 @@ namespace PluginHost {
         }
 
         sm._parent.Lock();
-#else
-        local->Release();
-        Core::hresult result = Core::ERROR_NONE;
-#endif
         // coverity[DEADCODE] — on the non-HIBERNATE_ENABLED path result is always
         // ERROR_NONE here, making the else-if appear unreachable to Coverity.
         // Both branches are reachable when HIBERNATE_SUPPORT_ENABLED is defined.
@@ -663,6 +665,7 @@ namespace PluginHost {
 
         return result;
     }
+#endif
 
     uint32_t Server::Service::StateMachine::ActivatedState::Resume(StateMachine & sm, const reason why VARIABLE_IS_NOT_USED)
     {
@@ -693,7 +696,7 @@ namespace PluginHost {
     // -------------------------------------------------------------------------
     // HibernatedState
     // -------------------------------------------------------------------------
-
+#ifdef HIBERNATE_SUPPORT_ENABLED
     Core::hresult Server::Service::StateMachine::HibernatedState::Activate(StateMachine& sm, const reason why VARIABLE_IS_NOT_USED)
     {
         const Core::hresult result = sm._parent.Wakeup(3000);
@@ -713,7 +716,7 @@ namespace PluginHost {
         sm.SetState(_stateActivated);  // _current must be updated before _Deactivate
         return sm._Deactivate(why);
     }
-
+#endif
     // -------------------------------------------------------------------------
     // UnavailableState
     // -------------------------------------------------------------------------
@@ -932,6 +935,7 @@ namespace PluginHost {
         return result;
     }
 
+#ifdef HIBERNATE_SUPPORT_ENABLED
     uint32_t Server::Service::Wakeup(const uint32_t timeout VARIABLE_IS_NOT_USED)
     {
         ASSERT(_stateMachine.IsTransitionThread());
@@ -944,7 +948,6 @@ namespace PluginHost {
         if (local == nullptr) {
             result = Core::ERROR_BAD_REQUEST;
         } else {
-#ifdef HIBERNATE_SUPPORT_ENABLED
             pid_t parentPID = local->ParentPID();
 
             // There is no recovery path while doing Wakeup, don't care about errors
@@ -952,7 +955,7 @@ namespace PluginHost {
 
             TRACE(Activity, (_T("Wakeup of plugin [%s] process [%u]"), Callsign().c_str(), parentPID));
             result = WakeupProcess(timeout, parentPID, _administrator.Configuration().HibernateLocator().c_str(), _T(""), &_hibernateStorage);
-#endif
+
             if (result == Core::ERROR_NONE) {
                 SYSLOG(Logging::Startup, (_T("Activated plugin from hibernation [%s]:[%s]"), ClassName().c_str(), Callsign().c_str()));
             }
@@ -963,7 +966,6 @@ namespace PluginHost {
         return result;
     }
 
-#ifdef HIBERNATE_SUPPORT_ENABLED
     uint32_t Server::Service::HibernateChildren(const pid_t parentPID, const uint32_t timeout)
     {
         Core::hresult result = Core::ERROR_NONE;
