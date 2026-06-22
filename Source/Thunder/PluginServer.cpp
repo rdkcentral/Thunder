@@ -379,6 +379,15 @@ namespace PluginHost {
     Server::Service::StateMachine::DestroyedState    Server::Service::StateMachine::_stateDestroyed;
 
     // -------------------------------------------------------------------------
+    // DeactivationState
+    // -------------------------------------------------------------------------
+    void* Server::Service::StateMachine::DeactivationState::QueryInterface(StateMachine& sm, const uint32_t id, const bool asIUnknown)
+    {
+        return sm.ForwardToHandler(id, asIUnknown);
+    }
+
+
+    // -------------------------------------------------------------------------
     // DeactivatedState
     // -------------------------------------------------------------------------
 
@@ -682,45 +691,7 @@ namespace PluginHost {
 
     void* Server::Service::StateMachine::ActivatedState::QueryInterface(StateMachine& sm, const uint32_t id, const bool asIUnknown)
     {
-        // Take a ref-counted local copy of _handler under _pluginHandling.
-        // This keeps _handler alive across the lock boundary even if
-        // UnloadPlugin() runs concurrently on another thread.
-        sm._parent._pluginHandling.Lock();
-
-        if (id == PluginHost::IDispatcher::ID) {
-            // Fast path: return the cached _jsonrpc pointer directly rather than
-            // routing through _handler->QueryInterface(). This is intentional.
-            // _jsonrpc is set once in AcquireInterfaces() via
-            // _handler->QueryInterface<IDispatcher>() and is the same pointer the
-            // plugin would return. Bypassing the plugin's own QueryInterface avoids
-            // a potential lock inversion if the plugin's QI acquires internal locks.
-            // Assumption: plugins do not conditionally expose IDispatcher at runtime.
-            // If a plugin gates IDispatcher on runtime state, this fast path will
-            // return the cached pointer regardless — revisit if that pattern emerges.
-            IDispatcher* jsonrpc = sm._parent._jsonrpc;
-            if (jsonrpc != nullptr) {
-                jsonrpc->AddRef();
-            }
-            sm._parent._pluginHandling.Unlock();
-            if (jsonrpc != nullptr) {
-                return asIUnknown == false ? static_cast<void*>(jsonrpc) : static_cast<void*>(static_cast<Core::IUnknown*>(jsonrpc));
-            }
-            return nullptr;
-        }
-
-        IPlugin* handler = sm._parent._handler;
-        if (handler != nullptr) {
-            handler->AddRef();
-        }
-        sm._parent._pluginHandling.Unlock();
-
-        if (handler == nullptr) {
-            return nullptr;
-        }
-
-        void* result = handler->QueryInterface(id, asIUnknown);
-        handler->Release();
-        return result;
+        return sm.ForwardToHandler(id, asIUnknown);
     }
 
     // -------------------------------------------------------------------------

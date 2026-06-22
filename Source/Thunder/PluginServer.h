@@ -878,6 +878,7 @@ namespace PluginHost {
                     Core::hresult Hibernate(StateMachine&, const uint32_t) override { return Core::ERROR_INPROGRESS; }
                     Core::hresult Unavailable(StateMachine&, const reason) override { return Core::ERROR_INPROGRESS; }
                     uint32_t Suspend(StateMachine&, const reason) override { return Core::ERROR_INPROGRESS; }
+                    void* QueryInterface(StateMachine&, const uint32_t id, const bool asIUnknown) override;
                 };
 
                 class HibernatedState : public StateBase {
@@ -1099,6 +1100,43 @@ namespace PluginHost {
                 {
                     ASSERT(IsTransitionThread());
                     return _current.load(std::memory_order_acquire)->Deactivate(*this, why);
+                }
+
+                void* ForwardToHandler(const uint32_t id, const bool asIUnknown)
+                {
+                    // Take a ref-counted local copy under _pluginHandling. This keeps the handler
+                    // alive across the lock boundary even if UnloadPlugin() runs concurrently.
+                    _parent._pluginHandling.Lock();
+
+                    if (id == PluginHost::IDispatcher::ID) {
+                        // Fast path: return the cached _jsonrpc pointer directly. Intentional —
+                        // _jsonrpc is set once in AcquireInterfaces() via the same QueryInterface
+                        // call the plugin would otherwise receive. Assumption: plugins do not
+                        // conditionally expose IDispatcher at runtime.
+                        IDispatcher* jsonrpc = _parent._jsonrpc;
+                        if (jsonrpc != nullptr) {
+                            jsonrpc->AddRef();
+                        }
+                        _parent._pluginHandling.Unlock();
+                        if (jsonrpc != nullptr) {
+                            return asIUnknown == false ? static_cast<void*>(jsonrpc) : static_cast<void*>(static_cast<Core::IUnknown*>(jsonrpc));
+                        }
+                        return nullptr;
+                    }
+
+                    IPlugin* handler = _parent._handler;
+                    if (handler != nullptr) {
+                        handler->AddRef();
+                    }
+                    _parent._pluginHandling.Unlock();
+
+                    if (handler == nullptr) {
+                        return nullptr;
+                    }
+
+                    void* result = handler->QueryInterface(id, asIUnknown);
+                    handler->Release();
+                    return result;
                 }
 
                 // Called from within a state method to trigger cascading re-evaluation
