@@ -495,12 +495,10 @@ namespace PluginHost {
         return sm._parent.RequestSuspend();
     }
 
-    void Server::Service::StateMachine::PreconditionState::Reevaluate(StateMachine& sm)
+    void Server::Service::StateMachine::PreconditionState::Reevaluate(StateMachine& sm, const bool preconditionChanged, const bool /* terminationChanged */)
     {
         sm._parent.Lock();
-        const uint32_t subsystems(sm._parent._administrator.SubSystemInfo().Value());
-
-        if ((sm._parent._precondition.Evaluate(subsystems) == true) && (sm._parent._precondition.IsMet() == true)) {
+        if ((preconditionChanged == true) && (sm._parent._precondition.IsMet() == true)) {
             sm.SetState(_stateDeactivated);   // re-enter the activation path via DeactivatedState::Activate
             sm._parent.Unlock();
             sm._Activate(sm._parent._reason);
@@ -676,12 +674,10 @@ namespace PluginHost {
         return sm._parent.RequestSuspend();
     }
 
-    void Server::Service::StateMachine::ActivatedState::Reevaluate(StateMachine& sm)
+    void Server::Service::StateMachine::ActivatedState::Reevaluate(StateMachine& sm, const bool /* preconditionChanged */, const bool terminationChanged)
     {
         sm._parent.Lock();
-        const uint32_t subsystems(sm._parent._administrator.SubSystemInfo().Value());
-
-        if ((sm._parent._termination.Evaluate(subsystems) == true) && (sm._parent._termination.IsMet() == false)) {
+        if ((terminationChanged == true) && (sm._parent._termination.IsMet() == false)) {
             sm._parent.Unlock();
             sm._Deactivate(IShell::CONDITIONS);
         } else {

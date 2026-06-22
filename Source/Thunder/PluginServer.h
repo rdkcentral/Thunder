@@ -828,7 +828,7 @@ namespace PluginHost {
                     virtual Core::hresult Unavailable(StateMachine&, const reason) { return Core::ERROR_ILLEGAL_STATE; }
                     virtual uint32_t Resume(StateMachine&, const reason) { return Core::ERROR_ILLEGAL_STATE; }
                     virtual uint32_t Suspend(StateMachine&, const reason) { return Core::ERROR_ILLEGAL_STATE; }
-                    virtual void Reevaluate(StateMachine&) {}
+                    virtual void Reevaluate(StateMachine&, const bool /* preconditionChanged */, const bool /* terminationChanged */) {}
                     virtual void* QueryInterface(StateMachine&, const uint32_t, const bool) { return nullptr; }
                 };
 
@@ -846,7 +846,7 @@ namespace PluginHost {
                     Core::hresult Deactivate(StateMachine&, const reason) override;
                     uint32_t Resume(StateMachine&, const reason) override;
                     uint32_t Suspend(StateMachine&, const reason) override;
-                    void Reevaluate(StateMachine&) override;
+                    void Reevaluate(StateMachine&, const bool preconditionChanged, const bool terminationChanged) override;
                 };
 
                 class ActivationState : public StateBase {
@@ -866,7 +866,7 @@ namespace PluginHost {
                     Core::hresult Hibernate(StateMachine&, const uint32_t timeout) override;
                     uint32_t Resume(StateMachine&, const reason) override;
                     uint32_t Suspend(StateMachine&, const reason) override;
-                    void Reevaluate(StateMachine&) override;
+                    void Reevaluate(StateMachine&, const bool preconditionChanged, const bool terminationChanged) override;
                     void* QueryInterface(StateMachine&, const uint32_t id, const bool asIUnknown) override;
                 };
 
@@ -1072,7 +1072,14 @@ namespace PluginHost {
                     }
                     Core::SafeSyncType<Core::CriticalSection> guard(_transitionLock);
                     TransitionScope scope(_transitionActive, _transitionOwner);
-                    _current.load(std::memory_order_acquire)->Reevaluate(*this);
+
+                    _parent.Lock();
+                    const uint32_t subsystems(_parent._administrator.SubSystemInfo().Value());
+                    const bool preconditionChanged(_parent._precondition.Evaluate(subsystems));
+                    const bool terminationChanged(_parent._termination.Evaluate(subsystems));
+                    _parent.Unlock();
+
+                    _current.load(std::memory_order_acquire)->Reevaluate(*this, preconditionChanged, terminationChanged);
                 }
 
                 void* QueryInterface(const uint32_t id, const bool asIUnknown)
