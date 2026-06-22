@@ -332,16 +332,18 @@ namespace PluginHost {
         return _stateMachine.Activate(why);
     }
 
-    uint32_t Server::Service::Resume(const reason why) /* override */
-    {
-        return _stateMachine.Resume(why);
-    }
 
     Core::hresult Server::Service::Deactivate(const reason why) /* override */
     {
         return _stateMachine.Deactivate(why);
     }
 
+#ifdef STATEMACHINE_SUSPEND_RESUME_ENABLED
+    uint32_t Server::Service::Resume(const reason why) /* override */
+    {
+        return _stateMachine.Resume(why);
+    }
+    
     uint32_t Server::Service::Suspend(const reason why) /* override */
     {
         uint32_t result = Core::ERROR_NONE;
@@ -354,6 +356,7 @@ namespace PluginHost {
 
         return (result);
     }
+#endif
 
     Core::hresult Server::Service::Unavailable(const reason why) /* override */
     {
@@ -463,6 +466,7 @@ namespace PluginHost {
         return Core::ERROR_NONE;
     }
 
+#ifdef STATEMACHINE_SUSPEND_RESUME_ENABLED
     uint32_t Server::Service::StateMachine::DeactivatedState::Resume(StateMachine & sm, const reason why)
     {
         Core::hresult result = sm._Activate(why);
@@ -472,6 +476,7 @@ namespace PluginHost {
 
         return sm._current.load(std::memory_order_acquire)->Resume(sm, why);
     }
+#endif
 
     // -------------------------------------------------------------------------
     // PreconditionState
@@ -491,6 +496,7 @@ namespace PluginHost {
         return Core::ERROR_NONE;
     }
 
+#ifdef STATEMACHINE_SUSPEND_RESUME_ENABLED
     uint32_t Server::Service::StateMachine::PreconditionState::Resume(StateMachine & sm, const reason /* why */)
     {
         return sm._parent.RequestResume();
@@ -500,6 +506,7 @@ namespace PluginHost {
     {
         return sm._parent.RequestSuspend();
     }
+#endif
 
     void Server::Service::StateMachine::PreconditionState::Reevaluate(StateMachine& sm, const bool preconditionChanged, const bool /* terminationChanged */)
     {
@@ -667,6 +674,7 @@ namespace PluginHost {
     }
 #endif
 
+#ifdef STATEMACHINE_SUSPEND_RESUME_ENABLED
     uint32_t Server::Service::StateMachine::ActivatedState::Resume(StateMachine & sm, const reason why VARIABLE_IS_NOT_USED)
     {
         return sm._parent.RequestResume();
@@ -676,6 +684,7 @@ namespace PluginHost {
     {
         return sm._parent.RequestSuspend();
     }
+#endif
 
     void Server::Service::StateMachine::ActivatedState::Reevaluate(StateMachine& sm, const bool /* preconditionChanged */, const bool terminationChanged)
     {
@@ -887,6 +896,7 @@ namespace PluginHost {
         }
     }
 
+#ifdef STATEMACHINE_SUSPEND_RESUME_ENABLED
     uint32_t Server::Service::RequestResume()
     {
         ASSERT(_stateMachine.IsTransitionThread());
@@ -934,6 +944,7 @@ namespace PluginHost {
 
         return result;
     }
+#endif
 
 #ifdef HIBERNATE_SUPPORT_ENABLED
     uint32_t Server::Service::Wakeup(const uint32_t timeout VARIABLE_IS_NOT_USED)

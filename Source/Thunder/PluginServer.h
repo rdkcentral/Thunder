@@ -830,8 +830,10 @@ namespace PluginHost {
                     virtual Core::hresult Hibernate(StateMachine&, const uint32_t) { return Core::ERROR_NOT_SUPPORTED; }
 #endif
                     virtual Core::hresult Unavailable(StateMachine&, const reason) { return Core::ERROR_ILLEGAL_STATE; }
+#ifdef STATEMACHINE_SUSPEND_RESUME_ENABLED
                     virtual uint32_t Resume(StateMachine&, const reason) { return Core::ERROR_ILLEGAL_STATE; }
                     virtual uint32_t Suspend(StateMachine&, const reason) { return Core::ERROR_ILLEGAL_STATE; }
+#endif
                     virtual void Reevaluate(StateMachine&, const bool /* preconditionChanged */, const bool /* terminationChanged */) {}
                     virtual void* QueryInterface(StateMachine&, const uint32_t, const bool) { return nullptr; }
                 };
@@ -841,15 +843,19 @@ namespace PluginHost {
                     IShell::state Id() const override { return IShell::DEACTIVATED; }
                     Core::hresult Activate(StateMachine&, const reason) override;
                     Core::hresult Unavailable(StateMachine&, const reason) override;
+#ifdef STATEMACHINE_SUSPEND_RESUME_ENABLED
                     uint32_t Resume(StateMachine&, const reason) override;
+#endif
                 };
 
                 class PreconditionState : public StateBase {
                 public:
                     IShell::state Id() const override { return IShell::PRECONDITION; }
                     Core::hresult Deactivate(StateMachine&, const reason) override;
+#ifdef STATEMACHINE_SUSPEND_RESUME_ENABLED
                     uint32_t Resume(StateMachine&, const reason) override;
                     uint32_t Suspend(StateMachine&, const reason) override;
+#endif
                     void Reevaluate(StateMachine&, const bool preconditionChanged, const bool terminationChanged) override;
                 };
 
@@ -862,7 +868,9 @@ namespace PluginHost {
                     Core::hresult Hibernate(StateMachine&, const uint32_t) override { return Core::ERROR_INPROGRESS; }
 #endif
                     Core::hresult Unavailable(StateMachine&, const reason) override { return Core::ERROR_INPROGRESS; }
+#ifdef STATEMACHINE_SUSPEND_RESUME_ENABLED
                     uint32_t Resume(StateMachine&, const reason) override { return Core::ERROR_INPROGRESS; }
+#endif
                 };
 
                 class ActivatedState : public StateBase {
@@ -872,8 +880,10 @@ namespace PluginHost {
 #ifdef HIBERNATE_SUPPORT_ENABLED
                     Core::hresult Hibernate(StateMachine&, const uint32_t timeout) override;
 #endif
+#ifdef STATEMACHINE_SUSPEND_RESUME_ENABLED
                     uint32_t Resume(StateMachine&, const reason) override;
                     uint32_t Suspend(StateMachine&, const reason) override;
+#endif
                     void Reevaluate(StateMachine&, const bool preconditionChanged, const bool terminationChanged) override;
                     void* QueryInterface(StateMachine&, const uint32_t id, const bool asIUnknown) override;
                 };
@@ -887,7 +897,9 @@ namespace PluginHost {
                     Core::hresult Hibernate(StateMachine&, const uint32_t) override { return Core::ERROR_INPROGRESS; }
 #endif
                     Core::hresult Unavailable(StateMachine&, const reason) override { return Core::ERROR_INPROGRESS; }
+#ifdef STATEMACHINE_SUSPEND_RESUME_ENABLED
                     uint32_t Suspend(StateMachine&, const reason) override { return Core::ERROR_INPROGRESS; }
+#endif
                     void* QueryInterface(StateMachine&, const uint32_t id, const bool asIUnknown) override;
                 };
 
@@ -1061,6 +1073,7 @@ namespace PluginHost {
                     TransitionScope scope(_transitionActive, _transitionOwner);
                     return _current.load(std::memory_order_acquire)->Unavailable(*this, why);
                 }
+#ifdef STATEMACHINE_SUSPEND_RESUME_ENABLED
                 uint32_t Resume(const reason why)
                 {
                     if (IsTransitionThread()) {
@@ -1079,6 +1092,7 @@ namespace PluginHost {
                     TransitionScope scope(_transitionActive, _transitionOwner);
                     return _current.load(std::memory_order_acquire)->Suspend(*this, why);
                 }
+#endif
                 void Reevaluate()
                 {
                     if (IsTransitionThread()) {
@@ -1908,8 +1922,10 @@ namespace PluginHost {
 
             Core::hresult Hibernate(const uint32_t timeout = 10000 /*ms*/) override;
 
+#ifdef STATEMACHINE_SUSPEND_RESUME_ENABLED
             uint32_t Suspend(const reason why);
             uint32_t Resume(const reason why);
+#endif
 
             reason Reason() const override
             {
@@ -1979,8 +1995,10 @@ namespace PluginHost {
             void UnloadPlugin();              // ReleaseInterfaces
             void Attach();                    // WebServer + JSONRPC + external connector + StateControl
             void Detach();                    // reverse of Attach
+#ifdef STATEMACHINE_SUSPEND_RESUME_ENABLED
             uint32_t RequestSuspend();        // _stateControl->Request(SUSPEND) if RESUMED
             uint32_t RequestResume();         // _stateControl->Request(RESUME)  if SUSPENDED
+#endif
 
 #ifdef HIBERNATE_SUPPORT_ENABLED
             uint32_t Wakeup(const uint32_t timeout);
