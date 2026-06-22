@@ -29,7 +29,7 @@ namespace WPEFramework {
 		using namespace Core::TypeTraits;
 
 		template<typename INTERFACE>
-		class EXTERNAL LinkType {
+		class LinkType {
 		private:
 			typedef std::function<void(const Core::JSONRPC::Message&)> CallbackFunction;
 
@@ -157,7 +157,7 @@ namespace WPEFramework {
 					{
 						_parent.StateChange();
 					}
-					virtual bool IsIdle() const override
+					virtual bool IsIdle() const
 					{
 						return (true);
 					}
@@ -1200,14 +1200,6 @@ namespace WPEFramework {
 			uint64_t _scheduledTime;
 			string _versionstring;
 		};
-        // Suppress implicit instantiation in all consumer TUs.
-        // The websocket library provides the single authoritative instantiation.
-        // This ensures channelMap, CommunicationChannel, ChannelImpl, and HandlerType
-        // vtables are all anchored in the websocket library, preventing use-after-free
-        // when a plugin that first instantiated the template is unloaded.
-        // Add a matching `template class LinkType<...>` line in JSONRPCLink.cpp for each new INTERFACE type.
-        extern template class LinkType<Core::JSON::IElement>;
-        extern template class LinkType<Core::JSON::IMessagePack>;
 
 
 		// This is for backward compatibility. Please use the template and not the typedef below!!!
