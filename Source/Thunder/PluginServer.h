@@ -5647,36 +5647,28 @@ namespace PluginHost {
                 readableDump += '\n';
             };
 
-            auto writeText = [](Core::File& file, const string& text) {
-                uint32_t offset = 0;
-                uint32_t remaining = static_cast<uint32_t>(text.length());
-
-                while (remaining > 0) {
-                    const uint32_t written = file.Write(reinterpret_cast<const uint8_t*>(text.c_str() + offset), remaining);
-                    if (written == 0) {
-                        break;
-                    }
-
-                    offset += written;
-                    remaining -= written;
-                }
-            };
-
             auto appendReadableStack = [&appendLine](const Metadata::Server::Minion& thread, const std::list<Core::callstack_info>& stackList) {
                 const Core::instance_id threadId = thread.Id.Value();
 
                 appendLine(EMPTY_STRING);
-                appendLine(Core::Format(_T("Thread 0x%" PRIx64 "%s"), static_cast<uint64_t>(threadId), threadId == 0 ? _T(" (invalid thread fallback)") : _T("")));
+                if (threadId == 0) {
+                    appendLine(_T("Thread <unavailable>"));
+                }
+                else {
+                    appendLine(Core::Format(_T("Thread 0x%llx"), static_cast<unsigned long long>(threadId)));
+                }
                 appendLine(Core::Format(_T("  job: %s"), ((thread.Job.IsSet() == true) && (thread.Job.Value().empty() == false)) ? thread.Job.Value().c_str() : _T("<none>")));
                 appendLine(Core::Format(_T("  runs: %u"), thread.Runs.Value()));
                 appendLine(EMPTY_STRING);
 
-                if (stackList.empty() == true) {
+                if (threadId == 0) {
+                    appendLine(_T("  <no thread id available; stack not captured>"));
+                }
+                else if (stackList.empty() == true) {
                     appendLine(_T("  <no stack available>"));
                 }
                 else {
-                    uint8_t counter = 0;
-
+                    uint32_t counter = 0;
                     for (const Core::callstack_info& entry : stackList) {
                         if (entry.line != static_cast<uint32_t>(~0)) {
                             appendLine(Core::Format(_T("  #%02u [%p] %s %s [%u]"), counter, entry.address, entry.module.c_str(), entry.function.c_str(), entry.line));
@@ -5684,7 +5676,6 @@ namespace PluginHost {
                         else {
                             appendLine(Core::Format(_T("  #%02u [%p] %s %s"), counter, entry.address, entry.module.c_str(), entry.function.c_str()));
                         }
-
                         ++counter;
                     }
                 }
@@ -5709,7 +5700,9 @@ namespace PluginHost {
             while (index.Next() == true) {
 
                 std::list<Core::callstack_info> stackList;
-                ::DumpCallStack(PluginHost::Metadata::ThreadId(index.Current().Id.Value()), stackList);
+                if (index.Current().Id.Value() != 0) {
+                    ::DumpCallStack(PluginHost::Metadata::ThreadId(index.Current().Id.Value()), stackList);
+                }
 
                 PostMortemData::Callstack dump;
                 dump.Id = index.Current().Id.Value();
@@ -5730,7 +5723,14 @@ namespace PluginHost {
 
             Core::File readableDumpFile(_config.PostMortemPath() + "ThunderInternals.txt");
             if (readableDumpFile.Create(false) == true) {
-                writeText(readableDumpFile, readableDump);
+                const uint32_t dumpSize = static_cast<uint32_t>(readableDump.length() * sizeof(string::value_type));
+                const uint32_t written = readableDumpFile.Write(reinterpret_cast<const uint8_t*>(readableDump.c_str()), dumpSize);
+                if (written != dumpSize) {
+                    SYSLOG(Logging::Error, (_T("Could not write complete postmortem dump [%s]."), readableDumpFile.Name().c_str()));
+                }
+            }
+            else {
+                SYSLOG(Logging::Error, (_T("Could not create postmortem dump [%s]."), readableDumpFile.Name().c_str()));
             }
         }
         inline ServiceMap& Services()
