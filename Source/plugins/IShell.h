@@ -376,6 +376,21 @@ namespace PluginHost {
             return (result);
         }
 
+        /* @stubgen:omit */
+        virtual bool AllowedLocal() const
+        {
+            return true;
+        }
+        /* @stubgen:omit */
+        virtual bool AllowedDistributed() const
+        {
+            return true;
+        }
+        /* @stubgen:omit */
+        virtual bool AllowedContainer() const
+        {
+            return true;
+        }
         void* Root(uint32_t& pid, const uint32_t waitTime, const string className, const uint32_t interface, const uint32_t version = ~0);
 
         /* @stubgen:omit */

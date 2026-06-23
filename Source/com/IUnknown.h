@@ -317,6 +317,10 @@ namespace ProxyStub {
         {
             return (_implementation);
         }
+        // Required by proxystubs!
+        const Core::ProxyType<Core::IPCChannel>& Channel() const {
+            return (_channel);
+        }
 
         // -------------------------------------------------------------------------------------------------------------------------------
         // Proxy environment calls
@@ -332,7 +336,7 @@ namespace ProxyStub {
 
         uint32_t Invoke(Core::ProxyType<RPC::InvokeMessage>& message, const uint32_t waitTime = RPC::CommunicationTimeOut) const;
 
-        inline uint32_t Complete(const Core::instance_id& impl, const uint32_t id, const RPC::Data::Output::mode how)
+        inline uint32_t Complete(const Core::instance_id& impl, const uint32_t id, const RPC::Data::Output::mode how) const
         {
             // This method is called from the stubs.
             uint32_t result = Core::ERROR_NONE;
@@ -469,6 +473,10 @@ namespace ProxyStub {
         {
             return(&_unknown);
         }
+        const UnknownProxy* Administration() const
+        {
+            return(&_unknown);
+        }
 
         // -------------------------------------------------------------------------------------------------------------------------------
         // Proxy environment calls
@@ -485,7 +493,7 @@ namespace ProxyStub {
         {
             return (_unknown.Interface(implementation, id));
         }
-        uint32_t Complete(const Core::instance_id& instance, const uint32_t id, const RPC::Data::Output::mode how)
+        uint32_t Complete(const Core::instance_id& instance, const uint32_t id, const RPC::Data::Output::mode how) const
         {
             return (_unknown.Complete(instance, id, how));
         }

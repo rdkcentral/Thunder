@@ -311,12 +311,16 @@ namespace PluginHost {
         {
             return (_config.Configuration());
         }
+        bool StartupOrderSet() const
+        {
+            return (_config.Configuration().StartupOrder.IsSet());
+        } 
         uint32_t StartupOrder() const
         {
             return (_config.Configuration().StartupOrder.Value());
         }
 
-        bool Extension() const
+        inline bool Extension() const
         {
             return (_config.Configuration().Extension.Value());
         }

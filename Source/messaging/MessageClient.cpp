@@ -35,9 +35,13 @@ namespace Messaging {
         , _identifier(identifer)
         , _basePath(basePath)
         , _socketPort(socketPort)
+        , _readBufferSize(MessageUnit::Instance().MessageSize())
+        , _readBuffer(new uint8_t[_readBufferSize])
         , _clients()
         , _factories()
     {
+        ASSERT(_readBufferSize != 0);
+        ::memset(_readBuffer.get(), 0, _readBufferSize);
     }
 
     /**
@@ -137,16 +141,30 @@ namespace Messaging {
     }
 
     /**
-     * @brief Get list of currently announced message controls
+     * @brief Get list of currently announced message modules
      */
-    void MessageClient::Controls(Messaging::MessageUnit::Iterator& controls) const
+    void MessageClient::Modules(std::vector<string>& modules) const
+    {
+        _adminLock.Lock();
+
+        for (auto& client : _clients) {
+            client.second.Modules(modules);
+        }
+
+        _adminLock.Unlock();
+    }
+
+    /**
+     * @brief Get list of currently announced message controls for a given module
+     */
+    void MessageClient::Controls(Messaging::MessageUnit::Iterator& controls, const string& module) const
     {
         Messaging::MessageUnit::ControlList list;
 
         _adminLock.Lock();
 
         for (auto& client : _clients) {
-            client.second.Load(list);
+            client.second.Load(list, module);
         }
 
         _adminLock.Unlock();
@@ -165,13 +183,15 @@ namespace Messaging {
         _adminLock.Lock();
 
         for (auto& client : _clients) {
-            uint16_t size = sizeof(_readBuffer);
+            client.second.Validate();
+            uint16_t size = _readBufferSize;
+            uint32_t status;
 
-            while (client.second.PopData(size, _readBuffer) != Core::ERROR_READ_ERROR) {
+            while (((status = client.second.PopData(size, _readBuffer.get())) == Core::ERROR_NONE) || (status == Core::ERROR_GENERAL)) {
                 ASSERT(size != 0);
 
-                if (size > sizeof(_readBuffer)) {
-                    size = sizeof(_readBuffer);
+                if (size > _readBufferSize) {
+                    size = _readBufferSize;
                 }
 
                 const Core::Messaging::Metadata::type type = static_cast<Core::Messaging::Metadata::type>(_readBuffer[0]);
@@ -190,7 +210,7 @@ namespace Messaging {
                     metadata = factory->second->GetMetadata();
                     message = factory->second->GetMessage();
 
-                    length = metadata->Deserialize(_readBuffer, size);
+                    length = metadata->Deserialize(_readBuffer.get(), size);
                     length += message->Deserialize((&_readBuffer[length]), (size - length));
 
                     handler(metadata, message);
@@ -200,7 +220,7 @@ namespace Messaging {
                     client.second.FlushDataBuffer();
                 }
 
-                size = sizeof(_readBuffer);
+                size = _readBufferSize;
             }
         }
  

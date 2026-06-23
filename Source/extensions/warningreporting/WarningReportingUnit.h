@@ -64,6 +64,18 @@ namespace WarningReporting {
                     Add(_T("excluded"), &Excluded);
                     Add(_T("config"), &CategoryConfig);
                 }
+                JSON(JSON&& move)
+                    : Core::JSON::Container()
+                    , Category(std::move(move.Category))
+                    , Enabled(std::move(move.Enabled))
+                    , Excluded(std::move(move.Excluded))
+                    , CategoryConfig(std::move(move.CategoryConfig))
+                {
+                    Add(_T("category"), &Category);
+                    Add(_T("enabled"), &Enabled);
+                    Add(_T("excluded"), &Excluded);
+                    Add(_T("config"), &CategoryConfig);
+                }
                 JSON(const Setting& rhs)
                     : Core::JSON::Container()
                     , Category()
@@ -109,6 +121,13 @@ namespace WarningReporting {
                 , _enabled(copy._enabled)
                 , _excluded(copy._excluded)
                 , _categoryconfig(copy._categoryconfig)
+            {
+            }
+            Setting(Setting&& move)
+                : _category(std::move(move._category))
+                , _enabled(move._enabled)
+                , _excluded(std::move(move._excluded))
+                , _categoryconfig(std::move(move._categoryconfig))
             {
             }
             ~Setting()

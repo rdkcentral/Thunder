@@ -29,10 +29,14 @@
 #include "DirectOutput.h"
 #include "TraceCategories.h"
 #include "TraceControl.h"
-#include "Control.h"
 #include "TraceFactory.h"
-#include "TextMessage.h"
+#include "TelemetryControl.h"
+#include "ConsoleStreamRedirect.h"
+#include "OperationalCategories.h"
+#include "AssertionUnit.h"
 
 #ifdef __WINDOWS__
 #pragma comment(lib, "messaging.lib")
 #endif
+
+WPEFRAMEWORK_NESTEDNAMESPACE_COMPATIBILIY(Messaging)

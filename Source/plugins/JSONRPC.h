@@ -28,7 +28,17 @@
 namespace WPEFramework {
 
 namespace PluginHost {
-namespace {
+
+  namespace {
+
+        static string Pack(const string& event, const string& index)
+        {
+            string packed = event;
+            if (index.empty() == false) {
+                packed += TCHAR('@') + index;
+            }
+            return packed;
+        }
 
         template<typename JSONRPCERRORASSESSORTYPE>
         uint32_t InvokeOnHandler(const Core::JSONRPC::Context& context, const string& method, const string& parameters, string& response, Core::JSONRPC::Handler& handler, JSONRPCERRORASSESSORTYPE errorhandler) 
@@ -57,51 +67,149 @@ namespace {
     };
 
     class EXTERNAL JSONRPC : public ILocalDispatcher, public IDispatcher::ICallback {
+    public:
+        using SendIfMethod = std::function<bool(const string&)>;
+        using SendIfMethodIndexed = std::function<bool(const string&, const string&)>;
+
     private:
         class Observer {
         private:
-            using Destination = std::pair<uint32_t, string>;
+            class Destination {
+            public:
+                Destination() = delete;
+                Destination(uint32_t channelId, const string& designator)
+                    : _callback(nullptr)
+                    , _channelId(channelId)
+                    , _designator(designator)
+                    , _index() {
+                }
+                Destination(uint32_t channelId, const string& designator, const string& index)
+                    : _callback(nullptr)
+                    , _channelId(channelId)
+                    , _designator(designator)
+                    , _index(index) {
+                }
+                Destination(IDispatcher::ICallback* callback, const string& designator)
+                    : _callback(callback)
+                    , _channelId(~0)
+                    , _designator(designator)
+                    , _index() {
+                    if (_callback != nullptr) {
+                        _callback->AddRef();
+                    }
+                }
+                Destination(IDispatcher::ICallback* callback, const string& designator, const string& index)
+                    : _callback(callback)
+                    , _channelId(~0)
+                    , _designator(designator)
+                    , _index(index) {
+                    if (_callback != nullptr) {
+                        _callback->AddRef();
+                    }
+                }
+                Destination(Destination&& move) noexcept
+                    : _callback(move._callback)
+                    , _channelId(move._channelId)
+                    , _designator(std::move(move._designator))
+                    , _index(std::move(move._index)) {
+                    move._callback = nullptr;
+                    move._channelId = ~0;
+                }
+                Destination(const Destination& copy)
+                    : _callback(copy._callback)
+                    , _channelId(copy._channelId)
+                    , _designator(copy._designator)
+                    , _index(copy._index) {
+                    if (_callback != nullptr) {
+                        _callback->AddRef();
+                    }
+                }
+                ~Destination() {
+                    if (_callback != nullptr) {
+                        _callback->Release();
+                    }
+                }
+
+                Destination& operator=(Destination&& move) noexcept
+                {
+                    if (_callback != nullptr) {
+                        _callback->Release();
+                    }
+                    _callback = move._callback;
+                    _channelId = move._channelId;
+                    _designator = std::move(move._designator);
+                    _index = std::move(move._index);
+                    move._callback = nullptr;
+                    move._channelId = ~0;
+                    return (*this);
+                }
+                Destination& operator=(const Destination& copy)
+                {
+                    if (_callback != nullptr) {
+                        _callback->Release();
+                    }
+                    _callback = copy._callback;
+                    _channelId = copy._channelId;
+                    _designator = copy._designator;
+                    _index = copy._index;
+                    if (_callback != nullptr) {
+                        _callback->AddRef();
+                    }
+                    return (*this);
+                }
+
+            public:
+                inline IDispatcher::ICallback* Callback() {
+                    return (_callback);
+                }
+                inline uint32_t ChannelId() const {
+                    return (_channelId);
+                }
+                inline const string& Designator() const {
+                    return (_designator);
+                }
+                inline const string& Index() const {
+                    return (_index);
+                }
+
+            private:
+                IDispatcher::ICallback* _callback;
+                uint32_t _channelId;
+                string _designator;
+                string _index;
+            };
+
             using Destinations = std::vector<Destination>;
-            using Remotes = std::vector<IDispatcher::ICallback*>;
 
         public:
-            Observer& operator= (const Observer& copy) = delete;
+            Observer& operator=(Observer&&) = delete;
+            Observer& operator=(const Observer&) = delete;
 
             Observer()
-                : _callbacks()
-                , _designators() {
+                : _designators() {
             }
             Observer(Observer&& move)
-                : _callbacks(move._callbacks)
-                , _designators(move._designators) {
+                : _designators(std::move(move._designators)) {
             }
             Observer(const Observer& copy)
-                : _callbacks(copy._callbacks)
-                , _designators(copy._designators) {
-                for (IDispatcher::ICallback*& callback : _callbacks) {
-                    callback->AddRef();
-                }
+                : _designators(copy._designators) {
             }
-            ~Observer() {
-                for (IDispatcher::ICallback*& callback : _callbacks) {
-                    callback->Release();
-                }
-            }
+            ~Observer() = default;
 
         public:
             bool IsEmpty() const {
-                return ( (_designators.empty()) && (_callbacks.empty()) );
+                return ( _designators.empty() );
             }
-            uint32_t Subscribe(const uint32_t id, const string& event) {
+            uint32_t Subscribe(const uint32_t id, const string& designator, const string& index) {
                 uint32_t result = Core::ERROR_NONE;
 
-                Destinations::iterator index(_designators.begin());
-                while ((index != _designators.end()) && ((index->first != id) || (index->second != event))) {
-                    index++;
+                Destinations::iterator it(_designators.begin());
+                while ((it != _designators.end()) && ((it->ChannelId() != id) || (it->Designator() != designator) || (it->Index() != index))) {
+                    it++;
                 }
 
-                if (index == _designators.end()) {
-                    _designators.emplace_back(Destination(id, event));
+                if (it == _designators.end()) {
+                    _designators.emplace_back(id, designator, index);
                 }
                 else {
                     result = Core::ERROR_DUPLICATE_KEY;
@@ -109,16 +217,16 @@ namespace {
 
                 return (result);
             }
-            uint32_t Unsubscribe(const uint32_t id, const string& event) {
+            uint32_t Unsubscribe(const uint32_t id, const string& designator, const string& index) {
                 uint32_t result = Core::ERROR_NONE;
 
-                Destinations::iterator index(_designators.begin());
-                while ((index != _designators.end()) && ((index->first != id) || (index->second != event))) {
-                    index++;
+                Destinations::iterator it(_designators.begin());
+                while ((it != _designators.end()) && ((it->ChannelId() != id) || (it->Designator() != designator) || (it->Index() != index))) {
+                    it++;
                 }
 
-                if (index != _designators.end()) {
-                    _designators.erase(index);
+                if (it != _designators.end()) {
+                    _designators.erase(it);
                 }
                 else {
                     result = Core::ERROR_BAD_REQUEST;
@@ -126,32 +234,44 @@ namespace {
 
                 return (result);
             }
-            void Subscribe(IDispatcher::ICallback* callback) {
-                Remotes::iterator index = std::find(_callbacks.begin(), _callbacks.end(), callback);
+            uint32_t Subscribe(IDispatcher::ICallback* callback, const string& designator, const string& index) {
+                uint32_t result = Core::ERROR_NONE;
 
-                ASSERT(index == _callbacks.end());
-
-                if (index == _callbacks.end()) {
-                    callback->AddRef();
-                    _callbacks.emplace_back(callback);
+                Destinations::iterator it(_designators.begin());
+                while ((it != _designators.end()) && ((it->Designator() != designator) || (it->Index() != index) || (it->Callback() == callback))) {
+                    it++;
                 }
-            }
-            void Unsubscribe(const IDispatcher::ICallback* callback) {
-                Remotes::iterator index = std::find(_callbacks.begin(), _callbacks.end(), callback);
 
-                ASSERT(index != _callbacks.end());
-
-                if (index != _callbacks.end()) {
-                    (*index)->Release();
-                    _callbacks.erase(index);
+                if (it == _designators.end()) {
+                    _designators.emplace_back(callback, designator, index);
                 }
+                else {
+                    result = Core::ERROR_DUPLICATE_KEY;
+                }
+
+                return (result);
             }
-            template<typename METHOD>
-            void Dropped(const uint32_t channelId, METHOD unregistered) {
+            uint32_t Unsubscribe(IDispatcher::ICallback* callback, const string& designator, const string& index) {
+                uint32_t result = Core::ERROR_NONE;
+
+                Destinations::iterator it(_designators.begin());
+                while ((it != _designators.end()) && ((it->Designator() != designator) || (it->Index() != index) || (it->Callback() == callback))) {
+                    it++;
+                }
+
+                if (it != _designators.end()) {
+                    _designators.erase(it);
+                }
+                else {
+                    result = Core::ERROR_BAD_REQUEST;
+                }
+
+                return (result);
+            }
+            void Dropped(const IDispatcher::ICallback* callback) {
                 Destinations::iterator index = _designators.begin();
                 while (index != _designators.end()) {
-                    if (index->first == channelId) {
-                        unregistered(index->second);
+                    if (index->Callback() == callback) {
                         index = _designators.erase(index);
                     }
                     else {
@@ -159,21 +279,61 @@ namespace {
                     }
                 }
             }
-            void Event(JSONRPC& parent, const string event, const string& parameter, std::function<bool(const string&)>&& sendifmethod) {
-                for (const Destination& entry : _designators) {
-                    if (!sendifmethod || sendifmethod(entry.second)) {
-                        parent.Notify(entry.first, entry.second + '.' + event, parameter);
+            template<typename METHOD>
+            void Dropped(const uint32_t channelId, METHOD unregistered) {
+                Destinations::iterator index = _designators.begin();
+                while (index != _designators.end()) {
+                    if ( (index->ChannelId() == channelId) && (index->Callback() == nullptr) ) {
+                        unregistered(index->Designator(), index->Index());
+                        index = _designators.erase(index);
+                    } 
+                    else {
+                        index++;
                     }
                 }
-                for (IDispatcher::ICallback*& callback : _callbacks) {
-                    callback->Event(event, parameter);
+            }
+            void Event(const JSONRPC& parent, const string event, const string& parameter, const SendIfMethod& sendifmethod) {
+                Destinations::iterator index(_designators.begin());
+
+                while (index != _designators.end()) {
+                    Destination& entry = (*index);
+
+                    if (!sendifmethod || sendifmethod(entry.Designator())) {
+                        if (entry.Callback() == nullptr) {
+                            parent.Notify(entry.ChannelId(), (entry.Designator() + '.' + event), parameter);
+                        }
+                        else {
+                            entry.Callback()->Event(event, parameter);
+                        }
+                    }
+
+                    ++index;
+                }
+            }
+            void Event(const JSONRPC& parent, const string event, const string& parameter, const SendIfMethodIndexed& sendifmethod) {
+                Destinations::iterator index(_designators.begin());
+
+                while (index != _designators.end()) {
+                    Destination& entry = (*index);
+
+                    if (!sendifmethod || sendifmethod(entry.Designator(), entry.Index())) {
+                        if (entry.Callback() == nullptr) {
+                            parent.Notify(entry.ChannelId(), Pack((entry.Designator() + '.' + event), entry.Index()), parameter);
+                        }
+                        else {
+                            // Have to sneak in the index into event name
+                            entry.Callback()->Event(Pack(event, entry.Index()), parameter);
+                        }
+                    }
+
+                    ++index;
                 }
             }
 
         private:
-            Remotes _callbacks;
             Destinations _designators;
         };
+
         using HandlerList = std::list<Core::JSONRPC::Handler>;
         using ObserverMap = std::unordered_map<string, Observer>;
 
@@ -233,16 +393,16 @@ namespace {
             Registration()
                 : Core::JSON::Container()
                 , Event()
-                , Callsign()
+                , Id()
             {
                 Add(_T("event"), &Event);
-                Add(_T("id"), &Callsign);
+                Add(_T("id"), &Id);
             }
             ~Registration() override = default;
 
         public:
             Core::JSON::String Event;
-            Core::JSON::String Callsign;
+            Core::JSON::String Id;
         };
 
         enum state {
@@ -380,12 +540,17 @@ namespace {
         {
             return (InternalNotify(event, _T("")));
         }
-        template <typename JSONOBJECT>
+        template <typename JSONOBJECT, typename std::enable_if<!std::is_convertible<JSONOBJECT, SendIfMethod>::value && !std::is_convertible<JSONOBJECT, SendIfMethodIndexed>::value, int>::type = 0>
         uint32_t Notify(const string& event, const JSONOBJECT& parameters) const
         {
             string subject;
             parameters.ToString(subject);
             return (InternalNotify(event, subject));
+        }
+        template <typename SENDIFMETHOD, typename std::enable_if<std::is_convertible<SENDIFMETHOD, SendIfMethod>::value || std::is_convertible<SENDIFMETHOD, SendIfMethodIndexed>::value, int>::type = 0>
+        uint32_t Notify(const string& event, SENDIFMETHOD method) const
+        {
+            return InternalNotify(event, _T(""), std::move(method));
         }
         template <typename JSONOBJECT, typename SENDIFMETHOD>
         uint32_t Notify(const string& event, const JSONOBJECT& parameters, SENDIFMETHOD method) const
@@ -479,7 +644,7 @@ namespace {
         Core::hresult Revoke(IDispatcher::ICallback* callback) override {
             // See if we re using this callback, we need to abort its use..
             for (std::pair<const string, Observer>& entry : _observers) {
-                entry.second.Unsubscribe(callback);
+                entry.second.Dropped(callback);
             }
             return (Core::ERROR_NONE);
         }
@@ -492,16 +657,16 @@ namespace {
         uint32_t Invoke(const uint32_t channelId, const uint32_t id, const string& token, const string& method, const string& parameters, string& response) override {
             uint32_t result = Core::ERROR_INCORRECT_URL;
 
-            ASSERT(Core::JSONRPC::Message::Callsign(method).empty() || (Core::JSONRPC::Message::Callsign(method) == _callsign));
+            string realMethod = Core::JSONRPC::Message::Method(method);
+            string callsign = Core::JSONRPC::Message::Callsign(method);
 
-            // Seems we are on the right handler..
-            // now see if someone supports this version
-            string realMethod(Core::JSONRPC::Message::Method(method));
+            ASSERT((callsign.empty() == true) || (callsign == _callsign));
 
             if (realMethod == _T("register")) {
                 Registration info;  info.FromString(parameters);
+                string index = Core::JSONRPC::Message::Index(method);
 
-                result = Subscribe(this, channelId, info.Event.Value(), info.Callsign.Value());
+                result = Subscribe(this, channelId, info.Event.Value(), info.Id.Value(), index);
                 if (result == Core::ERROR_NONE) {
                     response = _T("0");
                 }
@@ -511,8 +676,9 @@ namespace {
             }
             else if (realMethod == _T("unregister")) {
                 Registration info;  info.FromString(parameters);
+                string index = Core::JSONRPC::Message::Index(method);
 
-                result = Unsubscribe(this, channelId, info.Event.Value(), info.Callsign.Value());
+                result = Unsubscribe(this, channelId, info.Event.Value(), info.Id.Value(), index);
                 if (result == Core::ERROR_NONE) {
                     response = _T("0");
                 }
@@ -521,7 +687,7 @@ namespace {
                 }
             }
             else {
-                result = Invoke(this, channelId, id, token, method, parameters, response);
+                result = Invoke(this, channelId, id, token, Core::JSONRPC::Message::FullMethod(method), parameters, response);
             }
 
             return (result);
@@ -555,7 +721,7 @@ namespace {
             while (index != _observers.end()) {
 
                 const string& eventId = index->first;
-                index->second.Dropped(channelId, [this, channelId, &eventId](const string& designator) { ProcessUnsubscribed(channelId, eventId, designator); });
+                index->second.Dropped(channelId, [this, channelId, &eventId](const string& clientId, const string& index) { ProcessUnsubscribed(channelId, eventId, clientId, index); });
 
                 if (index->second.IsEmpty() == true) {
                     index = _observers.erase(index);
@@ -577,7 +743,7 @@ namespace {
             ObserverMap::iterator index = _observers.find(eventId);
 
             if (index != _observers.end()) {
-                index->second.Event(*this, eventId, parameters, std::function<bool(const string&)>());
+                index->second.Event(*this, eventId, parameters, SendIfMethod());
             }
 
             _adminLock.Unlock();
@@ -608,27 +774,35 @@ namespace {
 
             return (_service->Submit(channel, Core::ProxyType<Core::JSON::IElement>(message)));
         }
-        Core::hresult Subscribe(const uint32_t channel, const string& eventId, const string& designator) final
+        Core::hresult Subscribe(const uint32_t channel, const string& event, const string& clientId) final
         {
-            return ProcessSubscribe(channel, eventId, designator);
+            // id and index are packed into event name
+            const string eventId = Core::JSONRPC::Message::Method(event);
+            const string index = Core::JSONRPC::Message::Index(event);
+
+            return ProcessSubscribe(channel, eventId, clientId, index);
         }
-        Core::hresult Unsubscribe(const uint32_t channel, const string& eventId, const string& designator) final
+        Core::hresult Unsubscribe(const uint32_t channel, const string& event, const string& clientId) final
         {
             uint32_t result = Core::ERROR_UNKNOWN_KEY;
 
+            const string eventId = Core::JSONRPC::Message::Method(event);
+
             _adminLock.Lock();
 
-            ObserverMap::iterator index = _observers.find(eventId);
+            ObserverMap::iterator it = _observers.find(eventId);
 
-            if (index != _observers.end()) {
-                result = index->second.Unsubscribe(channel, designator);
+            if (it != _observers.end()) {
+                const string index = Core::JSONRPC::Message::Index(event);
+
+                result = it->second.Unsubscribe(channel, clientId, index);
 
                 if (result == Core::ERROR_NONE) {
 
-                    ProcessUnsubscribed(channel, eventId, designator);
-            
-                    if (index->second.IsEmpty() == true) {
-                        _observers.erase(index);
+                    ProcessUnsubscribed(channel, eventId, clientId, index);
+
+                    if (it->second.IsEmpty() == true) {
+                        _observers.erase(it);
                     }
                 }
             }
@@ -638,23 +812,23 @@ namespace {
         }
 
     protected:
-        uint32_t DoSubscribe(const uint32_t channelId, const string& eventId, const string& designator)
+        uint32_t DoSubscribe(const uint32_t channelId, const string& event, const string& clientId, const string& index)
         {
             _adminLock.Lock();
 
-            ObserverMap::iterator index = _observers.find(eventId);
+            ObserverMap::iterator it = _observers.find(event);
 
-            if (index == _observers.end()) {
-                index = _observers.emplace(std::piecewise_construct,
-                                      std::forward_as_tuple(eventId),
+            if (it == _observers.end()) {
+                it = _observers.emplace(std::piecewise_construct,
+                                      std::forward_as_tuple(event),
                                       std::forward_as_tuple())
                             .first;
             }
 
-            uint32_t result = index->second.Subscribe(channelId, designator);
+            uint32_t result = it->second.Subscribe(channelId, clientId, index);
 
-            if ((result != Core::ERROR_NONE) && (index->second.IsEmpty() == true)) {
-                _observers.erase(index);
+            if ((result != Core::ERROR_NONE) && (it->second.IsEmpty() == true)) {
+                _observers.erase(it);
             }
 
             _adminLock.Unlock();
@@ -663,12 +837,12 @@ namespace {
         }
 
     private:
-        virtual uint32_t ProcessSubscribe(const uint32_t channelId, const string& eventId, const string& designator)
+        virtual uint32_t ProcessSubscribe(const uint32_t channelId, const string& event, const string& clientId, const string& index)
         {
-            return DoSubscribe(channelId, eventId, designator);
+            return DoSubscribe(channelId, event, clientId, index);
         }
 
-        virtual void ProcessUnsubscribed(const uint32_t channelId VARIABLE_IS_NOT_USED, const string& eventId VARIABLE_IS_NOT_USED, const string& designator VARIABLE_IS_NOT_USED) 
+        virtual void ProcessUnsubscribed(const uint32_t channelId VARIABLE_IS_NOT_USED, const string& event VARIABLE_IS_NOT_USED, const string& clientId VARIABLE_IS_NOT_USED, const string& index VARIABLE_IS_NOT_USED) 
         {
         }
 
@@ -710,27 +884,27 @@ namespace {
         }
 
     private:
-        uint32_t Subscribe(IDispatcher::ICallback* callback, const uint32_t channelId, const string& event, const string& designator) {
+        uint32_t Subscribe(IDispatcher::ICallback* callback, const uint32_t channelId, const string& eventId, const string& clientId, const string& index) {
             uint32_t result = Core::ERROR_UNKNOWN_KEY;
 
             // This is to make sure that the actuall location (there weher the channels really end) are
             // aware of distributing the event.
-            if (callback->Subscribe(channelId, event, designator) == Core::ERROR_NONE) {
+            if (callback->Subscribe(channelId, Pack(eventId, index), clientId) == Core::ERROR_NONE) {
 
                 if (callback != this) {
                     // Oops the real location is somewhere else. Register this event also for callbacks
                     // to be forwarded to that actual location
                     _adminLock.Lock();
 
-                    ObserverMap::iterator index = _observers.find(event);
+                    ObserverMap::iterator it = _observers.find(eventId);
 
-                    if (index == _observers.end()) {
-                        index = _observers.emplace(std::piecewise_construct,
-                            std::forward_as_tuple(event),
+                    if (it == _observers.end()) {
+                        it = _observers.emplace(std::piecewise_construct,
+                            std::forward_as_tuple(eventId),
                             std::forward_as_tuple()).first;
                     }
 
-                    index->second.Subscribe(callback);
+                    it->second.Subscribe(callback, clientId, index);
 
                     _adminLock.Unlock();
                 }
@@ -738,23 +912,23 @@ namespace {
             }
             return (result);
         }
-        uint32_t Unsubscribe(IDispatcher::ICallback* callback, const uint32_t channelId, const string& event, const string& designator) {
+        uint32_t Unsubscribe(IDispatcher::ICallback* callback, const uint32_t channelId, const string& eventId, const string& clientId, const string& index) {
             uint32_t result = Core::ERROR_UNKNOWN_KEY;
 
-            if (callback->Unsubscribe(channelId, event, designator) == Core::ERROR_NONE) {
+            if (callback->Unsubscribe(channelId, Pack(eventId, index), clientId) == Core::ERROR_NONE) {
 
                 if (callback != this) {
                     // Oops the real location was somewhere else. Unregister this event also for callbacks
                     // to be forwarded to that actual location
                     _adminLock.Lock();
 
-                    ObserverMap::iterator index = _observers.find(event);
+                    ObserverMap::iterator it = _observers.find(eventId);
 
-                    if (index != _observers.end()) {
-                        index->second.Unsubscribe(callback);
+                    if (it != _observers.end()) {
+                        it->second.Unsubscribe(callback, clientId, index);
 
-                        if ((result == Core::ERROR_NONE) && (index->second.IsEmpty() == true)) {
-                            _observers.erase(index);
+                        if ((result == Core::ERROR_NONE) && (it->second.IsEmpty() == true)) {
+                            _observers.erase(it);
                         }
                     }
                 }
@@ -762,23 +936,24 @@ namespace {
             }
             return (result);
         }
-        uint32_t InternalNotify(const string& event, const string& parameters, std::function<bool(const string&)>&& sendifmethod = std::function<bool(const string&)>()) const
+        template<typename SENDIFMETHOD = SendIfMethod>
+        uint32_t InternalNotify(const string& event, const string& parameters, SENDIFMETHOD sendifmethod = nullptr) const
         {
             uint32_t result = Core::ERROR_UNKNOWN_KEY;
 
             _adminLock.Lock();
 
-            ObserverMap::const_iterator index = _observers.find(event);
+            ObserverMap::iterator index = _observers.find(event);
 
             if (index != _observers.end()) {
-                const_cast<Observer&>(index->second).Event(const_cast<JSONRPC&>(*this), event, parameters, std::move(sendifmethod));
+               index->second.Event(*this, event, parameters, std::move(sendifmethod));
             }
 
             _adminLock.Unlock();
 
             return (result);
         }
-        void Notify(const uint32_t channelId, const string& designator, const string& parameters)
+        void Notify(const uint32_t channelId, const string& designator, const string& parameters) const
         {
             Core::ProxyType<Core::JSONRPC::Message> message(Core::ProxyType<Core::JSONRPC::Message>(IFactories::Instance().JSONRPC()));
 
@@ -801,19 +976,44 @@ namespace {
         string _callsign;
         TokenCheckFunction _validate;
         VersionList _versions;
-        ObserverMap _observers;
+        mutable ObserverMap _observers;
     };
 
-    class EXTERNAL JSONRPCSupportsEventStatus : public PluginHost::JSONRPC {
+    class EXTERNAL JSONRPCSupportsEventStatus : virtual public PluginHost::JSONRPC {
     public:
         JSONRPCSupportsEventStatus(const JSONRPCSupportsEventStatus&) = delete;
         JSONRPCSupportsEventStatus& operator=(const JSONRPCSupportsEventStatus&) = delete;
+        JSONRPCSupportsEventStatus(JSONRPCSupportsEventStatus&&) = delete;
+        JSONRPCSupportsEventStatus& operator=(JSONRPCSupportsEventStatus&&) = delete;
 
-        JSONRPCSupportsEventStatus() = default;
-        JSONRPCSupportsEventStatus(const PluginHost::JSONRPC::TokenCheckFunction& validation) : JSONRPC(validation) {}
-        JSONRPCSupportsEventStatus(const std::vector<uint8_t>& versions) : JSONRPC(versions) {}
-        JSONRPCSupportsEventStatus(const std::vector<uint8_t>& versions, const TokenCheckFunction& validation) : JSONRPC(versions, validation) {}
-        virtual ~JSONRPCSupportsEventStatus() = default;
+        JSONRPCSupportsEventStatus()
+            : _adminLock()
+            , _observers()
+            , _indexedObservers()
+        {
+        }
+        JSONRPCSupportsEventStatus(const PluginHost::JSONRPC::TokenCheckFunction& validation)
+            : JSONRPC(validation)
+            , _adminLock()
+            , _observers()
+            , _indexedObservers()
+        {
+        }
+        JSONRPCSupportsEventStatus(const std::vector<uint8_t>& versions)
+            : JSONRPC(versions)
+            , _adminLock()
+            , _observers()
+            , _indexedObservers()
+        {
+        }
+        JSONRPCSupportsEventStatus(const std::vector<uint8_t>& versions, const TokenCheckFunction& validation)
+            : JSONRPC(versions, validation)
+            , _adminLock()
+            , _observers()
+            , _indexedObservers()
+        {
+        }
+        ~JSONRPCSupportsEventStatus() override = default;
 
         enum class Status {
             registered,
@@ -821,14 +1021,32 @@ namespace {
         };
 
     public:
-        template <typename METHOD>
-        void RegisterEventStatusListener(const string& event, METHOD method)
+        using EventStatusCallback = std::function<void(const string&, Status status)>;
+        using IndexedEventStatusCallback = std::function<void(const uint32_t, const string&, const string&, Status status)>;
+
+    public:
+        void RegisterEventStatusListener(const string& event, EventStatusCallback method)
+        {
+            // keep non-indexed register for backward compatibility
+
+            _adminLock.Lock();
+
+            ASSERT(_observers.find(event) == _observers.end());
+            ASSERT(_indexedObservers.find(event) == _indexedObservers.end());
+
+            _observers[event] = std::move(method);
+
+            _adminLock.Unlock();
+        }
+
+        void RegisterEventStatusListener(const string& event, IndexedEventStatusCallback method)
         {
             _adminLock.Lock();
 
             ASSERT(_observers.find(event) == _observers.end());
+            ASSERT(_indexedObservers.find(event) == _indexedObservers.end());
 
-            _observers[event] = method;
+            _indexedObservers[event] = std::move(method);
 
             _adminLock.Unlock();
         }
@@ -837,55 +1055,69 @@ namespace {
         {
             _adminLock.Lock();
 
-            ASSERT(_observers.find(event) != _observers.end());
+            ASSERT((_observers.find(event) != _observers.end()) || (_indexedObservers.find(event) != _indexedObservers.end()));
 
             _observers.erase(event);
+            _indexedObservers.erase(event);
 
             _adminLock.Unlock();
         }
 
     private:
-        uint32_t ProcessSubscribe(const uint32_t channel, const string& eventId, const string& designator) override
+        uint32_t ProcessSubscribe(const uint32_t channel, const string& event, const string& clientId, const string& index) override
         {
-            const Core::hresult result = JSONRPC::DoSubscribe(channel, eventId, designator);
+            Core::hresult result = Core::ERROR_PRIVILIGED_REQUEST;
+
+            _adminLock.Lock();
+
+            result = JSONRPC::DoSubscribe(channel, event, clientId, index);
 
             if (result == Core::ERROR_NONE) {
-                NotifyObservers(eventId, designator, Status::registered);
+                NotifyObservers(channel, event, clientId, index, Status::registered);
             }
+
+            _adminLock.Unlock();
 
             return (result);
         }
-
-        void ProcessUnsubscribed(const uint32_t channel VARIABLE_IS_NOT_USED, const string& eventId, const string& designator) override
-        {
-            NotifyObservers(eventId, designator, Status::unregistered);
-        }
-
-    protected:
-        void NotifyObservers(const string& event, const string& client, const Status status) const
+        void ProcessUnsubscribed(const uint32_t channel, const string& event, const string& clientId, const string& index) override
         {
             _adminLock.Lock();
 
-            StatusCallbackMap::const_iterator it = _observers.find(event);
-            if (it != _observers.cend()) {
-                it->second(client, status);
-            }
+            NotifyObservers(channel, event, clientId, index, Status::unregistered);
 
             _adminLock.Unlock();
         }
 
     private:
-        using EventStatusCallback = std::function<void(const string&, Status status)>;
+        void NotifyObservers(const uint32_t channel, const string event, const string& clientId, const string& index, const Status status) const
+        {
+            // called interlocked
+            IndexedStatusCallbackMap::const_iterator it = _indexedObservers.find(event);
+            if (it != _indexedObservers.cend()) {
+                it->second(channel, clientId, index, status);
+            }
+
+            StatusCallbackMap::const_iterator it2 = _observers.find(event);
+            if (it2 != _observers.cend()) {
+                it2->second(clientId, status);
+            }
+        }
+
+    private:
         using StatusCallbackMap = std::map<string, EventStatusCallback>;
+        using IndexedStatusCallbackMap = std::map<string, IndexedEventStatusCallback>;
 
         mutable Core::CriticalSection _adminLock;
         StatusCallbackMap _observers;
+        IndexedStatusCallbackMap _indexedObservers;
     };
 
-namespace JSONRPCErrorAssessorTypes {
+    namespace JSONRPCErrorAssessorTypes {
         using FunctionCallbackType  = uint32_t (*) (const Core::JSONRPC::Context&, const string&, const string&, const uint32_t errorcode, string&);
         using StdFunctionCallbackType = std::function<int32_t(const Core::JSONRPC::Context&, const string&, const string&, const uint32_t errorcode, string&)>;
-}
+    }
+
     template<typename JSONRPCERRORASSESSORTYPE>
     class EXTERNAL JSONRPCErrorAssessor : public JSONRPC {
     public:

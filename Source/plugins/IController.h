@@ -57,7 +57,7 @@ namespace Controller {
 
         // @brief Starts the network discovery. Use this method to initiate SSDP network discovery process.
         // @param TTL (time to live) parameter for SSDP discovery
-        virtual Core::hresult StartDiscovery(const uint8_t& ttl) = 0;
+        virtual Core::hresult StartDiscovery(const uint8_t& ttl /* @optional @default:1 */) = 0;
 
         // @property
         // @brief Provides SSDP network discovery results.
@@ -74,7 +74,7 @@ namespace Controller {
 
         // @alt storeconfig
         // @brief Stores the configuration to persistent memory
-        virtual Core::hresult Persist() = 0;
+        virtual DEPRECATED Core::hresult Persist() = 0;
 
         // @property
         // @brief Provides configuration value of a request service.
@@ -124,7 +124,7 @@ namespace Controller {
         virtual Core::hresult Proxies(string& response /* @out @opaque */) const = 0;
         // @property
         // @brief Provides status of a plugin, including their configurations
-        virtual Core::hresult Status(const string& index /* @index */, string& response /* @out @opaque */) const = 0;
+        virtual Core::hresult Status(const string& index /* @index @optional */, string& response /* @out @opaque */) const = 0;
         // @property
         // @brief Provides active connection details
         virtual Core::hresult Links(string& response /* @out @opaque */) const = 0;

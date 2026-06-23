@@ -69,6 +69,7 @@ namespace WPEFramework {
 namespace Core {
 
     /* static */ SystemInfo SystemInfo::_systemInfo;
+    static CriticalSection _lock;
 
     static string ConstructUniqueId(
         const TCHAR DeviceId[],
@@ -370,6 +371,7 @@ namespace Core {
     /* static */ bool SystemInfo::GetEnvironment(const string& name, string& value)
     {
 #ifdef __LINUX__
+        SafeSyncType<CriticalSection> scopedLock(_lock);
         TCHAR* text = ::getenv(name.c_str());
 
         if (text != nullptr) {
@@ -381,17 +383,24 @@ namespace Core {
         return (text != nullptr);
 #else
         TCHAR buffer[1024];
-        DWORD bytes = GetEnvironmentVariable(name.c_str(), buffer, sizeof(buffer));
+        const DWORD capacity = sizeof(buffer) / sizeof(buffer[0]);
 
-        value = string(buffer, bytes);
+        DWORD characters = ::GetEnvironmentVariable(name.c_str(), buffer, capacity);
 
-        return (bytes > 0);
+        ASSERT(characters < capacity);
+        if (characters > 0) {
+            value.assign(buffer, characters);
+        } else {
+            value.clear();
+        }
+        return (characters > 0);
 #endif
     }
 
     /* static */ bool SystemInfo::SetEnvironment(const string& name, const TCHAR* value, const bool forced)
     {
         bool result = false;
+        SafeSyncType<CriticalSection> scopedLock(_lock);
 #ifdef __LINUX__
         if ((forced == true) || (::getenv(name.c_str()) == nullptr)) {
             if (value != nullptr) {

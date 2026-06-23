@@ -1201,6 +1201,7 @@ namespace WPEFramework {
 			string _versionstring;
 		};
 
+
 		// This is for backward compatibility. Please use the template and not the typedef below!!!
 		typedef LinkType<Core::JSON::IElement> DEPRECATED Client;
 		enum JSONPluginState {

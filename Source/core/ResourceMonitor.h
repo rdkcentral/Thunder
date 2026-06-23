@@ -35,6 +35,7 @@ namespace Core {
         virtual ~IResource() = default;
 
         typedef signed int handle;
+        static constexpr handle INVALID = -1;
 
         virtual handle Descriptor() const = 0;
         virtual uint16_t Events() = 0;
