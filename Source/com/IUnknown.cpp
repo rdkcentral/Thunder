@@ -104,7 +104,13 @@ namespace ProxyStub {
         _adminLock.Unlock();
 
         if (channel.IsValid() == true) {
+            SYSLOG(Logging::Notification, (_T("COM-RPC REQUEST >> Interface ID 0x%X, Method ID 0x%X, Instance 0x%" PRIxPTR), message->Parameters().InterfaceId(), message->Parameters().MethodId(), message->Parameters().Implementation()));
+
             result = channel->Invoke(message, waitTime);
+
+            if (result == Core::ERROR_NONE) {
+                SYSLOG(Logging::Notification, (_T("COM-RPC RESPONSE << Interface ID 0x%X, Method ID 0x%X (OK)"), message->Parameters().InterfaceId(), message->Parameters().MethodId()));
+            }
 
             if (result != Core::ERROR_NONE) {
 
