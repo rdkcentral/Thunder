@@ -321,7 +321,28 @@ namespace PluginHost {
     {
         _administrator.Register(sink, interface_id);
     }
+
     void Server::Service::Unregister(IPlugin::INotification * sink, const uint32_t interface_id)
+    {
+        _administrator.Unregister(sink, interface_id);
+    }
+
+    void Server::Service::Register(IPlugin::INotificationExtended* sink, const Core::OptionalType<string>& callsign)
+    {
+        _administrator.Register(sink, callsign);
+    }
+
+    void Server::Service::Unregister(IPlugin::INotificationExtended* sink, const Core::OptionalType<string>& callsign)
+    {
+        _administrator.Unregister(sink, callsign);
+    }
+
+    void Server::Service::Register(IPlugin::INotificationExtended* sink, const uint32_t interface_id)
+    {
+        _administrator.Register(sink, interface_id);
+    }
+
+    void Server::Service::Unregister(IPlugin::INotificationExtended* sink, const uint32_t interface_id)
     {
         _administrator.Unregister(sink, interface_id);
     }
@@ -651,6 +672,7 @@ namespace PluginHost {
         // Both branches are reachable when HIBERNATE_SUPPORT_ENABLED is defined.
         if (result == Core::ERROR_NONE) {
             if (sm._parent.State() == IShell::state::HIBERNATED) {
+                sm._parent._administrator.Hibernated(sm._parent.Callsign(), &sm._parent);
                 SYSLOG(Logging::Startup, ("Hibernated plugin [%s]:[%s]", sm._parent.ClassName().c_str(), sm._parent.Callsign().c_str()));
                 sm._parent.Unlock();
                 sm._callback(IShell::HIBERNATED);
