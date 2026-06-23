@@ -168,6 +168,13 @@ namespace PluginHost {
                 : Core::WorkerPool(threadCount, stackSize, queueSize, &_dispatch, this, lowPriorityThreadCount, mediumPriorityThreadCount)
                 , _dispatch()
             {
+                SYSLOG(Logging::Startup, (_T("<PID:%d>: WorkerPool config: created threads=%d, queue size=%u, stack size=%u, low priority limit=%d, medium priority limit=%d"),
+                    Core::ProcessInfo().Id(),
+                    threadCount,
+                    queueSize,
+                    stackSize,
+                    lowPriorityThreadCount,
+                    mediumPriorityThreadCount));
                 Run();
             }
             ~WorkerPoolImplementation() override = default;
