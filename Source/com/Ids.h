@@ -71,6 +71,7 @@ namespace RPC {
         ID_COMPOSIT_PLUGIN                         = (ID_OFFSET_INTERNAL + 0x003B),
         ID_COMPOSIT_PLUGIN_CALLBACK                = (ID_OFFSET_INTERNAL + 0x003C),
         ID_DISPATCHER_CALLBACK                     = (ID_OFFSET_INTERNAL + 0x003D),
+        ID_PLUGIN_NOTIFICATION_EXTENDED            = (ID_OFFSET_INTERNAL + 0x003E),
 
         ID_SHELL                                   = (ID_OFFSET_INTERNAL + 0x0040),
         ID_SHELL_COMLINK                           = (ID_OFFSET_INTERNAL + 0x0041),
