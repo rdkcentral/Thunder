@@ -130,7 +130,7 @@
 			<SDLCheck>true</SDLCheck>
 			<PreprocessorDefinitions>__CORE_MESSAGING__;_CRT_SECURE_NO_WARNINGS;NDEBUG;COMMON_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
 			<ConformanceMode>true</ConformanceMode>
-			<AdditionalIncludeDirectories>.;..\plugins;$(FrameworkPath);$(WindowsPath);$(WindowsPath)zlib;$(FrameworkPath)extensions</AdditionalIncludeDirectories>
+			<AdditionalIncludeDirectories>.;..\plugins;$(FrameworkPath);$(WindowsPath);$(WindowsPath)zlib;$(FrameworkPath)extras</AdditionalIncludeDirectories>
 			<UseStandardPreprocessor>true</UseStandardPreprocessor>
 		</ClCompile>
 		<Link>
@@ -151,7 +151,7 @@
 			<SDLCheck>true</SDLCheck>
 			<PreprocessorDefinitions>__CORE_MESSAGING__;_CRT_SECURE_NO_WARNINGS;WIN32;_DEBUG;COMMON_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
 			<ConformanceMode>true</ConformanceMode>
-			<AdditionalIncludeDirectories>.;..\plugins;$(FrameworkPath);$(WindowsPath);$(WindowsPath)zlib;$(FrameworkPath)extensions</AdditionalIncludeDirectories>
+			<AdditionalIncludeDirectories>.;..\plugins;$(FrameworkPath);$(WindowsPath);$(WindowsPath)zlib;$(FrameworkPath)extras</AdditionalIncludeDirectories>
 			<UseStandardPreprocessor>true</UseStandardPreprocessor>
 		</ClCompile>
 		<Link>
@@ -170,7 +170,7 @@
 			<SDLCheck>true</SDLCheck>
 			<PreprocessorDefinitions>__CORE_MESSAGING__;_CRT_SECURE_NO_WARNINGS;_DEBUG;COMMON_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
 			<ConformanceMode>true</ConformanceMode>
-			<AdditionalIncludeDirectories>.;..\plugins;$(FrameworkPath);$(WindowsPath);$(WindowsPath)zlib;$(FrameworkPath)extensions</AdditionalIncludeDirectories>
+			<AdditionalIncludeDirectories>.;..\plugins;$(FrameworkPath);$(WindowsPath);$(WindowsPath)zlib;$(FrameworkPath)extras</AdditionalIncludeDirectories>
 			<UseStandardPreprocessor>true</UseStandardPreprocessor>
 		</ClCompile>
 		<Link>
@@ -191,7 +191,7 @@
 			<SDLCheck>true</SDLCheck>
 			<PreprocessorDefinitions>__CORE_MESSAGING__;_CRT_SECURE_NO_WARNINGS;WIN32;NDEBUG;COMMON_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
 			<ConformanceMode>true</ConformanceMode>
-			<AdditionalIncludeDirectories>.;..\plugins;$(FrameworkPath);$(WindowsPath);$(WindowsPath)zlib;$(FrameworkPath)extensions</AdditionalIncludeDirectories>
+			<AdditionalIncludeDirectories>.;..\plugins;$(FrameworkPath);$(WindowsPath);$(WindowsPath)zlib;$(FrameworkPath)extras</AdditionalIncludeDirectories>
 			<UseStandardPreprocessor>true</UseStandardPreprocessor>
 		</ClCompile>
 		<Link>

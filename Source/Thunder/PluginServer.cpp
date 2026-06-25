@@ -29,7 +29,7 @@
 #endif
 
 #ifdef HIBERNATE_SUPPORT_ENABLED
-#include "../extensions/hibernate/hibernate.h"
+#include "../extras/hibernate/hibernate.h"
 #endif
 
 namespace Thunder {
