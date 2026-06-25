@@ -31,6 +31,16 @@
     <ClCompile Include="Module.cpp" />
     <ClCompile Include="WarningReportingUnit.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\core\core.vcxproj">
+      <Project>{0936A7B8-E995-452D-8062-CA9311854018}</Project>
+      <LinkLibraryDependencies>true</LinkLibraryDependencies>
+    </ProjectReference>
+    <ProjectReference Include="..\..\messaging\messaging.vcxproj">
+      <Project>{68388CCB-365D-443A-A435-2F1940790836}</Project>
+      <LinkLibraryDependencies>true</LinkLibraryDependencies>
+    </ProjectReference>
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
     <ProjectGuid>{414DC2D4-2C59-4D15-A169-A34460E5CE48}</ProjectGuid>
