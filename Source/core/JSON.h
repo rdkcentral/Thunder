@@ -21,6 +21,7 @@
 #define __JSON_H
 
 #include <map>
+#include <syslog.h>
 #include <vector>
 
 #include "Enumerate.h"
@@ -127,7 +128,7 @@ namespace Core {
                 uint32_t handled = 0;
                 uint32_t size    = static_cast<uint32_t>(text.length());
 
-                TRACE_L1("JSON FromString: input length=%u, text=%s", size, text.c_str());
+                SYSLOG(Logging::Notification, (_T("JSON FromString: input length=%u, text=%s"), size, text.c_str()));
 
                 realObject.Clear();
 
@@ -142,12 +143,12 @@ namespace Core {
                     DEBUG_VARIABLE(loaded);
 
                     if (error.IsSet() == true) {
-                        TRACE_L1("JSON FromString: Deserialize error at handled=%u, loaded=%u, offset=%u, payload=%u, error=%s",
-                               handled, loaded, offset, payload, ErrorDisplayMessage(error.Value()).c_str());
+                        SYSLOG(Logging::Error, (_T("JSON FromString: Deserialize error at handled=%u, loaded=%u, offset=%u, payload=%u, error=%s"),
+                               handled, loaded, offset, payload, ErrorDisplayMessage(error.Value()).c_str()));
                     }
 
                     if (loaded == 0) {
-                        TRACE_L1("JSON FromString: Deserialize returned 0 bytes at handled=%u, offset=%u, size=%u", handled, offset, size);
+                        SYSLOG(Logging::Error, (_T("JSON FromString: Deserialize returned 0 bytes at handled=%u, offset=%u, size=%u"), handled, offset, size));
                         break;
                     }
                     handled += loaded;
@@ -176,14 +177,14 @@ namespace Core {
                 }
 
                 if (((offset != 0) || (handled < size)) && (error.IsSet() == false)) {
-                    TRACE_L1("JSON FromString: Malformed JSON detected - offset=%u, handled=%u, size=%u, remaining='%s'",
-                           offset, handled, size, (handled < size) ? text.c_str() + handled : "");
+                    SYSLOG(Logging::Error, (_T("JSON FromString: Malformed JSON detected - offset=%u, handled=%u, size=%u, remaining='%s'"),
+                           offset, handled, size, (handled < size) ? text.c_str() + handled : ""));
                     error = Error{ "Malformed JSON. Missing closing quotes or brackets" };
                     realObject.Clear();
                 }
 
                 if (error.IsSet() == true) {
-                    TRACE_L1("JSON FromString: Parsing failed - %s, input was: %s", ErrorDisplayMessage(error.Value()).c_str(), text.c_str());
+                    SYSLOG(Logging::Error, (_T("JSON FromString: Parsing failed - %s, input was: %s"), ErrorDisplayMessage(error.Value()).c_str(), text.c_str()));
                     TRACE_L1("Parsing failed: %s", ErrorDisplayMessage(error.Value()).c_str());
                     realObject.Clear();
                 }
@@ -198,14 +199,14 @@ namespace Core {
 
             inline bool FromString(const string& text)
             {
-                TRACE_L1("JSON FromString input: %s", text.c_str());
+                SYSLOG(Logging::Notification, (_T("JSON FromString input: %s"), text.c_str()));
                 Core::OptionalType<Error> error;
                 return FromString(text, error);
             }
 
             inline bool FromString(const string& text, Core::OptionalType<Error>& error)
             {
-                TRACE_L1("JSON FromString input: %s", text.c_str());
+                SYSLOG(Logging::Notification, (_T("JSON FromString input: %s"), text.c_str()));
                 return (Core::JSON::IElement::FromString(text, *this, error));
             }
 
@@ -3924,8 +3925,8 @@ namespace Core {
             uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint32_t& offset, Core::OptionalType<Error>& error) override
             {
                 uint16_t loaded = 0;
-                TRACE_L1("JSON Container::Deserialize entered, offset=%u, maxLength=%u, first_char='%c'",
-                       offset, maxLength, (maxLength > 0 ? stream[0] : '?'));
+                SYSLOG(Logging::Notification, (_T("JSON Container::Deserialize entered, offset=%u, maxLength=%u, first_char='%c'"),
+                       offset, maxLength, (maxLength > 0 ? stream[0] : '?')));
                 // Run till we find opening bracket..
                 if (offset == FIND_MARKER) {
                     while ((loaded < maxLength) && (::isspace(static_cast<uint8_t>(stream[loaded])))) {
@@ -3947,7 +3948,7 @@ namespace Core {
                         _state = UNDEFINED;
                         break;
                     case ValueValidity::INVALID:
-                        TRACE_L1("JSON Container::Deserialize: Invalid value - expected 'null' or '{', got '%c'", stream[loaded]);
+                        SYSLOG(Logging::Error, (_T("JSON Container::Deserialize: Invalid value - expected 'null' or '{', got '%c'"), stream[loaded]));
                         error = Error{ "Invalid value.\"null\" or \"{\" expected." };
                         break;
                     case ValueValidity::VALID:
@@ -4050,23 +4051,23 @@ namespace Core {
                         offset = (offset - PARSE);
                         uint16_t skip = SKIP_AFTER;
                         if (_current.json == nullptr) {
-                            TRACE_L1("JSON Container::Deserialize: parsing field KEY at loaded=%u", loaded);
+                            SYSLOG(Logging::Notification, (_T("JSON Container::Deserialize: parsing field KEY at loaded=%u"), loaded));
                             loaded += static_cast<IElement&>(_fieldName).Deserialize(&(stream[loaded]), maxLength - loaded, offset, error);
                             if (_fieldName.IsQuoted() == false) {
-                                TRACE_L1("JSON Container::Deserialize: Key not quoted, key='%s'", _fieldName.Value().c_str());
+                                SYSLOG(Logging::Error, (_T("JSON Container::Deserialize: Key not quoted, key='%s'"), _fieldName.Value().c_str()));
                                 error = Error{ "Key must be properly quoted." };
                             }
                             if (error.IsSet() == true) {
-                                TRACE_L1("JSON Container::Deserialize: Error parsing KEY: %s", ErrorDisplayMessage(error.Value()).c_str());
+                                SYSLOG(Logging::Error, (_T("JSON Container::Deserialize: Error parsing KEY: %s"), ErrorDisplayMessage(error.Value()).c_str()));
                             }
                             skip = SKIP_AFTER_KEY;
                         } else {
-                            TRACE_L1("JSON Container::Deserialize: parsing field VALUE for key='%s' at loaded=%u",
-                                   _fieldName.Value().c_str(), loaded);
+                            SYSLOG(Logging::Notification, (_T("JSON Container::Deserialize: parsing field VALUE for key='%s' at loaded=%u"),
+                                   _fieldName.Value().c_str(), loaded));
                             loaded += _current.json->Deserialize(&(stream[loaded]), maxLength - loaded, offset, error);
                             if (error.IsSet() == true) {
-                                TRACE_L1("JSON Container::Deserialize: Error parsing VALUE for key='%s': %s",
-                                       _fieldName.Value().c_str(), ErrorDisplayMessage(error.Value()).c_str());
+                                SYSLOG(Logging::Error, (_T("JSON Container::Deserialize: Error parsing VALUE for key='%s': %s"),
+                                       _fieldName.Value().c_str(), ErrorDisplayMessage(error.Value()).c_str()));
                             }
                             if (offset == FIND_MARKER) {
                                 // It could be that the field name was used, as we are not interested in this field, if so,
