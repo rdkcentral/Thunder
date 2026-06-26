@@ -941,6 +941,10 @@ namespace PluginHost {
         {
             uint32_t result = Core::ERROR_UNKNOWN_KEY;
 
+            if (_callsign.find("NetworkManager") != string::npos) {
+                SYSLOG(Logging::Notification, (_T("JSONRPC::InternalNotify >> callsign=%s event=%s"), _callsign.c_str(), event.c_str()));
+            }
+
             _adminLock.Lock();
 
             ObserverMap::iterator index = _observers.find(event);
@@ -950,6 +954,10 @@ namespace PluginHost {
             }
 
             _adminLock.Unlock();
+
+            if (_callsign.find("NetworkManager") != string::npos) {
+                SYSLOG(Logging::Notification, (_T("JSONRPC::InternalNotify << callsign=%s event=%s done"), _callsign.c_str(), event.c_str()));
+            }
 
             return (result);
         }
