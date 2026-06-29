@@ -151,9 +151,9 @@ namespace RPC {
 
         if (index != _stubs.end()) {
             uint32_t methodId(message->Parameters().MethodId());
-            SYSLOG(Logging::Notification, (_T("COM-RPC HANDLE >> Channel 0x%" PRIxPTR " Interface ID 0x%X, Method ID 0x%X, Instance 0x%" PRIxPTR), channel->LinkId(), interfaceId, methodId, message->Parameters().Implementation()));
+            SYSLOG(Logging::Notification, (_T("COM-RPC HANDLE >> Channel 0x%" PRIxPTR " Interface ID 0x%X, Method ID 0x%X, Instance 0x%" PRIxPTR " [TID:%" PRIu64 "]"), channel->LinkId(), interfaceId, methodId, message->Parameters().Implementation(), static_cast<uint64_t>(pthread_self())));
             REPORT_DURATION_WARNING({ index->second->Handle(methodId, channel, message); },  WarningReporting::TooLongInvokeRPC, interfaceId, methodId);
-            SYSLOG(Logging::Notification, (_T("COM-RPC HANDLE << Channel 0x%" PRIxPTR " Interface ID 0x%X, Method ID 0x%X (done)"), channel->LinkId(), interfaceId, methodId));
+            SYSLOG(Logging::Notification, (_T("COM-RPC HANDLE << Channel 0x%" PRIxPTR " Interface ID 0x%X, Method ID 0x%X (done) [TID:%" PRIu64 "]"), channel->LinkId(), interfaceId, methodId, static_cast<uint64_t>(pthread_self())));
         } else {
             // Oops this is an unknown interface, Do not think this could happen.
             TRACE_L1("Unknown interface. %d", interfaceId);

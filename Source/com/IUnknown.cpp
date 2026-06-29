@@ -104,12 +104,12 @@ namespace ProxyStub {
         _adminLock.Unlock();
 
         if (channel.IsValid() == true) {
-            SYSLOG(Logging::Notification, (_T("COM-RPC REQUEST >> Channel 0x%" PRIxPTR " Interface ID 0x%X, Method ID 0x%X, Instance 0x%" PRIxPTR), channel->LinkId(), message->Parameters().InterfaceId(), message->Parameters().MethodId(), message->Parameters().Implementation()));
+            SYSLOG(Logging::Notification, (_T("COM-RPC REQUEST >> Channel 0x%" PRIxPTR " Interface ID 0x%X, Method ID 0x%X, Instance 0x%" PRIxPTR " [TID:%" PRIu64 "]"), channel->LinkId(), message->Parameters().InterfaceId(), message->Parameters().MethodId(), message->Parameters().Implementation(), static_cast<uint64_t>(pthread_self())));
 
             result = channel->Invoke(message, waitTime);
 
             if (result == Core::ERROR_NONE) {
-                SYSLOG(Logging::Notification, (_T("COM-RPC RESPONSE << Channel 0x%" PRIxPTR " Interface ID 0x%X, Method ID 0x%X (OK)"), channel->LinkId(), message->Parameters().InterfaceId(), message->Parameters().MethodId()));
+                SYSLOG(Logging::Notification, (_T("COM-RPC RESPONSE << Channel 0x%" PRIxPTR " Interface ID 0x%X, Method ID 0x%X (OK) [TID:%" PRIu64 "]"), channel->LinkId(), message->Parameters().InterfaceId(), message->Parameters().MethodId(), static_cast<uint64_t>(pthread_self())));
             }
 
             if (result != Core::ERROR_NONE) {
