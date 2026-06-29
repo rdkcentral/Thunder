@@ -470,6 +470,7 @@ namespace Core {
         EXPECT_EQ(1u, StreamJSONTestServer::ReceiveCount());
 
         ASSERT_EQ(::Thunder::Core::ERROR_NONE, server.Close(2000));
+        ::Thunder::Core::Singleton::Dispose();
     }
 
     // -------------------------------------------------------------------------
