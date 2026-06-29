@@ -135,7 +135,14 @@ namespace Tests {
                 flags |= MSG_NOSIGNAL;
 #endif
                 const ssize_t result = ::send(_fd, data + sent, chunk, flags);
-                if (result <= 0) {
+                if (result < 0) {
+                    if (errno == EINTR) {
+                        continue;
+                    }
+                    Close();
+                    break;
+                }
+                if (result == 0) {
                     Close();
                     break;
                 }
