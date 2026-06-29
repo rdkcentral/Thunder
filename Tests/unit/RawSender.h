@@ -71,6 +71,7 @@ namespace Tests {
 
         // Opens a TCP connection to an IPv4 numeric address (e.g. "127.0.0.1"):port with TCP_NODELAY.
         // Returns true on success.
+        bool Open(const std::string& host, const uint16_t port)
         {
             Close();
 
