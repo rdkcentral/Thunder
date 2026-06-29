@@ -687,7 +687,7 @@ namespace PluginHost {
                 }
             }
             else {
-                result = Invoke(this, channelId, id, token, Core::JSONRPC::Message::FullMethod(method), parameters, response);
+                result = Invoke(this, channelId, id, token, method, parameters, response);
             }
 
             return (result);
