@@ -21,6 +21,9 @@
 #include <sys/utsname.h>
 #include <inttypes.h>
 #include <unistd.h>
+#include <cstdlib>
+#include <cerrno>
+
 #ifndef __APPLE__
 #include <sys/sysinfo.h>
 #endif
@@ -107,18 +110,19 @@ namespace Core {
         }
         return chipset;
     }
-    std::string GetCPUJiffies(std::string result) 
+    std::string GetCPUJiffies(std::string result)
     {
         std::stringstream iss(result);
 
         uint64_t jiffies = 0;
-        size_t* endPtr = nullptr;
-        iss >> result; // Skip first word
-        while (iss >> result)
-        {
+        iss >> result; // Skip first word ("cpu")
+        while (iss >> result) {
             if (result.empty() != true) {
-                uint64_t value = stol(result, endPtr);
-                if (endPtr == nullptr) {
+                const char* begin = result.c_str();
+                char* end = nullptr;
+                errno = 0;
+                const unsigned long long value = ::strtoull(begin, &end, 10);
+                if ((end != begin) && (*end == '\0') && (errno == 0)) {
                     jiffies += value; // FIXME: cross check do we need to use all fields to get jiffies or not
                     // https://titanwolf.org/Network/Articles/Article?AID=3d8450d1-470b-4533-bb5a-c46ded0215bb
                 }
@@ -126,7 +130,6 @@ namespace Core {
         }
 
         return std::to_string(jiffies);
-
     }
     std::string GetCPULoad(std::string result)
     {
@@ -134,13 +137,14 @@ namespace Core {
         std::stringstream iss(result);
 
         std::vector<float> usageData;
-        size_t* endPtr = nullptr;
 
-        while (iss >> result)
-        {
+        while (iss >> result) {
             if ((i % 2) == 1) {
-                float value = stof(result, endPtr);
-                if (endPtr == nullptr) {
+                const char* begin = result.c_str();
+                char* end = nullptr;
+                errno = 0;
+                const float value = ::strtof(begin, &end);
+                if ((end != begin) && (*end == '\0') && (errno == 0)) {
                     usageData.push_back(value);
                 }
             }
