@@ -115,8 +115,8 @@ namespace Tests {
         // Sends data in chunks of chunkSize bytes with delayUs microseconds between
         // each chunk.
         //
-        //   chunkSize == 1          → byte-by-byte, one TCP segment per byte
-        //   chunkSize == UINT32_MAX → whole buffer in a single send() (default)
+        //   chunkSize == 1          → byte-by-byte, one send() call per byte
+        //   chunkSize == UINT32_MAX → attempt to send the full remaining buffer per loop iteration (default)
         //   delayUs   == 0          → no sleep between chunks
         //
         // Returns the total number of bytes sent.
