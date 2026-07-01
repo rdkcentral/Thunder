@@ -22,6 +22,14 @@
 #include "Module.h"
 #include "WebSocketLink.h"
 
+// RDK OpenTelemetry trace context propagation
+#if __has_include("rdk_otlp_instrumentation.h")
+#include "rdk_otlp_instrumentation.h"
+#define RDK_OTEL_THUNDER_ENABLED 1
+#else
+#define RDK_OTEL_THUNDER_ENABLED 0
+#endif
+
 namespace Thunder {
 
     namespace JSONRPC {
@@ -1028,6 +1036,25 @@ namespace Thunder {
                     }
                     ToMessage(parameters, message);
 
+#if RDK_OTEL_THUNDER_ENABLED
+                    // Auto-inject trace context into outgoing JSON-RPC params
+                    {
+                        const char* tp = rdk_otlp_get_current_traceparent();
+                        if (tp != nullptr) {
+                            string params = message->Parameters.Value();
+                            if (params.empty() || params == "null") {
+                                params = "{\"traceparent\":\"" + string(tp) + "\"}";
+                            } else {
+                                size_t pos = params.rfind('}');
+                                if (pos != string::npos) {
+                                    params.insert(pos, ",\"traceparent\":\"" + string(tp) + "\"");
+                                }
+                            }
+                            message->Parameters = params;
+                        }
+                    }
+#endif
+
                     _adminLock.Lock();
 
                     typename std::pair< typename PendingMap::iterator, bool> newElement = _pendingQueue.emplace(std::piecewise_construct,
@@ -1091,6 +1118,25 @@ namespace Thunder {
                         message->Designator = method;
                     }
                     ToMessage(parameters, message);
+
+#if RDK_OTEL_THUNDER_ENABLED
+                    // Auto-inject trace context into outgoing JSON-RPC params
+                    {
+                        const char* tp = rdk_otlp_get_current_traceparent();
+                        if (tp != nullptr) {
+                            string params = message->Parameters.Value();
+                            if (params.empty() || params == "null") {
+                                params = "{\"traceparent\":\"" + string(tp) + "\"}";
+                            } else {
+                                size_t pos = params.rfind('}');
+                                if (pos != string::npos) {
+                                    params.insert(pos, ",\"traceparent\":\"" + string(tp) + "\"");
+                                }
+                            }
+                            message->Parameters = params;
+                        }
+                    }
+#endif
 
                     _adminLock.Lock();
 
