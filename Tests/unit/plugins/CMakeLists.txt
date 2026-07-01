@@ -24,12 +24,11 @@ add_executable(${TEST_RUNNER_NAME}
 target_include_directories(${TEST_RUNNER_NAME}
     PRIVATE
         ${CMAKE_SOURCE_DIR}/Source
-        ${GTEST_INCLUDE_DIR}
 )
 
 target_link_libraries(${TEST_RUNNER_NAME}
-    ${GTEST_LIBRARY}
-    ${GTEST_MAIN_LIBRARY}
+    GTest::gtest
+    GTest::gtest_main
     ${CMAKE_THREAD_LIBS_INIT}
     WPEFrameworkCore
     WPEFrameworkPlugins
