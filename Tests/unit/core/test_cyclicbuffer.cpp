@@ -1080,6 +1080,7 @@ namespace Core {
 
         ::Thunder::Core::Singleton::Dispose();
     }
+#ifndef THUNDER_PROCESSCONTAINERS_ENABLED
     TEST(Core_CyclicBuffer, CheckSharePermissionsFromForkedProcessWithoutOverwrite)
     {
         SetSharePermissionsFromForkedProcessAndVerify(true);
@@ -1095,6 +1096,7 @@ namespace Core {
         SetSharePermissionsFromForkedProcessAndVerify(true, true, 56);
         SetSharePermissionsFromForkedProcessAndVerify(false, true, 56);
     }
+#endif // THUNDER_PROCESSCONTAINERS_ENABLED
     TEST(Core_CyclicBuffer, WithoutOverwriteUsingForksReversed)
     {
         constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 4, VARIABLE_IS_NOT_USED maxWaitTimeMs = 4000, maxInitTime = 2000;
