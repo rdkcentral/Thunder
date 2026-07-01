@@ -23,12 +23,12 @@
 #include "WebSocketLink.h"
 
 // RDK OpenTelemetry trace context propagation
-#if __has_include("rdk_otlp_instrumentation.h")
-#include "rdk_otlp_instrumentation.h"
-#define RDK_OTEL_THUNDER_ENABLED 1
-#else
-#define RDK_OTEL_THUNDER_ENABLED 0
-#endif
+//#if __has_include("rdk_otlp_instrumentation.h")
+//#include "rdk_otlp_instrumentation.h"
+//#define RDK_OTEL_THUNDER_ENABLED 1
+//#else
+//#define RDK_OTEL_THUNDER_ENABLED 0
+//#endif
 
 namespace WPEFramework {
 
