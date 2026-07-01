@@ -25,3 +25,4 @@ jobs:
         with:
           folder: site
           clean-exclude: pr-preview/
+          force: false

@@ -181,6 +181,8 @@ namespace Core {
         {
             return (_monitor != nullptr ? _monitor->Id() : 0);
         }
+        // coverity[MISSING_LOCK] - Intentional: diagnostic accessor returning a momentary
+        // snapshot of the resource count. Callers tolerate a slightly stale value.
         uint32_t Count() const 
         {
             return (static_cast<uint32_t>(_resources.size()));

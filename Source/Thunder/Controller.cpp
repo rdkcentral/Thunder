@@ -133,7 +133,8 @@ namespace Plugin {
             }
         }
 
-        _service->Register(&_systemInfoReport);
+        _service->Register(static_cast<PluginHost::IPlugin::INotification*>(&_systemInfoReport));
+        _service->Register(static_cast<PluginHost::IPlugin::INotificationExtended*>(&_systemInfoReport));
 
         if (config.Ui.Value() == true) {
             _service->EnableWebServer(_T("UI"), EMPTY_STRING);
@@ -180,7 +181,8 @@ namespace Plugin {
             _probe = nullptr;
         }
 
-        _service->Unregister(&_systemInfoReport);
+        _service->Unregister(static_cast<PluginHost::IPlugin::INotificationExtended*>(&_systemInfoReport));
+        _service->Unregister(static_cast<PluginHost::IPlugin::INotification*>(&_systemInfoReport));
 
         /* stop the file serving over http.... */
         service->DisableWebServer();
@@ -241,19 +243,28 @@ namespace Plugin {
         return (result);
     }
 
-    Core::hresult Controller::Persist()
+    Core::hresult Controller::Persist(const Core::OptionalType<string>& callsign)
     {
         ASSERT(_pluginServer != nullptr);
-
-        Core::hresult result = _pluginServer->Persist();
+        Core::hresult result = _pluginServer->Persist(callsign);
 
         // Normalise return code
         if (result != Core::ERROR_NONE) {
             result = Core::ERROR_GENERAL;
         }
-
         return result;
+    }
 
+    Core::hresult Controller::Restore(const Core::OptionalType<string>& callsign)
+    {
+        ASSERT(_pluginServer != nullptr);
+        Core::hresult result = _pluginServer->Restore(callsign);
+
+        // Normalise return code
+        if (result != Core::ERROR_NONE) {
+            result = Core::ERROR_GENERAL;
+        }
+        return result;
     }
 
     Core::hresult Controller::Delete(const string& path)
@@ -677,7 +688,7 @@ namespace Plugin {
                 }
             } else if (index.Current() == _T("Persist")) {
 
-                _pluginServer->Persist();
+                _pluginServer->Persist(Core::OptionalType<string>());
 
                 result->ErrorCode = Web::STATUS_OK;
                 result->Message = _T("Current configuration stored");
@@ -810,7 +821,7 @@ namespace Plugin {
         Core::hresult result = Core::ERROR_BAD_REQUEST;
 
         const size_t indexDelimiter = method.find_last_of(TCHAR('@'));
-        const size_t compositeDelimiter = method.find_last_of(TCHAR('/'), indexDelimiter);
+        const size_t compositeDelimiter = method.find_last_of(PluginHost::ICompositPlugin::Delimiter, indexDelimiter);
         string callsign;
 
         if ((compositeDelimiter == string::npos) && (((callsign = Core::JSONRPC::Message::Callsign(method), callsign.empty() == true) || (callsign == PluginHost::JSONRPC::Callsign())))) {
@@ -1073,7 +1084,7 @@ namespace Plugin {
                 PluginHost::IStateControl* stateControl = service->QueryInterface<PluginHost::IStateControl>();
 
                 if (stateControl == nullptr) {
-                    result = Core::ERROR_UNAVAILABLE;
+                    result = Core::ERROR_NOT_SUPPORTED;
                 }
                 else {
                     result = stateControl->Request(PluginHost::IStateControl::command::SUSPEND);
@@ -1103,7 +1114,7 @@ namespace Plugin {
                 PluginHost::IStateControl* stateControl = service->QueryInterface<PluginHost::IStateControl>();
 
                 if (stateControl == nullptr) {
-                    result = Core::ERROR_UNAVAILABLE;
+                    result = Core::ERROR_NOT_SUPPORTED;
                 }
                 else {
                     result = stateControl->Request(PluginHost::IStateControl::command::RESUME);
@@ -1142,10 +1153,11 @@ namespace Plugin {
 
     Core::hresult Controller::DiscoveryResults(IDiscovery::Data::IDiscoveryResultsIterator*& outResults) const
     {
-        std::list<IDiscovery::Data::DiscoveryResult> results;
+        std::vector<IDiscovery::Data::DiscoveryResult> results;
 
         if (_probe != nullptr) {
             Probe::Iterator index(_probe->Instances());
+            results.reserve(_probe->Instances().Count());
 
             while (index.Next() == true) {
                 IDiscovery::Data::DiscoveryResult result;
@@ -1162,8 +1174,9 @@ namespace Plugin {
 
         if (results.empty() == false) {
             using Iterator = IDiscovery::Data::IDiscoveryResultsIterator;
+            using IteratorImpl = RPC::IteratorType<Iterator, decltype(results)>;
 
-            outResults = Core::ServiceType<RPC::IteratorType<Iterator>>::Create<Iterator>(results);
+            outResults = Core::ServiceType<IteratorImpl>::Create<Iterator>(std::move(results));
             ASSERT(outResults != nullptr);
         }
         else {
@@ -1176,26 +1189,24 @@ namespace Plugin {
     Core::hresult Controller::Services(const Core::OptionalType<string>& callsign, IMetadata::Data::IServicesIterator*& outServices) const
     {
         Core::hresult result = Core::ERROR_UNAVAILABLE;
-        std::list<IMetadata::Data::Service> services;
+        std::vector<IMetadata::Data::Service> services;
 
         if (callsign.IsSet() == false) {
             auto it = _pluginServer->Services().Services();
 
             while (it.Next() == true) {
                 string info;
-                const string& callsign(it.Current()->Callsign());
+                const string& cs(it.Index());
 
                 if (it.Current().operator->()->Metadata(info) == Core::ERROR_NONE) {
                     PluginHost::Metadata::Service meta;
                     meta.FromString(info);
-                    IMetadata::Data::Service service(meta);
 
-                    // Make sure the list is sorted..
-                    std::list<IMetadata::Data::Service>::iterator index(services.begin());
-                    while ((index != services.end()) && (index->Callsign < callsign)) {
-                        index++;
+                    if (cs.find(PluginHost::ICompositPlugin::Delimiter) != string::npos) {
+                        meta.Callsign = cs;
                     }
-                    services.insert(index, service);
+
+                    services.push_back(IMetadata::Data::Service(meta));
                 }
             }
         }
@@ -1215,9 +1226,15 @@ namespace Plugin {
         }
 
         if (services.empty() == false) {
-            using Iterator = IMetadata::Data::IServicesIterator;
+            std::sort(services.begin(), services.end(),
+                [](const IMetadata::Data::Service& a, const IMetadata::Data::Service& b) {
+                    return a.Callsign < b.Callsign;
+                });
 
-            outServices = Core::ServiceType<RPC::IteratorType<Iterator>>::Create<Iterator>(services);
+            using Iterator = IMetadata::Data::IServicesIterator;
+            using IteratorImpl = RPC::IteratorType<Iterator, decltype(services)>;
+
+            outServices = Core::ServiceType<IteratorImpl>::Create<Iterator>(std::move(services));
             ASSERT(outServices != nullptr);
             result = Core::ERROR_NONE;
         }
@@ -1240,7 +1257,8 @@ namespace Plugin {
 
         if (callStackInfo.empty() == false) {
 
-            std::list<IMetadata::Data::CallStack> callstack;
+            std::vector<IMetadata::Data::CallStack> callstack;
+            callstack.reserve(callStackInfo.size());
 
             for (const Core::callstack_info& entry : callStackInfo) {
                 IMetadata::Data::CallStack cs;
@@ -1259,8 +1277,9 @@ namespace Plugin {
             }
 
             using Iterator = IMetadata::Data::ICallStackIterator;
+            using IteratorImpl = RPC::IteratorType<Iterator, decltype(callstack)>;
 
-            outCallStack = Core::ServiceType<RPC::IteratorType<Iterator>>::Create<Iterator>(callstack);
+            outCallStack = Core::ServiceType<IteratorImpl>::Create<Iterator>(std::move(callstack));
             ASSERT(outCallStack != nullptr);
 
             result = Core::ERROR_NONE;
@@ -1281,8 +1300,8 @@ namespace Plugin {
         _pluginServer->Metadata(meta);
 
         if (meta.Length() > 0) {
-            std::list<IMetadata::Data::Link> links;
-
+            std::vector<IMetadata::Data::Link> links;
+            links.reserve(meta.Length());
             auto it = meta.Elements();
 
             while (it.Next() == true) {
@@ -1302,8 +1321,9 @@ namespace Plugin {
             }
 
             using Iterator = IMetadata::Data::ILinksIterator;
+            using IteratorImpl = RPC::IteratorType<Iterator, decltype(links)>;
 
-            outLinks = Core::ServiceType<RPC::IteratorType<Iterator>>::Create<Iterator>(links);
+            outLinks = Core::ServiceType<IteratorImpl>::Create<Iterator>(std::move(links));
             ASSERT(outLinks != nullptr);
         }
         else {
@@ -1336,8 +1356,9 @@ namespace Plugin {
 
         if (proxySearch == true) {
             using Iterator = IMetadata::Data::IProxiesIterator;
+            using IteratorImpl = RPC::IteratorType<Iterator, decltype(collection)>;
 
-            outProxies = Core::ServiceType<RPC::IteratorType<Iterator>>::Create<Iterator>(std::move(collection));
+            outProxies = Core::ServiceType<IteratorImpl>::Create<Iterator>(std::move(collection));
             ASSERT(outProxies != nullptr);
             result = Core::ERROR_NONE;
         }
@@ -1352,8 +1373,8 @@ namespace Plugin {
 
         if (meta.ThreadPoolRuns.Length() > 0) {
 
-            std::list<IMetadata::Data::Thread> threads;
-
+            std::vector<IMetadata::Data::Thread> threads;
+            threads.reserve(meta.ThreadPoolRuns.Length());
             auto it = meta.ThreadPoolRuns.Elements();
 
             while (it.Next() == true) {
@@ -1362,8 +1383,9 @@ namespace Plugin {
             }
 
             using Iterator = IMetadata::Data::IThreadsIterator;
+            using IteratorImpl = RPC::IteratorType<Iterator, decltype(threads)>;
 
-            outThreads = Core::ServiceType<RPC::IteratorType<Iterator>>::Create<Iterator>(threads);
+            outThreads = Core::ServiceType<IteratorImpl>::Create<Iterator>(std::move(threads));
             ASSERT(outThreads != nullptr);
         }
         else {
@@ -1381,8 +1403,8 @@ namespace Plugin {
 
         if (meta.PendingRequests.Length() > 0) {
 
-            std::list<string> requests;
-
+            std::vector<string> requests;
+            requests.reserve(meta.PendingRequests.Length());
             auto it = meta.PendingRequests.Elements();
 
             while (it.Next() == true) {
@@ -1390,8 +1412,9 @@ namespace Plugin {
             }
 
             using Iterator = IMetadata::Data::IPendingRequestsIterator;
+            using IteratorImpl = RPC::IteratorType<Iterator, decltype(requests)>;
 
-            outRequests = Core::ServiceType<RPC::IteratorType<Iterator>>::Create<Iterator>(requests);
+            outRequests = Core::ServiceType<IteratorImpl>::Create<Iterator>(std::move(requests));
             ASSERT(outRequests != nullptr);
         }
         else {
@@ -1408,8 +1431,8 @@ namespace Plugin {
         PluginHost::ISubSystem* subSystem = _service->SubSystems();
 
         if (subSystem != nullptr) {
-            std::list<ISubsystems::Subsystem> subsystems;
-
+            std::vector<ISubsystems::Subsystem> subsystems;
+            subsystems.reserve(PluginHost::ISubSystem::END_LIST);
             std::underlying_type<PluginHost::ISubSystem::subsystem>::type i = 0;
 
             while (i < PluginHost::ISubSystem::END_LIST) {
@@ -1421,7 +1444,9 @@ namespace Plugin {
 
             subSystem->Release();
 
-            outSubsystems = Core::ServiceType<RPC::IteratorType<ISubsystems::ISubsystemsIterator>>::Create<ISubsystems::ISubsystemsIterator>(subsystems);
+            using IteratorImpl = RPC::IteratorType<ISubsystems::ISubsystemsIterator, decltype(subsystems)>;
+
+            outSubsystems = Core::ServiceType<IteratorImpl>::Create<ISubsystems::ISubsystemsIterator>(std::move(subsystems));
             ASSERT(outSubsystems != nullptr);
         }
         else {
@@ -1446,6 +1471,8 @@ namespace Plugin {
     }
     void Controller::NotifyStateChange(const string& callsign, const PluginHost::IShell::state& state, const PluginHost::IShell::reason& reason)
     {
+        ASSERT(callsign.empty() == false);
+
         _adminLock.Lock();
 
         for (const auto& entry : _lifeTimeObservers) {
@@ -1455,16 +1482,20 @@ namespace Plugin {
         }
 
         _adminLock.Unlock();
-        // also notify the JSON RPC listeners (if any)
-        Exchange::Controller::JLifeTime::Event::StateChange(*this, callsign, state, reason,
-            [&callsign](const string& designator) {
-                const size_t dot = designator.find('.');
-                return (dot == string::npos) || (designator.compare(0, dot, callsign) == 0);
-            });
+
+        // also notify the JSON RPC listeners (if any...)
+
+        // First notify observers that registered for all (notification will include the callsign)
+        Exchange::Controller::JLifeTime::Event::StateChange(*this, {}, callsign, state, reason);
+
+        // ... then the specific observers (notification will not inlcude a callsign)
+        Exchange::Controller::JLifeTime::Event::StateChange(*this, callsign, {}, state, reason);
     }
 
     void Controller::NotifyStateControlStateChange(const string& callsign, const Exchange::Controller::ILifeTime::state& state)
     {
+       ASSERT(callsign.empty() == false);
+
        _adminLock.Lock();
 
         for (const auto& entry : _lifeTimeObservers) {
@@ -1474,20 +1505,17 @@ namespace Plugin {
         }
 
         _adminLock.Unlock();
+
         // also notify the JSON RPC listeners (if any)
-        Exchange::Controller::JLifeTime::Event::StateControlStateChange(*this, callsign, state,
-            [&callsign](const string& designator) {
-                const size_t dot = designator.find('.');
-                return (dot == string::npos) || (designator.compare(0, dot, callsign) == 0);
-            });
+        Exchange::Controller::JLifeTime::Event::StateControlStateChange(*this, {}, callsign, state);
+        Exchange::Controller::JLifeTime::Event::StateControlStateChange(*this, callsign, {}, state);
     }
 
-    void Controller::SendInitialStateSnapshot(const string& client)
+    void Controller::SendInitialStateSnapshot(const string& client, const Core::OptionalType<string>& callsign)
     {
-        const size_t dot = client.find('.');
-
-        if (dot == string::npos) {
+        if (callsign.IsSet() == false) {
             _adminLock.Lock();
+
             ASSERT(_pluginServer != nullptr);
             auto it = _pluginServer->Services().Services();
 
@@ -1496,35 +1524,35 @@ namespace Plugin {
 
                 if (service->State() == PluginHost::IShell::state::ACTIVATED) {
                     const string serviceCallsign = service->Callsign();
-                    Exchange::Controller::JLifeTime::Event::StateChange(*this, serviceCallsign, service->State(), service->Reason(), client);
+
+                    Exchange::Controller::JLifeTime::Event::StateChange(*this, {}, serviceCallsign, service->State(), service->Reason(), client);
                 }
             }
+
             _adminLock.Unlock();
         }
-        else {
-            const string callsign(client.substr(0, dot));
-            Core::ProxyType<PluginHost::IShell> service = FromIdentifier(callsign);
+        else if (callsign.Value().empty() == false) {
+            Core::ProxyType<PluginHost::IShell> service = FromIdentifier(callsign.Value());
 
             if ((service.IsValid() == true) && (service->State() == PluginHost::IShell::state::ACTIVATED)) {
-                Exchange::Controller::JLifeTime::Event::StateChange(*this, service->Callsign(), service->State(), service->Reason(), client);
+                const string serviceCallsign = service->Callsign();
+
+                Exchange::Controller::JLifeTime::Event::StateChange(*this, serviceCallsign, {}, service->State(), service->Reason(), client);
             }
         }
     }
 
-    void Controller::SendInitialStateControlSnapshot(const string& client)
+    void Controller::SendInitialStateControlSnapshot(const string& client, const Core::OptionalType<string>& callsign)
     {
-        const size_t dot = client.find('.');
-
-        if (dot != string::npos) {
-            const string callsign(client.substr(0, dot));
-            Core::ProxyType<PluginHost::IShell> service = FromIdentifier(callsign);
+        if ((callsign.IsSet() == true) && (callsign.Value().empty() == false)) {
+            Core::ProxyType<PluginHost::IShell> service = FromIdentifier(callsign.Value());
 
             if (service.IsValid() == true) {
                 PluginHost::IStateControl* control = service->QueryInterface<PluginHost::IStateControl>();
 
                 if (control != nullptr) {
                     const Exchange::Controller::ILifeTime::state ltState = ToLifeTimeState(control->State());
-                    Exchange::Controller::JLifeTime::Event::StateControlStateChange(*this, service->Callsign(), ltState, client);
+                    Exchange::Controller::JLifeTime::Event::StateControlStateChange(*this, service->Callsign(), {}, ltState, client);
                     control->Release();
                 }
             }
@@ -1577,6 +1605,9 @@ namespace Plugin {
             extensions |= IMetadata::Data::BuildInfo::PROCESS_CONTAINERS;
         #endif
         
+        // coverity[DEADCODE] - extensions is set via #ifdef blocks above. If no optional
+        // features are enabled the guard is dead in that build configuration, but it is
+        // intentionally defensive for all other configurations.
         if (extensions != 0) {
             buildInfo.Extensions = static_cast<IMetadata::Data::BuildInfo::extensiontype>(extensions);
         }

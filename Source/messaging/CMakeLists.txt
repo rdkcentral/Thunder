@@ -36,6 +36,7 @@ set(PUBLIC_HEADERS
         MessageUnit.h
         TraceCategories.h
         TraceControl.h
+        TelemetryControl.h
         Control.h
         Logging.h
         LoggingCategories.h
@@ -55,7 +56,7 @@ target_link_libraries(${TARGET}
         )
 
 set_target_properties(${TARGET} PROPERTIES
-        CXX_STANDARD 11
+        CXX_STANDARD ${CXX_STD}
         CXX_STANDARD_REQUIRED YES
         FRAMEWORK FALSE
         PUBLIC_HEADER "${PUBLIC_HEADERS}" # specify the public headers

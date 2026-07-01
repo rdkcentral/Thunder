@@ -1014,16 +1014,18 @@ PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE)
         : _time()
     {
         // This is the seconds since 1970...
-        time_t epochTimestamp = static_cast<time_t>((time - OffsetTicksForEpoch) / MicroSecondsPerSecond);
+        microsecondsfromepoch epochTimestamp = (time - static_cast<microsecondsfromepoch>(OffsetTicksForEpoch)) / static_cast<microsecondsfromepoch>(MicroSecondsPerSecond);
 
-        _time.tv_sec = epochTimestamp; 
+        _time.tv_sec = static_cast<std::time_t>(epochTimestamp);
 
-        _time.tv_nsec = (time % MicroSecondsPerSecond) * NanoSecondsPerMicroSecond;
+        microsecondsfromepoch remainderMicroseconds = (time - static_cast<microsecondsfromepoch>(OffsetTicksForEpoch)) % static_cast<microsecondsfromepoch>(MicroSecondsPerSecond);
+
+        _time.tv_nsec = remainderMicroseconds * NanoSecondsPerMicroSecond;
     }
 
     Time::microsecondsfromepoch Time::Ticks() const
     {
-        return ((static_cast<microsecondsfromepoch>(_time.tv_sec) * MicroSecondsPerSecond ) + (static_cast<microsecondsfromepoch>(_time.tv_nsec)/NanoSecondsPerMicroSecond));
+        return ((static_cast<microsecondsfromepoch>(_time.tv_sec) * MicroSecondsPerSecond) + (static_cast<microsecondsfromepoch>(_time.tv_nsec)/NanoSecondsPerMicroSecond));
     }
 
     uint8_t Time::DayOfWeek() const
@@ -1129,7 +1131,8 @@ PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE)
     struct tm Time::TMHandle() const 
     {
         struct tm tmtime{};
-        gmtime_r(&_time.tv_sec, &tmtime);
+        VARIABLE_IS_NOT_USED struct tm* result = gmtime_r(&_time.tv_sec, &tmtime);
+        ASSERT(result != nullptr);
         return tmtime;
     }
 
@@ -1148,14 +1151,14 @@ PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE)
     Time& Time::Add(const uint32_t timeInMilliseconds)
     {
         // Calculate the new time !!
-        uint64_t newTime = Ticks() + static_cast<uint64_t>(timeInMilliseconds) * MilliSecondsPerSecond;
+        uint64_t newTime = Ticks() + (static_cast<uint64_t>(timeInMilliseconds) * static_cast<uint64_t>(MicroSecondsPerMilliSecond));
         return (operator=(Time(newTime)));
     }
 
     Time& Time::Sub(const uint32_t timeInMilliseconds)
     {
         // Calculate the new time !!
-        uint64_t newTime = Ticks() - static_cast<uint64_t>(timeInMilliseconds) * MilliSecondsPerSecond;
+        uint64_t newTime = Ticks() - (static_cast<uint64_t>(timeInMilliseconds) * static_cast<uint64_t>(MicroSecondsPerMilliSecond));
         return (operator=(Time(newTime)));
     }
 

@@ -24,6 +24,7 @@
 #endif
 
 #include <core/core.h>
+#include <filesystem>
 
 namespace Thunder {
 namespace Tests {
@@ -117,7 +118,7 @@ namespace Core {
         EXPECT_TRUE(dirOne.IsDirectory());
         dirOne.Reset();
         EXPECT_TRUE(dirOne.Next());
-        system("rm -rf home");
+        std::filesystem::remove_all("home");
     }
 
     TEST (test_file, directory_normalize_path)

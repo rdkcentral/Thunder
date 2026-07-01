@@ -22,6 +22,8 @@
 #include "JSON.h"
 #include "Module.h"
 #include "TypeTraits.h"
+#include "Errors.h"
+#include "Number.h"
 
 #include <cctype>
 #include <functional>
@@ -180,15 +182,28 @@ namespace Core {
                         Code = ApplicationErrorCodeBase - Core::ERROR_UNAVAILABLE;
                         Text = _T("The service is not active.");
                         break;
+                    case Core::ERROR_NOT_SUPPORTED:
+                        Code = ApplicationErrorCodeBase - Core::ERROR_NOT_SUPPORTED;
+                        Text = _T("The operation is not supported.");
+                        break;
                     default:
-                        if ((frameworkError & 0x80000000) == 0) {
-                            Code = ApplicationErrorCodeBase - static_cast<int32_t>(frameworkError);
-                        } else {
+                        if ((frameworkError & COM_ERROR) != 0) {
                             Code = ApplicationErrorCodeBase - static_cast<int32_t>(frameworkError & 0x7FFFFFFF) - 500;
+                        } else {
+#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+                            int24_t customcode = IsCustomCode(frameworkError);
+                            if (customcode != 0) {
+                                Code = (Core::Overflowed(customcode) == true ? 0 : static_cast<int32_t>(customcode));
+                            } else {
+#endif
+                                Code = ApplicationErrorCodeBase - static_cast<int32_t>(frameworkError);
+#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+                            }
+#endif
                         }
 
                         if (Text.IsSet() == false) {
-                            Text = Core::ErrorToString(frameworkError);
+                            Text = Core::ErrorToStringExtended(frameworkError);
                         }
                         break;
                     }
@@ -290,7 +305,7 @@ namespace Core {
                     out += _T("::");
                 }
 
-                out += method;
+                out += Formalize(method);
 
                 if (index.empty() == false) {
                     out += TCHAR('@');
@@ -314,7 +329,7 @@ namespace Core {
                     out += _T("::");
                 }
 
-                out += method;
+                out += Formalize(method);
 
                 return (out);
             }
@@ -327,7 +342,7 @@ namespace Core {
                     out += _T("::");
                 }
 
-                out += method;
+                out += Formalize(method);
 
                 return (out);
             }
@@ -387,10 +402,7 @@ namespace Core {
 
                 if (outMethod != nullptr) {
                     (*outMethod) = designator.substr(idxM, ((idxI == string::npos)? idxI : (idxI - idxM)));
-
-PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE) // Support pascal casing during the transition period
-                    ToCamelCase(*outMethod);
-POP_WARNING()
+                    Formalize(*outMethod);
                 }
             }
             static string Callsign(const string& designator)
@@ -408,6 +420,20 @@ POP_WARNING()
                     }
                 }
                 return (pos == string::npos ? EMPTY_STRING : designator.substr(0, pos));
+            }
+            static void Formalize(VARIABLE_IS_NOT_USED string& method)
+            {
+#ifdef __ENABLE_JSONRPC_FORGIVING_METHOD_CASE_HANDLING__                
+PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE) // Support pascal casing during the transition period
+                ToCamelCase(method);
+POP_WARNING()
+#endif
+            }
+            static string Formalize(const string& method)
+            {
+                string formalized = method;
+                Formalize(formalized);
+                return (formalized);
             }
             static string Method(const string& designator)
             {
@@ -427,9 +453,7 @@ POP_WARNING()
                     method = designator.substr(begin, end - begin);
                 }
 
-PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE) // Support pascal casing during the transition period
-                ToCamelCase(method);
-POP_WARNING()
+                Formalize(method);
 
                 return (method);
             }
@@ -916,18 +940,20 @@ POP_WARNING()
             {
                 return (EventIterator(_handlers));
             }
-            inline bool Copy(const Handler& copy, const string& method)
+            inline bool Copy(const Handler& copy, const string& methodName)
             {
                 bool copied = false;
 
-                HandlerMap::const_iterator index = copy._handlers.find(method);
+                string formalMethodName = Message::Formalize(methodName);
+
+                HandlerMap::const_iterator index = copy._handlers.find(formalMethodName);
 
                 if (index != copy._handlers.end()) {
                     copied = true;
                     const Entry& info(index->second);
 
                     _handlers.emplace(std::piecewise_construct,
-                        std::forward_as_tuple(method),
+                        std::forward_as_tuple(std::move(formalMethodName)),
                         std::forward_as_tuple(info));
                 }
 
@@ -937,7 +963,8 @@ POP_WARNING()
             // The interface is prepared.
             inline uint32_t Exists(const string& methodName) const
             {
-                return ((_handlers.find(methodName) != _handlers.end()) ? Core::ERROR_NONE : Core::ERROR_UNKNOWN_METHOD);
+                string formalMethodName = Message::Formalize(methodName);
+                return ((_handlers.find(formalMethodName) != _handlers.end()) ? Core::ERROR_NONE : Core::ERROR_UNKNOWN_METHOD);
             }
             bool HasVersionSupport(const uint8_t number) const
             {
@@ -1031,10 +1058,12 @@ POP_WARNING()
             }
             void Register(const string& methodName, const InvokeFunction& lambda)
             {
+                string formalMethodName = Message::Formalize(methodName);
+
                 // Due to versioning, we do allow to overwrite methods that have been registered.
                 // These are typically methods that are different from the preferred interface..
                 auto retval = _handlers.emplace(std::piecewise_construct,
-                                    std::make_tuple(methodName),
+                                    std::make_tuple(std::move(formalMethodName)),
                                     std::make_tuple(lambda));
 
                 if ( retval.second == false ) {
@@ -1043,11 +1072,13 @@ POP_WARNING()
             }
             void Register(const string& methodName, const CallbackFunction& lambda)
             {
+                string formalMethodName = Message::Formalize(methodName);
+
                 // Due to versioning, we do allow to overwrite methods that have been registered.
                 // These are typically methods that are different from the preferred interface..
 
                 auto retval = _handlers.emplace(std::piecewise_construct,
-                                    std::make_tuple(methodName),
+                                    std::make_tuple(std::move(formalMethodName)),
                                     std::make_tuple(lambda));
 
                 if ( retval.second == false ) {
@@ -1059,23 +1090,28 @@ POP_WARNING()
                 ASSERT(methodName.empty() == false);
                 ASSERT(primaryName.empty() == false);
 
-                auto retval = _handlers.find(primaryName);
+                string formalMethodName = Message::Formalize(methodName);
+                string formalPrimaryName = Message::Formalize(primaryName);
+
+                auto retval = _handlers.find(formalPrimaryName);
                 ASSERT(retval != _handlers.end());
 
-                auto retvalAlias = _handlers.find(methodName);
+                auto retvalAlias = _handlers.find(formalMethodName);
                 ASSERT(retvalAlias == _handlers.end());
 
                 // Register the handler under an alternative name.
 
                 if ((retval != _handlers.end()) && (retvalAlias == _handlers.end()))  {
                     _handlers.emplace(std::piecewise_construct,
-                        std::make_tuple(methodName),
+                        std::make_tuple(std::move(formalMethodName)),
                         std::make_tuple(retval->second));
                 }
             }
             void Unregister(const string& methodName)
             {
-                HandlerMap::iterator index = _handlers.find(methodName);
+                string formalMethodName = Message::Formalize(methodName);
+
+                HandlerMap::iterator index = _handlers.find(formalMethodName);
 
                 ASSERT((index != _handlers.end()) && _T("Do not unregister methods that are not registered!!!"));
 

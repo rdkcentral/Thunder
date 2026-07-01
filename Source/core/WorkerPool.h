@@ -314,10 +314,15 @@ namespace Core {
         WorkerPool(const WorkerPool&) = delete;
         WorkerPool& operator=(const WorkerPool&) = delete;
 
+        WorkerPool(const uint8_t threadCount, const uint32_t stackSize, const uint32_t queueSize, ThreadPool::IDispatcher* dispatcher, ThreadPool::ICallback* callback = nullptr)
+            : WorkerPool(threadCount, stackSize, queueSize, dispatcher, callback, threadCount, threadCount, 1)
+        {
+        }
+
 PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
-        WorkerPool(const uint8_t threadCount, const uint32_t stackSize, const uint32_t queueSize, ThreadPool::IDispatcher* dispatcher, ThreadPool::ICallback* callback = nullptr, const uint16_t lowPriorityThreadCount = 0, const uint16_t mediumPriorityThreadCount = 0)
+        WorkerPool(const uint8_t threadCount, const uint32_t stackSize, const uint32_t queueSize, ThreadPool::IDispatcher* dispatcher, ThreadPool::ICallback* callback, const uint16_t lowPriorityThreadCount, const uint16_t mediumPriorityThreadCount, const uint8_t additionalThreads = 0)
             : _scheduler(this, _timer)
-            , _threadPool(threadCount, stackSize, queueSize, dispatcher, &_scheduler, &_external, callback, lowPriorityThreadCount, mediumPriorityThreadCount)
+            , _threadPool(threadCount, stackSize, queueSize, dispatcher, &_scheduler, &_external, callback, lowPriorityThreadCount, mediumPriorityThreadCount, additionalThreads)
             , _external(_threadPool, dispatcher)
             , _timer(1024 * 1024, _T("WorkerPoolType::Timer"))
             , _metadata()
@@ -334,6 +339,7 @@ POP_WARNING()
         ~WorkerPool()
         {
             _threadPool.Stop();
+            _threadPool.WaitForStop();
             delete[] _metadata.Slot;
         }
 
@@ -379,10 +385,13 @@ POP_WARNING()
             uint32_t report = _threadPool.Revoke(job, waitTime);
 
             if (report == Core::ERROR_UNKNOWN_KEY) {
-                report = _external.Completed(job, waitTime);
-                
-                if ( (report != Core::ERROR_UNKNOWN_KEY) && (result == Core::ERROR_UNKNOWN_KEY) ) {
-                    result = report;
+               if (_joined == Thread::ThreadId()) {
+                    result = Core::ERROR_NONE;
+                } else {
+                    report = _external.Completed(job, waitTime);
+                    if ((report != Core::ERROR_UNKNOWN_KEY) && (result == Core::ERROR_UNKNOWN_KEY)) {
+                        result = report;
+                    }
                 }
             }
 
@@ -436,7 +445,10 @@ POP_WARNING()
             #endif
             _threadPool.Stop();
         }
-
+        bool WaitForStop(uint32_t timeout = Core::infinite)
+        {
+            return _threadPool.WaitForStop(timeout);
+        }
     private:
         Scheduler _scheduler;
         ThreadPool _threadPool;

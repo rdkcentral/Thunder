@@ -36,17 +36,8 @@ file(GLOB JSON_ENUM_SOURCES "${CMAKE_CURRENT_BINARY_DIR}/json/JsonEnum_*.cpp")
 file(GLOB JSON_DATA_HEADERS "${CMAKE_CURRENT_BINARY_DIR}/json/JsonData_*.h" "${CMAKE_CURRENT_BINARY_DIR}/json/json_*.h")
 list(APPEND JSON_CODE_HEADERS "${CMAKE_CURRENT_BINARY_DIR}/json/JStateController.h")
 
-add_library(${TARGET} SHARED
-        Channel.cpp
-        JSONRPC.cpp
-        Metadata.cpp
+add_library(${TARGET}
         Module.cpp
-        Service.cpp
-        Shell.cpp
-        StateControl.cpp
-        SubSystem.cpp
-        VirtualInput.cpp
-        System.cpp
         ${JSON_ENUM_SOURCES}
         )
 
@@ -56,39 +47,34 @@ add_library(${TARGET_PROXYSTUBS} SHARED
         Module.cpp
         )
 
+# ProxyStubs should always be a shared object, so define BUILD_SHARED_LIBS
+# to get the proper Module.cpp version  
+target_compile_definitions(${TARGET_PROXYSTUBS} PRIVATE BUILD_SHARED_LIBS)
+
 set(PUBLIC_HEADERS
-        Channel.h
-        Config.h
-        Configuration.h
         IPlugin.h
         IShell.h
         IController.h
         IStateControl.h
         IStateController.h
-        StateControl.h
         ISubSystem.h
         IDispatcher.h
-        SubSystem.h
-        JSONRPC.h
-        Metadata.h
         plugins.h
-        Request.h
-        Service.h
-        System.h
-        Types.h
-        VirtualInput.h
         IVirtualInput.h
+        Types.h
         Module.h
         )
 
 target_link_libraries(${TARGET}
         PUBLIC
           ${NAMESPACE}Core::${NAMESPACE}Core
+          ${NAMESPACE}COM::${NAMESPACE}COM
+        INTERFACE
+          ${NAMESPACE}Common
+        PRIVATE
           ${NAMESPACE}Cryptalgo::${NAMESPACE}Cryptalgo
           ${NAMESPACE}Messaging::${NAMESPACE}Messaging
-          ${NAMESPACE}COM::${NAMESPACE}COM
           ${NAMESPACE}WebSocket::${NAMESPACE}WebSocket
-        PRIVATE
           CompileSettingsDebug::CompileSettingsDebug
         )
 
@@ -114,6 +100,7 @@ target_link_libraries(${TARGET_PROXYSTUBS}
 target_include_directories( ${TARGET}
         PUBLIC
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../>
           $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/../>
           $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}>
         )
@@ -124,8 +111,10 @@ target_include_directories( ${TARGET_PROXYSTUBS}
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../>
         )
 
+target_compile_definitions(${TARGET} PRIVATE PLUGINS_EXPORTS)
+
 set_target_properties(${TARGET} PROPERTIES
-        CXX_STANDARD 11
+        CXX_STANDARD ${CXX_STD}
         CXX_STANDARD_REQUIRED YES
         FRAMEWORK FALSE
         PUBLIC_HEADER "${PUBLIC_HEADERS}" # specify the public headers
@@ -139,7 +128,7 @@ set_target_properties(${TARGET} PROPERTIES
 endif()
 
 set_target_properties(${TARGET_PROXYSTUBS} PROPERTIES
-        CXX_STANDARD 11
+        CXX_STANDARD ${CXX_STD}
         CXX_STANDARD_REQUIRED YES
         FRAMEWORK FALSE
         SOVERSION ${VERSION_MAJOR}
@@ -187,7 +176,7 @@ InstallPackageConfig(
         DESCRIPTION "Basic library to realize the glue between a proprietary plugin and the framework host.")
 
 InstallCMakeConfig(
-        EXTRA_DEPENDENCIES "ConfigGenerator"
+        EXTRA_DEPENDENCIES "ConfigGenerator;${NAMESPACE}Common"
         TARGETS ${TARGET})
 
 InstallCMakeConfig(TARGETS ${TARGET_PROXYSTUBS})

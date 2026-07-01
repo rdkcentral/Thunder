@@ -23,7 +23,6 @@
 #include "Portability.h"
 #include "Netlink.h"
 #include "NodeId.h"
-#include "Portability.h"
 #include "SocketPort.h"
 
 namespace Thunder {

@@ -23,6 +23,7 @@
 
 #include <arpa/inet.h>
 #include <assert.h>
+#include <errno.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <sys/socket.h>
@@ -79,7 +80,8 @@ static int Connect(const char* serverLocator, uint32_t timeoutMs)
         }
 
         addrUn.sun_family = PF_UNIX;
-        strncpy(addrUn.sun_path, serverLocator, sizeof(addrUn.sun_path));
+        strncpy(addrUn.sun_path, serverLocator, sizeof(addrUn.sun_path) - 1);
+        addrUn.sun_path[sizeof(addrUn.sun_path) - 1] = '\0';
         addr = (struct sockaddr*)&addrUn;
         addrSize = sizeof(struct sockaddr_un);
     } else {
@@ -90,11 +92,12 @@ static int Connect(const char* serverLocator, uint32_t timeoutMs)
             return -1;
         }
 
-        strncpy(host, serverLocator, 64);
+        strncpy(host, serverLocator, sizeof(host) - 1);
+        host[sizeof(host) - 1] = '\0';
         port = strstr(host, ":");
         if (port == NULL) {
             LOGERR("Invalid Server Ip Address: %s", host);
-            return false;
+            return -1;
         }
 
         // Add NULL delimer between host and port
@@ -125,7 +128,6 @@ static bool SendRcvCmd(const ServerRequest* cmd, ServerResponse* resp, uint32_t 
 {
     int cd;
     int ret;
-    struct sockaddr_in addr = { 0 };
     resp->respCode = MEMCR_ERROR;
 
     cd = Connect(serverLocator, timeoutMs);
@@ -136,14 +138,14 @@ static bool SendRcvCmd(const ServerRequest* cmd, ServerResponse* resp, uint32_t 
 
     ret = write(cd, cmd, sizeof(ServerRequest));
     if (ret != sizeof(ServerRequest)) {
-        LOGERR("Socket write failed: ret %d, %m", ret);
+        LOGERR("Socket write failed: ret %d, errno %d", ret, errno);
         close(cd);
         return false;
     }
 
     ret = read(cd, resp, sizeof(ServerResponse));
     if (ret != sizeof(ServerResponse)) {
-        LOGERR("Socket read failed: ret %d, %m", ret);
+        LOGERR("Socket read failed: ret %d, errno %d", ret, errno);
         resp->respCode = MEMCR_SOCKET_READ_ERROR;
         close(cd);
         return false;
@@ -154,7 +156,7 @@ static bool SendRcvCmd(const ServerRequest* cmd, ServerResponse* resp, uint32_t 
     return (resp->respCode == MEMCR_OK);
 }
 
-uint32_t HibernateProcess(const uint32_t timeout, const pid_t pid, const char data_dir[], const char volatile_dir[], void** storage)
+uint32_t HibernateProcess(const uint32_t timeout, const pid_t pid, const char data_dir[], const char volatile_dir[] __attribute__((unused)), void** storage __attribute__((unused)))
 {
     ServerRequest req = {
         .reqCode = MEMCR_CHECKPOINT,
@@ -174,7 +176,7 @@ uint32_t HibernateProcess(const uint32_t timeout, const pid_t pid, const char da
     }
 }
 
-uint32_t WakeupProcess(const uint32_t timeout, const pid_t pid, const char data_dir[], const char volatile_dir[], void** storage)
+uint32_t WakeupProcess(const uint32_t timeout, const pid_t pid, const char data_dir[], const char volatile_dir[] __attribute__((unused)), void** storage __attribute__((unused)))
 {
     ServerRequest req = {
         .reqCode = MEMCR_RESTORE,

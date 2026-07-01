@@ -53,7 +53,8 @@ namespace Core {
                 LOGGING             = 2,
                 REPORTING           = 3,
                 OPERATIONAL_STREAM  = 4,
-                ASSERT              = 5
+                ASSERT              = 5,
+                TELEMETRY           = 6
             };
 
 // @stop
@@ -99,7 +100,7 @@ namespace Core {
             }
 
             bool Default() const {
-                return (_type == type::TRACING ? false : true);
+                return ((_type == type::TRACING || _type == type::TELEMETRY) ? false : true);
             }
 
             bool Specific() const {
@@ -122,6 +123,18 @@ namespace Core {
             string _module;
         };
 
+        // Determines where a message type/category/module is routed.
+        // HANDLER - sent to the data buffer (handler, e.g. MessageControl)
+        // DIRECT  - printed immediately via DirectOutput (console/syslog)
+        // ALL     - sent to all destinations
+        // The default when no explicit override is configured is HANDLER in normal
+        // mode and DIRECT in DirectOutput mode (-f / flush flag).
+        enum OutputMode : uint8_t {
+            HANDLER = 0,
+            DIRECT  = 1,
+            ALL     = 2
+        };
+
         struct EXTERNAL IControl {
 
             struct EXTERNAL IHandler {
@@ -132,6 +145,8 @@ namespace Core {
             virtual ~IControl() = default;
             virtual void Enable(bool enable) = 0;
             virtual bool Enable() const = 0;
+            virtual void Routing(OutputMode routing) = 0;
+            virtual OutputMode Routing() const = 0;
             virtual void Destroy() = 0;
 
             virtual const Core::Messaging::Metadata& Metadata() const = 0;
@@ -389,13 +404,36 @@ namespace Core {
                 string _callstack;
         };
 
+           /**
+            * @brief Data-Carrier, extended information about the telemetry-type message.
+            *        No additional info for now, used for function overloading.
+            */
+            class EXTERNAL Telemetry : public MessageInfo {
+            public:
+                Telemetry(const Telemetry&) = default;
+                Telemetry& operator=(const Telemetry&) = default;
+                Telemetry(Telemetry&&) = default;
+                Telemetry& operator=(Telemetry&&) = default;
+
+                Telemetry()
+                    : MessageInfo()
+                {
+                }
+                Telemetry(const MessageInfo& messageInfo)
+                    : MessageInfo(messageInfo)
+                {
+                }
+                ~Telemetry() = default;
+            };
+
             public:
             virtual ~IStore() = default;
             static IStore* Instance();
             static void Set(IStore*);
 
             virtual bool Default(const Metadata& metadata) const = 0;
-            virtual void Push(const MessageInfo& messageInfo, const IEvent* message) = 0;
+            virtual OutputMode DefaultOutput(const Metadata& metadata) const = 0;
+            virtual void Push(const MessageInfo& messageInfo, const IEvent* message, OutputMode outputMode) = 0;
         };
 
     } // namespace Messaging

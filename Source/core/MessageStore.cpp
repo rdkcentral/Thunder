@@ -31,6 +31,7 @@ ENUM_CONVERSION_BEGIN(Core::Messaging::Metadata::type)
     { Core::Messaging::Metadata::type::REPORTING, _TXT("Reporting") },
     { Core::Messaging::Metadata::type::OPERATIONAL_STREAM, _TXT("OperationalStream") },
     { Core::Messaging::Metadata::type::ASSERT, _TXT("Assert") },
+    { Core::Messaging::Metadata::type::TELEMETRY, _TXT("Telemetry") },
 ENUM_CONVERSION_END(Core::Messaging::Metadata::type)
 
     namespace {
@@ -75,6 +76,7 @@ ENUM_CONVERSION_END(Core::Messaging::Metadata::type)
 
                 if (_storage != nullptr) {
                     control->Enable(_storage->Default(control->Metadata()));
+                    control->Routing(_storage->DefaultOutput(control->Metadata()));
                 }
 
                 _adminLock.Unlock();
@@ -151,7 +153,7 @@ namespace Core {
             if (_type != ASSERT) {
                 length += static_cast<uint16_t>(_category.size() + 1);
 
-                if (_type == TRACING) {
+                if ((_type == TRACING) || (_type == TELEMETRY)) {
                     length += static_cast<uint16_t>(_module.size() + 1);
                 }
             }
@@ -166,7 +168,7 @@ namespace Core {
                 if (_type != ASSERT) {
                     frameWriter.NullTerminatedText(_category);
 
-                    if (_type == TRACING) {
+                    if ((_type == TRACING) || (_type == TELEMETRY)) {
                         frameWriter.NullTerminatedText(_module);
                     }
                 }
@@ -195,7 +197,7 @@ namespace Core {
                     _category = frameReader.NullTerminatedText();
                     length += static_cast<uint16_t>(_category.size()) + 1;
 
-                    if (_type == TRACING) {
+                    if ((_type == TRACING) || (_type == TELEMETRY)) {
                         _module = frameReader.NullTerminatedText();
                         length += static_cast<uint16_t>(_module.size()) + 1;
                     }

@@ -103,6 +103,15 @@ This plugin implements the following interfaces:
 
 The following methods are provided by the Controller plugin:
 
+Built-in methods:
+
+| Method | Description |
+| :-------- | :-------- |
+| [versions](#method_versions) | Retrieves a list of JSON-RPC interfaces offered by this service |
+| [exists](#method_exists) | Checks if a JSON-RPC method or property exists |
+| [register](#method_register) | Registers for an asynchronous JSON-RPC notification |
+| [unregister](#method_unregister) | Unregisters from an asynchronous JSON-RPC notification |
+
 Controller System interface methods:
 
 | Method | Description |
@@ -134,6 +143,212 @@ Controller LifeTime interface methods:
 | [hibernate](#method_hibernate) | Hibernates a plugin |
 | [suspend](#method_suspend) | Suspends a plugin |
 | [resume](#method_resume) | Resumes a plugin |
+
+<a id="method_versions"></a>
+## *versions [<sup>method</sup>](#head_Methods)*
+
+Retrieves a list of JSON-RPC interfaces offered by this service.
+
+### Parameters
+
+This method takes no parameters.
+
+### Result
+
+| Name | Type | M/O | Description |
+| :-------- | :-------- | :-------- | :-------- |
+| result | array | mandatory | A list ofsinterfaces with their version numbers<br>*Array length must be at most 255 elements.* |
+| result[#] | object | mandatory | *...* |
+| result[#].name | string | mandatory | Name of the interface |
+| result[#].major | integer | mandatory | Major part of version number |
+| result[#].minor | integer | mandatory | Minor part of version number |
+| result[#].patch | integer | mandatory | Patch part of version version number |
+
+### Example
+
+#### Request
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 42,
+  "method": "Controller.1.versions"
+}
+```
+
+#### Response
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 42,
+  "result": [
+    {
+      "name": "JMyInterface",
+      "major": 1,
+      "minor": 0,
+      "patch": 0
+    }
+  ]
+}
+```
+
+<a id="method_exists"></a>
+## *exists [<sup>method</sup>](#head_Methods)*
+
+Checks if a JSON-RPC method or property exists.
+
+### Description
+
+This method will return *True* for the following methods/properties: *environment, discoveryresults, configuration, subsystems, services, links, proxies, framework, threads, pendingrequests, callstack, buildinfo, versions, exists, register, unregister, reboot, delete, clone, destroy, startdiscovery, persist, activate, deactivate, unavailable, hibernate, suspend, resume*.
+
+### Parameters
+
+| Name | Type | M/O | Description |
+| :-------- | :-------- | :-------- | :-------- |
+| params | object | mandatory | *...* |
+| params.method | string | mandatory | Name of the method or property to look up |
+
+### Result
+
+| Name | Type | M/O | Description |
+| :-------- | :-------- | :-------- | :-------- |
+| result | boolean | mandatory | Denotes if the method exists or not |
+
+### Example
+
+#### Request
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 42,
+  "method": "Controller.1.exists",
+  "params": {
+    "method": "methodName"
+  }
+}
+```
+
+#### Response
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 42,
+  "result": false
+}
+```
+
+<a id="method_register"></a>
+## *register [<sup>method</sup>](#head_Methods)*
+
+Registers for an asynchronous JSON-RPC notification.
+
+### Description
+
+This method supports the following event names: *[statechange](#notification_statechange), [statecontrolstatechange](#notification_statecontrolstatechange), [subsystemchange](#notification_subsystemchange), [all](#notification_all)*.
+
+### Parameters
+
+| Name | Type | M/O | Description |
+| :-------- | :-------- | :-------- | :-------- |
+| params | object | mandatory | *...* |
+| params.event | string | mandatory | Name of the notification to register for |
+| params.id | string | mandatory | Client identifier |
+
+### Result
+
+| Name | Type | M/O | Description |
+| :-------- | :-------- | :-------- | :-------- |
+| result | null | mandatory | Always null |
+
+### Errors
+
+| Message | Description |
+| :-------- | :-------- |
+| ```ERROR_FAILED_REGISTERED``` | Failed to register for the notification (e.g. already registered) |
+
+### Example
+
+#### Request
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 42,
+  "method": "Controller.1.register",
+  "params": {
+    "event": "eventName",
+    "id": "myapp"
+  }
+}
+```
+
+#### Response
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 42,
+  "result": null
+}
+```
+
+<a id="method_unregister"></a>
+## *unregister [<sup>method</sup>](#head_Methods)*
+
+Unregisters from an asynchronous JSON-RPC notification.
+
+### Description
+
+This method supports the following event names: *[statechange](#notification_statechange), [statecontrolstatechange](#notification_statecontrolstatechange), [subsystemchange](#notification_subsystemchange), [all](#notification_all)*.
+
+### Parameters
+
+| Name | Type | M/O | Description |
+| :-------- | :-------- | :-------- | :-------- |
+| params | object | mandatory | *...* |
+| params.event | string | mandatory | Name of the notification to register for |
+| params.id | string | mandatory | Client identifier |
+
+### Result
+
+| Name | Type | M/O | Description |
+| :-------- | :-------- | :-------- | :-------- |
+| result | null | mandatory | Always null |
+
+### Errors
+
+| Message | Description |
+| :-------- | :-------- |
+| ```ERROR_FAILED_UNREGISTERED``` | Failed to unregister from the notification (e.g. not yet registered) |
+
+### Example
+
+#### Request
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 42,
+  "method": "Controller.1.unregister",
+  "params": {
+    "event": "eventName",
+    "id": "myapp"
+  }
+}
+```
+
+#### Response
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 42,
+  "result": null
+}
+```
 
 <a id="method_reboot"></a>
 ## *reboot [<sup>method</sup>](#head_Methods)*
@@ -319,7 +534,7 @@ Starts SSDP network discovery.
 | Name | Type | M/O | Description |
 | :-------- | :-------- | :-------- | :-------- |
 | params | object | mandatory | *...* |
-| params?.ttl | integer | optional | Time to live, parameter for SSDP discovery (default: *1*)<br>*Value must be in range [1..255].* |
+| params?.ttl | integer | optional | Time to live, parameter for SSDP discovery<br>*Value must be in range [1..255].* |
 
 ### Result
 
@@ -717,7 +932,7 @@ Controller Metadata interface properties:
 | [services](#property_services) / [status](#property_services) | read-only | Services metadata |
 | [links](#property_links) | read-only | Connections list of Thunder connections |
 | [proxies](#property_proxies) | read-only | Proxies list |
-| [version](#property_version) | read-only | Framework version |
+| [framework](#property_framework) / [version](#property_framework) | read-only | Framework version |
 | [threads](#property_threads) | read-only | Workerpool threads |
 | [pendingrequests](#property_pendingrequests) | read-only | Pending requests |
 | [callstack](#property_callstack) | read-only | Thread callstack |
@@ -1134,12 +1349,14 @@ Provides access to the proxies list.
 }
 ```
 
-<a id="property_version"></a>
-## *version [<sup>property</sup>](#head_Properties)*
+<a id="property_framework"></a>
+## *framework [<sup>property</sup>](#head_Properties)*
 
 Provides access to the framework version.
 
 > This property is **read-only**.
+
+> ``version`` is an alternative name for this property. This name is **deprecated** and may be removed in the future. It is not recommended for use in new implementations.
 
 ### Value
 
@@ -1159,7 +1376,7 @@ Provides access to the framework version.
 {
   "jsonrpc": "2.0",
   "id": 42,
-  "method": "Controller.1.version"
+  "method": "Controller.1.framework"
 }
 ```
 
@@ -1408,14 +1625,24 @@ Controller Events interface events:
 
 Notifies of a plugin state change.
 
+### Description
+
+If registered for empty callsign, notifications for all services will be sent.
+
+> This notification may also be triggered by client registration.
+
+### Parameters
+
+> The *callsign* parameter is optional. If set it shall be passed as index to the ``register`` call, i.e. ``register@<callsign>``.
+
 ### Notification Parameters
 
 | Name | Type | M/O | Description |
 | :-------- | :-------- | :-------- | :-------- |
 | params | object | mandatory | *...* |
-| params.callsign | string | mandatory | Plugin callsign |
+| params?.callsign | string | optional | Plugin callsign |
 | params.state | string | mandatory | New state of the plugin (must be one of the following: *Activated, Deactivated, Unavailable*) |
-| params.reason | string | mandatory | Reason for state change (must be one of the following: *Automatic, Conditions, Failure, InitializationFailed, MemoryExceeded, Requested, Shutdown, Startup, WatchdogExpired*) |
+| params.reason | string | mandatory | Reason for state change (must be one of the following: *Automatic, Conditions, Failure, InitializationFailed, InstantiationFailed, MemoryExceeded, Requested, Shutdown, Startup, WatchdogExpired*) |
 
 ### Example
 
@@ -1425,7 +1652,7 @@ Notifies of a plugin state change.
 {
   "jsonrpc": "2.0",
   "id": 42,
-  "method": "Controller.1.register",
+  "method": "Controller.1.register@Messenger",
   "params": {
     "event": "statechange",
     "id": "myid"
@@ -1438,28 +1665,40 @@ Notifies of a plugin state change.
 ```json
 {
   "jsonrpc": "2.0",
-  "method": "myid.statechange",
+  "method": "myid.statechange@Messenger",
   "params": {
-    "callsign": "...",
+    "callsign": "Messenger",
     "state": "Deactivated",
     "reason": "Automatic"
   }
 }
 ```
 
-> The *client ID* parameter is passed within the notification designator, i.e. ``<client-id>.statechange``.
+> The *client ID* parameter is passed within the notification designator, i.e. ``<client-id>.statechange@<callsign>``.
+
+> The *callsign* parameter is optionally passed as index within the notification designator, i.e. ``<client-id>.statechange@<callsign>``.
 
 <a id="notification_statecontrolstatechange"></a>
 ## *statecontrolstatechange [<sup>notification</sup>](#head_Notifications)*
 
 Notifies of a plugin state change controlled by IStateControl.
 
+### Description
+
+If registered for empty callsign, notifications for all services will be sent.
+
+> This notification may also be triggered by client registration.
+
+### Parameters
+
+> The *callsign* parameter is optional. If set it shall be passed as index to the ``register`` call, i.e. ``register@<callsign>``.
+
 ### Notification Parameters
 
 | Name | Type | M/O | Description |
 | :-------- | :-------- | :-------- | :-------- |
 | params | object | mandatory | *...* |
-| params.callsign | string | mandatory | Plugin callsign |
+| params?.callsign | string | optional | Plugin callsign |
 | params.state | string | mandatory | New state of the plugin (must be one of the following: *Resumed, Suspended, Unknown*) |
 
 ### Example
@@ -1470,7 +1709,7 @@ Notifies of a plugin state change controlled by IStateControl.
 {
   "jsonrpc": "2.0",
   "id": 42,
-  "method": "Controller.1.register",
+  "method": "Controller.1.register@Messenger",
   "params": {
     "event": "statecontrolstatechange",
     "id": "myid"
@@ -1483,15 +1722,17 @@ Notifies of a plugin state change controlled by IStateControl.
 ```json
 {
   "jsonrpc": "2.0",
-  "method": "myid.statecontrolstatechange",
+  "method": "myid.statecontrolstatechange@Messenger",
   "params": {
-    "callsign": "...",
+    "callsign": "Messenger",
     "state": "Suspended"
   }
 }
 ```
 
-> The *client ID* parameter is passed within the notification designator, i.e. ``<client-id>.statecontrolstatechange``.
+> The *client ID* parameter is passed within the notification designator, i.e. ``<client-id>.statecontrolstatechange@<callsign>``.
+
+> The *callsign* parameter is optionally passed as index within the notification designator, i.e. ``<client-id>.statecontrolstatechange@<callsign>``.
 
 <a id="notification_subsystemchange"></a>
 ## *subsystemchange [<sup>notification</sup>](#head_Notifications)*

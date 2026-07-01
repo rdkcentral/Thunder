@@ -57,7 +57,7 @@ namespace Assertion {
         return (AssertionUnitProxy);
     }
 
-    void AssertionUnitProxy::AssertionEvent(Core::Messaging::IStore::Assert& metadata, const Core::Messaging::TextMessage& message)
+    void AssertionUnitProxy::AssertionEvent(Core::Messaging::IStore::Assert& metadata, const Core::Messaging::TextMessage& message, Core::Messaging::OutputMode outputMode)
     {
         _adminLock->Lock();
 
@@ -65,7 +65,7 @@ namespace Assertion {
 
         // print the ASSERT to stderr if handler is not set, possibly due to the messaging engine not being fully initialized yet
         if (_handler != nullptr) {
-            _handler->AssertionEvent(metadata, message);
+            _handler->AssertionEvent(metadata, message, outputMode);
             _adminLock->Unlock();
         }
         else {

@@ -37,9 +37,9 @@ namespace Assertion {
         AssertionUnitProxy::Instance().Handle(nullptr);
     }
 
-    void AssertionUnit::AssertionEvent(Core::Messaging::IStore::Assert& metadata, const Core::Messaging::TextMessage& message)
+    void AssertionUnit::AssertionEvent(Core::Messaging::IStore::Assert& metadata, const Core::Messaging::TextMessage& message, Core::Messaging::OutputMode outputMode)
     {
-        Thunder::Messaging::MessageUnit::Instance().Push(metadata, &message);
+        Thunder::Messaging::MessageUnit::Instance().Push(metadata, &message, outputMode);
     }
 }
 }

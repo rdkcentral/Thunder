@@ -427,6 +427,7 @@ namespace Web
 
         if (hashType.IsSet() && hashValue.IsSet()) {
             uint8_t data[64];
+            // coverity[INTEGER_OVERFLOW] - sizeof(data) is 64, well within uint16_t range.
             uint16_t length = sizeof(data);
 
             // It should be base64 encoded, convert it here

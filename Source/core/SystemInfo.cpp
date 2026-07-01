@@ -69,6 +69,7 @@ namespace Thunder {
 namespace Core {
 
     /* static */ SystemInfo SystemInfo::_systemInfo;
+    static CriticalSection _lock;
 
     static string ConstructUniqueId(
         const TCHAR DeviceId[],
@@ -161,12 +162,13 @@ namespace Core {
         struct sysinfo info;
         sysinfo(&info);
 
+        const uint64_t unit = (info.mem_unit != 0) ? info.mem_unit : 1;
         m_uptime = info.uptime;
-        m_totalram = info.totalram;
+        m_totalram = info.totalram * unit;
         m_pageSize = static_cast<uint32_t>(sysconf(_SC_PAGESIZE));
-        m_freeram = info.freeram;
-        m_totalswap = info.totalswap;
-        m_freeswap = info.freeswap;
+        m_freeram = info.freeram * unit;
+        m_totalswap = info.totalswap * unit;
+        m_freeswap = info.freeswap * unit;
         m_cpuloadavg[0]=info.loads[0];
         m_cpuloadavg[1]=info.loads[1];
         m_cpuloadavg[2]=info.loads[2];
@@ -315,11 +317,12 @@ namespace Core {
         struct sysinfo info;
         sysinfo(&info);
 
+        const uint64_t unit = (info.mem_unit != 0) ? info.mem_unit : 1;
         m_uptime = info.uptime;
-        m_freeram = info.freeram;
-        m_totalram = info.totalram;
-        m_totalswap = info.totalswap;
-        m_freeswap = info.freeswap;
+        m_freeram = info.freeram * unit;
+        m_totalram = info.totalram * unit;
+        m_totalswap = info.totalswap * unit;
+        m_freeswap = info.freeswap * unit;
         m_cpuloadavg[0] = info.loads[0];
         m_cpuloadavg[1] = info.loads[1];
         m_cpuloadavg[2] = info.loads[2];
@@ -366,6 +369,7 @@ namespace Core {
     /* static */ bool SystemInfo::GetEnvironment(const string& name, string& value)
     {
 #ifdef __LINUX__
+        SafeSyncType<CriticalSection> scopedLock(_lock);
         TCHAR* text = ::getenv(name.c_str());
 
         if (text != nullptr) {
@@ -377,17 +381,24 @@ namespace Core {
         return (text != nullptr);
 #else
         TCHAR buffer[1024];
-        DWORD bytes = GetEnvironmentVariable(name.c_str(), buffer, sizeof(buffer));
+        const DWORD capacity = sizeof(buffer) / sizeof(buffer[0]);
 
-        value = string(buffer, bytes);
+        DWORD characters = ::GetEnvironmentVariable(name.c_str(), buffer, capacity);
 
-        return (bytes > 0);
+        ASSERT(characters < capacity);
+        if (characters > 0) {
+            value.assign(buffer, characters);
+        } else {
+            value.clear();
+        }
+        return (characters > 0);
 #endif
     }
 
     /* static */ bool SystemInfo::SetEnvironment(const string& name, const TCHAR* value, const bool forced)
     {
         bool result = false;
+        SafeSyncType<CriticalSection> scopedLock(_lock);
 #ifdef __LINUX__
         if ((forced == true) || (::getenv(name.c_str()) == nullptr)) {
             if (value != nullptr) {

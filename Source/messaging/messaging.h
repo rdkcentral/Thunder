@@ -30,6 +30,7 @@
 #include "TraceCategories.h"
 #include "TraceControl.h"
 #include "TraceFactory.h"
+#include "TelemetryControl.h"
 #include "ConsoleStreamRedirect.h"
 #include "OperationalCategories.h"
 #include "AssertionUnit.h"

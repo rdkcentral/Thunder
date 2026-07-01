@@ -26,6 +26,7 @@
 
 // ---- Include local include files ----
 #include "Portability.h"
+#include "Errors.h"
 #include "StateTrigger.h"
 #include "Sync.h"
 #include "TypeTraits.h"
@@ -154,10 +155,14 @@ POP_WARNING()
             inline operator const IReferenceCounted* () const {
                 return (this);
             }
+            // coverity[PW.CONVERSION_FUNCTION_NOT_USABLE] - Intentional: ProxyObject exposes both the
+            // ref-counted wrapper and the underlying CONTEXT via implicit conversion. This is the
+            // proxy pattern by design; ambiguity in overload resolution is accepted.
             inline operator CONTEXT& ()
             {
                 return (*this);
             }
+            // coverity[PW.CONVERSION_FUNCTION_NOT_USABLE]
             inline operator const CONTEXT& () const
             {
                 return (*this);
@@ -1479,7 +1484,7 @@ POP_WARNING()
                 for (uint32_t index = 0; index < initialQueueSize; index++) {
                     Core::ProxyType<ContainerElement> newElement;
 
-                    Core::ProxyType<ContainerElement>::template CreateMove(newElement, 0, *this, std::forward<Args>(args)...);
+                    Core::ProxyType<ContainerElement>::CreateMove(newElement, 0, *this, std::forward<Args>(args)...);
                     _queue.emplace_back(std::move(newElement));
                     ASSERT(_queue.back().IsValid() == true);
                 }
@@ -1531,7 +1536,7 @@ POP_WARNING()
 
                     _lock.Unlock();
 
-                    Core::ProxyType<ContainerElement>::template CreateMove(element, 0, *this, std::forward<Args>(args)...);
+                    Core::ProxyType<ContainerElement>::CreateMove(element, 0, *this, std::forward<Args>(args)...);
 
                     result = Core::ProxyType<PROXYELEMENT>(element);
                 }
@@ -1556,10 +1561,13 @@ POP_WARNING()
 
                 return (result);
             }
+            // coverity[MISSING_LOCK] - Intentional: diagnostic accessors returning a momentary
+            // snapshot. Callers are expected to tolerate a slightly stale value.
             inline uint32_t CreatedElements() const
             {
                 return (_createdElements);
             }
+            // coverity[MISSING_LOCK]
             inline uint32_t QueuedElements() const
             {
                 return (static_cast<uint32_t>(_queue.size()));
@@ -1649,7 +1657,7 @@ POP_WARNING()
                 if (index == _map.end()) {
                     // Oops we do not have such an element, create it...
                     Core::ProxyType<ActualElement> newItem;
-                    Core::ProxyType<ActualElement>::template CreateMove(newItem, 0, *this, std::forward<Args>(args)...);
+                    Core::ProxyType<ActualElement>::CreateMove(newItem, 0, *this, std::forward<Args>(args)...);
 
                     if (newItem.IsValid() == true) {
 
@@ -1810,7 +1818,7 @@ POP_WARNING()
                 Core::ProxyType<ACTUALOBJECT> result;
 
                 Core::ProxyType<ActualElement> newItem;
-                Core::ProxyType<ActualElement>::template CreateMove(newItem, 0, *this, std::forward<Args>(args)...);
+                Core::ProxyType<ActualElement>::CreateMove(newItem, 0, *this, std::forward<Args>(args)...);
 
                 if (newItem.IsValid() == true) {
 

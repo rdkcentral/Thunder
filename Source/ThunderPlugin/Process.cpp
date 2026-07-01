@@ -111,16 +111,23 @@ POP_WARNING()
         WorkerPoolImplementation& operator=(const WorkerPoolImplementation&) = delete;
 
 PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
-        WorkerPoolImplementation(const uint8_t threads, const uint32_t stackSize, const uint32_t queueSize, const string& callsign)
-            : WorkerPool(threads - 1, stackSize, queueSize, &_dispatcher, this, (threads > 2 ? (threads - 1) : 1), (threads > 2 ? (threads - 1) : 1))
+        WorkerPoolImplementation(const uint8_t threads, const uint32_t stackSize, const uint32_t queueSize, const string& callsign, const uint8_t additionalThreads = 1)
+            : WorkerPool((threads - additionalThreads), stackSize, queueSize, &_dispatcher, this, (threads > 2 ? (threads - 1) : threads), (threads > 2 ? (threads - 1) : threads), additionalThreads)
             , _dispatcher(callsign)
             , _sink(*this)
         {
             Core::ServiceAdministrator::Instance().Callback(&_sink);
 
-            if (threads > 1) {
-                SYSLOG(Logging::Notification, ("Spawned: %d additional minions.", threads - 1));
-            }
+            SYSLOG(Logging::Startup, (_T("<PID:%d>: WorkerPool config: callsign=%s, created threads=%d, additional threads=%d, total thread capacity=%d, queue size=%u, stack size=%u, low priority limit=%d, medium priority limit=%d"),
+                Core::ProcessInfo().Id(),
+                callsign.c_str(),
+                static_cast<uint8_t>(threads - additionalThreads),
+                additionalThreads,
+                threads,
+                queueSize,
+                stackSize,
+                (threads > 2 ? (threads - 1) : threads),
+                (threads > 2 ? (threads - 1) : threads)));
         }
 POP_WARNING()
 
@@ -169,7 +176,7 @@ POP_WARNING()
         ConsoleOptions& operator= (const ConsoleOptions&&) = delete;
 
         ConsoleOptions(int argumentCount, TCHAR* arguments[])
-            : Core::Options(argumentCount, arguments, _T("h:l:c:C:r:p:s:d:a:m:i:u:g:t:e:E:x:V:v:P:S:f:"))
+            : Core::Options(argumentCount, arguments, _T("h:l:c:C:r:p:s:X:d:a:m:i:u:g:t:e:E:x:V:v:P:S:f:"))
             , Locator(nullptr)
             , ClassName(nullptr)
             , Callsign(nullptr)
@@ -179,6 +186,7 @@ POP_WARNING()
             , Exchange(0)
             , PersistentPath()
             , SystemPath()
+            , ExtensionPath()
             , DataPath()
             , VolatilePath()
             , AppPath()
@@ -204,6 +212,7 @@ POP_WARNING()
         uint32_t Exchange;
         string PersistentPath;
         string SystemPath;
+        string ExtensionPath;
         string DataPath;
         string VolatilePath;
         string AppPath;
@@ -249,6 +258,9 @@ POP_WARNING()
                 break;
             case 's':
                 SystemPath = Core::Directory::Normalize(Strip(argument));
+                break;
+            case 'X':
+                ExtensionPath = Core::Directory::Normalize(Strip(argument));
                 break;
             case 'd':
                 DataPath = Core::Directory::Normalize(Strip(argument));
@@ -352,10 +364,16 @@ POP_WARNING()
                     result = CheckInstance((Core::Directory::Normalize(options.SystemRootPath + options.SystemPath) + options.Locator), options);
 
                     if (result == nullptr) {
-                        result = CheckInstance((Core::Directory::Normalize(options.SystemRootPath + options.DataPath) + options.Locator), options);
+                        if (options.ExtensionPath.empty() == false) {
+                            result = CheckInstance((Core::Directory::Normalize(options.SystemRootPath + options.ExtensionPath) + options.Locator), options);
+                        }
 
                         if (result == nullptr) {
-                            result = CheckInstance((Core::Directory::Normalize(options.SystemRootPath + options.AppPath + _T("Plugins")) + options.Locator), options);
+                            result = CheckInstance((Core::Directory::Normalize(options.SystemRootPath + options.DataPath) + options.Locator), options);
+
+                            if (result == nullptr) {
+                                result = CheckInstance((Core::Directory::Normalize(options.SystemRootPath + options.AppPath + _T("Plugins")) + options.Locator), options);
+                            }
                         }
                     }
                 }
@@ -601,6 +619,7 @@ int main(int argc, char** argv)
         printf("        [-g <group>]\n");
         printf("        [-p <persistent path>]\n");
         printf("        [-s <system path>]\n");
+        printf("        [-X <extension path>]\n");
         printf("        [-d <data path>]\n");
         printf("        [-v <volatile path>]\n");
         printf("        [-f <linker_path>...\n");

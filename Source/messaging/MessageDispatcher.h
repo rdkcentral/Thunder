@@ -25,6 +25,44 @@ namespace Thunder {
 
 namespace Messaging {
 
+    struct MessageFilenames {
+        string doorBell;
+        string metaData;
+        string data;
+    };
+
+    /**
+     * @brief Prepare filenames for messaging components
+     *
+     * @param baseDirectory directory where those files are stored (this directory should already exist)
+     * @param identifier identifier of the instance
+     * @param instanceId number of the instance
+     * @param socketPort triggers the use of IP socket instead of a domain socket if the port value is not 0
+     * @return MessageFilenames containing doorBell, metaData, and data filenames
+     */
+    inline MessageFilenames PrepareFilenames(const string& baseDirectory, const string& identifier, const uint32_t instanceId, const uint16_t socketPort)
+    {
+        ASSERT(Core::File(baseDirectory).IsDirectory() && "Directory for message files does not exist");
+
+        string doorBellFilename;
+        string metaDataFilename;
+        string basePath = Core::Directory::Normalize(baseDirectory) + identifier;
+        string instancePath = basePath + '.' + Core::NumberType<uint32_t>(instanceId).Text();
+
+        if (socketPort != 0) {
+            doorBellFilename = _T("127.0.0.1:") + Core::NumberType<uint16_t>(socketPort).Text();
+            metaDataFilename = _T("127.0.0.1:") + Core::NumberType<uint16_t>(socketPort + instanceId + 1).Text();
+        }
+        else {
+            doorBellFilename = basePath + _T(".doorbell");
+            metaDataFilename = instancePath + _T(".metadata");
+        }
+
+        string dataFilename = instancePath + _T(".data");
+
+        return { std::move(doorBellFilename), std::move(metaDataFilename), std::move(dataFilename) };
+    }
+
     class EXTERNAL MessageDataBuffer {
     private:
         /**
@@ -107,27 +145,29 @@ namespace Messaging {
         MessageDataBuffer& operator=(const MessageDataBuffer&) = delete;
 
         /**
-         * @brief Construct a new Message Dispatcher object
+         * @brief Construct a new MessageDataBuffer object
          *
          * @param identifier name of the instance
          * @param instanceId number of the instance
          * @param baseDirectory where to place all the necessary files. This directory should exist before creating this class.
+         * @param dataSize size of the data buffer in bytes
          * @param socketPort triggers the use of using a IP socket in stead of a domain socket if the port value is not 0.
+         * @param initialize true for the server side (creates the buffer), false for the client side (opens existing)
          */
         MessageDataBuffer(const string& identifier, const uint32_t instanceId, const string& baseDirectory, const uint16_t dataSize, const uint16_t socketPort = 0, const bool initialize = false)
             : _filenames(PrepareFilenames(baseDirectory, identifier, instanceId, socketPort))
             , _dataLock()
             , _initialize(initialize)
             // clang-format off
-            , _dataBuffer(_filenames.doorBell, _filenames.data,  Core::File::USER_READ    |
-                                                                 Core::File::USER_WRITE   |
-                                                                 Core::File::USER_EXECUTE |
-                                                                 Core::File::GROUP_READ   |
-                                                                 Core::File::GROUP_WRITE  |
-                                                                 Core::File::OTHERS_READ  |
-                                                                 Core::File::OTHERS_WRITE |
-                                                                 Core::File::SHAREABLE,
-                                                                 (initialize == true ? dataSize : 0), true)
+            , _dataBuffer(_filenames.doorBell, _filenames.data, Core::File::USER_READ    |
+                                                                Core::File::USER_WRITE   |
+                                                                Core::File::USER_EXECUTE |
+                                                                Core::File::GROUP_READ   |
+                                                                Core::File::GROUP_WRITE  |
+                                                                Core::File::OTHERS_READ  |
+                                                                Core::File::OTHERS_WRITE |
+                                                                Core::File::SHAREABLE,
+                                                                (initialize == true ? dataSize : 0), true)
             // clang-format on
         {
             if (_dataBuffer.IsValid() == true) {
@@ -138,10 +178,10 @@ namespace Messaging {
             }
             else {
                 if (initialize == false) {
-                    TRACE_L1("MessageDispatcher instance %d (client) is not valid, probably because the server has not created a file yet", instanceId);
+                    TRACE_L1("MessageDataBuffer instance %d (client) is not valid, probably because the server has not created a file yet", instanceId);
                 }
                 else {
-                    TRACE_L1("MessageDispatcher instance %d (server) is not valid, possible issues when creating a file", instanceId);
+                    TRACE_L1("MessageDataBuffer instance %d (server) is not valid, possible issues when creating a file", instanceId);
                 }
             }
         }
@@ -222,7 +262,7 @@ namespace Messaging {
 
             if (_dataBuffer.IsValid() == true) {
                 const uint32_t length = _dataBuffer.Read(outValue, outLength, true);
-                
+
                 if (length > 0) {
                     if (length > outLength) {
                         TRACE_L1("Lost part of the message");
@@ -268,53 +308,8 @@ namespace Messaging {
             return (_dataBuffer.Open());
         }
 
-        const string& MetadataName() const {
-            return (_filenames.metaData);
-        }
-
     private:
-        struct Filenames {
-            string doorBell;
-            string metaData;
-            string data;
-        } _filenames;
-
-        /**
-        * @brief Prepare filenames for MessageDispatcher
-        *
-        * @param baseDirectory where are those filed stored. This directory should already exist.
-        * @param identifier identifer of the instance
-        * @param instanceId number of instance
-        * @param socketPort triggers the use of using a IP socket in stead of a domain socket if the port value is not 0.
-        * @return std::tuple<string, string, string>
-        *         0 - doorBellFilename
-        *         1 - dataFileName
-        *         2 - metaDataFilename
-        */
-        static Filenames PrepareFilenames(const string& baseDirectory, const string& identifier, const uint32_t instanceId, const uint16_t socketPort)
-        {
-            ASSERT(Core::File(baseDirectory).IsDirectory() && "Directory for message files does not exist");
-
-            string doorBellFilename;
-            string metaDataFilename;
-            string basePath = Core::Directory::Normalize(baseDirectory) + identifier;
-            string instancePath = basePath + '.' + Core::NumberType<uint32_t>(instanceId).Text();
-
-            if (socketPort != 0) {
-                doorBellFilename = _T("127.0.0.1:") + Core::NumberType<uint16_t>(socketPort).Text();
-                metaDataFilename = _T("127.0.0.1:") + Core::NumberType<uint16_t>(socketPort + instanceId + 1).Text();
-            }
-            else {
-                doorBellFilename = basePath + _T(".doorbell");
-                metaDataFilename = instancePath + _T(".metadata");
-            }
-
-            string dataFilename = instancePath + _T(".data");
-
-            return { doorBellFilename, metaDataFilename, dataFilename };
-        }
-
-    private:
+        MessageFilenames _filenames;
         mutable Core::CriticalSection _dataLock;
         bool _initialize;
         DataBuffer _dataBuffer;

@@ -20,7 +20,7 @@ on:
 
 jobs:
   Thunder_MacOS:
-    uses: rdkcentral/Thunder/.github/workflows/MacOS build template.yml@master
+    uses: ./.github/workflows/MacOS build template.yml
 
   ThunderInterfaces_MacOS:
     needs: Thunder_MacOS

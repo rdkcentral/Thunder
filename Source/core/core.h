@@ -101,13 +101,15 @@
 #include "Timer.h"
 #include "TokenizedStringList.h"
 #include "Trace.h"
-#include "TriState.h"
 #include "TypeTraits.h"
 #include "ValueRecorder.h"
 #include "XGetopt.h"
 #include "WorkerPool.h"
 #include "WarningReportingControl.h"
 #include "WarningReportingCategories.h"
+#include "Number.h"
+#include "ExtraNumberDefinitions.h"
+#include "Errors.h"
 
 #ifdef __WINDOWS__
 #pragma comment(lib, "core.lib")

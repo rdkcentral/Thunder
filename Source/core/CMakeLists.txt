@@ -58,6 +58,7 @@ add_library(${TARGET}
         WorkerPool.cpp
         XGetopt.cpp
         ResourceMonitor.cpp
+        Errors.cpp
         )
 
 #TODO: Remove all non public headers from this list,
@@ -140,7 +141,6 @@ set(PUBLIC_HEADERS
         Time.h
         Timer.h
         Trace.h
-        TriState.h
         TypeTraits.h
         ValueRecorder.h
         XGetopt.h
@@ -151,6 +151,9 @@ set(PUBLIC_HEADERS
         CallsignTLS.h
         TokenizedStringList.h
         MessageStore.h
+        ICustomErrorCode.h
+        Errors.h
+        ExtraNumberDefinitions.h
         ${CMAKE_CURRENT_BINARY_DIR}/generated/core/Version.h
         )
 
@@ -207,6 +210,11 @@ if (INSTANCE_ID_BITS)
     message(STATUS "COMRPC instanceid defined as ${INSTANCE_ID_BITS} bits.")
 endif()
 
+if (ENABLE_JSONRPC_FORGIVING_METHOD_CASE_HANDLING)
+    target_compile_definitions(${TARGET} PUBLIC __ENABLE_JSONRPC_FORGIVING_METHOD_CASE_HANDLING__=${ENABLE_JSONRPC_FORGIVING_METHOD_CASE_HANDLING})
+    message(STATUS "json rpc forgiving method handling enabled")
+endif()
+
 if(BLUETOOTH_SUPPORT)
     target_compile_definitions(${TARGET} PUBLIC __CORE_BLUETOOTH_SUPPORT__)
 
@@ -252,7 +260,7 @@ target_link_libraries(${TARGET}
         )
 
 set_target_properties(${TARGET} PROPERTIES
-          CXX_STANDARD 11
+          CXX_STANDARD ${CXX_STD}
           CXX_STANDARD_REQUIRED YES
           FRAMEWORK FALSE
           PUBLIC_HEADER "${PUBLIC_HEADERS}" # specify the public headers
@@ -301,7 +309,7 @@ if(SYSTEMD_FOUND)
         PRIVATE
         Systemd::Systemd
     )
-    SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -DSYSTEMD_FOUND")
+    target_compile_definitions(${TARGET} PRIVATE SYSTEMD_FOUND)
 endif()
 
 # ===========================================================================================
