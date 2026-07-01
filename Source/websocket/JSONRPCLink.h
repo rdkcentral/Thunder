@@ -23,12 +23,12 @@
 #include "WebSocketLink.h"
 
 // RDK OpenTelemetry trace context propagation
-#if __has_include("rdk_otlp_instrumentation.h")
-#include "rdk_otlp_instrumentation.h"
-#define RDK_OTEL_THUNDER_ENABLED 1
-#else
-#define RDK_OTEL_THUNDER_ENABLED 0
-#endif
+//#if __has_include("rdk_otlp_instrumentation.h")
+//#include "rdk_otlp_instrumentation.h"
+//#define RDK_OTEL_THUNDER_ENABLED 1
+//#else
+//#define RDK_OTEL_THUNDER_ENABLED 0
+//#endif
 
 namespace Thunder {
 
@@ -1039,7 +1039,7 @@ namespace Thunder {
 #if RDK_OTEL_THUNDER_ENABLED
                     // Auto-inject trace context into outgoing JSON-RPC params
                     {
-                        const char* tp = rdk_otlp_get_current_traceparent();
+                        const char* tp = "a6c77c681f5f42c6d468d9fa2c39c344";
                         if (tp != nullptr) {
                             string params = message->Parameters.Value();
                             if (params.empty() || params == "null") {
