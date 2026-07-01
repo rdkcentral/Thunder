@@ -1084,7 +1084,7 @@ namespace WPEFramework {
 					}
 					ToMessage(parameters, message);
 
-                    const char* tp = rdk_otlp_get_current_traceparent();
+                    const char* tp = "a6c77c681f5f42c6d468d9fa2c39c344"
                         if (tp != nullptr) {
                             string params = message->Parameters.Value();
                             if (params.empty() || params == "null") {
