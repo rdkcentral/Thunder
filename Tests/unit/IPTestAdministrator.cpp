@@ -63,7 +63,10 @@ IPTestAdministrator::IPTestAdministrator(Callback parent, Callback child, const 
         ASSERT(child !=  nullptr);
         child(*this);
 
-        std::exit(0); // Avoid multiple / repeated test runs
+        // Use _exit() rather than std::exit(): the child must not run C++ static
+        // destructors inherited from the parent, as their order relative to other
+        // statics is undefined
+        _exit(0);
     } else {
         ASSERT(parent !=  nullptr);
         parent(*this);
