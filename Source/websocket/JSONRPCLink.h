@@ -1036,7 +1036,7 @@ namespace Thunder {
                     }
                     ToMessage(parameters, message);
 
-#if RDK_OTEL_THUNDER_ENABLED
+//#if RDK_OTEL_THUNDER_ENABLED
                     // Auto-inject trace context into outgoing JSON-RPC params
                     {
                         const char* tp = "a6c77c681f5f42c6d468d9fa2c39c344";
@@ -1053,7 +1053,7 @@ namespace Thunder {
                             message->Parameters = params;
                         }
                     }
-#endif
+//#endif
 
                     _adminLock.Lock();
 
@@ -1119,7 +1119,7 @@ namespace Thunder {
                     }
                     ToMessage(parameters, message);
 
-#if RDK_OTEL_THUNDER_ENABLED
+//#if RDK_OTEL_THUNDER_ENABLED
                     // Auto-inject trace context into outgoing JSON-RPC params
                     {
                         const char* tp = rdk_otlp_get_current_traceparent();
@@ -1136,7 +1136,7 @@ namespace Thunder {
                             message->Parameters = params;
                         }
                     }
-#endif
+//#endif
 
                     _adminLock.Lock();
 
