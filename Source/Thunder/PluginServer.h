@@ -28,12 +28,12 @@
 #include <atomic>
 
 // RDK OpenTelemetry trace context propagation
-#if __has_include("rdk_otlp_instrumentation.h")
-#include "rdk_otlp_instrumentation.h"
-#define RDK_OTEL_THUNDER_ENABLED 1
-#else
-#define RDK_OTEL_THUNDER_ENABLED 0
-#endif
+//#if __has_include("rdk_otlp_instrumentation.h")
+//#include "rdk_otlp_instrumentation.h"
+//#define RDK_OTEL_THUNDER_ENABLED 1
+//#else
+//#define RDK_OTEL_THUNDER_ENABLED 0
+//#endif
 
 #ifndef HOSTING_COMPROCESS
 #error "Please define the name of the COM process!!!"
@@ -1097,7 +1097,7 @@ namespace PluginHost {
                     Core::InterlockedIncrement(_activity);
                     string output;
 
-#if RDK_OTEL_THUNDER_ENABLED
+//#if RDK_OTEL_THUNDER_ENABLED
                     // Extract traceparent from JSON-RPC params and create child span
                     bool _otelSpanStarted = false;
                     string cleanedParams = message.Parameters.Value();
@@ -1128,18 +1128,19 @@ namespace PluginHost {
                                 // If params became just "{}" after removal, that's fine
                                 // Start child span under the propagated trace
                                 string methodName = message.Designator.Value();
-                                rdk_otlp_start_child_from_traceparent(traceparent.c_str(), methodName.c_str());
+                                //rdk_otlp_start_child_from_traceparent(traceparent.c_str(), methodName.c_str());
+								// CHILD SPAN WILL BE STARTED HERE, MAYBE JUST PRINT SOME LINE TO CONFIRM CODE REACHES THIS PART. ACTUAL SPAN CREATION NEEDS NEW APIS IN WRAPPER 
                                 _otelSpanStarted = true;
                             }
                         }
                     }
                     uint32_t result = _jsonrpc->Invoke(channelId, message.Id.Value(), token, message.Designator.Value(), cleanedParams, output);
-                    if (_otelSpanStarted) {
-                        rdk_otlp_finish_child_span();
-                    }
-#else
-                    uint32_t result = _jsonrpc->Invoke(channelId, message.Id.Value(), token, message.Designator.Value(), message.Parameters.Value(), output);
-#endif
+                    //if (_otelSpanStarted) {
+                    //    rdk_otlp_finish_child_span();
+                    //}
+//#else
+//                    uint32_t result = _jsonrpc->Invoke(channelId, message.Id.Value(), token, message.Designator.Value(), message.Parameters.Value(), output);
+//#endif
 
                     if ( (result != static_cast<uint32_t>(~0)) && ( (message.Id.IsSet()) || (result != Core::ERROR_NONE) ) )  {
 
