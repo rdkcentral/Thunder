@@ -45,7 +45,7 @@ jobs:
         if [ "${{ matrix.architecture }}" = "32" ]; then
           PKGS="$PKGS zlib1g-dev:i386 libssl-dev:i386 libsbc-dev:i386 gcc-13-multilib g++-13-multilib"
         else
-          PKGS="$PKGS zlib1g-dev libssl-dev libsbc-dev"
+          PKGS="$PKGS zlib1g-dev libssl-dev libsbc-dev libgtest-dev"
         fi
         for attempt in {1..4}; do
           if sudo apt-get install -y --no-install-recommends $PKGS; then
@@ -169,6 +169,8 @@ jobs:
         -DPROCESSCONTAINERS=ON \
         -DPROCESSCONTAINERS_RUNC=ON \
         -DWARNING_REPORTING=ON \
+        -DENABLE_TEST_RUNTIME=ON \
+        -DBUILD_TESTS=ON \
         ${{steps.regexthunder.outputs.first_match}}
         cmake --build ${{matrix.build_type}}/build/Thunder --target install
 
@@ -182,3 +184,58 @@ jobs:
       with:
         name: Thunder-${{matrix.build_type}}${{matrix.architecture == '32' && '_x86' || ''}}-artifact
         path: ${{matrix.build_type}}${{matrix.architecture == '32' && '_x86' || ''}}.tar.gz
+
+# ----- Testing -----
+  Test:
+    needs: Thunder
+    runs-on: ubuntu-24.04
+
+    strategy:
+      matrix:
+        build_type: [Debug, Release, MinSizeRel]
+
+    env:
+      lib: LD_LIBRARY_PATH=${{github.workspace}}/${{matrix.build_type}}/install/usr/lib:$LD_LIBRARY_PATH
+      path: PATH=${{github.workspace}}/${{matrix.build_type}}/install/usr/bin:$PATH
+
+    name: Test - ${{matrix.build_type}}
+    steps:
+    - name: Install system dependencies
+      shell: bash
+      run: |
+        set -euo pipefail
+        export DEBIAN_FRONTEND=noninteractive
+        for attempt in {1..5}; do
+          if sudo apt-get update -o Acquire::Retries=5 -o Acquire::http::Timeout=30; then
+            break
+          fi
+          echo "apt-get update failed (attempt $attempt), retrying..."
+          sleep $((attempt*10))
+        done
+        for attempt in {1..4}; do
+          if sudo apt-get install -y --no-install-recommends libusb-1.0-0 zlib1g libssl3; then
+            break
+          fi
+          sudo apt-get clean
+          sleep $((attempt*15))
+        done
+
+    - name: Download Thunder artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: Thunder-${{matrix.build_type}}-artifact
+        path: ${{matrix.build_type}}
+
+    - name: Unpack files
+      run: |
+        tar -xvzf ${{matrix.build_type}}/${{matrix.build_type}}.tar.gz
+        rm ${{matrix.build_type}}/${{matrix.build_type}}.tar.gz
+
+    - name: Run IPTestAdministrator unit tests
+      run: ${{env.path}} ${{env.lib}} Thunder_test_tests
+
+    - name: Run core unit tests
+      run: ${{env.path}} ${{env.lib}} Thunder_test_core
+
+    - name: Run test framework smoke test
+      run: ${{env.path}} ${{env.lib}} thunder_test_runtime_smoke
