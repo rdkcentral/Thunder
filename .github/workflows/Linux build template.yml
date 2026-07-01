@@ -166,8 +166,7 @@ jobs:
         -DLOCALTRACER=ON \
         -DPERFORMANCE_MONITOR=ON \
         -DPRIVILEGEDREQUEST=ON \
-        ${{!(matrix.architecture == '64' && matrix.shared_libs == 'ON') && '-DPROCESSCONTAINERS=ON -DPROCESSCONTAINERS_RUNC=ON' || '-DENABLE_TEST_RUNTIME=ON -DBUILD_TESTS=ON'}} \
-        -DWARNING_REPORTING=ON \
+        ${{!(matrix.architecture == '64' && matrix.shared_libs == 'ON') && '-DPROCESSCONTAINERS=ON -DPROCESSCONTAINERS_RUNC=ON -DWARNING_REPORTING=ON' || '-DENABLE_TEST_RUNTIME=ON -DBUILD_TESTS=ON'}} \
         ${{steps.regexthunder.outputs.first_match}}
         cmake --build ${{matrix.build_type}}/build/Thunder --target install
 
