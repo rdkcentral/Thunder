@@ -59,7 +59,7 @@ jobs:
     - name: Download Thunder artifact
       uses: actions/download-artifact@v4
       with:
-        name: Thunder-${{matrix.build_type}}-artifact
+        name: Thunder-${{matrix.build_type}}-test-artifact
         path: ${{matrix.build_type}}
 
     - name: Unpack files
