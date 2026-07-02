@@ -287,23 +287,20 @@ namespace Core {
         auto proxy = ::Thunder::Core::ProxyType<Trackable>::Create(70);
         ASSERT_TRUE(proxy.IsValid());
 
-        // AddRef increments — object stays alive after proxy destruction
-        proxy.AddRef();
+        // Use Origin() to exercise AddRef/Release at the ProxyObject level
+        // without invalidating the ProxyType handle (ProxyType::Release()
+        // clears its internal pointer, making further use impossible).
+        ::Thunder::Core::ProxyObject<Trackable>* obj = proxy.Origin();
 
-        Trackable* raw = proxy.operator->();
-        ::Thunder::Core::ProxyType<Trackable> proxy2(proxy);
+        // refcount starts at 1 (held by proxy)
+        obj->AddRef();   // refcount: 1 → 2
+        obj->AddRef();   // refcount: 2 → 3
+        obj->Release();  // refcount: 3 → 2
+        obj->Release();  // refcount: 2 → 1
 
-        // Now 3 refs: proxy, proxy2, explicit AddRef
-
-        // Release the explicit AddRef via proxy
-        proxy.Release();
-
-        // proxy is now invalid (Release clears its internal pointer)
-        EXPECT_FALSE(proxy.IsValid());
-
-        // proxy2 still holds a reference, object should be alive
-        ASSERT_TRUE(proxy2.IsValid());
-        EXPECT_EQ(proxy2->Value(), 70);
+        // proxy still valid and holds the sole reference
+        ASSERT_TRUE(proxy.IsValid());
+        EXPECT_EQ(proxy->Value(), 70);
         EXPECT_EQ(g_destructed.load(), 0);
     }
 

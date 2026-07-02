@@ -229,10 +229,14 @@ namespace Core {
 
     TEST(Core_Library, LoadWithNullFilename)
     {
-        // Loading with nullptr opens global symbols (on Linux)
+        // Loading with nullptr: on Linux dlopen(nullptr) opens the main
+        // program handle and succeeds; on Windows LoadLibrary(nullptr) fails.
         ::Thunder::Core::Library lib(static_cast<const TCHAR*>(nullptr));
-        // On Linux, dlopen(nullptr) opens the main program handle — succeeds
+#ifdef __LINUX__
         EXPECT_TRUE(lib.IsLoaded());
+#else
+        EXPECT_FALSE(lib.IsLoaded());
+#endif
     }
 
     TEST(Core_Library, LoadFromFunctionAddress)

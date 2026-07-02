@@ -99,8 +99,20 @@ namespace Core {
     // level errors are communicated via the JSON-RPC Error object in the
     // response body, following the JSON-RPC 2.0 specification.
     // =========================================================================
+    // Base-from-member idiom: ensures factory members are fully constructed
+    // before WebLinkType's constructor receives them by reference.
+    // (C++ initializes base classes before members, so passing a member
+    //  by reference to a base constructor is undefined behavior.)
+    struct HTTPServerFactoryBase {
+    protected:
+        ::Thunder::Core::ProxyPoolType<Web::Request> _requestFactory;
+        ::Thunder::Core::ProxyPoolType<JSONRPCBody> _jsonrpcBodyFactory;
+        HTTPServerFactoryBase(uint32_t count) : _requestFactory(count), _jsonrpcBodyFactory(count) {}
+    };
+
     class JSONRPCHTTPServer
-        : public Web::WebLinkType<
+        : private HTTPServerFactoryBase
+        , public Web::WebLinkType<
               ::Thunder::Core::SocketStream,
               Web::Request,
               Web::Response,
@@ -124,9 +136,8 @@ namespace Core {
             const SOCKET& connector,
             const ::Thunder::Core::NodeId& remoteId,
             ::Thunder::Core::SocketServerType<JSONRPCHTTPServer>*)
-            : BaseClass(5, _requestFactory, false, connector, remoteId, 2048, 2048)
-            , _requestFactory(5)
-            , _jsonrpcBodyFactory(5)
+            : HTTPServerFactoryBase(5)
+            , BaseClass(5, _requestFactory, false, connector, remoteId, 2048, 2048)
             , _handler({ 1 })
         {
             // Register JSON-RPC methods
@@ -247,8 +258,6 @@ namespace Core {
         }
 
     private:
-        ::Thunder::Core::ProxyPoolType<Web::Request> _requestFactory;
-        ::Thunder::Core::ProxyPoolType<JSONRPCBody> _jsonrpcBodyFactory;
         ::Thunder::Core::JSONRPC::Handler _handler;
     };
 
@@ -266,8 +275,16 @@ namespace Core {
     //   - WaitForResponse() blocks until a response is available in the queue
     //     (with a configurable timeout to prevent test hangs)
     // =========================================================================
+    struct HTTPClientFactoryBase {
+    protected:
+        ::Thunder::Core::ProxyPoolType<Web::Response> _responseFactory;
+        ::Thunder::Core::ProxyPoolType<JSONRPCBody> _jsonrpcBodyFactory;
+        HTTPClientFactoryBase(uint32_t count) : _responseFactory(count), _jsonrpcBodyFactory(count) {}
+    };
+
     class JSONRPCHTTPClient
-        : public Web::WebLinkType<
+        : private HTTPClientFactoryBase
+        , public Web::WebLinkType<
               ::Thunder::Core::SocketStream,
               Web::Response,
               Web::Request,
@@ -288,11 +305,9 @@ namespace Core {
         JSONRPCHTTPClient& operator=(const JSONRPCHTTPClient&) = delete;
 
         JSONRPCHTTPClient(const ::Thunder::Core::NodeId& remoteNode)
-            : BaseClass(5, _responseFactory, false, remoteNode.AnyInterface(), remoteNode, 2048, 2048)
-            , _responseFactory(5)
-            , _jsonrpcBodyFactory(5)
+            : HTTPClientFactoryBase(5)
+            , BaseClass(5, _responseFactory, false, remoteNode.AnyInterface(), remoteNode, 2048, 2048)
             , _httpStatusCode(0)
-            , _responseReceived(false)
         {
         }
 
@@ -318,14 +333,9 @@ namespace Core {
                     body->ToString(text);
                     std::lock_guard<std::mutex> lock(_responseMutex);
                     _responseQueue.push(text);
+                    _responseCV.notify_one();
                 }
             }
-
-            {
-                std::lock_guard<std::mutex> lock(_responseMutex);
-                _responseReceived = true;
-            }
-            _responseCV.notify_one();
         }
 
         virtual void Send(const ::Thunder::Core::ProxyType<Web::Request>& request VARIABLE_IS_NOT_USED)
@@ -340,13 +350,7 @@ namespace Core {
         {
             std::unique_lock<std::mutex> lock(_responseMutex);
             return _responseCV.wait_for(lock, std::chrono::milliseconds(timeout_ms),
-                [this]{ return _responseReceived; });
-        }
-
-        void ResetResponse()
-        {
-            std::lock_guard<std::mutex> lock(_responseMutex);
-            _responseReceived = false;
+                [this]{ return !_responseQueue.empty(); });
         }
 
         void RetrieveMessage(::Thunder::Core::JSONRPC::Message& message)
@@ -395,9 +399,6 @@ namespace Core {
     private:
         string _dataReceived;
         uint16_t _httpStatusCode;
-        bool _responseReceived;
-        ::Thunder::Core::ProxyPoolType<Web::Response> _responseFactory;
-        ::Thunder::Core::ProxyPoolType<JSONRPCBody> _jsonrpcBodyFactory;
         std::queue<string> _responseQueue;
         std::mutex _responseMutex;
         std::condition_variable _responseCV;
@@ -674,13 +675,78 @@ namespace Core {
         ::Thunder::Core::Singleton::Dispose();
     }
 
+    // Sends 5 sequential "add" requests over the same HTTP connection.
+    // Each request uses i + i*10 as operands (e.g. i=1 -> {a:1,b:10} = 11).
+    // Validates that each response has the correct Id and result, ensuring
+    // HTTP keep-alive and request/response correlation work correctly
+    // across multiple round-trips on a persistent TCP connection.
+    TEST(HTTPJSONRPC, MultipleSequentialRequests)
+    {
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTimeMs = 8000, maxInitTime = 4000;
+        constexpr uint8_t maxRetries = 10;
+
+        const std::string connector{ "0.0.0.0" };
+        const uint16_t port = 12354;
+
+        IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
+            ::Thunder::Core::SocketServerType<JSONRPCHTTPServer> server(
+                ::Thunder::Core::NodeId(connector.c_str(), port));
+
+            ASSERT_EQ(server.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+
+            ASSERT_EQ(server.Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+        };
+
+        IPTestAdministrator::Callback callback_parent = [&](IPTestAdministrator& testAdmin) {
+            SleepMs(maxInitTime);
+
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+
+            JSONRPCHTTPClient client(::Thunder::Core::NodeId(connector.c_str(), port));
+
+            ASSERT_EQ(client.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+            ASSERT_TRUE(client.IsOpen());
+
+            // Send multiple requests over the same connection
+            for (uint32_t i = 1; i <= 5; i++) {
+                ::Thunder::Core::JSONRPC::Message request;
+                request.JSONRPC = _T("2.0");
+                request.Id = i;
+                request.Designator = _T("add");
+
+                string params = _T("{\"a\":") + std::to_string(i) + _T(",\"b\":") + std::to_string(i * 10) + _T("}");
+                request.Parameters = params;
+
+                EXPECT_TRUE(client.SendJSONRPC(request));
+
+                ASSERT_TRUE(client.WaitForResponse());
+
+                EXPECT_EQ(client.StatusCode(), Web::STATUS_OK);
+
+                ::Thunder::Core::JSONRPC::Message response;
+                client.RetrieveMessage(response);
+
+                EXPECT_EQ(response.Id.Value(), i);
+                EXPECT_TRUE(response.Result.IsSet());
+                EXPECT_STREQ(response.Result.Value().c_str(), std::to_string(i + i * 10).c_str());
+            }
+
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+        };
+
+        IPTestAdministrator testAdmin(callback_parent, callback_child, initHandshakeValue, 20);
+
+        ::Thunder::Core::Singleton::Dispose();
+    }
+
     // =========================================================================
     // Gap 6 Extension: HTTP POST edge cases
     // =========================================================================
 
     // Verifies that an HTTP POST with an empty body returns HTTP 400.
-    // The server's Received() handler checks HasBody() and rejects with
-    // STATUS_BAD_REQUEST if the body is absent.
     TEST(HTTPJSONRPC, EmptyBodyReturnsError)
     {
         constexpr uint32_t initHandshakeValue = 0, maxWaitTimeMs = 8000, maxInitTime = 4000;
@@ -736,8 +802,6 @@ namespace Core {
     }
 
     // Verifies that a non-POST verb (GET) is rejected with HTTP 405.
-    // The server's Received() handler checks for HTTP_POST and rejects
-    // any other verb with STATUS_METHOD_NOT_ALLOWED.
     TEST(HTTPJSONRPC, NonPostVerbReturnsMethodNotAllowed)
     {
         constexpr uint32_t initHandshakeValue = 0, maxWaitTimeMs = 8000, maxInitTime = 4000;

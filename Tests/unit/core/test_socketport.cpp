@@ -1362,9 +1362,9 @@ TEST(test_socketport, open_tcp_ipv4_refused_connection_returns_error)
 
     TEST(test_socketport, remote_unexpected_close_triggers_statechange)
     {
-        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 16,
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 8,
                            maxWaitTimeMs = 8000, maxInitTime = 500;
-        constexpr uint8_t maxRetries = 10;
+        constexpr uint8_t maxRetries = 4;
 
         const string connector = "/tmp/test_sp_remotesc.sock";
 
@@ -1556,7 +1556,11 @@ TEST(test_socketport, open_tcp_ipv4_refused_connection_returns_error)
             ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
 
             // Close server — remote-close from client's perspective.
-            server.Close(maxWaitTimeMs);
+            ASSERT_EQ(server.Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+
+            // Signal parent that server has closed.
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries),
+                      ::Thunder::Core::ERROR_NONE);
         };
 
         IPTestAdministrator::Callback callback_parent = [&](IPTestAdministrator& testAdmin) {
@@ -1570,6 +1574,9 @@ TEST(test_socketport, open_tcp_ipv4_refused_connection_returns_error)
             // Signal server to close.
             ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries),
                       ::Thunder::Core::ERROR_NONE);
+
+            // Wait for server closure.
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
 
             // Wait for the remote-close to propagate.
             uint32_t waited = 0;

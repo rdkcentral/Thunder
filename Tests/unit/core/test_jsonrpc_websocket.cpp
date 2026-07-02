@@ -95,6 +95,19 @@ namespace Core {
     };
 
     // =========================================================================
+    // Base-from-member idiom: ensures _objectFactory is fully constructed
+    // before StreamJSONType's constructor receives it by reference.
+    // (C++ initializes base classes before members, so passing a member
+    //  by reference to a base constructor is undefined behavior.)
+    // =========================================================================
+
+    struct ServerFactoryBase {
+    protected:
+        JSONRPCMessageFactory _objectFactory;
+        ServerFactoryBase(uint32_t count) : _objectFactory(count) {}
+    };
+
+    // =========================================================================
     // JSONRPCWebSocketServer
     //
     // A per-connection server handler instantiated by SocketServerType for
@@ -111,7 +124,8 @@ namespace Core {
 
     template <typename INTERFACE>
     class JSONRPCWebSocketServer
-        : public ::Thunder::Core::StreamJSONType<
+        : private ServerFactoryBase
+        , public ::Thunder::Core::StreamJSONType<
               Web::WebSocketServerType<::Thunder::Core::SocketStream>,
               JSONRPCMessageFactory&,
               INTERFACE> {
@@ -131,8 +145,8 @@ namespace Core {
             const SOCKET& socket,
             const ::Thunder::Core::NodeId& remoteNode,
             ::Thunder::Core::SocketServerType<JSONRPCWebSocketServer<INTERFACE>>*)
-            : BaseClass(2, _objectFactory, false, false, false, socket, remoteNode, 1024, 1024)
-            , _objectFactory(5)
+            : ServerFactoryBase(5)
+            , BaseClass(2, _objectFactory, false, false, false, socket, remoteNode, 1024, 1024)
             , _handler({ 1 })  // version array for JSONRPC::Handler
         {
             // Register test methods on the handler.
@@ -259,7 +273,6 @@ namespace Core {
         }
 
     private:
-        JSONRPCMessageFactory _objectFactory;
         ::Thunder::Core::JSONRPC::Handler _handler;
 
         static bool _attached;
@@ -276,6 +289,12 @@ namespace Core {
     template <typename INTERFACE>
     bool JSONRPCWebSocketServer<INTERFACE>::_attached = false;
 
+    struct ClientFactoryBase {
+    protected:
+        JSONRPCMessageFactory _objectFactory;
+        ClientFactoryBase(uint32_t count) : _objectFactory(count) {}
+    };
+
     // =========================================================================
     // JSONRPCWebSocketClient
     //
@@ -291,7 +310,8 @@ namespace Core {
 
     template <typename INTERFACE>
     class JSONRPCWebSocketClient
-        : public ::Thunder::Core::StreamJSONType<
+        : private ClientFactoryBase
+        , public ::Thunder::Core::StreamJSONType<
               Web::WebSocketClientType<::Thunder::Core::SocketStream>,
               JSONRPCMessageFactory&,
               INTERFACE> {
@@ -308,9 +328,9 @@ namespace Core {
         JSONRPCWebSocketClient& operator=(const JSONRPCWebSocketClient&) = delete;
 
         JSONRPCWebSocketClient(const ::Thunder::Core::NodeId& remoteNode)
-            : BaseClass(5, _objectFactory, _T(""), _T(""), _T(""), _T(""), false, true, false,
+            : ClientFactoryBase(5)
+            , BaseClass(5, _objectFactory, _T(""), _T(""), _T(""), _T(""), false, true, false,
                         remoteNode.AnyInterface(), remoteNode, 1024, 1024)
-            , _objectFactory(5)
         {
         }
 
@@ -368,7 +388,6 @@ namespace Core {
         }
 
     private:
-        JSONRPCMessageFactory _objectFactory;
         std::queue<string> _responseQueue;
         std::mutex _responseMutex;
         std::condition_variable _responseCV;
