@@ -29,12 +29,13 @@ jobs:
     strategy:
       matrix:
         build_type: [Debug, Release, MinSizeRel]
+        shared_libs: [ON, OFF]
 
     env:
       lib: LD_LIBRARY_PATH=${{github.workspace}}/${{matrix.build_type}}/install/usr/lib:$LD_LIBRARY_PATH
       path: PATH=${{github.workspace}}/${{matrix.build_type}}/install/usr/bin:$PATH
 
-    name: Test - ${{matrix.build_type}}
+    name: Test - ${{matrix.shared_libs == 'OFF' && 'Static ' || ''}}${{matrix.build_type}}
     steps:
     - name: Install system dependencies
       shell: bash
@@ -59,7 +60,7 @@ jobs:
     - name: Download Thunder artifact
       uses: actions/download-artifact@v4
       with:
-        name: Thunder-${{matrix.build_type}}-test-artifact
+        name: Thunder-${{matrix.build_type}}${{matrix.shared_libs == 'OFF' && '-static' || ''}}-test-artifact
         path: ${{matrix.build_type}}
 
     - name: Unpack files
