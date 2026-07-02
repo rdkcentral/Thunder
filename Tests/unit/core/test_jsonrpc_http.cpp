@@ -326,16 +326,17 @@ namespace Core {
         {
             _httpStatusCode = response->ErrorCode;
 
+            string text;
             if (response->HasBody()) {
                 ::Thunder::Core::ProxyType<JSONRPCBody> body = response->Body<JSONRPCBody>();
                 if (body.IsValid()) {
-                    string text;
                     body->ToString(text);
-                    std::lock_guard<std::mutex> lock(_responseMutex);
-                    _responseQueue.push(text);
-                    _responseCV.notify_one();
                 }
             }
+
+            std::lock_guard<std::mutex> lock(_responseMutex);
+            _responseQueue.push(text);
+            _responseCV.notify_one();
         }
 
         virtual void Send(const ::Thunder::Core::ProxyType<Web::Request>& request VARIABLE_IS_NOT_USED)
