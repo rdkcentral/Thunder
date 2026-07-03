@@ -130,6 +130,7 @@ namespace PluginHost {
                     , StackSize(0)
                     , LowPriorityThreadCount(THREADPOOL_COUNT > 1 ? THREADPOOL_COUNT - 1 : 1)
                     , MediumPriorityThreadCount(THREADPOOL_COUNT > 1 ? THREADPOOL_COUNT - 1 : 1)
+                    , QueueSize(64 * THREADPOOL_COUNT)
                     , Umask(1)
                 {
                     Add(_T("user"), &User);
@@ -141,6 +142,7 @@ namespace PluginHost {
                     Add(_T("stacksize"), &StackSize);
                     Add(_T("lowprioritythreadcount"), &LowPriorityThreadCount);
                     Add(_T("mediumprioritythreadcount"), &MediumPriorityThreadCount);
+                    Add(_T("queuesize"), &QueueSize);
                     Add(_T("umask"), &Umask);
                 }
                 ProcessSet(const ProcessSet& copy)
@@ -154,6 +156,7 @@ namespace PluginHost {
                     , StackSize(copy.StackSize)
                     , LowPriorityThreadCount(copy.LowPriorityThreadCount)
                     , MediumPriorityThreadCount(copy.MediumPriorityThreadCount)
+                    , QueueSize(copy.QueueSize)
                     , Umask(copy.Umask)
                 {
                     Add(_T("user"), &User);
@@ -165,6 +168,7 @@ namespace PluginHost {
                     Add(_T("stacksize"), &StackSize);
                     Add(_T("lowprioritythreadcount"), &LowPriorityThreadCount);
                     Add(_T("mediumprioritythreadcount"), &MediumPriorityThreadCount);
+                    Add(_T("queuesize"), &QueueSize);
                     Add(_T("umask"), &Umask);
                 }
                 ProcessSet(ProcessSet&& move) noexcept
@@ -178,6 +182,7 @@ namespace PluginHost {
                     , StackSize(std::move(move.StackSize))
                     , LowPriorityThreadCount(std::move(move.LowPriorityThreadCount))
                     , MediumPriorityThreadCount(std::move(move.MediumPriorityThreadCount))
+                    , QueueSize(std::move(move.QueueSize))
                     , Umask(std::move(move.Umask))
                 {
                     Add(_T("user"), &User);
@@ -189,6 +194,7 @@ namespace PluginHost {
                     Add(_T("stacksize"), &StackSize);
                     Add(_T("lowprioritythreadcount"), &LowPriorityThreadCount);
                     Add(_T("mediumprioritythreadcount"), &MediumPriorityThreadCount);
+                    Add(_T("queuesize"), &QueueSize);
                     Add(_T("umask"), &Umask);
                 }
 
@@ -205,6 +211,7 @@ namespace PluginHost {
                     StackSize = RHS.StackSize;
                     LowPriorityThreadCount = RHS.LowPriorityThreadCount;
                     MediumPriorityThreadCount = RHS.MediumPriorityThreadCount;
+                    QueueSize = RHS.QueueSize;
                     Umask = RHS.Umask;
 
                     return (*this);
@@ -222,6 +229,7 @@ namespace PluginHost {
                         StackSize = std::move(move.StackSize);
                         LowPriorityThreadCount = std::move(move.LowPriorityThreadCount);
                         MediumPriorityThreadCount = std::move(move.MediumPriorityThreadCount);
+                        QueueSize = std::move(move.QueueSize);
                         Umask = std::move(move.Umask);
                     }
                     return (*this);
@@ -236,6 +244,7 @@ namespace PluginHost {
                 Core::JSON::DecUInt32 StackSize;
                 Core::JSON::DecUInt8 LowPriorityThreadCount;
                 Core::JSON::DecUInt8 MediumPriorityThreadCount;
+                Core::JSON::DecUInt32 QueueSize;
                 Core::JSON::DecUInt16 Umask;
             };
 
@@ -710,6 +719,7 @@ namespace PluginHost {
             , _stackSize(0)
             , _lowPriorityThreadCount(THREADPOOL_COUNT > 1 ? THREADPOOL_COUNT - 1 : 1)
             , _mediumPriorityThreadCount(THREADPOOL_COUNT > 1 ? THREADPOOL_COUNT - 1 : 1)
+            , _queueSize(64 * THREADPOOL_COUNT)
             , _inputInfo()
             , _processInfo()
             , _plugins()
@@ -813,8 +823,9 @@ namespace PluginHost {
                 _portNumber = config.Port.Value();
                 _threadPoolCount = config.Process.IsSet() ? config.Process.ThreadPoolCount.Value() : 4;
                 _stackSize = config.Process.IsSet() ? config.Process.StackSize.Value() : 0;
-                _lowPriorityThreadCount = config.Process.IsSet() ? config.Process.LowPriorityThreadCount.Value() : (_threadPoolCount > 1 ? (_threadPoolCount - 1) : 1);
-                _mediumPriorityThreadCount = config.Process.IsSet() ? config.Process.MediumPriorityThreadCount.Value() : (_threadPoolCount > 1 ? (_threadPoolCount - 1) : 1);
+                _lowPriorityThreadCount = (config.Process.IsSet() && config.Process.LowPriorityThreadCount.IsSet()) ? config.Process.LowPriorityThreadCount.Value() : (_threadPoolCount > 1 ? (_threadPoolCount - 1) : 1);
+                _mediumPriorityThreadCount = (config.Process.IsSet() && config.Process.MediumPriorityThreadCount.IsSet()) ? config.Process.MediumPriorityThreadCount.Value() : (_threadPoolCount > 1 ? (_threadPoolCount - 1) : 1);
+                _queueSize = (config.Process.IsSet() && config.Process.QueueSize.IsSet()) ? config.Process.QueueSize.Value() : (64 * _threadPoolCount);
                 _inputInfo.Set(config.Input);
                 _processInfo.Set(config.Process);
                 _ethernetCard = config.EthernetCard.Value();
@@ -1084,6 +1095,10 @@ namespace PluginHost {
         {
             return (_mediumPriorityThreadCount);
         }
+        inline uint32_t QueueSize() const
+        {
+            return (_queueSize);
+        }
         inline string EthernetCard() const {
             return _ethernetCard;
         }
@@ -1343,6 +1358,7 @@ namespace PluginHost {
         uint32_t _stackSize;
         uint8_t _lowPriorityThreadCount;
         uint8_t _mediumPriorityThreadCount;
+        uint32_t _queueSize;
         InputInfo _inputInfo;
         ProcessInfo _processInfo;
         Core::JSON::ArrayType<Plugin::Config> _plugins;

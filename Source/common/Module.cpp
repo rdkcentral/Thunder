@@ -17,13 +17,11 @@
  * limitations under the License.
  */
 
-#pragma once
-
 #include "Module.h"
-#include "ISubSystem.h"
+#include <plugins/IController.h>
 
-namespace Thunder {
-
-ENUM_CONVERSION_HANDLER(PluginHost::ISubSystem::subsystem)
-
-}
+#ifdef BUILD_SHARED_LIBS
+MODULE_NAME_DECLARATION(BUILD_REFERENCE)
+#else
+MODULE_NAME_ARCHIVE_DECLARATION
+#endif

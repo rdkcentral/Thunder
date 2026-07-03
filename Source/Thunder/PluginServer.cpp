@@ -330,7 +330,28 @@ namespace PluginHost {
     {
         _administrator.Register(sink, interface_id);
     }
+
     void Server::Service::Unregister(IPlugin::INotification * sink, const uint32_t interface_id)
+    {
+        _administrator.Unregister(sink, interface_id);
+    }
+
+    void Server::Service::Register(IPlugin::INotificationExtended* sink, const Core::OptionalType<string>& callsign)
+    {
+        _administrator.Register(sink, callsign);
+    }
+
+    void Server::Service::Unregister(IPlugin::INotificationExtended* sink, const Core::OptionalType<string>& callsign)
+    {
+        _administrator.Unregister(sink, callsign);
+    }
+
+    void Server::Service::Register(IPlugin::INotificationExtended* sink, const uint32_t interface_id)
+    {
+        _administrator.Register(sink, interface_id);
+    }
+
+    void Server::Service::Unregister(IPlugin::INotificationExtended* sink, const uint32_t interface_id)
     {
         _administrator.Unregister(sink, interface_id);
     }
@@ -797,6 +818,7 @@ namespace PluginHost {
                     // Both branches are reachable when HIBERNATE_ENABLED is defined.
                     if (result == Core::ERROR_NONE) {
                         if (State() == IShell::state::HIBERNATED) {
+                            _administrator.Hibernated(Callsign(), this);
                             SYSLOG(Logging::Startup, ("Hibernated plugin [%s]:[%s]", ClassName().c_str(), Callsign().c_str()));
                         } else {
                             // wakeup occured right after hibernation finished
@@ -1260,7 +1282,7 @@ namespace PluginHost {
     // -----------------------------------------------------------------------------------------------------------------------------------
     PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
     Server::Server(Config& configuration, const bool background)
-        : _dispatcher(configuration.ThreadPoolCount(), configuration.StackSize(), configuration.LowPriorityThreadCount(), configuration.MediumPriorityThreadCount())
+        : _dispatcher(configuration.ThreadPoolCount(), configuration.StackSize(), configuration.QueueSize(), configuration.LowPriorityThreadCount(), configuration.MediumPriorityThreadCount())
         , _config(configuration)
         , _connections(*this, configuration.Binder())
         , _services(*this)
