@@ -24,3 +24,8 @@ target_link_libraries(${TARGET}
 )
 
 add_test(NAME ${TARGET} COMMAND ${TARGET})
+
+install(
+    TARGETS ${TARGET}
+    DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT ${NAMESPACE}_Test
+)
