@@ -1785,7 +1785,7 @@ namespace PluginHost {
                 const string normalized(Core::File::Normalize(locator));
                 const string rootPath(Core::Directory::Normalize(PluginHost::Service::Configuration().SystemRootPath));
                 searchPaths.push_back(Core::Directory::Normalize(rootPath + ExtensionPath()) + normalized);
-                searchPaths.push_back(Core::Directory::Normalize(rootPath + Administrator().Configuration().AppPath() + _T("Addons/")) + normalized);
+                searchPaths.push_back(Core::Directory::Normalize(rootPath + Administrator().Configuration().AppPath() + _T("Extensions/")) + normalized);
 
                 RPC::IStringIterator* paths = Service::GetLibrarySearchPaths(locator);
 
