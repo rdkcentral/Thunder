@@ -33,14 +33,14 @@
 #include <core/WarningReportingCategories.h>
 
 // Pull in the process-container helper headers (header-only, no backend needed)
-// Note: CMakeLists adds Source/extensions to the include path so that
+// Note: CMakeLists adds Source/addons to the include path so that
 // BaseContainerIterator.h's #include "processcontainers/IProcessContainers.h" resolves.
 #include <processcontainers/IProcessContainers.h>
 #include <processcontainers/common/BaseRefCount.h>
 #include <processcontainers/common/BaseContainerIterator.h>
 
 // Hibernate C API header (for error constant validation)
-#include <extensions/hibernate/hibernate.h>
+#include <addons/hibernate/hibernate.h>
 
 // If the proxy was not compiled into the library (WARNING_REPORTING=OFF),
 // pull in the implementation so the linker can find it.

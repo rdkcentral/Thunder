@@ -22,7 +22,7 @@ env:
   bridge: Thunder\Source\Thunder\bridge.vcxproj
   comProcess: Thunder\Source\ThunderPlugin\comprocess.vcxproj
   solution: Thunder.sln
-  warningReporting: Thunder\Source\extensions\warningreporting\warningreporting.vcxproj
+  warningReporting: Thunder\Source\addons\warningreporting\warningreporting.vcxproj
 
 jobs:
   Thunder:
