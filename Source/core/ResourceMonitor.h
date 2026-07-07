@@ -414,11 +414,11 @@ POP_WARNING()
                 // Resize the array to fit..
                 _descriptorArray = static_cast<::pollfd*>(::malloc(sizeof(::pollfd) * _descriptorArrayLength));
 
-                if (_descriptorArray != nullptr) {
-                    _descriptorArray[0].fd = _signalDescriptor;
-                    _descriptorArray[0].events = POLLIN;
-                    _descriptorArray[0].revents = 0;
-                }
+                ASSERT(_descriptorArray != nullptr);
+
+                _descriptorArray[0].fd = _signalDescriptor;
+                _descriptorArray[0].events = POLLIN;
+                _descriptorArray[0].revents = 0;
             }
 
             int filledFileDescriptors = 1;
