@@ -419,7 +419,7 @@ namespace Core {
         string result;
         PIP_ADAPTER_ADDRESSES info = LoadAdapterInfo(_index);
 
-        if (info->PhysicalAddressLength != 0) {
+        if ((info != nullptr) && (info->PhysicalAddressLength != 0)) {
             ConvertMACToString(info->PhysicalAddress, static_cast<uint8_t>(info->PhysicalAddressLength), delimiter, result);
         }
         return (result);
@@ -451,7 +451,7 @@ namespace Core {
 
         PIP_ADAPTER_ADDRESSES info = LoadAdapterInfo(_index);
 
-        if (info->PhysicalAddressLength != 0) {
+        if ((info != nullptr) && (info->PhysicalAddressLength != 0)) {
             ASSERT(length >= info->PhysicalAddressLength);
             ::memcpy(buffer, info->PhysicalAddress, info->PhysicalAddressLength);
             if (length > info->PhysicalAddressLength) {
@@ -561,7 +561,7 @@ namespace Core {
         Adapters adapters;
         if (!getifaddrs(&interfaces)) {
 
-            struct ifaddrs* index = interfaces->ifa_next;
+            struct ifaddrs* index = interfaces;
             while (index != nullptr) {
 
                 Adapters::iterator adapterIndex = adapters.find(index->ifa_name);
@@ -583,6 +583,8 @@ namespace Core {
                     addresses = index->second;
                 }
             }
+
+            freeifaddrs(interfaces);
         }
         return adapters.size();
     }
