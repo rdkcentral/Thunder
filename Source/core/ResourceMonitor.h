@@ -210,11 +210,7 @@ namespace Core {
                 snprintf(procfn, sizeof(procfn), "/proc/self/fd/%d", info.descriptor);
 
                 ssize_t len = readlink(procfn, info.filename, sizeof(info.filename) - 1);
-                if (len >= 0) {
-                    info.filename[len] = '\0';
-                } else {
-                    info.filename[0] = '\0';
-                }
+                info.filename[len >= 0 ? len : 0] = '\0';
                 #endif
                 #ifdef __WINDOWS__
                 info.monitor = 0;

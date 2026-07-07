@@ -168,6 +168,13 @@ namespace PluginHost {
                 : Core::WorkerPool(threadCount, stackSize, queueSize, &_dispatch, this, lowPriorityThreadCount, mediumPriorityThreadCount)
                 , _dispatch()
             {
+                SYSLOG(Logging::Startup, (_T("<PID:%d>: WorkerPool config: created threads=%d, queue size=%u, stack size=%u, low priority limit=%d, medium priority limit=%d"),
+                    Core::ProcessInfo().Id(),
+                    threadCount,
+                    queueSize,
+                    stackSize,
+                    lowPriorityThreadCount,
+                    mediumPriorityThreadCount));
                 Run();
             }
             ~WorkerPoolImplementation() override = default;
@@ -962,6 +969,8 @@ namespace PluginHost {
                 State(DESTROYED);
 
                 Unlock();
+
+                _administrator.Destroyed(Callsign(), this);
             }
 
             // The service might be still alive and refered to in the request/links but they will
@@ -1291,6 +1300,10 @@ namespace PluginHost {
             void Unregister(IPlugin::INotification* sink, const Core::OptionalType<string>& callsign) override;
             void Register(IPlugin::INotification* sink, const uint32_t interface_id) override;
             void Unregister(IPlugin::INotification* sink, const uint32_t interface_id) override;
+            void Register(IPlugin::INotificationExtended* sink, const Core::OptionalType<string>& callsign) override;
+            void Unregister(IPlugin::INotificationExtended* sink, const Core::OptionalType<string>& callsign) override;
+            void Register(IPlugin::INotificationExtended* sink, const uint32_t interface_id) override;
+            void Unregister(IPlugin::INotificationExtended* sink, const uint32_t interface_id) override;
 
             string Model() const override {
                 return (_administrator.Configuration().Model());
@@ -1486,6 +1499,8 @@ namespace PluginHost {
         private:
             const Core::IService* LoadLibrary(const string& name, Core::Library& library) {
                 Core::IService* result(nullptr);
+                string lastError;
+                string lastPath;
 
                 RPC::IStringIterator* all_paths = GetLibrarySearchPaths(name);
                 ASSERT(all_paths != nullptr);
@@ -1498,6 +1513,7 @@ namespace PluginHost {
                     Core::File libraryToLoad(element);
 
                     if (libraryToLoad.Exists() == true) {
+                        lastPath = element;
 
                         // Loading a library, in the static initializers, might register Service::Metadata structures. As
                         // the dlopen has a process wide system lock, make sure that the, during open used lock of the
@@ -1512,12 +1528,28 @@ namespace PluginHost {
                                 result = moduleServiceMetadata();
                                 if (result != nullptr) {
                                     library = std::move(newLib);
+                                } else {
+                                    lastError = _T("GetModuleServices returned no service metadata");
                                 }
+                            } else {
+                                lastError = newLib.Error().empty() == false ? newLib.Error() : _T("GetModuleServices symbol missing");
                             }
+                        } else {
+                            lastError = newLib.Error().empty() == false ? newLib.Error() : _T("Library load failed");
                         }
                     }
                 }
                 all_paths->Release();
+
+                if (result == nullptr) {
+                    if (lastPath.empty() == false) {
+                        SYSLOG(Logging::Startup, (_T("Loading library [%s] for plugin [%s] failed. Candidate [%s], error [%s]"),
+                            name.c_str(), Callsign().c_str(), lastPath.c_str(), lastError.c_str()));
+                    } else {
+                        SYSLOG(Logging::Startup, (_T("Loading library [%s] for plugin [%s] failed: no library candidate found"),
+                            name.c_str(), Callsign().c_str()));
+                    }
+                }
 
                 return (result);
             }
@@ -2663,6 +2695,7 @@ namespace PluginHost {
                 };
             };
 
+            template <typename NOTIFICATION>
             class Notifiers
             {
             public:
@@ -2688,7 +2721,7 @@ namespace PluginHost {
 
                 //return true when added 
                 template <typename... Args>
-                bool Add(PluginHost::IPlugin::INotification* notification, Args&&... args)
+                bool Add(NOTIFICATION* notification, Args&&... args)
                 {
                     _notificationLock.Lock();
 
@@ -2710,16 +2743,16 @@ namespace PluginHost {
 
                 // return true when removed
                 template <typename... Args>
-                bool Remove(const PluginHost::IPlugin::INotification* const notification, Args&&... args)
+                bool Remove(const NOTIFICATION* const notification, Args&&... args)
                 {
                     bool found = false;
 
                     _notificationLock.Lock();
 
-                    auto range = _notifiers.equal_range(const_cast<PluginHost::IPlugin::INotification*>(notification));
+                    auto range = _notifiers.equal_range(const_cast<NOTIFICATION*>(notification));
                     for (auto it = range.first; it != range.second; ++it) {
                         if (it->second.IsEqual(std::forward<Args>(args)...) == true) {
-                            PluginHost::IPlugin::INotification* foundnotification = it->first;
+                            NOTIFICATION* foundnotification = it->first;
                             _notifiers.erase(it);
                             foundnotification->Release();
                             foundnotification = nullptr;
@@ -2731,14 +2764,14 @@ namespace PluginHost {
 
                     return found;
                 }
-                void RemoveAll(const PluginHost::IPlugin::INotification* const notification)
+                void RemoveAll(const NOTIFICATION* const notification)
                 {
                     _notificationLock.Lock();
 
-                    auto range = _notifiers.equal_range(const_cast<PluginHost::IPlugin::INotification*>(notification));
+                    auto range = _notifiers.equal_range(const_cast<NOTIFICATION*>(notification));
                     auto it = range.first;
                     while (it != range.second) {
-                        PluginHost::IPlugin::INotification* foundnotification = it->first;
+                        NOTIFICATION* foundnotification = it->first;
                         it = _notifiers.erase(it);
                         foundnotification->Release();
                         foundnotification = nullptr;
@@ -2753,7 +2786,7 @@ namespace PluginHost {
                     auto it = _notifiers.begin();
                     while (it != _notifiers.end()) {
                         if (static_cast<const Core::IUnknown*>(it->first) == notification) {
-                            PluginHost::IPlugin::INotification* foundnotification = it->first;
+                            NOTIFICATION* foundnotification = it->first;
                             it = _notifiers.erase(it);
                             foundnotification->Release();
                             foundnotification = nullptr;
@@ -2764,7 +2797,7 @@ namespace PluginHost {
 
                     _notificationLock.Unlock();
                 }
-                void Notify(const string& callsign, PluginHost::IShell* entry, Core::hresult (PluginHost::IPlugin::INotification::*notificatonmethod)(const string& callsign, IShell* plugin))
+                void Notify(const string& callsign, PluginHost::IShell* entry, Core::hresult (NOTIFICATION::*notificatonmethod)(const string& callsign, IShell* plugin))
                 {
                     _notificationLock.Lock();
 
@@ -2773,7 +2806,7 @@ namespace PluginHost {
                         if (it->second.SendNotification(callsign, entry) == true) {
                             Core::hresult result = (it->first->*notificatonmethod)(callsign, entry);
                             if (result == Core::ERROR_CANCEL) {
-                                PluginHost::IPlugin::INotification* foundnotification = it->first;
+                                NOTIFICATION* foundnotification = it->first;
                                 it = _notifiers.erase(it);
                                 foundnotification->Release();
                                 foundnotification = nullptr;
@@ -2794,7 +2827,7 @@ namespace PluginHost {
 
                     for (const auto& notifier : _notifiers) {
                         if (notifier.second.SendNotification(callsign, entry) == true) {
-                            PluginHost::IPlugin::ILifeTime* lifeTime = notifier.first->QueryInterface<PluginHost::IPlugin::ILifeTime>();
+                            PluginHost::IPlugin::ILifeTime* lifeTime = notifier.first->template QueryInterface<PluginHost::IPlugin::ILifeTime>();
                             if (lifeTime != nullptr) {
                                 (lifeTime->*notificatonmethod)(callsign, entry);
                                 lifeTime->Release();
@@ -2819,7 +2852,7 @@ namespace PluginHost {
 
             private:
                 template <typename... Args>
-                bool RegistrationAllowed(PluginHost::IPlugin::INotification* notification, Args&&... args) const 
+                bool RegistrationAllowed(NOTIFICATION* notification, Args&&... args) const
                 {
                     bool notallowed = false; 
                     auto range = _notifiers.equal_range(notification);
@@ -2833,10 +2866,9 @@ namespace PluginHost {
                 }
 
             private:
-                std::unordered_multimap<PluginHost::IPlugin::INotification*, Notifier> _notifiers;
+                std::unordered_multimap<NOTIFICATION*, Notifier> _notifiers;
                 mutable Core::CriticalSection _notificationLock;
             };
-
 
             using Plugins = std::unordered_map<string, Core::ProxyType<Service>>;
             using RemoteInstantiators = std::unordered_map<string, IRemoteInstantiation*>;
@@ -3689,6 +3721,7 @@ namespace PluginHost {
                 , _notificationLock()
                 , _services()
                 , _notifiers()
+                , _extendedNotifiers()
                 , _engine(Core::ProxyType<RPC::InvokeServer>::Create(&(server._dispatcher)))
                 , _processAdministrator(
                       *this,
@@ -3816,6 +3849,14 @@ namespace PluginHost {
             {
                 _notifiers.Notify(callsign, entry, &PluginHost::IPlugin::INotification::CancelableUnavailable);
             }
+            void Hibernated(const string& callsign, PluginHost::IShell* entry)
+            {
+                _extendedNotifiers.Notify(callsign, entry, &PluginHost::IPlugin::INotificationExtended::CancelableHibernated);
+            }
+            void Destroyed(const string& callsign, PluginHost::IShell* entry)
+            {
+                _extendedNotifiers.Notify(callsign, entry, &PluginHost::IPlugin::INotificationExtended::CancelableDestroyed);
+            }
             void StateControlStateChange(const string& callsign, const IStateControl::state state)
             {
                 _server.StateControlStateChange(callsign, state);       
@@ -3856,12 +3897,29 @@ namespace PluginHost {
                     }
                 }
             }
+            void Register(PluginHost::IPlugin::INotificationExtended* sink, const Core::OptionalType<string>& callsign = {})
+            {
+                if (callsign.IsSet() == true) {
+                    _extendedNotifiers.Add(sink, callsign.Value());
+                }
+                else {
+                    _extendedNotifiers.Add(sink);
+                }
+            }
             void Unregister(const PluginHost::IPlugin::INotification* sink, const Core::OptionalType<string>& callsign = {})
             {
                 if (callsign.IsSet() == true) {
                     _notifiers.Remove(sink, callsign.Value());
                 } else {
                     _notifiers.Remove(sink);
+                }
+            }
+            void Unregister(const PluginHost::IPlugin::INotificationExtended* sink, const Core::OptionalType<string>& callsign = {})
+            {
+                if (callsign.IsSet() == true) {
+                    _extendedNotifiers.Remove(sink, callsign.Value());
+                } else {
+                    _extendedNotifiers.Remove(sink);
                 }
             }
             void Register(IPlugin::INotification* sink, const uint32_t interface_id)
@@ -3875,6 +3933,14 @@ namespace PluginHost {
             void Unregister(IPlugin::INotification* sink, const uint32_t interface_id)
             {
                 _notifiers.Remove(sink, interface_id);
+            }
+            void Register(IPlugin::INotificationExtended* sink, const uint32_t interface_id)
+            {
+                _extendedNotifiers.Add(sink, interface_id);
+            }
+            void Unregister(IPlugin::INotificationExtended* sink, const uint32_t interface_id)
+            {
+                _extendedNotifiers.Remove(sink, interface_id);
             }
             inline void* QueryInterfaceByCallsign(const uint32_t id, const string& name)
             {
@@ -4305,6 +4371,9 @@ namespace PluginHost {
                 if (interfaceId == PluginHost::IPlugin::INotification::ID) {
                     _notifiers.RemoveAll(remote);
                 }
+                else if (interfaceId == PluginHost::IPlugin::INotificationExtended::ID) {
+                    _extendedNotifiers.RemoveAll(remote);
+                }
                 else if (interfaceId == IShell::IConnectionServer::INotification::ID) {
 
                     _notificationLock.Lock();
@@ -4451,7 +4520,8 @@ namespace PluginHost {
             Core::CriticalSection _notificationLock;
             Plugins _services;
             mutable RemoteInstantiators _instantiators;
-            Notifiers _notifiers;
+            Notifiers<PluginHost::IPlugin::INotification> _notifiers;
+            Notifiers<PluginHost::IPlugin::INotificationExtended> _extendedNotifiers;
             Core::ProxyType<RPC::InvokeServer> _engine;
             CommunicatorServer _processAdministrator;
             Core::SinkType<SubSystems> _subSystems;
@@ -5627,7 +5697,9 @@ namespace PluginHost {
             while (index.Next() == true) {
 
                 std::list<Core::callstack_info> stackList;
-                ::DumpCallStack(PluginHost::Metadata::ThreadId(index.Current().Id.Value()), stackList);
+                if (index.Current().Id.Value() != 0) {
+                    ::DumpCallStack(PluginHost::Metadata::ThreadId(index.Current().Id.Value()), stackList);
+                }
 
                 PostMortemData::Callstack dump;
                 dump.Id = index.Current().Id.Value();
@@ -5644,6 +5716,8 @@ namespace PluginHost {
             if (dumpFile.Create(false) == true) {
                 data.IElement::ToFile(dumpFile);
             }
+
+            DumpReadableMetadata(data);
         }
         inline ServiceMap& Services()
         {
@@ -5723,6 +5797,96 @@ namespace PluginHost {
         }
 
     private:
+        void DumpReadableMetadata(PostMortemData& data) const
+        {
+            string readableDump;
+
+            auto appendLine = [&readableDump](const string& line) {
+                readableDump += line;
+                readableDump += '\n';
+            };
+
+            auto stackForThread = [&data](const Core::instance_id threadId) -> PostMortemData::Callstack* {
+                Core::JSON::ArrayType<PostMortemData::Callstack>::Iterator stacks(data.Callstacks.Elements());
+                while (stacks.Next() == true) {
+                    if (stacks.Current().Id.Value() == threadId) {
+                        return (&stacks.Current());
+                    }
+                }
+                return (nullptr);
+            };
+
+            auto appendReadableStack = [&appendLine, &stackForThread](const Metadata::Server::Minion& thread) {
+                const Core::instance_id threadId = thread.Id.Value();
+
+                appendLine(EMPTY_STRING);
+                if (threadId == 0) {
+                    appendLine(_T("Thread <unavailable>"));
+                }
+                else {
+                    appendLine(Core::Format(_T("Thread 0x%llx"), static_cast<unsigned long long>(threadId)));
+                }
+                appendLine(Core::Format(_T("  job: %s"), ((thread.Job.IsSet() == true) && (thread.Job.Value().empty() == false)) ? thread.Job.Value().c_str() : _T("<none>")));
+                appendLine(Core::Format(_T("  runs: %u"), thread.Runs.Value()));
+                appendLine(EMPTY_STRING);
+
+                if (threadId == 0) {
+                    appendLine(_T("  <no thread id available; stack not captured>"));
+                    return;
+                }
+
+                PostMortemData::Callstack* stack = stackForThread(threadId);
+                if ((stack == nullptr) || (stack->Data.Length() == 0)) {
+                    appendLine(_T("  <no stack available>"));
+                    return;
+                }
+
+                uint32_t counter = 0;
+                Core::JSON::ArrayType<CallstackData>::Iterator entries(stack->Data.Elements());
+                while (entries.Next() == true) {
+                    const CallstackData& entry = entries.Current();
+                    if (entry.Line.IsSet() == true) {
+                        appendLine(Core::Format(_T("  #%02u [0x%llx] %s %s [%u]"), counter, static_cast<unsigned long long>(entry.Address.Value()), entry.Module.Value().c_str(), entry.Function.Value().c_str(), entry.Line.Value()));
+                    }
+                    else {
+                        appendLine(Core::Format(_T("  #%02u [0x%llx] %s %s"), counter, static_cast<unsigned long long>(entry.Address.Value()), entry.Module.Value().c_str(), entry.Function.Value().c_str()));
+                    }
+                    ++counter;
+                }
+            };
+
+            appendLine(_T("Thunder Worker Pool Post-Mortem"));
+            appendLine(EMPTY_STRING);
+
+            appendLine(_T("Pending requests:"));
+            if (data.WorkerPool.PendingRequests.Length() == 0) {
+                appendLine(_T("  <none>"));
+            }
+            else {
+                Core::JSON::ArrayType<Core::JSON::String>::Iterator pending(data.WorkerPool.PendingRequests.Elements());
+                while (pending.Next() == true) {
+                    appendLine(Core::Format(_T("  %s"), pending.Current().Value().c_str()));
+                }
+            }
+
+            Core::JSON::ArrayType<Metadata::Server::Minion>::Iterator index(data.WorkerPool.ThreadPoolRuns.Elements());
+            while (index.Next() == true) {
+                appendReadableStack(index.Current());
+            }
+
+            Core::File readableDumpFile(_config.PostMortemPath() + "ThunderInternals.txt");
+            if (readableDumpFile.Create(false) == true) {
+                const uint32_t dumpSize = static_cast<uint32_t>(readableDump.length() * sizeof(string::value_type));
+                const uint32_t written = readableDumpFile.Write(reinterpret_cast<const uint8_t*>(readableDump.c_str()), dumpSize);
+                if (written != dumpSize) {
+                    SYSLOG(Logging::Error, (_T("Could not write complete postmortem dump [%s]."), readableDumpFile.Name().c_str()));
+                }
+            }
+            else {
+                SYSLOG(Logging::Error, (_T("Could not create postmortem dump [%s]."), readableDumpFile.Name().c_str()));
+            }
+        }
+
         void Operational(const uint32_t id, const bool upAndRunning)
         {
             if (upAndRunning == true) {
