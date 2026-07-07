@@ -165,7 +165,7 @@ namespace WarningReporting {
         }
         bool IsModuleExcluded(const string& module) const
         {
-            return _modules.find(module) != _callsigns.end();
+            return _modules.find(module) != _modules.end();
         }
         void InsertCallsign(const string& callsign)
         {

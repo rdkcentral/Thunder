@@ -111,9 +111,9 @@ namespace Core {
     TEST(test_dataParser, simple_dataParser)
     {
         uint8_t arr[] = {10,20,30,40,50};
-        ::Thunder::Core::DataElement object1(10,arr);
+        ::Thunder::Core::DataElement object1(sizeof(arr)/sizeof(arr[0]),arr);
         ::Thunder::Core::DataElementParser parser1(object1,0);
-        uint64_t size = -10;
+        uint64_t size = sizeof(arr)/sizeof(arr[0]);
         EXPECT_TRUE(parser1.IsValid());
         EXPECT_EQ(parser1.Size(),size);
         parser1.SkipBytes(2);

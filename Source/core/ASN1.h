@@ -52,12 +52,10 @@ namespace Core {
             {
                 if (_buffer != nullptr) {
                     _buffer[0] = 1;
-PUSH_WARNING(DISABLE_WARNING_CONSTANT_LOGICAL_OPERAND)
                     _buffer[1] = (length & 0xFF);
-                    _buffer[2] = ((length >> 8) && 0xFF);
+                    _buffer[2] = ((length >> 8) & 0xFF);
                     _buffer[3] = (length & 0xFF);
-                    _buffer[4] = ((length >> 8) && 0xFF);
-POP_WARNING()
+                    _buffer[4] = ((length >> 8) & 0xFF);
                 }
             }
             Buffer(const Buffer& copy)
@@ -98,13 +96,11 @@ POP_WARNING()
         public:
             inline void Size(const uint16_t length)
             {
-                ASSERT((_buffer != nullptr) && (length < ((_buffer[3] << 8) | _buffer[4])));
+                ASSERT((_buffer != nullptr) && (length < ((_buffer[4] << 8) | _buffer[3])));
 
                 if (_buffer != nullptr) {
                     _buffer[1] = (length & 0xFF);
-PUSH_WARNING(DISABLE_WARNING_CONSTANT_LOGICAL_OPERAND)
-                    _buffer[2] = ((length >> 8) && 0xFF);
-POP_WARNING()
+                    _buffer[2] = ((length >> 8) & 0xFF);
                 }
             }
             inline uint16_t Size() const
@@ -134,7 +130,7 @@ POP_WARNING()
             {
                 if (_buffer != nullptr) {
                     if (_buffer[0] == 1) {
-                        delete _buffer;
+                        delete[] _buffer;
                     } else {
                         _buffer[0] = _buffer[0] - 1;
                     }

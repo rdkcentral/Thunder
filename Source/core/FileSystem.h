@@ -752,8 +752,6 @@ POP_WARNING()
         }
         void Reset()
         {
-            _dirFD = INVALID_HANDLE_VALUE;
-
             if (_dirFD != INVALID_HANDLE_VALUE) {
                 ::FindClose(_dirFD);
                 _dirFD = INVALID_HANDLE_VALUE;
