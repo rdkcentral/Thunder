@@ -78,7 +78,7 @@ if(MESSAGING)
     add_subdirectory(messaging)
 endif()
 
-add_subdirectory(extensions)
+add_subdirectory(addons)
 
 if(COM)
     add_subdirectory(com)
