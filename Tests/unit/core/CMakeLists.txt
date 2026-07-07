@@ -102,7 +102,7 @@ test_url.cpp
     test_assertionunit.cpp
 )
 
-target_include_directories(${TEST_RUNNER_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/Source/extensions)
+target_include_directories(${TEST_RUNNER_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/Source/addons)
 target_include_directories(${TEST_RUNNER_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/Source/Thunder)
 
 find_package(OpenSSL QUIET)
