@@ -71,6 +71,15 @@ target_link_libraries(${TARGET}
           Threads::Threads
         )
 
+# Conditionally link RDK OTEL instrumentation library
+find_library(RDK_OTLP_LIB rdk_otlp)
+if(RDK_OTLP_LIB)
+    target_link_libraries(${TARGET} PRIVATE ${RDK_OTLP_LIB})
+    message(STATUS "RDK OTEL Thunder propagation: ENABLED (found ${RDK_OTLP_LIB})")
+else()
+    message(STATUS "RDK OTEL Thunder propagation: DISABLED (librdk_otlp not found)")
+endif()
+
 if(WARNING_REPORTING)
     target_sources(${TARGET} PRIVATE WarningReportingCategories.cpp)
 endif()
