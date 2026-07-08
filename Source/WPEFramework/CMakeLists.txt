@@ -58,6 +58,8 @@ if (EXCEPTION_CATCHING)
     set_source_files_properties( PluginServer.cpp PROPERTIES COMPILE_FLAGS "-fexceptions" )
 endif()
 
+find_library(RDK_OTLP_LIB rdk_otlp)
+
 target_link_libraries(${TARGET}
         PRIVATE
           CompileSettingsDebug::CompileSettingsDebug
@@ -69,6 +71,7 @@ target_link_libraries(${TARGET}
           ${NAMESPACE}Plugins::${NAMESPACE}Plugins
           ${NAMESPACE}COMProcess::${NAMESPACE}COMProcess  # For COM executable define
           Threads::Threads
+          $<$<BOOL:${RDK_OTLP_LIB}>:rdk_otlp>
         )
 
 # Conditionally link RDK OTEL instrumentation library
