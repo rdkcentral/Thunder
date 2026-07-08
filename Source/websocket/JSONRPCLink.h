@@ -23,12 +23,12 @@
 #include "WebSocketLink.h"
 
 // RDK OpenTelemetry trace context propagation
-#if __has_include("rdk_otlp_instrumentation.h")
-#include "rdk_otlp_instrumentation.h"
+// The actual OTEL calls are in JSONRPCLink.cpp to avoid leaking link dependencies
+// to downstream consumers. This wrapper is exported from libWPEFrameworkWebSocket.so.
+namespace WPEFramework {
+    const char* OtelGetCurrentTraceparent();
+} // namespace WPEFramework
 #define RDK_OTEL_THUNDER_ENABLED 1
-#else
-#define RDK_OTEL_THUNDER_ENABLED 0
-#endif
 
 namespace WPEFramework {
 
@@ -1013,7 +1013,8 @@ namespace WPEFramework {
 					ToMessage(parameters, message);
 
                     
-                        const char* tp = rdk_otlp_get_current_traceparent();
+                        //const char* tp = rdk_otlp_get_current_traceparent();
+					    const char* tp = WPEFramework::OtelGetCurrentTraceparent();
                         if (tp != nullptr) {
                             string params = message->Parameters.Value();
                             if (params.empty() || params == "null") {
@@ -1092,7 +1093,8 @@ namespace WPEFramework {
 					}
 					ToMessage(parameters, message);
 
-                    const char* tp = rdk_otlp_get_current_traceparent();
+                    //const char* tp = rdk_otlp_get_current_traceparent();
+					const char* tp = WPEFramework::OtelGetCurrentTraceparent();
                         if (tp != nullptr) {
                             string params = message->Parameters.Value();
                             if (params.empty() || params == "null") {
