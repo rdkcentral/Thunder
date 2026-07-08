@@ -383,11 +383,10 @@ namespace PluginHost
 
             _pluginHandling.Lock();
 
-            if (State() == ACTIVATED) {
-                if (_handler != nullptr) {
-                    result = _handler->QueryInterface(id);
-                }
-            }            
+            if (_handler != nullptr) {
+
+                result = _handler->QueryInterface(id);
+            }
 
             _pluginHandling.Unlock();
         }
