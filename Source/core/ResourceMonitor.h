@@ -27,6 +27,13 @@
 #include "Trace.h"
 #include "Timer.h"
 
+#ifdef __LINUX__
+#include <cerrno>
+#include <pthread.h>
+#include <sched.h>
+#include <sys/resource.h>
+#endif
+
 namespace WPEFramework {
 
 namespace Core {
@@ -75,7 +82,26 @@ namespace Core {
 #ifdef __LINUX__
             virtual uint32_t Initialize()
             {
-                return ((Thread::Initialize() == Core::ERROR_NONE) && (_parent.Initialize() == Core::ERROR_NONE) ? Core::ERROR_NONE : Core::ERROR_UNAVAILABLE);
+                uint32_t result = ((Thread::Initialize() == Core::ERROR_NONE) && (_parent.Initialize() == Core::ERROR_NONE) ? Core::ERROR_NONE : Core::ERROR_UNAVAILABLE);
+
+                if (result == Core::ERROR_NONE) {
+                    // This thread drives all socket I/O dispatching for the whole process. Give it a
+                    // scheduling edge over the regular (SCHED_OTHER, nice 0) worker threads so it is
+                    // picked up quickly when a descriptor becomes ready, minimizing dispatch latency.
+                    struct sched_param param;
+                    const int policy = SCHED_RR;
+                    param.sched_priority = (::sched_get_priority_min(policy) + 1);
+
+                    if (::pthread_setschedparam(::pthread_self(), policy, &param) != 0) {
+                        // A real-time policy is not permitted (e.g. missing CAP_SYS_NICE). Fall back
+                        // to improving the nice level while staying on the default policy.
+                        if (::setpriority(PRIO_PROCESS, 0, -10) != 0) {
+                            TRACE_L1("ResourceMonitor: failed to raise thread priority (errno %d)", errno);
+                        }
+                    }
+                }
+
+                return (result);
             }
 #endif
             virtual uint32_t Worker()
