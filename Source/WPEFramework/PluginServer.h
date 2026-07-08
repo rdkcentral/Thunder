@@ -1552,7 +1552,7 @@ namespace PluginHost {
                                 // If params became just "{}" after removal, that's fine
                                 // Start child span under the propagated trace
                                 string methodName = message.Designator.Value();
-                                //rdk_otlp_start_child_from_traceparent(traceparent.c_str(), methodName.c_str());
+                                rdk_otlp_start_child_from_traceparent(traceparent.c_str(), methodName.c_str());
 								// CHILD SPAN WILL BE STARTED HERE, MAYBE JUST PRINT SOME LINE TO CONFIRM CODE REACHES THIS PART. ACTUAL SPAN CREATION NEEDS NEW APIS IN WRAPPER 
 								// Log traceparent for diagnostics
                                 {
