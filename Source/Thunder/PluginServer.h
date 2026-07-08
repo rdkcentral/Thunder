@@ -5694,15 +5694,29 @@ namespace PluginHost {
 
             Core::JSON::ArrayType<Metadata::Server::Minion>::Iterator index(data.WorkerPool.ThreadPoolRuns.Elements());
 
+            const PluginHost::PostMortemDataSink wpSink = _config.PostMortemWorkerPoolSink();
+            const PluginHost::PostMortemDataSink csSink = _config.PostMortemCallstackSink();
+
             while (index.Next() == true) {
 
+                const uint64_t threadIdRaw = index.Current().Id.Value();
+
                 std::list<Core::callstack_info> stackList;
-                if (index.Current().Id.Value() != 0) {
-                    ::DumpCallStack(PluginHost::Metadata::ThreadId(index.Current().Id.Value()), stackList);
+                if (threadIdRaw != 0) {
+                    ::DumpCallStack(PluginHost::Metadata::ThreadId(threadIdRaw), stackList);
+                }
+
+                if (csSink == PluginHost::PostMortemDataSink::LOG || csSink == PluginHost::PostMortemDataSink::ALL) {
+                    for (const Core::callstack_info& entry : stackList) {
+                        const char* sym = entry.function.empty() ? "Unknown symbol" : entry.function.c_str();
+                        fprintf(stderr, "[%s]:[%s]:[%d]:[%p]\n",
+                                entry.module.c_str(), sym, entry.line, entry.address);
+                    }
+                    fflush(stderr);
                 }
 
                 PostMortemData::Callstack dump;
-                dump.Id = index.Current().Id.Value();
+                dump.Id = threadIdRaw;
 
                 for (const Core::callstack_info& info : stackList) {
                     dump.Data.Add() = CallstackData(info);
@@ -5711,13 +5725,26 @@ namespace PluginHost {
                 data.Callstacks.Add(dump);
             }
 
-            // Drop the workerpool info (what is currently running and what is pending) to a file..
-            Core::File dumpFile(_config.PostMortemPath() + "ThunderInternals.json");
-            if (dumpFile.Create(false) == true) {
-                data.IElement::ToFile(dumpFile);
+            if (csSink == PluginHost::PostMortemDataSink::FILE || csSink == PluginHost::PostMortemDataSink::ALL) {
+                DumpReadableMetadata(data, _config.PostMortemCallstackDumpPath());
             }
 
-            DumpReadableMetadata(data);
+            // Drop the workerpool info (what is currently running and what is pending) to a file..
+            if (wpSink == PluginHost::PostMortemDataSink::FILE || wpSink == PluginHost::PostMortemDataSink::ALL) {
+                Core::File dumpFile(_config.PostMortemPath() + "ThunderInternals.json");
+                if (dumpFile.Create(false) == true) {
+                    data.IElement::ToFile(dumpFile);
+                }
+            }
+
+            if (wpSink == PluginHost::PostMortemDataSink::LOG || wpSink == PluginHost::PostMortemDataSink::ALL) {
+                string jsonContent;
+                data.IElement::ToString(jsonContent);
+                SYSLOG(Logging::Shutdown, (_T("WorkerPool snapshot start\n")));
+                SYSLOG(Logging::Shutdown, (_T("[%s]\n"), jsonContent.c_str()));
+                SYSLOG(Logging::Shutdown, (_T("WorkerPool snapshot end\n")));
+                fflush(stderr);
+            }
         }
         inline ServiceMap& Services()
         {
@@ -5797,7 +5824,7 @@ namespace PluginHost {
         }
 
     private:
-        void DumpReadableMetadata(PostMortemData& data) const
+        void DumpReadableMetadata(PostMortemData& data, const string& outputPath) const
         {
             string readableDump;
 
@@ -5874,7 +5901,7 @@ namespace PluginHost {
                 appendReadableStack(index.Current());
             }
 
-            Core::File readableDumpFile(_config.PostMortemPath() + "ThunderInternals.txt");
+            Core::File readableDumpFile(outputPath + "ThunderInternals.txt");
             if (readableDumpFile.Create(false) == true) {
                 const uint32_t dumpSize = static_cast<uint32_t>(readableDump.length() * sizeof(string::value_type));
                 const uint32_t written = readableDumpFile.Write(reinterpret_cast<const uint8_t*>(readableDump.c_str()), dumpSize);

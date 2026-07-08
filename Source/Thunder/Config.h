@@ -25,6 +25,25 @@
 namespace Thunder {
 
 namespace PluginHost {
+
+    enum class PostMortemDataSink : uint8_t {
+        FILE     = 0,
+        LOG      = 1,
+        ALL      = 2,
+        DISABLED = 3
+    };
+
+    static inline PostMortemDataSink ParsePostMortemDataSink(const string& input, PostMortemDataSink fallback)
+    {
+        string s(input);
+        std::transform(s.begin(), s.end(), s.begin(), ::tolower);
+        if      (s == _T("log"))      return PostMortemDataSink::LOG;
+        else if (s == _T("all"))      return PostMortemDataSink::ALL;
+        else if (s == _T("disabled")) return PostMortemDataSink::DISABLED;
+        else if (s == _T("file"))     return PostMortemDataSink::FILE;
+        return fallback;
+    }
+
     /**
      * IMPORTANT: If updating this class to add/remove/modify configuration options, ensure
      * the documentation in docs/introduction/config.md is updated to reflect the changes!
@@ -459,6 +478,9 @@ namespace PluginHost {
                 Add(_T("volatilepath"), &VolatilePath);
                 Add(_T("proxystubpath"), &ProxyStubPath);
                 Add(_T("postmortempath"), &PostMortemPath);
+                Add(_T("postmortemworkerpoolsink"), &PostMortemWorkerPoolSink);
+                Add(_T("postmortemcallstacksink"), &PostMortemCallstackSink);
+                Add(_T("postmortemcallstackdumppath"), &PostMortemCallstackDumpPath);
                 Add(_T("communicator"), &Communicator);
                 Add(_T("signature"), &Signature);
                 Add(_T("idletime"), &IdleTime);
@@ -515,6 +537,9 @@ namespace PluginHost {
             Core::JSON::String VolatilePath;
             Core::JSON::String ProxyStubPath;
             Core::JSON::String PostMortemPath;
+            Core::JSON::String PostMortemWorkerPoolSink;
+            Core::JSON::String PostMortemCallstackSink;
+            Core::JSON::String PostMortemCallstackDumpPath;
             Core::JSON::String Communicator;
             Core::JSON::String Redirect;
             Core::JSON::String Signature;
@@ -695,6 +720,9 @@ namespace PluginHost {
             , _proxyStubPath()
             , _observableProxyStubPath()
             , _postMortemPath()
+            , _workerPoolSink(static_cast<PostMortemDataSink>(THUNDER_POSTMORTEM_WORKERPOOL_SINK_DEFAULT))
+            , _callstackSink(static_cast<PostMortemDataSink>(THUNDER_POSTMORTEM_CALLSTACK_SINK_DEFAULT))
+            , _callstackDumpPath()
             , _pluginConfigPath()
             , _accessor()
             , _communicator()
@@ -808,6 +836,17 @@ namespace PluginHost {
                     _pluginConfigPath = Core::Directory::Normalize(config.Observe.PluginConfigPath.Value());
                 }
                 _postMortemPath = Core::Directory::Normalize(config.PostMortemPath.Value());
+                _callstackDumpPath = config.PostMortemCallstackDumpPath.IsSet()
+                    ? Core::Directory::Normalize(config.PostMortemCallstackDumpPath.Value())
+                    : _postMortemPath;
+                _workerPoolSink = config.PostMortemWorkerPoolSink.IsSet()
+                    ? ParsePostMortemDataSink(config.PostMortemWorkerPoolSink.Value(),
+                                              PostMortemDataSink::FILE)
+                    : static_cast<PostMortemDataSink>(THUNDER_POSTMORTEM_WORKERPOOL_SINK_DEFAULT);
+                _callstackSink = config.PostMortemCallstackSink.IsSet()
+                    ? ParsePostMortemDataSink(config.PostMortemCallstackSink.Value(),
+                                              PostMortemDataSink::DISABLED)
+                    : static_cast<PostMortemDataSink>(THUNDER_POSTMORTEM_CALLSTACK_SINK_DEFAULT);
                 _appPath = Core::Directory::Normalize(Core::File::PathName(Core::ProcessInfo().Executable()));
                 _hashKey = config.Signature.Value();
                 _communicator = Core::NodeId(config.Communicator.Value().c_str());
@@ -1038,6 +1077,18 @@ namespace PluginHost {
         inline const string& PostMortemPath() const
         {
             return (_postMortemPath);
+        }
+        inline PostMortemDataSink PostMortemWorkerPoolSink() const
+        {
+            return (_workerPoolSink);
+        }
+        inline PostMortemDataSink PostMortemCallstackSink() const
+        {
+            return (_callstackSink);
+        }
+        inline const string& PostMortemCallstackDumpPath() const
+        {
+            return (_callstackDumpPath);
         }
         inline bool PostMortemAllowed(PluginHost::IShell::reason why) const
         {
@@ -1334,6 +1385,9 @@ namespace PluginHost {
         string _proxyStubPath;
         string _observableProxyStubPath;
         string _postMortemPath;
+        PostMortemDataSink _workerPoolSink;
+        PostMortemDataSink _callstackSink;
+        string _callstackDumpPath;
         string _pluginConfigPath;
         Core::NodeId _accessor;
         Core::NodeId _communicator;
