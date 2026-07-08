@@ -55,11 +55,8 @@ target_link_libraries(${TARGET}
           CompileSettingsDebug::CompileSettingsDebug
           ${NAMESPACE}Core::${NAMESPACE}Core
           ${NAMESPACE}Cryptalgo::${NAMESPACE}Cryptalgo
+          $<$<BOOL:${HAS_RDK_OTLP}>:rdk_otlp>
         )
-
-if(HAS_RDK_OTLP)
-    target_link_libraries(${TARGET} PUBLIC rdk_otlp)
-endif()
 
 target_compile_definitions(${TARGET} PRIVATE WEBSOCKET_EXPORTS)
 
