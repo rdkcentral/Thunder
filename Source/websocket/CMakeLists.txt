@@ -45,7 +45,8 @@ set(PUBLIC_HEADERS
 
 find_library(RDK_OTLP_LIB rdk_otlp)
 if(RDK_OTLP_LIB)
-    message(STATUS "Found librdk_otlp: ${RDK_OTLP_LIB} - enabling OTEL trace propagation")
+    message(STATUS "Found librdk_otlp - enabling OTEL trace propagation")
+    set(HAS_RDK_OTLP TRUE)
 endif()
 
 target_link_libraries(${TARGET}
@@ -54,9 +55,11 @@ target_link_libraries(${TARGET}
           CompileSettingsDebug::CompileSettingsDebug
           ${NAMESPACE}Core::${NAMESPACE}Core
           ${NAMESPACE}Cryptalgo::${NAMESPACE}Cryptalgo
-          PUBLIC
-            $<$<BOOL:${RDK_OTLP_LIB}>:${RDK_OTLP_LIB}>
         )
+
+if(HAS_RDK_OTLP)
+    target_link_libraries(${TARGET} PUBLIC rdk_otlp)
+endif()
 
 target_compile_definitions(${TARGET} PRIVATE WEBSOCKET_EXPORTS)
 
