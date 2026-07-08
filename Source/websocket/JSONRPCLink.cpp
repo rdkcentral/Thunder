@@ -19,6 +19,27 @@
 
 #include "JSONRPCLink.h"
 
+// RDK OpenTelemetry trace propagation wrapper
+// These functions live in the websocket .so, so downstream consumers
+// resolve them via the shared library without needing to link librdk_otlp directly.
+#if __has_include("rdk_otlp_instrumentation.h")
+#include "rdk_otlp_instrumentation.h"
+#define RDK_OTEL_JSONRPC_IMPL 1
+#else
+#define RDK_OTEL_JSONRPC_IMPL 0
+#endif
+
+namespace WPEFramework {
+
+    const char* OtelGetCurrentTraceparent() {
+#if RDK_OTEL_JSONRPC_IMPL
+        return rdk_otlp_get_current_traceparent();
+#else
+        return nullptr;
+#endif
+    }
+} // namespace WPEFramework
+
 namespace WPEFramework {
 
 ENUM_CONVERSION_BEGIN(WPEFramework::JSONRPC::JSONPluginState)
