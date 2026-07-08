@@ -17,7 +17,7 @@
 
 set(TARGET ${NAMESPACE}WebSocket)
 
-add_library(${TARGET}
+add_library(${TARGET} SHARED
         Module.cpp
         URL.cpp
         JSONWebToken.cpp
@@ -54,50 +54,45 @@ target_link_libraries(${TARGET}
           CompileSettingsDebug::CompileSettingsDebug
           ${NAMESPACE}Core::${NAMESPACE}Core
           ${NAMESPACE}Cryptalgo::${NAMESPACE}Cryptalgo
-        PUBLIC
-          $<$<BOOL:${RDK_OTLP_LIB}>:${RDK_OTLP_LIB}>
+          PUBLIC
+            $<$<BOOL:${RDK_OTLP_LIB}>:${RDK_OTLP_LIB}>
         )
 
 target_compile_definitions(${TARGET} PRIVATE WEBSOCKET_EXPORTS)
 
 set_target_properties(${TARGET} PROPERTIES
-        CXX_STANDARD ${CXX_STD}
+        CXX_STANDARD 11
         CXX_STANDARD_REQUIRED YES
         FRAMEWORK FALSE
         PUBLIC_HEADER "${PUBLIC_HEADERS}" # specify the public headers
+        VERSION ${VERSION}
         SOVERSION ${VERSION_MAJOR}
         )
-
-if(HUMAN_VERSIONED_BINARIES)
-set_target_properties(${TARGET} PROPERTIES
-        VERSION ${VERSION}
-        )
-endif()
 
 target_include_directories( ${TARGET}
         PUBLIC
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../>
-          $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}>
+          $<INSTALL_INTERFACE:include/${NAMESPACE}>
         )
 
 install(
-        TARGETS ${TARGET}  EXPORT ${TARGET}Targets
-        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT ${NAMESPACE}_Development
-        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT ${NAMESPACE}_Runtime NAMELINK_COMPONENT ${NAMESPACE}_Development
-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT ${NAMESPACE}_Runtime
-        FRAMEWORK DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT ${NAMESPACE}_Runtime
-        PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}/websocket COMPONENT ${NAMESPACE}_Development
-        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}
+        TARGETS ${TARGET}  EXPORT ${TARGET}Targets  # for downstream dependencies
+        ARCHIVE DESTINATION lib COMPONENT libs      # static lib
+        LIBRARY DESTINATION lib COMPONENT libs      # shared lib
+        RUNTIME DESTINATION bin COMPONENT libs      # binaries
+        FRAMEWORK DESTINATION bin COMPONENT libs    # for mac
+        PUBLIC_HEADER DESTINATION include/${NAMESPACE}/websocket COMPONENT devel   # headers for mac (note the different component -> different package)
+        INCLUDES DESTINATION include/${NAMESPACE}   # default include path
 )
 
-#FIXME: check if this goes OK with bitbake
-install(CODE "execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink websocket ${CMAKE_SYSROOT}${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}/jsonrpc)")
-install(CODE "execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink websocket.h ${CMAKE_SYSROOT}${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}/websocket/jsonrpc.h)")
+install(CODE "execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink websocket ${CMAKE_SYSROOT}${CMAKE_INSTALL_PREFIX}/include/${NAMESPACE}/jsonrpc)")
+install(CODE "execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink websocket.h ${CMAKE_SYSROOT}${CMAKE_INSTALL_PREFIX}/include/${NAMESPACE}/websocket/jsonrpc.h)")
 
 
 InstallPackageConfig(
         TARGETS ${TARGET} 
         DESCRIPTION "library containing HTTP protocol (RFC2616), WebSocket (RFC6455) and JSONRPC functionality.")
+
 
 InstallCMakeConfig(TARGETS ${TARGET})
