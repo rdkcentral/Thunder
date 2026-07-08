@@ -4720,20 +4720,32 @@ POP_WARNING()
 
             Core::JSON::ArrayType<MetaData::Server::Minion>::Iterator index(data.WorkerPool.ThreadPoolRuns.Elements());
 
+            const PluginHost::PostMortemDataSink wpSink = _config.PostMortemWorkerPoolSink();
+            const PluginHost::PostMortemDataSink csSink = _config.PostMortemCallstackSink();
+
             while (index.Next() == true) {
 
-                std::list<Core::callstack_info> stackList;
+                const uint64_t threadIdRaw = index.Current().Id.Value();
 
-                ::DumpCallStack(static_cast<ThreadId>(index.Current().Id.Value()), stackList);
-                for(const Core::callstack_info& entry : stackList)
-                {
-                    std::string symbol = entry.function.empty() ? "Unknown symbol" : entry.function;
-                    fprintf(stderr, "[%s]:[%s]:[%d]:[%p]\n",entry.module.c_str(), symbol.c_str(),entry.line,entry.address);
+                std::list<Core::callstack_info> stackList;
+                if (threadIdRaw != 0) {
+                    ::DumpCallStack(static_cast<ThreadId>(threadIdRaw), stackList);
                 }
-                fflush(stderr);
+
+                // Inline per-thread callstack print (disabled by default; enable via
+                // postmortemcallstacksink = "log" or "all" in config.json, or the
+                // POSTMORTEM_CALLSTACK_SINK CMake option).
+                if (csSink == PluginHost::PostMortemDataSink::LOG || csSink == PluginHost::PostMortemDataSink::ALL) {
+                    for (const Core::callstack_info& entry : stackList) {
+                        const char* sym = entry.function.empty() ? "Unknown symbol" : entry.function.c_str();
+                        fprintf(stderr, "[%s]:[%s]:[%d]:[%p]\n",
+                                entry.module.c_str(), sym, entry.line, entry.address);
+                    }
+                    fflush(stderr);
+                }
 
                 PostMortemData::Callstack dump;
-                dump.Id = index.Current().Id.Value();
+                dump.Id = threadIdRaw;
 
                 for (const Core::callstack_info& info : stackList) {
                     dump.Data.Add() = CallstackData(info);
@@ -4742,13 +4754,29 @@ POP_WARNING()
                 data.Callstacks.Add(dump);
             }
 
-            // Drop the workerpool info (what is currently running and what is pending) to a wpeframework.log
-            string jsonContent;
-            data.IElement::ToString(jsonContent);
-            SYSLOG(Logging::Shutdown, (_T("!!!!!!WPEFramework/Thunder Workerpool info started!!!!!!\n")));
-            SYSLOG(Logging::Shutdown, (_T("[%s]\n"), jsonContent.c_str()));
-            SYSLOG(Logging::Shutdown, (_T("!!!!!!WPEFramework/Thunder Workerpool info Ended!!!!!!\n")));
-            fflush(stderr);
+            // Callstack readable dump to file — destination controlled by postmortemcallstacksink.
+            // Writes ThunderInternals.txt to postmortemcallstackdumppath (defaults to postmortempath).
+            if (csSink == PluginHost::PostMortemDataSink::FILE || csSink == PluginHost::PostMortemDataSink::ALL) {
+                DumpReadableMetadata(data, _config.PostMortemCallstackDumpPath());
+            }
+
+            // WorkerPool JSON snapshot to file — destination controlled by postmortemworkerpoolsink.
+            if (wpSink == PluginHost::PostMortemDataSink::FILE || wpSink == PluginHost::PostMortemDataSink::ALL) {
+                Core::File dumpFile(_config.PostMortemPath() + "ThunderInternals.json");
+                if (dumpFile.Create(false) == true) {
+                    data.IElement::ToFile(dumpFile);
+                }
+            }
+
+            // WorkerPool JSON snapshot to syslog — destination controlled by postmortemworkerpoolsink.
+            if (wpSink == PluginHost::PostMortemDataSink::LOG || wpSink == PluginHost::PostMortemDataSink::ALL) {
+                string jsonContent;
+                data.IElement::ToString(jsonContent);
+                SYSLOG(Logging::Shutdown, (_T("WorkerPool snapshot start\n")));
+                SYSLOG(Logging::Shutdown, (_T("[%s]\n"), jsonContent.c_str()));
+                SYSLOG(Logging::Shutdown, (_T("WorkerPool snapshot end\n")));
+                fflush(stderr);
+            }
         }
         inline ServiceMap& Services()
         {
@@ -4816,6 +4844,97 @@ POP_WARNING()
         }
         void Closed(const uint32_t id) {
             _services.Closed(id);
+        }
+
+    private:
+        void DumpReadableMetadata(PostMortemData& data, const string& outputPath) const
+        {
+            string readableDump;
+
+            auto appendLine = [&readableDump](const string& line) {
+                readableDump += line;
+                readableDump += '\n';
+            };
+
+            auto stackForThread = [&data](const Core::instance_id threadId) -> PostMortemData::Callstack* {
+                Core::JSON::ArrayType<PostMortemData::Callstack>::Iterator stacks(data.Callstacks.Elements());
+                while (stacks.Next() == true) {
+                    if (stacks.Current().Id.Value() == threadId) {
+                        return (&stacks.Current());
+                    }
+                }
+                return (nullptr);
+            };
+
+            auto appendReadableStack = [&appendLine, &stackForThread](const MetaData::Server::Minion& thread) {
+                const Core::instance_id threadId = thread.Id.Value();
+
+                appendLine(EMPTY_STRING);
+                if (threadId == 0) {
+                    appendLine(_T("Thread <unavailable>"));
+                }
+                else {
+                    appendLine(Core::Format(_T("Thread 0x%llx"), static_cast<unsigned long long>(threadId)));
+                }
+                appendLine(Core::Format(_T("  job: %s"), ((thread.Job.IsSet() == true) && (thread.Job.Value().empty() == false)) ? thread.Job.Value().c_str() : _T("<none>")));
+                appendLine(Core::Format(_T("  runs: %u"), thread.Runs.Value()));
+                appendLine(EMPTY_STRING);
+
+                if (threadId == 0) {
+                    appendLine(_T("  <no thread id available; stack not captured>"));
+                    return;
+                }
+
+                PostMortemData::Callstack* stack = stackForThread(threadId);
+                if ((stack == nullptr) || (stack->Data.Length() == 0)) {
+                    appendLine(_T("  <no stack available>"));
+                    return;
+                }
+
+                uint32_t counter = 0;
+                Core::JSON::ArrayType<CallstackData>::Iterator entries(stack->Data.Elements());
+                while (entries.Next() == true) {
+                    const CallstackData& entry = entries.Current();
+                    if (entry.Line.IsSet() == true) {
+                        appendLine(Core::Format(_T("  #%02u [0x%llx] %s %s [%u]"), counter, static_cast<unsigned long long>(entry.Address.Value()), entry.Module.Value().c_str(), entry.Function.Value().c_str(), entry.Line.Value()));
+                    }
+                    else {
+                        appendLine(Core::Format(_T("  #%02u [0x%llx] %s %s"), counter, static_cast<unsigned long long>(entry.Address.Value()), entry.Module.Value().c_str(), entry.Function.Value().c_str()));
+                    }
+                    ++counter;
+                }
+            };
+
+            appendLine(_T("Thunder Worker Pool Post-Mortem"));
+            appendLine(EMPTY_STRING);
+
+            appendLine(_T("Pending requests:"));
+            if (data.WorkerPool.PendingRequests.Length() == 0) {
+                appendLine(_T("  <none>"));
+            }
+            else {
+                Core::JSON::ArrayType<Core::JSON::String>::Iterator pending(data.WorkerPool.PendingRequests.Elements());
+                while (pending.Next() == true) {
+                    appendLine(Core::Format(_T("  %s"), pending.Current().Value().c_str()));
+                }
+            }
+
+            Core::JSON::ArrayType<MetaData::Server::Minion>::Iterator index(data.WorkerPool.ThreadPoolRuns.Elements());
+            while (index.Next() == true) {
+                appendReadableStack(index.Current());
+            }
+
+            Core::File readableDumpFile(outputPath + "ThunderInternals.txt");
+            if (readableDumpFile.Create(false) == true) {
+                const uint32_t dumpSize = static_cast<uint32_t>(readableDump.length() * sizeof(string::value_type));
+                const uint32_t written = readableDumpFile.Write(reinterpret_cast<const uint8_t*>(readableDump.c_str()), dumpSize);
+                if (written != dumpSize) {
+                    SYSLOG(Logging::Error, (_T("Postmortem dump truncated: wrote %u of %u bytes to [%s]."), written, dumpSize, readableDumpFile.Name().c_str()));
+                }
+            }
+            else {
+                SYSLOG(Logging::Error, (_T("Could not create postmortem dump [%s]."), readableDumpFile.Name().c_str()));
+            }
         }
 
   private:
