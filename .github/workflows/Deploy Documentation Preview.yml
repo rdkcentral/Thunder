@@ -26,7 +26,7 @@ jobs:
   deploy-preview:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       # Will download all artifacts
       # If artifact name == preview_site, then we have a site to reply
       # If artifact name == closed_pr_number, then we need to cleanup an old deployment
