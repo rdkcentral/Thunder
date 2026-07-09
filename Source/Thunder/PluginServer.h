@@ -5697,6 +5697,10 @@ namespace PluginHost {
             const PluginHost::PostMortemDataSink wpSink = _config.PostMortemWorkerPoolSink();
             const PluginHost::PostMortemDataSink csSink = _config.PostMortemCallstackSink();
 
+            if ((wpSink == PluginHost::PostMortemDataSink::DISABLED) && (csSink == PluginHost::PostMortemDataSink::DISABLED)) {
+                return;
+            }
+
             while (index.Next() == true) {
 
                 const uint64_t threadIdRaw = index.Current().Id.Value();
