@@ -31,7 +31,7 @@
 
 namespace WPEFramework {
 
-    const char* OtelGetCurrentTraceparent() {
+    EXTERNAL const char* OtelGetCurrentTraceparent() {
 #if RDK_OTEL_JSONRPC_IMPL
         return rdk_otlp_get_current_traceparent();
 #else
