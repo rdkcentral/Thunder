@@ -26,7 +26,7 @@
 // The actual OTEL calls are in JSONRPCLink.cpp to avoid leaking link dependencies
 // to downstream consumers. This wrapper is exported from libWPEFrameworkWebSocket.so.
 namespace WPEFramework {
-    const char* OtelGetCurrentTraceparent();
+   EXTERNAL const char* OtelGetCurrentTraceparent();
 } // namespace WPEFramework
 #define RDK_OTEL_THUNDER_ENABLED 1
 
