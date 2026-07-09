@@ -119,7 +119,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>APPLICATION_NAME=Thunder;__CORE_MESSAGING__;_CRT_SECURE_NO_WARNINGS;_WINDOWS;THREADPOOL_COUNT=4;HOSTING_COMPROCESS=comprocess.exe;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>APPLICATION_NAME=Thunder;__CORE_MESSAGING__;_CRT_SECURE_NO_WARNINGS;_WINDOWS;THREADPOOL_COUNT=4;HOSTING_COMPROCESS=comprocess.exe;THUNDER_POSTMORTEM_WORKERPOOL_SINK_DEFAULT=0;THUNDER_POSTMORTEM_CALLSTACK_SINK_DEFAULT=3;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>$(FrameworkPath)plugins;$(FrameworkPath);$(WindowsPath);$(WindowsPath)zlib;$(FrameworkPath)addons</AdditionalIncludeDirectories>
@@ -143,7 +143,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>APPLICATION_NAME=Thunder;__CORE_MESSAGING__;_CRT_SECURE_NO_WARNINGS;_WINDOWS;THREADPOOL_COUNT=4;HOSTING_COMPROCESS=comprocess.exe;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>APPLICATION_NAME=Thunder;__CORE_MESSAGING__;_CRT_SECURE_NO_WARNINGS;_WINDOWS;THREADPOOL_COUNT=4;HOSTING_COMPROCESS=comprocess.exe;THUNDER_POSTMORTEM_WORKERPOOL_SINK_DEFAULT=0;THUNDER_POSTMORTEM_CALLSTACK_SINK_DEFAULT=3;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>$(FrameworkPath)plugins;$(FrameworkPath);$(WindowsPath);$(WindowsPath)zlib;$(FrameworkPath)addons</AdditionalIncludeDirectories>
@@ -165,7 +165,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>APPLICATION_NAME=Thunder;__CORE_MESSAGING__;_CRT_SECURE_NO_WARNINGS;_WINDOWS;THREADPOOL_COUNT=4;HOSTING_COMPROCESS=comprocess.exe;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>APPLICATION_NAME=Thunder;__CORE_MESSAGING__;_CRT_SECURE_NO_WARNINGS;_WINDOWS;THREADPOOL_COUNT=4;HOSTING_COMPROCESS=comprocess.exe;THUNDER_POSTMORTEM_WORKERPOOL_SINK_DEFAULT=0;THUNDER_POSTMORTEM_CALLSTACK_SINK_DEFAULT=3;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>$(FrameworkPath)plugins;$(FrameworkPath);$(WindowsPath);$(WindowsPath)zlib;$(FrameworkPath)addons</AdditionalIncludeDirectories>
@@ -189,7 +189,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>APPLICATION_NAME=Thunder;__CORE_MESSAGING__;_CRT_SECURE_NO_WARNINGS;_WINDOWS;THREADPOOL_COUNT=4;HOSTING_COMPROCESS=comprocess.exe;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>APPLICATION_NAME=Thunder;__CORE_MESSAGING__;_CRT_SECURE_NO_WARNINGS;_WINDOWS;THREADPOOL_COUNT=4;HOSTING_COMPROCESS=comprocess.exe;THUNDER_POSTMORTEM_WORKERPOOL_SINK_DEFAULT=0;THUNDER_POSTMORTEM_CALLSTACK_SINK_DEFAULT=3;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>$(FrameworkPath)plugins;$(FrameworkPath);$(WindowsPath);$(WindowsPath)zlib;$(FrameworkPath)addons</AdditionalIncludeDirectories>
