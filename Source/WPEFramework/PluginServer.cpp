@@ -414,8 +414,10 @@ namespace PluginHost
     /* virtual */ Core::hresult Server::Service::Activate(const PluginHost::IShell::reason why)
     {
         Core::hresult result = Core::ERROR_NONE;
+        SYSLOG(Logging::Startup, (_T("[TS-Profile] Activating plugin [%s]:[%s]"), ClassName().c_str(), Callsign().c_str()));
 
         Lock();
+        SYSLOG(Logging::Startup, (_T("[TS-Profile] After Lock Activating plugin [%s]:[%s]"), ClassName().c_str(), Callsign().c_str()));
 
         IShell::state currentState(State());
 
@@ -433,6 +435,7 @@ namespace PluginHost
 
             // Load the interfaces, If we did not load them yet...
             if (_handler == nullptr) {
+                SYSLOG(Logging::Startup, (_T("[TS-Profile] Within Lock AcquireInterface for Activating plugin [%s]:[%s]"), ClassName().c_str(), Callsign().c_str()));
                 AcquireInterfaces();
             }
 
@@ -443,6 +446,7 @@ namespace PluginHost
                 SYSLOG(Logging::Startup, (_T("Loading of plugin [%s]:[%s], failed. Error [%s]"), className.c_str(), callSign.c_str(), ErrorMessage().c_str()));
                 result = Core::ERROR_UNAVAILABLE;
 
+                SYSLOG(Logging::Startup, (_T("[TS-Profile] Released Lock for Activating plugin [%s]:[%s]"), ClassName().c_str(), Callsign().c_str()));
                 Unlock();
 
                 // See if the preconditions have been met..
@@ -474,6 +478,7 @@ namespace PluginHost
                     TRACE(Activity, (_T("Delta preconditions: %s"), feedback.c_str()));
                 }
 
+                SYSLOG(Logging::Startup, (_T("[TS-Profile] Released Lock for Activating plugin [%s]:[%s]"), ClassName().c_str(), Callsign().c_str()));
                 Unlock();
 
             } else {
@@ -486,13 +491,19 @@ namespace PluginHost
 
                 TRACE(Activity, (_T("Activation plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
 
+                SYSLOG(Logging::Startup, (_T("[TS-Profile] Calling ILifetime subscribers before Activating plugin [%s]:[%s]"), ClassName().c_str(), Callsign().c_str()));
                 _administrator.Initialize(callSign, this);
+                SYSLOG(Logging::Startup, (_T("[TS-Profile] Finished Calling ILifetime subscribers before Activating plugin [%s]:[%s]"), ClassName().c_str(), Callsign().c_str()));
                 
                 State(ACTIVATION);
 
+                SYSLOG(Logging::Startup, (_T("[TS-Profile] State changed to ACTIVATION for Activating plugin [%s]:[%s]"), ClassName().c_str(), Callsign().c_str()));
                 Unlock();
+                SYSLOG(Logging::Startup, (_T("[TS-Profile] Released Lock for Activating plugin [%s]:[%s]"), ClassName().c_str(), Callsign().c_str()));
 
+                SYSLOG(Logging::Startup, (_T("[TS-Profile] Calling Initialize for plugin [%s]:[%s]"), ClassName().c_str(), Callsign().c_str()));
                 REPORT_DURATION_WARNING( { ErrorMessage(_handler->Initialize(this)); }, WarningReporting::TooLongPluginState, WarningReporting::TooLongPluginState::StateChange::ACTIVATION, callSign.c_str());
+                SYSLOG(Logging::Startup, (_T("[TS-Profile] Initialize complete for plugin [%s]:[%s]"), ClassName().c_str(), Callsign().c_str()));
 
                 if (HasError() == true) {
                     result = Core::ERROR_GENERAL;
@@ -507,7 +518,9 @@ namespace PluginHost
                         Lock();
                         ReleaseInterfaces();
                         State(DEACTIVATED);
+                        SYSLOG(Logging::Startup, (_T("[TS-Profile] Released Lock for Activating plugin [%s]:[%s]"), ClassName().c_str(), Callsign().c_str()));
                         Unlock();
+                        SYSLOG(Logging::Startup, (_T("[TS-Profile] Released Lock for Activating plugin [%s]:[%s]"), ClassName().c_str(), Callsign().c_str()));
                     }
 
                 } else {
@@ -547,11 +560,14 @@ namespace PluginHost
                     }
 
                     Unlock();
+                    SYSLOG(Logging::Startup, (_T("[TS-Profile] Released Lock for Activating plugin [%s]:[%s]"), ClassName().c_str(), Callsign().c_str()));
                 }
             }
         } else {
             Unlock();
+            SYSLOG(Logging::Startup, (_T("[TS-Profile] Released Lock for Activating plugin [%s]:[%s]"), ClassName().c_str(), Callsign().c_str()));
         }
+        SYSLOG(Logging::Startup, (_T("[TS-Profile] End of Activate for plugin [%s]:[%s]"), ClassName().c_str(), Callsign().c_str()));
 
         return (result);
     }
