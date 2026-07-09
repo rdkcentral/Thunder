@@ -36,7 +36,7 @@ namespace PluginHost {
     static inline PostMortemDataSink ParsePostMortemDataSink(const string& input, PostMortemDataSink fallback)
     {
         string s(input);
-        std::transform(s.begin(), s.end(), s.begin(), ::tolower);
+        std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c) { return static_cast<char>(::tolower(c)); });
         if      (s == _T("log"))      return PostMortemDataSink::LOG;
         else if (s == _T("all"))      return PostMortemDataSink::ALL;
         else if (s == _T("disabled")) return PostMortemDataSink::DISABLED;

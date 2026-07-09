@@ -5709,10 +5709,9 @@ namespace PluginHost {
                 if (csSink == PluginHost::PostMortemDataSink::LOG || csSink == PluginHost::PostMortemDataSink::ALL) {
                     for (const Core::callstack_info& entry : stackList) {
                         const char* sym = entry.function.empty() ? "Unknown symbol" : entry.function.c_str();
-                        fprintf(stderr, "[%s]:[%s]:[%d]:[%p]\n",
-                                entry.module.c_str(), sym, entry.line, entry.address);
+                        SYSLOG(Logging::Shutdown, (_T("[%s]:[%s]:[%u]:[%p]"),
+                                 entry.module.c_str(), sym, static_cast<unsigned int>(entry.line), entry.address));
                     }
-                    fflush(stderr);
                 }
 
                 PostMortemData::Callstack dump;
@@ -5743,7 +5742,6 @@ namespace PluginHost {
                 SYSLOG(Logging::Shutdown, (_T("WorkerPool snapshot start\n")));
                 SYSLOG(Logging::Shutdown, (_T("[%s]\n"), jsonContent.c_str()));
                 SYSLOG(Logging::Shutdown, (_T("WorkerPool snapshot end\n")));
-                fflush(stderr);
             }
         }
         inline ServiceMap& Services()
