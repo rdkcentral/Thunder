@@ -1624,13 +1624,13 @@ namespace PluginHost {
                                 }
                             }
                         }
-                    }
-                    Core::InterlockedDecrement(_activity);
 					
 #if RDK_OTEL_THUNDER_ENABLED
                     if (_otelSpanStarted) {
                         rdk_otlp_finish_child_span();
                     }
+					}
+                    Core::InterlockedDecrement(_activity);
 #endif
                 }
 
