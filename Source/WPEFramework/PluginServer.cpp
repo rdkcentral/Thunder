@@ -437,6 +437,7 @@ namespace PluginHost
             if (_handler == nullptr) {
                 SYSLOG(Logging::Startup, (_T("[TS-Profile] Within Lock AcquireInterface for Activating plugin [%s]:[%s]"), ClassName().c_str(), Callsign().c_str()));
                 AcquireInterfaces();
+                SYSLOG(Logging::Startup, (_T("[TS-Profile] Within Lock After AcquireInterface for Activating plugin [%s]:[%s]"), ClassName().c_str(), Callsign().c_str()));
             }
 
             const string callSign(PluginHost::Service::Configuration().Callsign.Value());

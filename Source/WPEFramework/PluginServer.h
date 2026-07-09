@@ -1974,15 +1974,19 @@ namespace PluginHost {
                         ErrorMessage(_T("local class definitions/version does not exist"));
                     }
                 } else {
+                     SYSLOG(Logging::Startup, (_T("[TS-Profile] Before Loading Library [%s] for plugin [%s]:[%s] "), locator.c_str(), ClassName().c_str(), Callsign().c_str()));
                     _library = LoadLibrary(locator);
+                     SYSLOG(Logging::Startup, (_T("[TS-Profile] After Loading Library [%s] for plugin [%s]:[%s] "), locator.c_str(), ClassName().c_str(), Callsign().c_str()));
                     if (_library.IsLoaded() == false) {
                         ErrorMessage(_T("Library could not be loaded"));
                     }
                     else {
+                        SYSLOG(Logging::Startup, (_T("[TS-Profile] Before Instantiate Library [%s] for plugin [%s]:[%s] "), locator.c_str(), ClassName().c_str(), Callsign().c_str()));
                         if ((newIF = Core::ServiceAdministrator::Instance().Instantiate<IPlugin>(_library, className, version)) == nullptr) {
                             ErrorMessage(_T("class definitions/version does not exist"));
                             _library = Core::Library();
                         }
+                        SYSLOG(Logging::Startup, (_T("[TS-Profile] After Instantiate Library [%s] for plugin [%s]:[%s] "), locator.c_str(), ClassName().c_str(), Callsign().c_str()));
                     }
                 }
 
