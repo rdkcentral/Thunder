@@ -126,8 +126,9 @@ namespace Core {
 
                 void* newBuffer = (::MapViewOfFile(m_MemoryMappedFile, flags, 0, 0, mapSize));
 
-                // Seems like everything succeeded. Lets map it.
-                UpdateCache(0, static_cast<uint8_t*>(newBuffer), requiredSize, mapSize);
+                if (newBuffer != nullptr) {
+                    UpdateCache(0, static_cast<uint8_t*>(newBuffer), requiredSize, mapSize);
+                }
             }
         }
     }
@@ -166,7 +167,7 @@ namespace Core {
                 }
             }
 
-            if (m_MemoryMappedFile == INVALID_HANDLE_VALUE) {
+            if (m_MemoryMappedFile != INVALID_HANDLE_VALUE) {
                 DWORD flags = ((m_Flags & File::USER_READ) != 0 ? FILE_MAP_READ : 0) | ((m_Flags & File::USER_WRITE) != 0 ? FILE_MAP_WRITE : 0);
 
                 void* newBuffer = ::MapViewOfFileEx(m_MemoryMappedFile, flags, 0, 0, static_cast<SIZE_T>(requestedSize), Buffer());

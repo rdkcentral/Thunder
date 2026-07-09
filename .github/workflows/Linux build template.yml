@@ -69,7 +69,7 @@ jobs:
 # --------- Thunder ----------
     - name: Checkout Thunder - default
       if: ${{ !contains(github.event.pull_request.body, '[DependsOn=Thunder:') }}
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         path: Thunder
         repository: rdkcentral/Thunder
@@ -85,7 +85,7 @@ jobs:
 
     - name: Checkout Thunder - ${{steps.thunder.outputs.first_match}}
       if: contains(github.event.pull_request.body, '[DependsOn=Thunder:')
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         path: Thunder
         repository: rdkcentral/Thunder
@@ -94,7 +94,7 @@ jobs:
 # ------- ThunderTools -------
     - name: Checkout ThunderTools - default
       if: ${{ !contains(github.event.pull_request.body, '[DependsOn=ThunderTools:') }}
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         path: ThunderTools
         repository: rdkcentral/ThunderTools
@@ -110,7 +110,7 @@ jobs:
 
     - name: Checkout ThunderTools - ${{steps.tools.outputs.first_match}}
       if: contains(github.event.pull_request.body, '[DependsOn=ThunderTools:')
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         path: ThunderTools
         repository: rdkcentral/ThunderTools
