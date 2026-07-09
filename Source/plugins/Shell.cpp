@@ -42,6 +42,7 @@ ENUM_CONVERSION_BEGIN(PluginHost::IShell::reason)
     { PluginHost::IShell::STARTUP, _TXT("Startup") },
     { PluginHost::IShell::SHUTDOWN, _TXT("Shutdown") },
     { PluginHost::IShell::CONDITIONS, _TXT("Conditions") },
+    { PluginHost::IShell::WATCHDOG_EXPIRED, _TXT("WatchdogExpired") },
 
 ENUM_CONVERSION_END(PluginHost::IShell::reason)
 

@@ -64,7 +64,8 @@ namespace PluginHost {
             MEMORY_EXCEEDED,
             STARTUP,
             SHUTDOWN,
-            CONDITIONS
+            CONDITIONS,
+            WATCHDOG_EXPIRED,
         };
 
         class EXTERNAL Job : public Core::IDispatch {
