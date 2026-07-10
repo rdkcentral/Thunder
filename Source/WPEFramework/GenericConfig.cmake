@@ -34,6 +34,7 @@ set(PROXYSTUB_PATH "${CMAKE_INSTALL_PREFIX}/lib/${NAMESPACE_LIB}/proxystubs" CAC
 set(POSTMORTEM_PATH "/opt/minidumps" CACHE STRING "Core file path to do the postmortem of the crash")
 set(MESSAGECONTROL_PATH "MessageDispatcher" CACHE STRING "MessageControl base path to create message files")
 set(MESSAGING_PORT 0 CACHE STRING "The port for the messaging")
+option(FLUSH_LOGS "Controls if logs to be flushed out" false)
 set(CONFIG_INSTALL_PATH "/etc/${NAMESPACE}" CACHE STRING "Install location of the configuration")
 set(IPV6_SUPPORT false CACHE STRING "Controls if should application supports ipv6")
 set(LEGACY_INITIALZE false CACHE STRING "Enables legacy Plugin Initialize behaviour (Deinit not called on failed Init)")
@@ -55,6 +56,12 @@ set(PLUGIN_CONTROLLER_UI_ENABLED "true" CACHE STRING "Enable the Controller's UI
 
 if (PLUGIN_CONTROLLER_UI_ENABLED STREQUAL "false")
     set (BINDING "127.0.0.1")
+endif()
+
+if (FLUSH_LOGS)
+    set(FLUSH "true")
+else()
+    set(FLUSH "false")
 endif()
 
 if(CMAKE_VERSION VERSION_LESS 3.20.0 AND LEGACY_CONFIG_GENERATOR)
