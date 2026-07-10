@@ -278,6 +278,10 @@ POP_WARNING()
             }
 
             destructor->Close();
+#if RDK_OTEL_THUNDER_ENABLED
+            rdk_otlp_force_flush();
+            rdk_otlp_shutdown();
+#endif
             delete destructor;
             delete _config;
             _config = nullptr;
@@ -784,6 +788,10 @@ POP_WARNING()
 
             // Startup/load/initialize what we found in the configuration.
             _dispatcher = new PluginHost::Server(*_config, _background);
+
+#if RDK_OTEL_THUNDER_ENABLED
+            rdk_otlp_init("WPEFramework", EXPAND_AND_QUOTE(BUILD_REFERENCE));
+#endif
 
             SYSLOG(Logging::Startup, (_T(EXPAND_AND_QUOTE(APPLICATION_NAME) " actively listening.")));
 
