@@ -543,7 +543,7 @@ namespace PluginHost
                         }
                     }
 
-                    SYSLOG(Logging::Startup, (_T("Activated plugin [%s]:[%s], monotonic time: %lu"), className.c_str(), callSign.c_str(), Core::Time::Now().Ticks()));
+                    SYSLOG(Logging::Startup, (_T("[TS-Profile] [TID: %d] Activated plugin [%s]:[%s], monotonic time: %lu"), static_cast<uint64_t>(::gettid()),className.c_str(), callSign.c_str(), Core::Time::Now().Ticks()));
                     Lock();
                     State(ACTIVATED);
                     SYSLOG(Logging::Startup, (_T("[TS-Profile] [TID: %d] Before Calling IPlugin::INotification subscribers after Activating plugin [%s]:[%s] %lu ms, monotonic time: %lu"), static_cast<uint64_t>(::gettid()), ClassName().c_str(), Callsign().c_str() , (stopwatch.Elapsed() / Core::Time::TicksPerMillisecond), Core::Time::Now().Ticks()));

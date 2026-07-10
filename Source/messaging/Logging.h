@@ -83,6 +83,7 @@ namespace Logging {
 #define SYSLOG(CATEGORY, PARAMETERS)                                                                                                             \
     do {                                                                                                                                         \
         static_assert(std::is_base_of<WPEFramework::Logging::BaseLoggingType<CATEGORY>, CATEGORY>::value, "SYSLOG() only for Logging controls"); \
+        printf("SYSLOG: %s is enabled:%d routing:%d \n", #CATEGORY, CATEGORY::IsEnabled(), CATEGORY::Routing());                                                                                       \
         if (CATEGORY::IsEnabled() == true) {                                                                                                     \
             CATEGORY __data__ PARAMETERS;                                                                                                        \
             WPEFramework::Core::Messaging::MessageInfo __info__(                                                                                 \
