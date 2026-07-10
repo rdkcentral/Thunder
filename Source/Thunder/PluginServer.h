@@ -1686,6 +1686,15 @@ namespace PluginHost {
                 }
 
                 _composit.ReleaseInterfaces();
+                _handler = nullptr;
+
+                _pluginHandling.Unlock();
+
+                if (currentIF != nullptr) {
+                    _external.SetInterface(nullptr);
+                    currentIF->Release();
+                }
+
                 if (_connection != nullptr) {
                     // Lets record the ID associated with this connection.
                     // If the other end of this connection (indicated by the
@@ -1695,15 +1704,6 @@ namespace PluginHost {
                     _connection->Terminate();
                     _connection->Release();
                     _connection = nullptr;
-                }
-
-                _handler = nullptr;
-
-                _pluginHandling.Unlock();
-
-                if (currentIF != nullptr) {
-                    _external.SetInterface(nullptr);
-                    currentIF->Release();
                 }
 
                 if (_library.IsLoaded() == true) {
