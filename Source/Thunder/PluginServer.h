@@ -5689,15 +5689,15 @@ namespace PluginHost {
             return (_connections.Connection(id));
         }
         inline void DumpMetadata() {
-            PostMortemData data;
-            _dispatcher.Snapshot(data.WorkerPool);
-
-            Core::JSON::ArrayType<Metadata::Server::Minion>::Iterator index(data.WorkerPool.ThreadPoolRuns.Elements());
-
             const PluginHost::PostMortemDataSink wpSink = _config.PostMortemWorkerPoolSink();
             const PluginHost::PostMortemDataSink csSink = _config.PostMortemCallstackSink();
 
             if ((wpSink != PluginHost::PostMortemDataSink::DISABLED) || (csSink != PluginHost::PostMortemDataSink::DISABLED)) {
+
+                PostMortemData data;
+                _dispatcher.Snapshot(data.WorkerPool);
+
+                Core::JSON::ArrayType<Metadata::Server::Minion>::Iterator index(data.WorkerPool.ThreadPoolRuns.Elements());
 
                 while (index.Next() == true) {
 
