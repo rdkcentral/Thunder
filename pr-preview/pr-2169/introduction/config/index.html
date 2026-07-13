@@ -3349,17 +3349,10 @@
 </tr>
 <tr>
 <td>postmortemcallstacksink</td>
-<td>Controls where per-thread callstack output is written on crash. <br /><br />Allowed values: <code>FILE</code> (write ThunderInternals.txt to <code>postmortemcallstackdumppath</code>), <code>LOG</code> (emit via SYSLOG), <code>ALL</code> (both), <code>DISABLED</code> (skip)</td>
+<td>Controls where per-thread callstack output is written on crash. <br /><br />Allowed values: <code>FILE</code> (write ThunderInternals.txt to <code>postmortempath</code>), <code>LOG</code> (emit via SYSLOG), <code>ALL</code> (both), <code>DISABLED</code> (skip)</td>
 <td>string</td>
 <td>DISABLED</td>
 <td>DISABLED</td>
-</tr>
-<tr>
-<td>postmortemcallstackdumppath</td>
-<td>Directory to store the human-readable callstack dump file (ThunderInternals.txt) when <code>postmortemcallstacksink</code> is <code>FILE</code> or <code>ALL</code>. <br /><br />Defaults to the value of <code>postmortempath</code> if not set</td>
-<td>string</td>
-<td>Value of <code>postmortempath</code></td>
-<td>/opt/minidumps</td>
 </tr>
 <tr>
 <td>communicator</td>
