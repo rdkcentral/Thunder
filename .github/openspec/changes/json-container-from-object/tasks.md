@@ -1,95 +1,76 @@
 ## 1. Read & Understand Existing Code
 
-- [ ] 1.1 Read `Source/core/JSON.h` — `Container` class body: confirm `_data` layout
-  (`JSONElementList`), existing `Add()`, `Remove()`, `FromString()`, `Clear()`,
-  `Find()`, `Request()`, `IsComplete()`, `FindNext()`, and the public `Iterator`
-- [ ] 1.2 Confirm `IElement` interface methods available for per-field round-tripping
-  (`ToString`, `FromString`, `IsSet`, `IsNull`, `Clear`)
-- [ ] 1.3 Read `VariantContainer::Request()` override to confirm it dynamically
-  allocates slots — ensures `Find(label)` is used (not direct `_data` scan)
-- [ ] 1.4 Verify `Container::Serialize` recurses into nested `Container` fields
-  (lossless round-trip for any nesting depth)
-- [ ] 1.5 **Null model finding — document for US-1.5:** Confirm the inconsistency:
-  scalar types (`NumberType`, `String`, etc.) set both `SET|UNDEFINED` on
-  `Null(true)` so `IsSet()==true`; `Container::Null(true)` sets only `UNDEFINED`
-  so `IsSet()==false`. Record this as a finding in the US-1.5 impact analysis
-  backlog item — no code change in this US
+- [ ] 1.1 Read `IElement` in `Source/core/JSON.h` — confirm `ToString(string&)`,
+  `static FromString(text, object)`, and instance `FromString(text)` signatures
+- [ ] 1.2 Read `Container::Deserialize` — confirm it calls `Find(label)` per key,
+  silently skips unknown keys, and does NOT clear registered slots absent from
+  the incoming JSON
+- [ ] 1.3 Read `VariantContainer::Request()` override — confirm it allocates a new
+  `Variant` slot, making `Find` succeed for any key
+- [ ] 1.4 **Null model finding for US-1.5:** confirm `Container::Null(true)` sets
+  only `UNDEFINED` while scalar types set `SET|UNDEFINED`; record as finding
 
 ## 2. API Declaration (JSON.h)
 
-- [ ] 2.1 Add the `FromObject` public method declaration to `Container` in
-  `Source/core/JSON.h` with the full API-comment documenting:
-  - Shallow top-level merge semantics
-  - Nested containers/arrays: whole-replace (not deep-merge)
-  - Null-valued source fields: propagated
-  - Unset source fields: skipped
-  - Duplicate-key behaviour: last-writer-wins
-  - Unknown key in typed target: silently skipped
-  - Type-mismatch: target slot left unchanged, TRACE_L1 in debug builds
-  - `VariantContainer` target: all source keys accepted via `Request()` override
-  - `IsComplete` not set
-  - Thread-safety contract: caller-holds-lock
+- [ ] 2.1 Add `FromObject` to `Container` with full API comment:
   ```cpp
-  // Merges all set top-level fields from 'source' into this container.
-  // Semantics:
-  //   - Nested containers/arrays are whole-replaced, not deep-merged.
-  //   - Duplicate keys: last-writer-wins.
-  //   - Null source fields: propagated. Unset source fields: skipped.
-  //   - Unknown key in typed target: silently skipped.
-  //   - Type-mismatch: target slot unchanged; TRACE_L1 warning in debug builds.
-  //   - IsComplete is NOT set by this method.
+  // Populates this container from the JSON representation of 'source'.
+  // Equivalent to: this->FromString(source.ToString()).
+  //
+  // On typed Container: updates only pre-registered field slots; unknown keys
+  // in source are silently skipped; registered slots absent from source are
+  // preserved (not cleared). Never adds new fields.
+  //
+  // On VariantContainer: additionally inserts new Variant slots for keys not
+  // yet present (via Request() override).
+  //
+  // Deep recursive: nested Container fields updated key-by-key, not replaced.
+  //
+  // Returns false if FromString fails (e.g. malformed JSON).
   // Not thread-safe — caller must hold any necessary lock.
-  void FromObject(const Container& source);
+  bool FromObject(const IElement& source);
   ```
 
-## 3. Implementation (JSON.h or JSON.cpp)
+## 3. Implementation (JSON.h)
 
-- [ ] 3.1 Implement `Container::FromObject(const Container& source)` using
-  the source's `_data` list (direct member access, since `FromObject` is a
-  `Container` member):
-  - Skip entries where `source_element->IsSet() == false` **OR** `source_element->IsNull() == true`
-  - For set entries: call `source_element->ToString(buf)`
-  - Call `Find(label)` on `*this` (NOT direct `_data` scan — respects `Request()`)
-  - If `Find` returns non-null: call `slot->FromString(buf)`; on failure emit
-    `TRACE_L1` and leave slot unchanged
-  - If `Find` returns null (unregistered key in typed target): skip silently
-- [ ] 3.2 Verify the implementation does NOT set `_state |= COMPLETE`
-- [ ] 3.3 Verify the implementation compiles cleanly against C++11/14/17
+- [ ] 3.1 Implement `Container::FromObject` — two lines only:
+  ```cpp
+  bool Container::FromObject(const IElement& source) {
+      string json;
+      source.ToString(json);
+      return FromString(json);
+  }
+  ```
+- [ ] 3.2 Verify no field-by-field iteration, no `_data` access in `FromObject` —
+  all behaviour is inside `FromString`/`Deserialize`
 
 ## 4. Unit Tests
 
-- [ ] 4.1 **Merge two non-overlapping containers** — verify all fields appear and
-  serialisation is correct
-- [ ] 4.2 **Merge with overlapping keys** — last-writer-wins: source value
-  overwrites pre-existing target value
-- [ ] 4.3 **Nested container — whole-replace semantics** — target has nested object
-  with fields `{model, region}`; source has same key with `{model}` only;
-  verify `region` is absent after merge
-- [ ] 4.4 **Nested array** — source field is an `ArrayType`; verify array appears
-  in merged output with all elements intact
-- [ ] 4.5 **Null and unset source fields both skipped** — source has one null
-  field (`Null(true)`) and one unset field; verify neither is copied to target;
-  target slots are left unchanged
-
-  > Not a null-propagation test — null-aware merge is deferred to US-1.5/US-1.6.
-- [ ] 4.6 **Unset source field skipped** — source has a set and an unset field;
-  verify only the set field is copied
-- [ ] 4.8 **Type-mismatch — target slot left unchanged** — source field serialises
-  as `{...}` but target slot is `JSON::String`; verify target slot unchanged
-- [ ] 4.9 **VariantContainer target — all source keys accepted** — source has three
-  fields of mixed types; verify all appear in `VariantContainer` output
-- [ ] 4.10 **IsComplete not set** — verify `IsComplete()` remains `false` after
-  `FromObject`; `IsSet()` returns `true`
-- [ ] 4.11 **Chain multiple `FromObject()` calls** — three sources merged in
-  sequence; verify accumulated field count and values
-- [ ] 4.12 **Empty source container** — `FromObject` on default-constructed source;
-  verify target is unchanged
-- [ ] 4.13 **Existing `FromString()` and `Add()` regression** — run existing
-  Container unit tests and confirm all still pass
+- [ ] 4.1 **VariantContainer: accumulate new fields** — two VariantContainer sources
+  with distinct keys; verify all keys appear in VariantContainer target after two
+  `FromObject` calls
+- [ ] 4.2 **Typed Container: only registered slots updated** — source has registered
+  + unregistered keys; verify only registered slots updated; unregistered absent
+- [ ] 4.3 **Typed Container: absent source keys preserve target values** — source
+  carries only one of two registered fields; verify the other is unchanged
+- [ ] 4.4 **Deep recursive update of nested typed Container** — target has nested
+  Container with `{model, region}`; source has nested object with `{model}` only;
+  verify `region` is **preserved** after `FromObject`
+- [ ] 4.5 **Cross-type: Container::FromObject(VariantContainer)** — typed Container
+  updates registered slots from a VariantContainer source
+- [ ] 4.6 **Cross-type: VariantContainer::FromObject(typed Container)** — VariantContainer
+  receives all set fields from a typed Container source
+- [ ] 4.7 **FromObject vs operator= on VariantContainer** — `operator=` replaces all
+  content; `FromObject` preserves entries absent from source — verify distinction
+- [ ] 4.8 **Chaining on VariantContainer** — three sources with distinct keys;
+  verify all accumulated in target
+- [ ] 4.9 **Returns bool** — `true` on success; `false` when `FromString` fails
+- [ ] 4.10 **Empty source** — default-constructed source; target unchanged; returns `true`
+- [ ] 4.11 **Existing `FromString()` and `Add()` regression** — run existing Container
+  unit tests; confirm all still pass
 
 ## 5. Documentation
 
-- [ ] 5.1 API-comment block in `JSON.h` at the `FromObject` declaration (task 2.1)
-  is the primary documentation; covered further by US-1.4
-- [ ] 5.2 Update `CHANGELOG` / `ReleaseNotes` for R4.4.7 to mention the new method
-  and note the shallow-merge / nested-replace behaviour explicitly
+- [ ] 5.1 API comment on `FromObject` (task 2.1) is the primary documentation
+- [ ] 5.2 Update `CHANGELOG` / `ReleaseNotes` for R4.4.7 noting `FromObject`,
+  Container-vs-VariantContainer distinction, and the null model finding for US-1.5

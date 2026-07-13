@@ -1,78 +1,64 @@
 ## ADDED Requirements
 
-### Requirement: JSON Container FromObject Merge
-`JSON::Container` SHALL provide a `FromObject(const JSON::Container& source)`
-method that copies all set top-level key-value pairs from `source` into the
-calling container.
+### Requirement: JSON Container FromObject
+`JSON::Container` SHALL provide a `bool FromObject(const IElement& source)` method
+equivalent to `this->FromString(source.ToString())`.
 
-#### Scenario: Merge two non-overlapping containers
-- **GIVEN** a target `Container` with fields `{a, b}` and a source `Container`
-  with fields `{c, d}`
+#### Scenario: VariantContainer accumulates new fields from multiple sources
+- **GIVEN** a `VariantContainer` target with no entries
+  AND two source containers with distinct keys
+- **WHEN** `target.FromObject(sourceA)` then `target.FromObject(sourceB)` are called
+- **THEN** the target contains all keys from both sources
+- **AND** `target.ToString()` serialises all accumulated fields correctly
+
+#### Scenario: Typed Container updates only registered slots
+- **GIVEN** a typed `Container` with registered fields `{model, firmware}`
+  AND a source with fields `{firmware, extra}` where `extra` is not registered
 - **WHEN** `target.FromObject(source)` is called
-- **THEN** the target contains `{a, b, c, d}` and `target.ToString()` serialises
-  all four fields correctly
+- **THEN** `firmware` is updated to the source value
+- **AND** `extra` does NOT appear in `target.ToString()`
+- **AND** `model` retains its prior value (absent from source, not cleared)
 
-#### Scenario: Merge with duplicate keys (last-writer-wins)
-- **GIVEN** a target `Container` with field `version = "4.4.6"` and a source
-  `Container` with field `version = "4.4.7"`
+#### Scenario: Typed Container preserves fields absent from source
+- **GIVEN** a typed `Container` with registered fields `{model, firmware}`, both set
+  AND a source that carries only `{firmware}`
 - **WHEN** `target.FromObject(source)` is called
-- **THEN** `target["version"]` equals `"4.4.7"`
+- **THEN** `firmware` is updated
+- **AND** `model` is unchanged — absent source keys do NOT clear target fields
 
-#### Scenario: Chain multiple FromObject calls
-- **GIVEN** three source containers A, B, C each with distinct fields
-- **WHEN** `target.FromObject(A)`, `target.FromObject(B)`, `target.FromObject(C)`
-  are called in sequence
-- **THEN** the target accumulates all fields from A, B, and C
-
-#### Scenario: Nested container — whole-replace, not deep-merge
-- **GIVEN** a target with field `"device": {"model":"ES1-A", "region":"EU"}`
-  AND a source with field `"device": {"model":"ES1-B"}`
+#### Scenario: Deep recursive update of nested typed Container
+- **GIVEN** a target with a nested typed `Container` field `"device"` holding
+  `{model:"ES1-A", region:"EU"}`
+  AND a source with `"device": {"model":"ES1-B"}` (no `region`)
 - **WHEN** `target.FromObject(source)` is called
-- **THEN** `target.ToString()` produces `"device":{"model":"ES1-B"}`
-- **AND** `"region"` does NOT appear in the output (nested subtree is replaced)
+- **THEN** `target.device.model` equals `"ES1-B"`
+- **AND** `target.device.region` equals `"EU"` — **preserved, not cleared**
 
-#### Scenario: Nested array — whole-replace
-- **GIVEN** a source `Container` whose field `"tags"` is an `ArrayType` with
-  two elements
+#### Scenario: Cross-type — VariantContainer source into typed Container target
+- **GIVEN** a typed `Container` with registered fields
+  AND a `VariantContainer` source carrying matching keys
+- **WHEN** `target.FromObject(variantSource)` is called
+- **THEN** the registered fields are updated from the VariantContainer's values
+
+#### Scenario: Cross-type — typed Container source into VariantContainer target
+- **GIVEN** a `VariantContainer` target
+  AND a typed `Container` source with set fields
+- **WHEN** `target.FromObject(typedSource)` is called
+- **THEN** all set fields from the typed source appear in the VariantContainer target
+
+#### Scenario: FromObject vs operator= on VariantContainer
+- **GIVEN** a `VariantContainer` target with entries `{a, b}`
+  AND a source with entry `{b}` (carrying a new value for b, no a)
+- **WHEN** `target.FromObject(source)` is called (NOT `target = source`)
+- **THEN** `b` is updated to the source value
+- **AND** `a` is **preserved** (merge semantics)
+- **WHEN** `target = source` is called instead
+- **THEN** only `b` exists in target — `a` is **gone** (replace semantics)
+
+#### Scenario: Returns false on malformed source
+- **GIVEN** a source whose `ToString()` produces invalid JSON
 - **WHEN** `target.FromObject(source)` is called
-- **THEN** the array is present in `target.ToString()` with both elements intact
-
-#### Scenario: Null and unset source fields are both skipped
-- **GIVEN** a source `Container` with one field explicitly set to null
-  (`element.Null(true)`) and one field that is unset (`IsSet() == false`)
-- **WHEN** `target.FromObject(source)` is called
-- **THEN** neither field is copied to the target; the target's corresponding
-  slots are left in their prior state
-- **AND** no crash or exception occurs
-
-> **Note:** Null-aware merging (propagating `null` source fields) is deferred to
-> US-1.5 (Impact Analysis) and US-1.6 (Implementation). The R4.4.7 behaviour
-> is conservative: treat null the same as unset.
-
-#### Scenario: Unknown key in typed target is silently skipped
-- **GIVEN** a typed target container that does not have a registered slot for
-  key `"extra"`, and a source that has `"extra": 42`
-- **WHEN** `target.FromObject(source)` is called
-- **THEN** the target is unchanged for that key; no crash or exception occurs
-
-#### Scenario: Type-mismatch leaves target slot unchanged
-- **GIVEN** a target with a `JSON::String` slot for key `"info"`, and a source
-  where `"info"` is a nested `Container` (serialises as `{...}`)
-- **WHEN** `target.FromObject(source)` is called
-- **THEN** the target's `"info"` slot is left in its prior state
-- **AND** no exception is thrown (a debug-trace warning is emitted in debug builds)
-
-#### Scenario: VariantContainer target accepts all source keys
-- **GIVEN** a `VariantContainer` target with no pre-registered fields, and a
-  source with three fields of mixed types (string, number, nested object)
-- **WHEN** `target.FromObject(source)` is called
-- **THEN** all three fields appear in `target.ToString()`
-
-#### Scenario: IsComplete not set after FromObject
-- **GIVEN** a target that has not been through `Deserialize()`
-- **WHEN** `target.FromObject(source)` is called
-- **THEN** `target.IsComplete()` remains `false`
-- **AND** `target.IsSet()` returns `true` (fields have values)
+- **THEN** `FromObject` returns `false`
 
 #### Scenario: Existing FromString and Add unaffected
 - **GIVEN** existing code that uses `FromString()` and `Add()`

@@ -1,105 +1,90 @@
 ## Why
 
-Thunder plugin developers frequently need to collect data from multiple distinct
-`JSON::Container` objects and combine them into a single JSON response. Today
-this requires manually iterating every field of each source container and calling
-`Add(label, element)` for each one — boilerplate that is error-prone and breaks
-as fields are added to source containers over time.
+Thunder plugin developers need to populate a typed `JSON::Container` or
+`VariantContainer` from the content of another JSON object — for example,
+updating a cached response from a freshly-populated source container, or
+accumulating fields from multiple sub-system containers into one `VariantContainer`
+response.
 
-`JSON::Container` already supports `FromString()` to populate from a serialised
-string and `Add(label, element)` to insert individual fields. `FromObject()`
-closes the gap by accepting another `Container` directly, mirroring the
-relationship between `FromString` (string → container) and `FromObject`
-(container → container).
+`IElement` already provides `FromString()` (populate from serialised text) and
+`ToString()` (serialise to text). `FromObject()` closes the gap by accepting
+another `IElement` directly — `container.FromObject(other)` is semantically
+equivalent to `container.FromString(other.ToString())`, without the intermediate
+string the caller would otherwise have to manage.
+
+> **Container vs VariantContainer:** the two cases behave differently:
+> - **Typed `Container`** — `FromObject` updates only pre-registered field slots.
+>   It never adds new fields. It is a selective update, not a flat merge.
+> - **`VariantContainer`** — `FromObject` updates existing entries AND creates new
+>   `Variant` slots for keys not yet present (via `Request()` override). This is
+>   the correct type for the "accumulate fields from multiple sources" use case.
 
 ## What Changes
 
-A new method `FromObject(const JSON::Container& source)` is added to
-`JSON::Container` (defined in `Source/core/JSON.h`). It iterates all top-level
-key-value pairs in `source` that are in a set state and copies their values
-into the calling container via a per-field `ToString`/`FromString` round-trip.
+A new method `FromObject(const IElement& source)` is added to `JSON::Container`
+(defined in `Source/core/JSON.h`). The implementation is a two-line whole-object
+round-trip — no field-by-field iteration, no access to source internals:
 
-No existing API is removed or modified; `FromString()` and `Add()` continue to
-work exactly as before.
+```cpp
+bool FromObject(const IElement& source) {
+    string json;
+    source.ToString(json);
+    return FromString(json);
+}
+```
+
+The parameter type is `const IElement&` (not `const Container&`), making
+`Container::FromObject(variantContainer)` and `VariantContainer::FromObject(container)`
+work without overloading. No existing API is modified.
 
 ## Behavioral Specification
 
-### Merge semantics
-`FromObject` performs a **shallow, top-level merge**. Each field in the source
-is treated as an opaque value. If a field value is itself a nested `Container`
-or an `ArrayType`, it is transferred whole — not field-by-field or element-by-element.
+### Deep recursive update — not shallow replace
+`FromObject` delegates entirely to `FromString`, which calls `Container::Deserialize`
+recursively. `Deserialize` **only updates keys present in the incoming JSON**;
+all other registered slots are left untouched. This gives deep-recursive-update
+semantics at every level of nesting:
 
-### Nested containers — field-replace, not field-merge
-When a field in the source is a nested `Container` and the target has a matching
-field with the same label:
-- The **target's nested container is replaced in its entirety** with the source value.
-- No recursive merge of the inner fields is performed.
-- Example: if target has `"device": {"model":"X", "region":"EU"}` and source
-  has `"device": {"model":"Y"}`, after `FromObject` the target has
-  `"device": {"model":"Y"}` — `region` is lost.
+- If target has `"device": {"model":"X", "region":"EU"}` and source has
+  `"device": {"model":"Y"}`, after `FromObject` the target has
+  `"device": {"model":"Y", "region":"EU"}` — `region` is **preserved**.
 
-Deep/recursive merge (merging nested objects key-by-key) is **explicitly out of
-scope for R4.4.7** and is a candidate follow-on story.
+### Typed `Container` — only registered fields updated; no new fields added
+`Container::Deserialize` calls `Find(label)` per key. For a typed `Container`
+subclass, `Find` returns `nullptr` for unregistered keys and `Request()` returns
+`false` — unknown keys are silently skipped. **`FromObject` on a typed `Container`
+never adds new fields.** The "accumulate from multiple sources into one flat
+object" use case requires `VariantContainer`, not plain `Container`.
 
-### Nested arrays — same rule
-A top-level field whose value is an `ArrayType` is replaced wholesale in the same
-way as a nested container.
+### `VariantContainer` — new fields inserted dynamically
+`VariantContainer` overrides `Request()` to allocate a new `Variant` slot on
+demand. `Find` succeeds for every incoming key, including previously absent ones.
+`FromObject` on a `VariantContainer` both updates existing entries AND inserts
+new ones.
 
-### Null-valued and unset fields — both skipped
-Fields where `IsSet() == false` OR `IsNull() == true` in the source are **not
-copied** into the target. This is the conservative safe default for R4.4.7.
+### `FromObject` vs. copy assignment on `VariantContainer`
+`VariantContainer::operator=(const VariantContainer&)` is an assign-and-replace
+(all prior content overwritten). `FromObject` is a merge: existing entries are
+updated, new ones inserted, but entries in `*this` absent from `source` are
+**preserved**. These are distinct operations.
 
-> **Rationale:** The Thunder JSON null model is inconsistent across the type
-> hierarchy: scalar types (`NumberType`, `String`, `Boolean`, …) have `Null(true)`
-> set both the `UNDEFINED` and `SET` flags, so `IsSet() == true` for a null
-> scalar. `Container::Null(true)`, however, sets only the `UNDEFINED` flag and
-> leaves `SET` unset — meaning a null `Container` field has `IsSet() == false`
-> and is already invisible to `FindNext()` during serialisation. Propagating null
-> fields in `FromObject()` would silently behave differently for scalar vs.
-> container-typed fields without a cross-framework audit.
->
-> US-1.5 (Impact Analysis) and US-1.6 (Implementation) exist for exactly this
-> purpose. Null-aware merging in `FromObject()` is a follow-on task **blocked on
-> US-1.5** and MUST NOT be implemented in R4.4.7.
-
-### Typed (`ObjectType`) targets — field registration mismatch
-In a typed target (a struct-like subclass of `Container` with pre-registered
-member fields), any source key that does not correspond to a registered field is
-**silently skipped**. This is the same behaviour as `FromString()` with an
-unknown key. No error is raised.
-
-If a source field key exists in the target but the types are incompatible (e.g.,
-source serialises the field as `{...}` but target slot is a `String`),
-`FromString` on the target slot will fail and the field is left in its prior
-state. The failure is recorded via `TRACE_L1` in debug builds; no exception is
-thrown.
-
-### Generic (`VariantContainer`) targets
-`VariantContainer` overrides `Request()` to dynamically create field slots for
-unknown keys. When the target is a `VariantContainer`, **all** set fields from
-the source are accepted regardless of whether they were pre-registered, including
-nested objects and arrays.
-
-### Duplicate keys — last-writer-wins
-If both source and target contain the same key, the source value overwrites the
-target value. This matches `FromString()` semantics.
-
-### Chaining
-Multiple `FromObject()` calls accumulate fields. Later calls override fields set
-by earlier calls for duplicate keys.
+### Null and unset fields
+`FromObject` delegates to `FromString`; null/unset handling follows `FromString`
+semantics. Null-aware merging is deferred to US-1.5 / US-1.6 — see the null
+model inconsistency finding in the design document.
 
 ### Thread safety
-Not internally locked. Caller must hold any necessary lock — identical contract
-to `Add()` and `Remove()`.
+Not internally locked. Caller-holds-lock contract, same as `Add()` and `Remove()`.
 
 ## Capabilities
 
 ### New Capabilities
-- `json-container-from-object`: `JSON::Container::FromObject(const Container&)` — merges all
-  set top-level fields from a source container into the target container. Supports
-  chaining multiple calls to accumulate fields from several sources. Behaviour for
-  duplicate keys is **last-writer-wins** (source overwrites target), and this
-  contract is documented in the API reference.
+- `json-container-from-object`: `JSON::Container::FromObject(const IElement& source)` —
+  populates this container from the JSON representation of `source` (equivalent
+  to `this->FromString(source.ToString())`). On a typed `Container`: selectively
+  updates pre-registered slots; never adds new fields. On `VariantContainer`:
+  updates existing and inserts new slots. Deep recursive update at all nesting
+  levels — absent fields in target are preserved.
 
 ### Modified Capabilities
 <!-- none -->
@@ -116,76 +101,87 @@ to `Add()` and `Remove()`.
 
 ## Usage Examples
 
-### Example 1 — merge two flat containers
+### Example 1 — VariantContainer: accumulate fields from two sub-systems
 ```cpp
-// Sub-system A fills its own container.
-Core::JSON::Container networkInfo;
-networkInfo.Add(_T("interface"),  Core::JSON::String("eth0"));
-networkInfo.Add(_T("ip"),         Core::JSON::String("192.168.1.5"));
+// The "accumulate fields from multiple sources" use case requires VariantContainer.
+// A plain typed Container only updates pre-registered slots — it cannot add new fields.
 
-// Sub-system B fills a separate container.
-Core::JSON::Container deviceInfo;
-deviceInfo.Add(_T("model"),       Core::JSON::String("ES1-A"));
-deviceInfo.Add(_T("firmware"),    Core::JSON::String("R4.4.7"));
+Core::JSON::VariantContainer networkInfo;
+networkInfo.Set(_T("interface"), Core::JSON::Variant(string("eth0")));
+networkInfo.Set(_T("ip"),        Core::JSON::Variant(string("192.168.1.5")));
 
-// Merge both into the final response object.
-Core::JSON::Container response;
-response.FromObject(networkInfo);   // pulls in interface + ip
-response.FromObject(deviceInfo);    // accumulates model + firmware
+Core::JSON::VariantContainer deviceInfo;
+deviceInfo.Set(_T("model"),    Core::JSON::Variant(string("ES1-A")));
+deviceInfo.Set(_T("firmware"), Core::JSON::Variant(string("R4.4.7")));
+
+Core::JSON::VariantContainer response;
+response.FromObject(networkInfo);   // inserts interface + ip
+response.FromObject(deviceInfo);    // inserts model + firmware
 
 string json;
 response.ToString(json);
 // json == {"interface":"eth0","ip":"192.168.1.5","model":"ES1-A","firmware":"R4.4.7"}
 ```
 
-### Example 2 — nested container: whole-object replace semantics
+### Example 2 — typed Container: selective update; unregistered keys skipped
 ```cpp
-// Target already has device info with two sub-fields.
-Core::JSON::Container target;
-Core::JSON::Container existingDevice;
-existingDevice.Add(_T("model"),  Core::JSON::String("ES1-A"));
-existingDevice.Add(_T("region"), Core::JSON::String("EU"));
-target.Add(_T("device"), &existingDevice);
+struct DeviceResponse : public Core::JSON::Container {
+    DeviceResponse() : model(), firmware() {
+        Add(_T("model"),    &model);
+        Add(_T("firmware"), &firmware);
+    }
+    Core::JSON::String model;
+    Core::JSON::String firmware;
+};
 
-// Source has an updated device block — only 'model', no 'region'.
-Core::JSON::Container patch;
-Core::JSON::Container updatedDevice;
-updatedDevice.Add(_T("model"), Core::JSON::String("ES1-B"));
-patch.Add(_T("device"), &updatedDevice);
+DeviceResponse target;
+target.model    = _T("ES1-A");
+target.firmware = _T("R4.4.6");
+
+// Source has updated firmware plus a key the target doesn't know about.
+Core::JSON::VariantContainer patch;
+patch.Set(_T("firmware"), Core::JSON::Variant(string("R4.4.7")));
+patch.Set(_T("extra"),    Core::JSON::Variant(string("ignored")));
+
+target.FromObject(patch);   // == target.FromString(patch.ToString())
+
+string json;
+target.ToString(json);
+// json == {"model":"ES1-A","firmware":"R4.4.7"}
+// "extra" silently skipped — no registered slot.
+// "model" preserved — absent from source, untouched in target.
+```
+
+### Example 3 — nested typed Container: deep recursive update preserves absent fields
+```cpp
+struct DeviceInfo : public Core::JSON::Container {
+    DeviceInfo() : model(), region() {
+        Add(_T("model"),  &model);
+        Add(_T("region"), &region);
+    }
+    Core::JSON::String model;
+    Core::JSON::String region;
+};
+struct Response : public Core::JSON::Container {
+    Response() { Add(_T("device"), &device); }
+    DeviceInfo device;
+};
+
+Response target;
+target.device.model  = _T("ES1-A");
+target.device.region = _T("EU");
+
+// Source only carries 'model' inside device.
+Core::JSON::VariantContainer patch;
+Core::JSON::VariantContainer patchDevice;
+patchDevice.Set(_T("model"), Core::JSON::Variant(string("ES1-B")));
+patch.Set(_T("device"), Core::JSON::Variant(patchDevice));
 
 target.FromObject(patch);
 
 string json;
 target.ToString(json);
-// json == {"device":{"model":"ES1-B"}}
-//
-// NOTE: "region" is GONE — nested containers are replaced, not merged.
-```
-
-### Example 3 — null and unset source fields are both skipped
-```cpp
-Core::JSON::Container source;
-Core::JSON::String nullableField;
-nullableField.Null(true);                     // IsNull()==true, IsSet()==true on String
-Core::JSON::String unsetField;                // IsSet()==false
-source.Add(_T("token"),   &nullableField);
-source.Add(_T("unused"),  &unsetField);
-
-Core::JSON::Container target;
-Core::JSON::String tokenSlot(_T("old-value"));
-Core::JSON::String unusedSlot(_T("old-unused"));
-target.Add(_T("token"),  &tokenSlot);
-target.Add(_T("unused"), &unusedSlot);
-
-target.FromObject(source);
-
-// Both source fields are skipped:
-//   - nullableField: IsNull()==true  -> skipped in R4.4.7
-//   - unsetField:    IsSet()==false  -> skipped always
-// Target is UNCHANGED.
-string json;
-target.ToString(json);
-// json == {"token":"old-value","unused":"old-unused"}
-//
-// NOTE: Null-aware merging is deferred to US-1.5 / US-1.6.
+// json == {"device":{"model":"ES1-B","region":"EU"}}
+// "region" is PRESERVED — FromString recurses into the nested Container
+// and only updates keys present in the incoming JSON.
 ```
