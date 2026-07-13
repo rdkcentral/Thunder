@@ -415,10 +415,10 @@ namespace PluginHost
     {
         Core::hresult result = Core::ERROR_NONE;
         Core::StopWatch stopwatch;
-        SYSLOG(Logging::Startup, (_T("[TS-Profile] [TID: %d] Activating plugin [%s]:[%s] %lu ms, monotonic time: %lu"), static_cast<uint64_t>(::gettid()), ClassName().c_str(), Callsign().c_str(), (stopwatch.Elapsed() / Core::Time::TicksPerMillisecond), Core::Time::Now().Ticks()));
+        SYSLOG(Logging::Startup, (_T("[TS-Profile] [TID: %" PRIu64 "] Activating plugin [%s]:[%s] %" PRIu64 " ms, monotonic time: %" PRIu64 ""), static_cast<uint64_t>(::gettid()), ClassName().c_str(), Callsign().c_str(), (stopwatch.Elapsed() / Core::Time::TicksPerMillisecond), Core::Time::Now().Ticks()));
 
         Lock();
-        SYSLOG(Logging::Startup, (_T("[TS-Profile] [TID: %d] After Lock Activating plugin [%s]:[%s] %lu ms, monotonic time: %lu"), static_cast<uint64_t>(::gettid()), ClassName().c_str(), Callsign().c_str(), (stopwatch.Elapsed() / Core::Time::TicksPerMillisecond), Core::Time::Now().Ticks()));
+        SYSLOG(Logging::Startup, (_T("[TS-Profile] [TID: %" PRIu64 "] After Lock Activating plugin [%s]:[%s] %" PRIu64 " ms, monotonic time: %" PRIu64 ""), static_cast<uint64_t>(::gettid()), ClassName().c_str(), Callsign().c_str(), (stopwatch.Elapsed() / Core::Time::TicksPerMillisecond), Core::Time::Now().Ticks()));
 
         IShell::state currentState(State());
 
@@ -436,9 +436,9 @@ namespace PluginHost
 
             // Load the interfaces, If we did not load them yet...
             if (_handler == nullptr) {
-                SYSLOG(Logging::Startup, (_T("[TS-Profile] [TID: %d] Within Lock AcquireInterface for Activating plugin [%s]:[%s] %lu ms, monotonic time:%lu"), static_cast<uint64_t>(::gettid()), ClassName().c_str(), Callsign().c_str(), (stopwatch.Elapsed() / Core::Time::TicksPerMillisecond), Core::Time::Now().Ticks()));
+                SYSLOG(Logging::Startup, (_T("[TS-Profile] [TID: %" PRIu64 "] Within Lock AcquireInterface for Activating plugin [%s]:[%s] %" PRIu64 " ms, monotonic time: %" PRIu64 ""), static_cast<uint64_t>(::gettid()), ClassName().c_str(), Callsign().c_str(), (stopwatch.Elapsed() / Core::Time::TicksPerMillisecond), Core::Time::Now().Ticks()));
                 AcquireInterfaces();
-                SYSLOG(Logging::Startup, (_T("[TS-Profile] [TID: %d] Within Lock After AcquireInterface for Activating plugin [%s]:[%s] %lu ms, monotonic time: %lu"), static_cast<uint64_t>(::gettid()), ClassName().c_str(), Callsign().c_str(), (stopwatch.Elapsed() / Core::Time::TicksPerMillisecond), Core::Time::Now().Ticks()));
+                SYSLOG(Logging::Startup, (_T("[TS-Profile] [TID: %" PRIu64 "] Within Lock After AcquireInterface for Activating plugin [%s]:[%s] %" PRIu64 " ms, monotonic time: %" PRIu64 ""), static_cast<uint64_t>(::gettid()), ClassName().c_str(), Callsign().c_str(), (stopwatch.Elapsed() / Core::Time::TicksPerMillisecond), Core::Time::Now().Ticks()));
             }
 
             const string callSign(PluginHost::Service::Configuration().Callsign.Value());
@@ -448,7 +448,7 @@ namespace PluginHost
                 SYSLOG(Logging::Startup, (_T("Loading of plugin [%s]:[%s], failed. Error [%s]"), className.c_str(), callSign.c_str(), ErrorMessage().c_str()));
                 result = Core::ERROR_UNAVAILABLE;
 
-                SYSLOG(Logging::Startup, (_T("[TS-Profile] [TID: %d] Released Lock for Activating plugin [%s]:[%s] %lu ms, monotonic time: %lu"), static_cast<uint64_t>(::gettid()), ClassName().c_str(), Callsign().c_str(), (stopwatch.Elapsed() / Core::Time::TicksPerMillisecond), Core::Time::Now().Ticks()));
+                SYSLOG(Logging::Startup, (_T("[TS-Profile] [TID: %" PRIu64 "] Released Lock for Activating plugin [%s]:[%s] %" PRIu64 " ms, monotonic time: %" PRIu64 ""), static_cast<uint64_t>(::gettid()), ClassName().c_str(), Callsign().c_str(), (stopwatch.Elapsed() / Core::Time::TicksPerMillisecond), Core::Time::Now().Ticks()));
                 Unlock();
 
                 // See if the preconditions have been met..
@@ -480,7 +480,7 @@ namespace PluginHost
                     TRACE(Activity, (_T("Delta preconditions: %s"), feedback.c_str()));
                 }
 
-                SYSLOG(Logging::Startup, (_T("[TS-Profile] [TID: %d] Released Lock for Activating plugin [%s]:[%s] %lu ms, monotonic time: %lu"), static_cast<uint64_t>(::gettid()), ClassName().c_str(), Callsign().c_str(), (stopwatch.Elapsed() / Core::Time::TicksPerMillisecond), Core::Time::Now().Ticks()));
+                SYSLOG(Logging::Startup, (_T("[TS-Profile] [TID: %" PRIu64 "] Released Lock for Activating plugin [%s]:[%s] %" PRIu64 " ms, monotonic time: %" PRIu64 ""), static_cast<uint64_t>(::gettid()), ClassName().c_str(), Callsign().c_str(), (stopwatch.Elapsed() / Core::Time::TicksPerMillisecond), Core::Time::Now().Ticks()));
                 Unlock();
 
             } else {
@@ -493,24 +493,24 @@ namespace PluginHost
 
                 TRACE(Activity, (_T("Activation plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
 
-                SYSLOG(Logging::Startup, (_T("[TS-Profile] [TID: %d] Calling ILifetime subscribers before Activating plugin [%s]:[%s] %lu ms, monotonic time: %lu"), static_cast<uint64_t>(::gettid()), ClassName().c_str(), Callsign().c_str() , (stopwatch.Elapsed() / Core::Time::TicksPerMillisecond), Core::Time::Now().Ticks()));
+                SYSLOG(Logging::Startup, (_T("[TS-Profile] [TID: %" PRIu64 "] Calling ILifetime subscribers before Activating plugin [%s]:[%s] %" PRIu64 " ms, monotonic time: %" PRIu64 ""), static_cast<uint64_t>(::gettid()), ClassName().c_str(), Callsign().c_str() , (stopwatch.Elapsed() / Core::Time::TicksPerMillisecond), Core::Time::Now().Ticks()));
                 _administrator.Initialize(callSign, this);
-                SYSLOG(Logging::Startup, (_T("[TS-Profile] [TID: %d] Finished Calling ILifetime subscribers before Activating plugin [%s]:[%s] %lu ms, monotonic time: %lu"), static_cast<uint64_t>(::gettid()), ClassName().c_str(), Callsign().c_str(), (stopwatch.Elapsed() / Core::Time::TicksPerMillisecond), Core::Time::Now().Ticks()));
+                SYSLOG(Logging::Startup, (_T("[TS-Profile] [TID: %" PRIu64 "] Finished Calling ILifetime subscribers before Activating plugin [%s]:[%s] %" PRIu64 " ms, monotonic time: %" PRIu64 ""), static_cast<uint64_t>(::gettid()), ClassName().c_str(), Callsign().c_str(), (stopwatch.Elapsed() / Core::Time::TicksPerMillisecond), Core::Time::Now().Ticks()));
                 
                 State(ACTIVATION);
 
-                SYSLOG(Logging::Startup, (_T("[TS-Profile] [TID: %d] State changed to ACTIVATION for Activating plugin [%s]:[%s] %lu ms, monotonic time: %lu"), static_cast<uint64_t>(::gettid()), ClassName().c_str(), Callsign().c_str(), (stopwatch.Elapsed() / Core::Time::TicksPerMillisecond), Core::Time::Now().Ticks()));
+                SYSLOG(Logging::Startup, (_T("[TS-Profile] [TID: %" PRIu64 "] State changed to ACTIVATION for Activating plugin [%s]:[%s] %" PRIu64 " ms, monotonic time: %" PRIu64 ""), static_cast<uint64_t>(::gettid()), ClassName().c_str(), Callsign().c_str(), (stopwatch.Elapsed() / Core::Time::TicksPerMillisecond), Core::Time::Now().Ticks()));
                 Unlock();
-                SYSLOG(Logging::Startup, (_T("[TS-Profile] [TID: %d] Released Lock for Activating plugin [%s]:[%s] %lu ms, monotonic time: %lu"), static_cast<uint64_t>(::gettid()), ClassName().c_str(), Callsign().c_str(), (stopwatch.Elapsed() / Core::Time::TicksPerMillisecond), Core::Time::Now().Ticks()));
+                SYSLOG(Logging::Startup, (_T("[TS-Profile] [TID: %" PRIu64 "] Released Lock for Activating plugin [%s]:[%s] %" PRIu64 " ms, monotonic time: %" PRIu64 ""), static_cast<uint64_t>(::gettid()), ClassName().c_str(), Callsign().c_str(), (stopwatch.Elapsed() / Core::Time::TicksPerMillisecond), Core::Time::Now().Ticks()));
 
-                SYSLOG(Logging::Startup, (_T("[TS-Profile] [TID: %d] Calling Initialize for plugin [%s]:[%s] %lu ms, monotonic time: %lu"), static_cast<uint64_t>(::gettid()), ClassName().c_str(), Callsign().c_str(), (stopwatch.Elapsed() / Core::Time::TicksPerMillisecond), Core::Time::Now().Ticks()));
+                SYSLOG(Logging::Startup, (_T("[TS-Profile] [TID: %" PRIu64 "] Calling Initialize for plugin [%s]:[%s] %" PRIu64 " ms, monotonic time: %" PRIu64 ""), static_cast<uint64_t>(::gettid()), ClassName().c_str(), Callsign().c_str(), (stopwatch.Elapsed() / Core::Time::TicksPerMillisecond), Core::Time::Now().Ticks()));
                 REPORT_DURATION_WARNING( { ErrorMessage(_handler->Initialize(this)); }, WarningReporting::TooLongPluginState, WarningReporting::TooLongPluginState::StateChange::ACTIVATION, callSign.c_str());
-                SYSLOG(Logging::Startup, (_T("[TS-Profile] [TID: %d] Initialize complete for plugin [%s]:[%s] %lu ms, monotonic time: %lu"), static_cast<uint64_t>(::gettid()), ClassName().c_str(), Callsign().c_str(), (stopwatch.Elapsed() / Core::Time::TicksPerMillisecond), Core::Time::Now().Ticks()));
+                SYSLOG(Logging::Startup, (_T("[TS-Profile] [TID: %" PRIu64 "] Initialize complete for plugin [%s]:[%s] %" PRIu64 " ms, monotonic time: %" PRIu64 ""), static_cast<uint64_t>(::gettid()), ClassName().c_str(), Callsign().c_str(), (stopwatch.Elapsed() / Core::Time::TicksPerMillisecond), Core::Time::Now().Ticks()));
 
                 if (HasError() == true) {
                     result = Core::ERROR_GENERAL;
 
-                    SYSLOG(Logging::Startup, (_T("[TS-Profile] [TID: %d] Activation of plugin [%s]:[%s], failed. Error [%s] %lu ms, monotonic time: %lu"), static_cast<uint64_t>(::gettid()), className.c_str(), callSign.c_str(), ErrorMessage().c_str(), (stopwatch.Elapsed() / Core::Time::TicksPerMillisecond), Core::Time::Now().Ticks()));
+                    SYSLOG(Logging::Startup, (_T("[TS-Profile] [TID: %" PRIu64 "] Activation of plugin [%s]:[%s], failed. Error [%s] %" PRIu64 " ms, monotonic time: %" PRIu64 ""), static_cast<uint64_t>(::gettid()), className.c_str(), callSign.c_str(), ErrorMessage().c_str(), (stopwatch.Elapsed() / Core::Time::TicksPerMillisecond), Core::Time::Now().Ticks()));
 
                     if( _administrator.Configuration().LegacyInitialize() == false ) {
                         Deactivate(reason::INITIALIZATION_FAILED);
@@ -520,9 +520,9 @@ namespace PluginHost
                         Lock();
                         ReleaseInterfaces();
                         State(DEACTIVATED);
-                        SYSLOG(Logging::Startup, (_T("[TS-Profile] [TID: %d] Released Lock for Activating plugin [%s]:[%s] %lu ms, monotonic time: %lu"), static_cast<uint64_t>(::gettid()), ClassName().c_str(), Callsign().c_str(), (stopwatch.Elapsed() / Core::Time::TicksPerMillisecond), Core::Time::Now().Ticks()));
+                        SYSLOG(Logging::Startup, (_T("[TS-Profile] [TID: %" PRIu64 "] Released Lock for Activating plugin [%s]:[%s] %" PRIu64 " ms, monotonic time: %" PRIu64 ""), static_cast<uint64_t>(::gettid()), ClassName().c_str(), Callsign().c_str(), (stopwatch.Elapsed() / Core::Time::TicksPerMillisecond), Core::Time::Now().Ticks()));
                         Unlock();
-                        SYSLOG(Logging::Startup, (_T("[TS-Profile] [TID: %d] Released Lock for Activating plugin [%s]:[%s] %lu ms, monotonic time: %lu"), static_cast<uint64_t>(::gettid()), ClassName().c_str(), Callsign().c_str(), (stopwatch.Elapsed() / Core::Time::TicksPerMillisecond), Core::Time::Now().Ticks()));
+                        SYSLOG(Logging::Startup, (_T("[TS-Profile] [TID: %" PRIu64 "] Released Lock for Activating plugin [%s]:[%s] %" PRIu64 " ms, monotonic time: %" PRIu64 ""), static_cast<uint64_t>(::gettid()), ClassName().c_str(), Callsign().c_str(), (stopwatch.Elapsed() / Core::Time::TicksPerMillisecond), Core::Time::Now().Ticks()));
                     }
 
                 } else {
@@ -543,12 +543,12 @@ namespace PluginHost
                         }
                     }
 
-                    SYSLOG(Logging::Startup, (_T("[TS-Profile] [TID: %d] Activated plugin [%s]:[%s], monotonic time: %lu"), static_cast<uint64_t>(::gettid()),className.c_str(), callSign.c_str(), Core::Time::Now().Ticks()));
+                    SYSLOG(Logging::Startup, (_T("[TS-Profile] [TID: %" PRIu64 "] Activated plugin [%s]:[%s], monotonic time: %" PRIu64 ""), static_cast<uint64_t>(::gettid()), className.c_str(), callSign.c_str(), Core::Time::Now().Ticks()));
                     Lock();
                     State(ACTIVATED);
-                    SYSLOG(Logging::Startup, (_T("[TS-Profile] [TID: %d] Before Calling IPlugin::INotification subscribers after Activating plugin [%s]:[%s] %lu ms, monotonic time: %lu"), static_cast<uint64_t>(::gettid()), ClassName().c_str(), Callsign().c_str() , (stopwatch.Elapsed() / Core::Time::TicksPerMillisecond), Core::Time::Now().Ticks()));
+                    SYSLOG(Logging::Startup, (_T("[TS-Profile] [TID: %" PRIu64 "] Before Calling IPlugin::INotification subscribers after Activating plugin [%s]:[%s] %" PRIu64 " ms, monotonic time: %" PRIu64 ""), static_cast<uint64_t>(::gettid()), ClassName().c_str(), Callsign().c_str() , (stopwatch.Elapsed() / Core::Time::TicksPerMillisecond), Core::Time::Now().Ticks()));
                     _administrator.Activated(callSign, this);
-                    SYSLOG(Logging::Startup, (_T("[TS-Profile] [TID: %d] After Calling IPlugin::INotification subscribers after Activating plugin [%s]:[%s] %lu ms, monotonic time: %lu"), static_cast<uint64_t>(::gettid()), ClassName().c_str(), Callsign().c_str() , (stopwatch.Elapsed() / Core::Time::TicksPerMillisecond), Core::Time::Now().Ticks()));
+                    SYSLOG(Logging::Startup, (_T("[TS-Profile] [TID: %" PRIu64 "] After Calling IPlugin::INotification subscribers after Activating plugin [%s]:[%s] %" PRIu64 " ms, monotonic time: %" PRIu64 ""), static_cast<uint64_t>(::gettid()), ClassName().c_str(), Callsign().c_str() , (stopwatch.Elapsed() / Core::Time::TicksPerMillisecond), Core::Time::Now().Ticks()));
 
 #if THUNDER_RESTFULL_API
                     _administrator.Notification(_T("{\"callsign\":\"") + callSign + _T("\",\"state\":\"deactivated\",\"reason\":\"") + textReason.Data() + _T("\"}"));
@@ -564,14 +564,14 @@ namespace PluginHost
                     }
 
                     Unlock();
-                    SYSLOG(Logging::Startup, (_T("[TS-Profile] Released Lock for Activating plugin [%s]:[%s] %lu ms, monotonic time: %lu"), ClassName().c_str(), Callsign().c_str(), (stopwatch.Elapsed() / Core::Time::TicksPerMillisecond), Core::Time::Now().Ticks()));
+                    SYSLOG(Logging::Startup, (_T("[TS-Profile] Released Lock for Activating plugin [%s]:[%s] %" PRIu64 " ms, monotonic time: %" PRIu64 ""), ClassName().c_str(), Callsign().c_str(), (stopwatch.Elapsed() / Core::Time::TicksPerMillisecond), Core::Time::Now().Ticks()));
                 }
             }
         } else {
             Unlock();
-            SYSLOG(Logging::Startup, (_T("[TS-Profile] Released Lock for Activating plugin [%s]:[%s] %lu ms, monotonic time: %lu"), ClassName().c_str(), Callsign().c_str(), (stopwatch.Elapsed() / Core::Time::TicksPerMillisecond), Core::Time::Now().Ticks()));
+            SYSLOG(Logging::Startup, (_T("[TS-Profile] Released Lock for Activating plugin [%s]:[%s] %" PRIu64 " ms, monotonic time: %" PRIu64 ""), ClassName().c_str(), Callsign().c_str(), (stopwatch.Elapsed() / Core::Time::TicksPerMillisecond), Core::Time::Now().Ticks()));
         }
-        SYSLOG(Logging::Startup, (_T("[TS-Profile] End of Activate for plugin [%s]:[%s] %lu ms, monotonic time: %lu"), ClassName().c_str(), Callsign().c_str(), (stopwatch.Elapsed() / Core::Time::TicksPerMillisecond), Core::Time::Now().Ticks()));
+        SYSLOG(Logging::Startup, (_T("[TS-Profile] End of Activate for plugin [%s]:[%s] %" PRIu64 " ms, monotonic time: %" PRIu64 ""), ClassName().c_str(), Callsign().c_str(), (stopwatch.Elapsed() / Core::Time::TicksPerMillisecond), Core::Time::Now().Ticks()));
 
         return (result);
     }
