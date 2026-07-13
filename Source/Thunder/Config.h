@@ -27,22 +27,11 @@ namespace Thunder {
 namespace PluginHost {
 
     enum class PostMortemDataSink : uint8_t {
-        FILE     = 0,
-        LOG      = 1,
-        ALL      = 2,
-        DISABLED = 3
+        DISABLED = 0,
+        FILE     = 1,
+        LOG      = 2,
+        ALL      = 3
     };
-
-    static inline PostMortemDataSink ParsePostMortemDataSink(const string& input, PostMortemDataSink fallback)
-    {
-        string s(input);
-        std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c) { return static_cast<char>(::tolower(c)); });
-        if      (s == _T("log"))      return PostMortemDataSink::LOG;
-        else if (s == _T("all"))      return PostMortemDataSink::ALL;
-        else if (s == _T("disabled")) return PostMortemDataSink::DISABLED;
-        else if (s == _T("file"))     return PostMortemDataSink::FILE;
-        return fallback;
-    }
 
     /**
      * IMPORTANT: If updating this class to add/remove/modify configuration options, ensure
@@ -536,8 +525,8 @@ namespace PluginHost {
             Core::JSON::String VolatilePath;
             Core::JSON::String ProxyStubPath;
             Core::JSON::String PostMortemPath;
-            Core::JSON::String PostMortemWorkerPoolSink;
-            Core::JSON::String PostMortemCallstackSink;
+            Core::JSON::EnumType<PostMortemDataSink> PostMortemWorkerPoolSink;
+            Core::JSON::EnumType<PostMortemDataSink> PostMortemCallstackSink;
             Core::JSON::String Communicator;
             Core::JSON::String Redirect;
             Core::JSON::String Signature;
@@ -834,12 +823,10 @@ namespace PluginHost {
                 }
                 _postMortemPath = Core::Directory::Normalize(config.PostMortemPath.Value());
                 _workerPoolSink = config.PostMortemWorkerPoolSink.IsSet()
-                    ? ParsePostMortemDataSink(config.PostMortemWorkerPoolSink.Value(),
-                                              PostMortemDataSink::FILE)
+                    ? config.PostMortemWorkerPoolSink.Value()
                     : static_cast<PostMortemDataSink>(THUNDER_POSTMORTEM_WORKERPOOL_SINK_DEFAULT);
                 _callstackSink = config.PostMortemCallstackSink.IsSet()
-                    ? ParsePostMortemDataSink(config.PostMortemCallstackSink.Value(),
-                                              PostMortemDataSink::DISABLED)
+                    ? config.PostMortemCallstackSink.Value()
                     : static_cast<PostMortemDataSink>(THUNDER_POSTMORTEM_CALLSTACK_SINK_DEFAULT);
                 _appPath = Core::Directory::Normalize(Core::File::PathName(Core::ProcessInfo().Executable()));
                 _hashKey = config.Signature.Value();

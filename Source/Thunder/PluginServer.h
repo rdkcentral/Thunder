@@ -5697,55 +5697,54 @@ namespace PluginHost {
             const PluginHost::PostMortemDataSink wpSink = _config.PostMortemWorkerPoolSink();
             const PluginHost::PostMortemDataSink csSink = _config.PostMortemCallstackSink();
 
-            if ((wpSink == PluginHost::PostMortemDataSink::DISABLED) && (csSink == PluginHost::PostMortemDataSink::DISABLED)) {
-                return;
-            }
+            if ((wpSink != PluginHost::PostMortemDataSink::DISABLED) || (csSink != PluginHost::PostMortemDataSink::DISABLED)) {
 
-            while (index.Next() == true) {
+                while (index.Next() == true) {
 
-                const uint64_t threadIdRaw = index.Current().Id.Value();
+                    const uint64_t threadIdRaw = index.Current().Id.Value();
 
-                std::list<Core::callstack_info> stackList;
-                if (threadIdRaw != 0) {
-                    ::DumpCallStack(PluginHost::Metadata::ThreadId(threadIdRaw), stackList);
+                    std::list<Core::callstack_info> stackList;
+                    if (threadIdRaw != 0) {
+                        ::DumpCallStack(PluginHost::Metadata::ThreadId(threadIdRaw), stackList);
+                    }
+
+                    if (csSink == PluginHost::PostMortemDataSink::LOG || csSink == PluginHost::PostMortemDataSink::ALL) {
+                        for (const Core::callstack_info& entry : stackList) {
+                            const char* sym = entry.function.empty() ? "Unknown symbol" : entry.function.c_str();
+                            SYSLOG(Logging::Shutdown, (_T("[%s]:[%s]:[%u]:[%p]"),
+                                     entry.module.c_str(), sym, static_cast<unsigned int>(entry.line), entry.address));
+                        }
+                    }
+
+                    PostMortemData::Callstack dump;
+                    dump.Id = threadIdRaw;
+
+                    for (const Core::callstack_info& info : stackList) {
+                        dump.Data.Add() = CallstackData(info);
+                    }
+
+                    data.Callstacks.Add(dump);
                 }
 
-                if (csSink == PluginHost::PostMortemDataSink::LOG || csSink == PluginHost::PostMortemDataSink::ALL) {
-                    for (const Core::callstack_info& entry : stackList) {
-                        const char* sym = entry.function.empty() ? "Unknown symbol" : entry.function.c_str();
-                        SYSLOG(Logging::Shutdown, (_T("[%s]:[%s]:[%u]:[%p]"),
-                                 entry.module.c_str(), sym, static_cast<unsigned int>(entry.line), entry.address));
+                if (csSink == PluginHost::PostMortemDataSink::FILE || csSink == PluginHost::PostMortemDataSink::ALL) {
+                    DumpReadableMetadata(data, _config.PostMortemPath());
+                }
+
+                // Drop the workerpool info (what is currently running and what is pending) to a file..
+                if (wpSink == PluginHost::PostMortemDataSink::FILE || wpSink == PluginHost::PostMortemDataSink::ALL) {
+                    Core::File dumpFile(_config.PostMortemPath() + "ThunderInternals.json");
+                    if (dumpFile.Create(false) == true) {
+                        data.IElement::ToFile(dumpFile);
                     }
                 }
 
-                PostMortemData::Callstack dump;
-                dump.Id = threadIdRaw;
-
-                for (const Core::callstack_info& info : stackList) {
-                    dump.Data.Add() = CallstackData(info);
+                if (wpSink == PluginHost::PostMortemDataSink::LOG || wpSink == PluginHost::PostMortemDataSink::ALL) {
+                    string jsonContent;
+                    data.IElement::ToString(jsonContent);
+                    SYSLOG(Logging::Shutdown, (_T("WorkerPool snapshot start\n")));
+                    SYSLOG(Logging::Shutdown, (_T("[%s]\n"), jsonContent.c_str()));
+                    SYSLOG(Logging::Shutdown, (_T("WorkerPool snapshot end\n")));
                 }
-
-                data.Callstacks.Add(dump);
-            }
-
-            if (csSink == PluginHost::PostMortemDataSink::FILE || csSink == PluginHost::PostMortemDataSink::ALL) {
-                DumpReadableMetadata(data, _config.PostMortemPath());
-            }
-
-            // Drop the workerpool info (what is currently running and what is pending) to a file..
-            if (wpSink == PluginHost::PostMortemDataSink::FILE || wpSink == PluginHost::PostMortemDataSink::ALL) {
-                Core::File dumpFile(_config.PostMortemPath() + "ThunderInternals.json");
-                if (dumpFile.Create(false) == true) {
-                    data.IElement::ToFile(dumpFile);
-                }
-            }
-
-            if (wpSink == PluginHost::PostMortemDataSink::LOG || wpSink == PluginHost::PostMortemDataSink::ALL) {
-                string jsonContent;
-                data.IElement::ToString(jsonContent);
-                SYSLOG(Logging::Shutdown, (_T("WorkerPool snapshot start\n")));
-                SYSLOG(Logging::Shutdown, (_T("[%s]\n"), jsonContent.c_str()));
-                SYSLOG(Logging::Shutdown, (_T("WorkerPool snapshot end\n")));
             }
         }
         inline ServiceMap& Services()
