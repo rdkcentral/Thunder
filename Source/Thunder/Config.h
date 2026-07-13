@@ -480,7 +480,6 @@ namespace PluginHost {
                 Add(_T("postmortempath"), &PostMortemPath);
                 Add(_T("postmortemworkerpoolsink"), &PostMortemWorkerPoolSink);
                 Add(_T("postmortemcallstacksink"), &PostMortemCallstackSink);
-                Add(_T("postmortemcallstackdumppath"), &PostMortemCallstackDumpPath);
                 Add(_T("communicator"), &Communicator);
                 Add(_T("signature"), &Signature);
                 Add(_T("idletime"), &IdleTime);
@@ -539,7 +538,6 @@ namespace PluginHost {
             Core::JSON::String PostMortemPath;
             Core::JSON::String PostMortemWorkerPoolSink;
             Core::JSON::String PostMortemCallstackSink;
-            Core::JSON::String PostMortemCallstackDumpPath;
             Core::JSON::String Communicator;
             Core::JSON::String Redirect;
             Core::JSON::String Signature;
@@ -722,7 +720,6 @@ namespace PluginHost {
             , _postMortemPath()
             , _workerPoolSink(static_cast<PostMortemDataSink>(THUNDER_POSTMORTEM_WORKERPOOL_SINK_DEFAULT))
             , _callstackSink(static_cast<PostMortemDataSink>(THUNDER_POSTMORTEM_CALLSTACK_SINK_DEFAULT))
-            , _callstackDumpPath()
             , _pluginConfigPath()
             , _accessor()
             , _communicator()
@@ -836,9 +833,6 @@ namespace PluginHost {
                     _pluginConfigPath = Core::Directory::Normalize(config.Observe.PluginConfigPath.Value());
                 }
                 _postMortemPath = Core::Directory::Normalize(config.PostMortemPath.Value());
-                _callstackDumpPath = config.PostMortemCallstackDumpPath.IsSet()
-                    ? Core::Directory::Normalize(config.PostMortemCallstackDumpPath.Value())
-                    : _postMortemPath;
                 _workerPoolSink = config.PostMortemWorkerPoolSink.IsSet()
                     ? ParsePostMortemDataSink(config.PostMortemWorkerPoolSink.Value(),
                                               PostMortemDataSink::FILE)
@@ -1085,10 +1079,6 @@ namespace PluginHost {
         inline PostMortemDataSink PostMortemCallstackSink() const
         {
             return (_callstackSink);
-        }
-        inline const string& PostMortemCallstackDumpPath() const
-        {
-            return (_callstackDumpPath);
         }
         inline bool PostMortemAllowed(PluginHost::IShell::reason why) const
         {
@@ -1387,7 +1377,6 @@ namespace PluginHost {
         string _postMortemPath;
         PostMortemDataSink _workerPoolSink;
         PostMortemDataSink _callstackSink;
-        string _callstackDumpPath;
         string _pluginConfigPath;
         Core::NodeId _accessor;
         Core::NodeId _communicator;

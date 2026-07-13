@@ -5729,7 +5729,7 @@ namespace PluginHost {
             }
 
             if (csSink == PluginHost::PostMortemDataSink::FILE || csSink == PluginHost::PostMortemDataSink::ALL) {
-                DumpReadableMetadata(data, _config.PostMortemCallstackDumpPath());
+                DumpReadableMetadata(data, _config.PostMortemPath());
             }
 
             // Drop the workerpool info (what is currently running and what is pending) to a file..
