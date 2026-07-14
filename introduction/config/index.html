@@ -3341,6 +3341,20 @@
 <td>/opt/minidumps</td>
 </tr>
 <tr>
+<td>postmortemworkerpoolsink</td>
+<td>Controls where the WorkerPool JSON snapshot is written on crash. <br /><br />Allowed values: <code>FILE</code> (write ThunderInternals.json to <code>postmortempath</code>), <code>LOG</code> (emit via SYSLOG), <code>ALL</code> (both), <code>DISABLED</code> (skip)</td>
+<td>string</td>
+<td>FILE</td>
+<td>FILE</td>
+</tr>
+<tr>
+<td>postmortemcallstacksink</td>
+<td>Controls where per-thread callstack output is written on crash. <br /><br />Allowed values: <code>FILE</code> (write ThunderInternals.txt to <code>postmortempath</code>), <code>LOG</code> (emit via SYSLOG), <code>ALL</code> (both), <code>DISABLED</code> (skip)</td>
+<td>string</td>
+<td>DISABLED</td>
+<td>DISABLED</td>
+</tr>
+<tr>
 <td>communicator</td>
 <td>Socket to listen for COM-RPC messages. Can be a filesystem path on Linux for a Unix domain socket, or a TCP socket. <br /><br />For unix sockets, the file permissions can be specified by adding a <code>|</code> followed by the numeric permissions</td>
 <td>string</td>
