@@ -22,6 +22,27 @@ get_filename_component(TARGET ${CMAKE_CURRENT_SOURCE_DIR} NAME)
 set(THREADPOOL_COUNT "4" CACHE STRING "The number of threads in the thread pool")
 set(ENABLE_TRACING_MODULES ""  CACHE STRING "A space separated list of specific tracing modules to be enabled at start.")
 
+macro(thunder_postmortem_sink_value VAR_IN VAR_OUT)
+    string(TOUPPER "${${VAR_IN}}" _s)
+    if (_s STREQUAL "FILE")
+        set(${VAR_OUT} 1)
+    elseif(_s STREQUAL "LOG")
+        set(${VAR_OUT} 2)
+    elseif(_s STREQUAL "ALL")
+        set(${VAR_OUT} 3)
+    else()
+        set(${VAR_OUT} 0)
+    endif()
+endmacro()
+
+set(POSTMORTEM_WORKERPOOL_SINK "FILE" CACHE STRING "Default WorkerPool JSON dump sink on crash (FILE | LOG | ALL | DISABLED)")
+set(POSTMORTEM_CALLSTACK_SINK "DISABLED" CACHE STRING "Default inline callstack print sink on crash (FILE | LOG | ALL | DISABLED)")
+set_property(CACHE POSTMORTEM_WORKERPOOL_SINK PROPERTY STRINGS FILE LOG ALL DISABLED)
+set_property(CACHE POSTMORTEM_CALLSTACK_SINK  PROPERTY STRINGS FILE LOG ALL DISABLED)
+
+thunder_postmortem_sink_value(POSTMORTEM_WORKERPOOL_SINK _wp_sink)
+thunder_postmortem_sink_value(POSTMORTEM_CALLSTACK_SINK  _cs_sink)
+
 option(SKIP_PERSISTENT_PATH_INSTALL "This will skip installing the persistent path and its privileges. Needed for local build/installs" OFF)
 
 add_executable(${TARGET}
@@ -38,6 +59,8 @@ target_compile_definitions(${TARGET}
           NAMESPACE=${NAMESPACE}
           APPLICATION_NAME=${TARGET}
           THREADPOOL_COUNT=${THREADPOOL_COUNT}
+          THUNDER_POSTMORTEM_WORKERPOOL_SINK_DEFAULT=${_wp_sink}
+          THUNDER_POSTMORTEM_CALLSTACK_SINK_DEFAULT=${_cs_sink}
         )
 
 target_compile_options (${TARGET} PRIVATE -Wno-psabi)

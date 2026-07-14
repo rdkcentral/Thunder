@@ -51,6 +51,15 @@ ENUM_CONVERSION_BEGIN(PluginHost::InputHandler::type)
 
 ENUM_CONVERSION_END(PluginHost::InputHandler::type)
 
+ENUM_CONVERSION_BEGIN(PluginHost::PostMortemDataSink)
+
+    { PluginHost::PostMortemDataSink::DISABLED, _TXT("Disabled") },
+    { PluginHost::PostMortemDataSink::FILE,     _TXT("File") },
+    { PluginHost::PostMortemDataSink::LOG,      _TXT("Log") },
+    { PluginHost::PostMortemDataSink::ALL,      _TXT("All") },
+
+ENUM_CONVERSION_END(PluginHost::PostMortemDataSink)
+
 namespace PluginHost {
     //
     // STATIC declarations
