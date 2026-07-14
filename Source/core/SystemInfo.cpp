@@ -147,7 +147,7 @@ namespace Core {
 #ifdef __APPLE__
         m_uptime = 0;
         m_totalram = 0;
-        m_pageSize = 0;
+        m_pageSize = static_cast<uint32_t>(sysconf(_SC_PAGESIZE));
         m_freeram = 0;
         m_totalswap=0;
         m_freeswap=0;
@@ -262,6 +262,8 @@ namespace Core {
             uint64_t CurrentIdleTime = CpuFields[3]; // 3 is index of idle ticks time
             uint64_t CurrentTickCount = 0L;
 
+            // coverity[OVERRUN] - Intentional: fscanf fills at most 4 fields (matching the 4 format specifiers),
+            // so numFields <= 4 and i < numFields always clamps the loop within CpuFields[0..3].
             for (int i = 0; i < numFields && i < 10; ++i) {
                 CurrentTickCount += CpuFields[i];
             }

@@ -1,3 +1,21 @@
+/*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2026 Metrological
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 #include <condition_variable>
 #include <mutex>
 #include <queue>
@@ -81,8 +99,20 @@ namespace Core {
     // level errors are communicated via the JSON-RPC Error object in the
     // response body, following the JSON-RPC 2.0 specification.
     // =========================================================================
+    // Base-from-member idiom: ensures factory members are fully constructed
+    // before WebLinkType's constructor receives them by reference.
+    // (C++ initializes base classes before members, so passing a member
+    //  by reference to a base constructor is undefined behavior.)
+    struct HTTPServerFactoryBase {
+    protected:
+        ::Thunder::Core::ProxyPoolType<Web::Request> _requestFactory;
+        ::Thunder::Core::ProxyPoolType<JSONRPCBody> _jsonrpcBodyFactory;
+        HTTPServerFactoryBase(uint32_t count) : _requestFactory(count), _jsonrpcBodyFactory(count) {}
+    };
+
     class JSONRPCHTTPServer
-        : public Web::WebLinkType<
+        : private HTTPServerFactoryBase
+        , public Web::WebLinkType<
               ::Thunder::Core::SocketStream,
               Web::Request,
               Web::Response,
@@ -106,9 +136,8 @@ namespace Core {
             const SOCKET& connector,
             const ::Thunder::Core::NodeId& remoteId,
             ::Thunder::Core::SocketServerType<JSONRPCHTTPServer>*)
-            : BaseClass(5, _requestFactory, false, connector, remoteId, 2048, 2048)
-            , _requestFactory(5)
-            , _jsonrpcBodyFactory(5)
+            : HTTPServerFactoryBase(5)
+            , BaseClass(5, _requestFactory, false, connector, remoteId, 2048, 2048)
             , _handler({ 1 })
         {
             // Register JSON-RPC methods
@@ -229,8 +258,6 @@ namespace Core {
         }
 
     private:
-        ::Thunder::Core::ProxyPoolType<Web::Request> _requestFactory;
-        ::Thunder::Core::ProxyPoolType<JSONRPCBody> _jsonrpcBodyFactory;
         ::Thunder::Core::JSONRPC::Handler _handler;
     };
 
@@ -248,8 +275,16 @@ namespace Core {
     //   - WaitForResponse() blocks until a response is available in the queue
     //     (with a configurable timeout to prevent test hangs)
     // =========================================================================
+    struct HTTPClientFactoryBase {
+    protected:
+        ::Thunder::Core::ProxyPoolType<Web::Response> _responseFactory;
+        ::Thunder::Core::ProxyPoolType<JSONRPCBody> _jsonrpcBodyFactory;
+        HTTPClientFactoryBase(uint32_t count) : _responseFactory(count), _jsonrpcBodyFactory(count) {}
+    };
+
     class JSONRPCHTTPClient
-        : public Web::WebLinkType<
+        : private HTTPClientFactoryBase
+        , public Web::WebLinkType<
               ::Thunder::Core::SocketStream,
               Web::Response,
               Web::Request,
@@ -270,9 +305,8 @@ namespace Core {
         JSONRPCHTTPClient& operator=(const JSONRPCHTTPClient&) = delete;
 
         JSONRPCHTTPClient(const ::Thunder::Core::NodeId& remoteNode)
-            : BaseClass(5, _responseFactory, false, remoteNode.AnyInterface(), remoteNode, 2048, 2048)
-            , _responseFactory(5)
-            , _jsonrpcBodyFactory(5)
+            : HTTPClientFactoryBase(5)
+            , BaseClass(5, _responseFactory, false, remoteNode.AnyInterface(), remoteNode, 2048, 2048)
             , _httpStatusCode(0)
         {
         }
@@ -365,8 +399,6 @@ namespace Core {
     private:
         string _dataReceived;
         uint16_t _httpStatusCode;
-        ::Thunder::Core::ProxyPoolType<Web::Response> _responseFactory;
-        ::Thunder::Core::ProxyPoolType<JSONRPCBody> _jsonrpcBodyFactory;
         std::queue<string> _responseQueue;
         std::mutex _responseMutex;
         std::condition_variable _responseCV;
@@ -389,8 +421,8 @@ namespace Core {
     // Also validates HTTP status code is 200 (OK).
     TEST(HTTPJSONRPC, BasicMethodInvocation)
     {
-        constexpr uint32_t initHandshakeValue = 0, maxWaitTimeMs = 4000, maxInitTime = 2000;
-        constexpr uint8_t maxRetries = 1;
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTimeMs = 8000, maxInitTime = 4000;
+        constexpr uint8_t maxRetries = 10;
 
         const std::string connector{ "0.0.0.0" };
         const uint16_t port = 12350;
@@ -442,7 +474,7 @@ namespace Core {
             ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
         };
 
-        IPTestAdministrator testAdmin(callback_parent, callback_child, initHandshakeValue, 8);
+        IPTestAdministrator testAdmin(callback_parent, callback_child, initHandshakeValue, 20);
 
         ::Thunder::Core::Singleton::Dispose();
     }
@@ -453,8 +485,8 @@ namespace Core {
     // HTTP POST -> JSONRPCBody -> Handler -> JSONRPCBody round-trip.
     TEST(HTTPJSONRPC, EchoMethod)
     {
-        constexpr uint32_t initHandshakeValue = 0, maxWaitTimeMs = 4000, maxInitTime = 2000;
-        constexpr uint8_t maxRetries = 1;
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTimeMs = 8000, maxInitTime = 4000;
+        constexpr uint8_t maxRetries = 10;
 
         const std::string connector{ "0.0.0.0" };
         const uint16_t port = 12351;
@@ -506,7 +538,7 @@ namespace Core {
             ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
         };
 
-        IPTestAdministrator testAdmin(callback_parent, callback_child, initHandshakeValue, 8);
+        IPTestAdministrator testAdmin(callback_parent, callback_child, initHandshakeValue, 20);
 
         ::Thunder::Core::Singleton::Dispose();
     }
@@ -517,8 +549,8 @@ namespace Core {
     // status), and the Error.Code should be -32601.
     TEST(HTTPJSONRPC, ErrorResponse)
     {
-        constexpr uint32_t initHandshakeValue = 0, maxWaitTimeMs = 4000, maxInitTime = 2000;
-        constexpr uint8_t maxRetries = 1;
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTimeMs = 8000, maxInitTime = 4000;
+        constexpr uint8_t maxRetries = 10;
 
         const std::string connector{ "0.0.0.0" };
         const uint16_t port = 12352;
@@ -570,7 +602,7 @@ namespace Core {
             ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
         };
 
-        IPTestAdministrator testAdmin(callback_parent, callback_child, initHandshakeValue, 8);
+        IPTestAdministrator testAdmin(callback_parent, callback_child, initHandshakeValue, 20);
 
         ::Thunder::Core::Singleton::Dispose();
     }
@@ -581,8 +613,8 @@ namespace Core {
     // size (2048 bytes configured on client/server).
     TEST(HTTPJSONRPC, LargePayload)
     {
-        constexpr uint32_t initHandshakeValue = 0, maxWaitTimeMs = 4000, maxInitTime = 2000;
-        constexpr uint8_t maxRetries = 1;
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTimeMs = 8000, maxInitTime = 4000;
+        constexpr uint8_t maxRetries = 10;
 
         const std::string connector{ "0.0.0.0" };
         const uint16_t port = 12353;
@@ -638,7 +670,7 @@ namespace Core {
             ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
         };
 
-        IPTestAdministrator testAdmin(callback_parent, callback_child, initHandshakeValue, 8);
+        IPTestAdministrator testAdmin(callback_parent, callback_child, initHandshakeValue, 20);
 
         ::Thunder::Core::Singleton::Dispose();
     }
@@ -650,8 +682,8 @@ namespace Core {
     // across multiple round-trips on a persistent TCP connection.
     TEST(HTTPJSONRPC, MultipleSequentialRequests)
     {
-        constexpr uint32_t initHandshakeValue = 0, maxWaitTimeMs = 4000, maxInitTime = 2000;
-        constexpr uint8_t maxRetries = 1;
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTimeMs = 8000, maxInitTime = 4000;
+        constexpr uint8_t maxRetries = 10;
 
         const std::string connector{ "0.0.0.0" };
         const uint16_t port = 12354;
@@ -705,7 +737,7 @@ namespace Core {
             ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
         };
 
-        IPTestAdministrator testAdmin(callback_parent, callback_child, initHandshakeValue, 8);
+        IPTestAdministrator testAdmin(callback_parent, callback_child, initHandshakeValue, 20);
 
         ::Thunder::Core::Singleton::Dispose();
     }

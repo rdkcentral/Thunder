@@ -51,7 +51,7 @@ set(UMASK "" CACHE STRING "Set the permission mask for the creation of new files
 set(COMMUNICATOR "" CACHE STRING "Define the ComRPC socket e.g. 127.0.0.1:62000 or /tmp/communicator|750")
 set(LOCATOR "/tmp/memcrcom" CACHE STRING "Default Memecr Socket path")
 set(DISABLEPLUGINAUTOACTIVATION false CACHE STRING "Disable plugin auto activation (override plugin startmode)")
-set(AUTHORIZEDEXTENSIONS "[\"*\"]" CACHE STRING "List all authorized Thunder extensions, use * to allow all extensions, also determines order of Thunder extension activation/deactivation")
+set(AUTHORIZEDEXTENSIONS "*" CACHE STRING "List all authorized Thunder extensions, use * to allow all extensions, also determines order of Thunder extension activation/deactivation")
 
 # Controller Plugin Settings.
 set(PLUGIN_CONTROLLER_UI_ENABLED "true" CACHE STRING "Enable the Controller's UI")
@@ -97,7 +97,10 @@ endif()
 if(DISABLEPLUGINAUTOACTIVATION)
     map_set(${CONFIG} disablepluginautoactivation true)
 endif()
-map_set(${CONFIG} authorizedextensions ${AUTHORIZEDEXTENSIONS})
+list(LENGTH AUTHORIZEDEXTENSIONS AUTHORIZEDEXTENSIONS_LENGTH)
+if (AUTHORIZEDEXTENSIONS_LENGTH GREATER 0)
+    map_append(${CONFIG} authorizedextensions ___array___ ${AUTHORIZEDEXTENSIONS})
+endif()
 
 map()
 kv(locator ${LOCATOR})
