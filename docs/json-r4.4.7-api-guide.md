@@ -33,15 +33,15 @@ bool Container::FromObject(const IElement& source);
 | Target is cleared first | All existing fields are removed before any values are imported from `source` |
 | Only set values imported | Fields in `source` where `IsSet() == false` are discarded |
 | Null values round-tripped | `null` fields in `source` are preserved in the target |
-| Parameter is `IElement&` | Accepts any JSON type: typed Container, VariantContainer, or ArrayType |
+| Parameter is `const IElement&` | Accepts any `IElement` as source, but `source` must serialise to a JSON object (`{...}`). In practice this means a typed `Container` or a `VariantContainer`. Passing a scalar (String, Number, Boolean) or an ArrayType as `source` will cause `FromObject` to return `false` because the Container deserialiser expects `{` as the opening token. |
 
 ---
 
 ### 1.1 Typed Container target
 
-Only fields that are **registered** in the target (declared in the constructor
-with `Add()`) can receive values. Unknown keys from `source` are silently
-skipped. No new fields are ever added to a typed Container.
+Only fields that are **registered** in the target (via `Add()`) can receive
+values. Unknown keys from `source` are silently skipped. No new fields are ever
+added to a typed Container.
 
 ```cpp
 struct DeviceInfo : public Core::JSON::Container {
@@ -104,10 +104,6 @@ JsonObject result;
 result.FromObject(info);
 // result: model="ES1-A", firmware="R4.4.7"
 ```
-
-> **Tip:** If you want to *merge* two `VariantContainer` objects (preserve keys
-> absent from the source), use `VariantContainer::operator=` which performs a
-> field-level reconciliation rather than a full replace.
 
 ---
 
