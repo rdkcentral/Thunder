@@ -1,61 +1,113 @@
 ## Why
 
-Thunder middleware plugins build JSON array responses incrementally — for example,
-collecting active plugin callsigns, error codes, or capability entries one-by-one
-as each sub-system responds. `JSON::ArrayType<ELEMENT>` already supports `Add()`
-(append) and `operator[]` (random access), but has no `Remove(index)` operation.
-Without it, developers must rebuild the entire array from scratch to drop a single
-element, or work around it with a second temporary array — both patterns are
-wasteful and hard to maintain.
+Thunder middleware plugins build `JSON::ArrayType<T>` responses incrementally.
+The existing API covers append (`Add`) and random read access (`operator[]`,
+`Get`), but provides no way to remove an element by position or insert one at an
+arbitrary position. Both operations are needed to support runtime-built
+capability lists and response arrays where elements must be removed or
+re-ordered without rebuilding the whole array.
 
 ## What Changes
 
-`JSON::ArrayType<ELEMENT>` gains a `Remove(uint32_t index)` method that erases
-the element at the given position and decrements `Length()` accordingly.
+Two new methods are added to `JSON::ArrayType<ELEMENT>`:
 
-The existing `Add()`, `Add(element)`, `operator[]`, `Get()`, `Length()`, and
-`Clear()` already exist (confirmed in `Source/core/JSON.h` lines 3330–3380) and
-are **not changed**. The work is purely additive.
+| Method | Description |
+|---|---|
+| `void Remove(uint32_t index)` | Erases the element at zero-based `index` |
+| `void Insert(uint32_t index, const ELEMENT& element)` | Inserts a copy of `element` before position `index` |
+
+All existing methods (`Add`, `operator[]`, `Get`, `Length`, `Clear`,
+`Elements`) are unchanged.
 
 ## Capabilities
 
 ### New Capabilities
-- `json-array-remove`: `JSON::ArrayType<ELEMENT>::Remove(uint32_t index)` — erases
-  the element at `index` (0-based). `ASSERT`s that `index < Length()` in debug
-  builds; undefined behaviour for out-of-range index in release builds, consistent
-  with the existing `operator[]` contract.
+- `json-array-remove`: `void ArrayType<ELEMENT>::Remove(uint32_t index)` —
+  erases the element at zero-based `index`. `index` must be less than `Length()`;
+  behaviour for out-of-range index matches `operator[]` (ASSERT in debug builds).
+  Elements after `index` shift down by one.
+
+- `json-array-insert`: `void ArrayType<ELEMENT>::Insert(uint32_t index, const ELEMENT& element)` —
+  inserts a copy of `element` before position `index`. Valid range is
+  `0 <= index <= Length()`. Inserting at `index == Length()` is equivalent to
+  `Add(element)`. Elements at `index` and beyond shift up by one.
 
 ### Modified Capabilities
 <!-- none -->
 
 ## Impact
 
-- **`Source/core/JSON.h`** — one new `Remove` method on `ArrayType<ELEMENT>`.
-- **No ABI break** — purely additive template method.
+- **`Source/core/JSON.h`** — two new template methods on `ArrayType<ELEMENT>`.
+- **No ABI break** — purely additive.
 - **No CMake changes** required.
 
-## Usage Example
+## Usage Examples
 
+### Example 1 — Remove an element by index
 ```cpp
-// Scenario: build a capability list and remove one entry based on a runtime flag.
-
 Core::JSON::ArrayType<Core::JSON::String> caps;
-caps.Add() = _T("network");
-caps.Add() = _T("display");
-caps.Add() = _T("audio");     // index 2
+caps.Add() = _T("HDMI");    // index 0
+caps.Add() = _T("4K");      // index 1
+caps.Add() = _T("HDR");     // index 2
 
 ASSERT(caps.Length() == 3);
 
-// Runtime check — audio capability not available on this SKU.
-if (!AudioAvailable()) {
-    caps.Remove(2);           // erases "audio"
-}
+// Runtime check — HDR not available on this SKU.
+caps.Remove(2);
 
-string json;
-caps.ToString(json);
-// json == ["network","display"]    (if audio removed)
+ASSERT(caps.Length() == 2);
+// Serialises as: ["HDMI","4K"]
+```
 
-// Append more entries after removal.
-caps.Add() = _T("hdmi");
-ASSERT(caps.Length() == 3);   // network, display, hdmi
+### Example 2 — Remove middle element; remaining elements shift
+```cpp
+Core::JSON::ArrayType<Core::JSON::String> tags;
+tags.Add() = _T("alpha");   // 0
+tags.Add() = _T("beta");    // 1
+tags.Add() = _T("gamma");   // 2
+
+tags.Remove(1);  // removes "beta"
+
+// tags[0] == "alpha",  tags[1] == "gamma"
+// Serialises as: ["alpha","gamma"]
+```
+
+### Example 3 — Insert at a position
+```cpp
+Core::JSON::ArrayType<Core::JSON::String> pipeline;
+pipeline.Add() = _T("decode");    // 0
+pipeline.Add() = _T("render");    // 1
+
+// Insert "scale" between "decode" and "render".
+Core::JSON::String scale(_T("scale"));
+pipeline.Insert(1, scale);
+
+// pipeline[0]=="decode", pipeline[1]=="scale", pipeline[2]=="render"
+// Serialises as: ["decode","scale","render"]
+```
+
+### Example 4 — Insert at end (equivalent to Add)
+```cpp
+Core::JSON::ArrayType<Core::JSON::DecUInt32> ids;
+ids.Add() = 10;
+ids.Add() = 20;
+
+Core::JSON::DecUInt32 newId;
+newId = 30;
+ids.Insert(ids.Length(), newId);  // append — same as Add(newId)
+
+// Serialises as: [10,20,30]
+```
+
+### Example 5 — Combined Remove and Insert (move an element)
+```cpp
+Core::JSON::ArrayType<Core::JSON::String> steps;
+steps.Add() = _T("A");   // 0
+steps.Add() = _T("B");   // 1
+steps.Add() = _T("C");   // 2
+
+// Move "A" to position 2.
+Core::JSON::String moved = steps[0];   // copy value
+steps.Remove(0);                        // ["B","C"]
+steps.Insert(1, moved);                 // ["B","A","C"]
 ```

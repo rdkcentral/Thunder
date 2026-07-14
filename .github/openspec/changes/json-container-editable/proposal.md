@@ -1,75 +1,72 @@
 ## Why
 
-Thunder middleware plugins need to build and mutate `JSON::Container` objects
-dynamically at runtime — for example, constructing a telemetry payload
-incrementally as sub-systems report their state, or patching a cached response
-object when a single field changes. Today `Container` supports `Add()` to
-append a new field and `Remove()` to remove one by label, but there is no
-first-class `Set(key, value)` operation to update the value of an already-registered
-field in a typed or generic container. Developers work around this with
-`Clear()` + re-add, which is fragile and loses unrelated fields.
+This user story was raised to allow plugins to add, update, and remove key-value
+pairs in a `JSON::Container` at runtime. After peer review and analysis of the
+existing codebase, the requirement is **withdrawn as a new API request** — the
+capability already exists through direct member access and `VariantContainer`.
 
-## What Changes
+## Finding: No New API Required
 
-`JSON::Container` gains a documented, explicitly-supported `Set(label, value)`
-mutation path. The thread-safety contract for `Add`, `Set`, and `Remove` is
-made explicit in the API comments (caller-holds-lock). `Remove` already exists
-but is underdocumented; this change improves its contract as well.
-
-Existing `Add(const TCHAR label[], IElement* element)` and
-`Remove(const TCHAR label[])` signatures are **not changed** — they already
-exist (lines 3862 / 3867 of `Source/core/JSON.h`). The work is:
-
-1. Add `Set(const TCHAR label[], const IElement& value)` — update the value of
-   an existing field in-place via `FromString` round-trip.
-2. Add doxygen-style API comments to `Add`, `Set`, and `Remove` documenting the
-   thread-safety contract.
-3. Unit-test all three mutations and serialisation after each.
-
-## Capabilities
-
-### New Capabilities
-- `json-container-set`: `JSON::Container::Set(const TCHAR label[], const IElement& value)` —
-  updates the value of an already-registered field by label. If the label does
-  not exist in the container, the call is a no-op (with a debug-trace warning),
-  consistent with how `Remove` silently skips unknown labels.
-
-### Modified Capabilities
-- `json-container-mutations`: `Add` and `Remove` on `JSON::Container` — no
-  behaviour change, but thread-safety contract and semantics are now formally
-  documented in API comments.
-
-## Impact
-
-- **`Source/core/JSON.h`** — one new `Set` method on `Container`; API-comment
-  additions to `Add` and `Remove`.
-- **No ABI break** — purely additive.
-- **No CMake changes** required.
-
-## Usage Example
+### Typed Container — direct member access
+A typed `Container` subclass declares its fields as **public member variables**.
+Those members are live C++ objects that can be read and written directly at any
+time. There is no need for a `Set(label, value)` method because the developer
+already holds a typed reference to the field.
 
 ```cpp
-// Scenario: update a single cached field without rebuilding the whole container.
+struct PluginStatus : public Core::JSON::Container {
+    PluginStatus() : state(), version(), activeClients(0) {
+        Add(_T("state"),   &state);
+        Add(_T("version"), &version);
+        Add(_T("clients"), &activeClients);
+    }
+    Core::JSON::EnumType<PluginState> state;
+    Core::JSON::String                version;
+    Core::JSON::DecUInt32             activeClients;
+};
 
-Core::JSON::Container status;
-Core::JSON::String state;
-Core::JSON::String build;
+PluginStatus status;
 
-state = _T("initialising");
-build = _T("R4.4.7");
-status.Add(_T("state"), &state);
-status.Add(_T("build"), &build);
+// Add / update fields — direct assignment, no helper needed.
+status.state         = PluginState::ACTIVATED;
+status.version       = _T("R4.4.7");
+status.activeClients = 3;
 
-// ... later, after activation completes ...
-Core::JSON::String newState(_T("active"));
-status.Set(_T("state"), newState);   // overwrites only "state"
-
-string json;
-status.ToString(json);
-// json == {"state":"active","build":"R4.4.7"}
-
-// Remove a field entirely.
-status.Remove(_T("build"));
-status.ToString(json);
-// json == {"state":"active"}
+// Remove a field from serialised output — call Clear() on the member.
+status.version.Clear();   // IsSet()==false → omitted from ToString()
 ```
+
+If a Container is declared with **private member variables**, the developer is
+responsible for adding typed accessor methods — this is standard C++ practice
+and requires no framework change.
+
+### VariantContainer — existing `Set()`, `Get()`, `Remove()`, `operator[]`
+`VariantContainer` (aliased as `JsonObject`) already provides a full dynamic
+mutation API:
+
+```cpp
+JsonObject obj;
+
+// Add
+obj.Set(_T("model"),   JsonValue(string("ES1-A")));
+obj.Set(_T("clients"), JsonValue(3));
+
+// Update (same call — Set overwrites if key exists)
+obj.Set(_T("model"), JsonValue(string("ES1-B")));
+
+// Read
+string model = obj.Get(_T("model")).String();    // "ES1-B"
+JsonValue& ref = obj[_T("clients")];              // reference to live value
+ref = JsonValue(5);                               // update in place
+
+// Remove
+obj.Remove(_T("clients"));
+```
+
+## Outcome
+
+No code changes are required for this user story. The design document and task
+list for this change are closed as **Not Needed — Existing Capability**.
+
+The documentation in `docs/json-type-system.md` already covers both patterns
+(typed Container direct access and VariantContainer mutation API).
