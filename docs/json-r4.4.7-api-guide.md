@@ -6,6 +6,19 @@ with JSON containers and arrays. It is intended for plugin developers who use
 
 ---
 
+## Thread Safety
+
+None of the APIs described in this document perform internal locking.
+**The caller is responsible for holding any necessary lock** before calling
+`FromObject`, any mutation method on a Container, or `Remove`/`Insert` on an
+array. This is consistent with all existing Thunder JSON mutation methods
+(`Add`, `Remove`, `Set`, `Clear`).
+
+Typically this means protecting access to a shared JSON object with a
+`Core::CriticalSection` in the same way as any other shared data in a plugin.
+
+---
+
 ## 1. `FromObject()` — Populate a Container from Another JSON Element
 
 `FromObject()` follows the same rules as `FromString()` and `FromFile()`:
@@ -183,6 +196,10 @@ void ArrayType<ELEMENT>::Remove(uint32_t index);
 
 Erases the element at zero-based `index`. Elements after `index` shift down.
 
+**Complexity:** O(n) — the internal storage is a `std::list`; reaching `index`
+requires a linear walk. The erase itself is O(1) once the position is found.
+`Add()` (append) remains O(1) and is unaffected.
+
 ```cpp
 Core::JSON::ArrayType<Core::JSON::String> caps;
 caps.Add() = _T("HDMI");   // 0
@@ -217,6 +234,10 @@ void ArrayType<ELEMENT>::Insert(uint32_t index, const ELEMENT& element);
 Inserts a copy of `element` before position `index`. Valid range is
 `0 <= index <= Length()`. Inserting at `index == Length()` is equivalent to
 `Add(element)`. Elements at `index` and beyond shift up.
+
+**Complexity:** O(n) — same linear walk as `Remove` to reach `index`; the
+list insertion itself is O(1). For pure append use `Add()` (O(1)) instead.
+Avoid repeated `Insert(0, …)` in a loop on large arrays.
 
 ```cpp
 // Insert between existing elements
