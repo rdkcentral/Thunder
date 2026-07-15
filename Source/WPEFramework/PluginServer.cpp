@@ -564,14 +564,14 @@ namespace PluginHost
                     }
 
                     Unlock();
-                    SYSLOG(Logging::Startup, (_T("[TS-Profile] Released Lock for Activating plugin [%s]:[%s] %" PRIu64 " ms, monotonic time: %" PRIu64 ""), ClassName().c_str(), Callsign().c_str(), (stopwatch.Elapsed() / Core::Time::TicksPerMillisecond), Core::Time::Now().Ticks()));
+                    SYSLOG(Logging::Startup, (_T("[TS-Profile] [TID: %" PRIu64 "] Released Lock for Activating plugin [%s]:[%s] %" PRIu64 " ms, monotonic time: %" PRIu64 ""), static_cast<uint64_t>(::gettid()), ClassName().c_str(), Callsign().c_str(), (stopwatch.Elapsed() / Core::Time::TicksPerMillisecond), Core::Time::Now().Ticks()));
                 }
             }
         } else {
             Unlock();
-            SYSLOG(Logging::Startup, (_T("[TS-Profile] Released Lock for Activating plugin [%s]:[%s] %" PRIu64 " ms, monotonic time: %" PRIu64 ""), ClassName().c_str(), Callsign().c_str(), (stopwatch.Elapsed() / Core::Time::TicksPerMillisecond), Core::Time::Now().Ticks()));
+            SYSLOG(Logging::Startup, (_T("[TS-Profile] [TID: %" PRIu64 "] Released Lock for Activating plugin [%s]:[%s] %" PRIu64 " ms, monotonic time: %" PRIu64 ""), static_cast<uint64_t>(::gettid()), ClassName().c_str(), Callsign().c_str(), (stopwatch.Elapsed() / Core::Time::TicksPerMillisecond), Core::Time::Now().Ticks()));
         }
-        SYSLOG(Logging::Startup, (_T("[TS-Profile] End of Activate for plugin [%s]:[%s] %" PRIu64 " ms, monotonic time: %" PRIu64 ""), ClassName().c_str(), Callsign().c_str(), (stopwatch.Elapsed() / Core::Time::TicksPerMillisecond), Core::Time::Now().Ticks()));
+        SYSLOG(Logging::Startup, (_T("[TS-Profile] [TID: %" PRIu64 "] End of Activate for plugin [%s]:[%s] %" PRIu64 " ms, monotonic time: %" PRIu64 ""), static_cast<uint64_t>(::gettid()), ClassName().c_str(), Callsign().c_str(), (stopwatch.Elapsed() / Core::Time::TicksPerMillisecond), Core::Time::Now().Ticks()));
 
         return (result);
     }
