@@ -19,7 +19,7 @@
 
 #pragma once
 
-#ifdef __WINDOWS__
+#if defined(__WINDOWS__) && !defined(THUNDER_NO_COMMON_LIB)
 #pragma comment(lib, "common.lib")
 #endif
 
