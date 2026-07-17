@@ -21,7 +21,28 @@
 #include "IUnknown.h"
 
 namespace WPEFramework {
+
+namespace {
+    // Thread-local span ID for distributed tracing context propagation
+    thread_local uint64_t g_currentTraceSpanId = 0;
+
+    // Stub-side trace callbacks (set by DistributedTracing in WPEFramework process)
+    RPC::ICOMRPCStubTraceCallbacks* g_stubTraceCallbacks = nullptr;
+}
+
 namespace RPC {
+
+    void SetCurrentTraceSpanId(uint64_t spanId) {
+        g_currentTraceSpanId = spanId;
+    }
+
+    uint64_t GetCurrentTraceSpanId() {
+        return g_currentTraceSpanId;
+    }
+
+    void SetCOMRPCStubTraceCallbacks(ICOMRPCStubTraceCallbacks* callbacks) {
+        g_stubTraceCallbacks = callbacks;
+    }
 
     Administrator::Administrator()
         : _adminLock()
@@ -151,7 +172,26 @@ namespace RPC {
 
         if (index != _stubs.end()) {
             uint32_t methodId(message->Parameters().MethodId());
+
+            // --- Distributed Tracing: propagate span ID from message to thread-local ---
+            uint64_t incomingSpanId = message->Parameters().SpanId();
+            uint64_t previousSpanId = g_currentTraceSpanId;
+            if (incomingSpanId != 0) {
+                g_currentTraceSpanId = incomingSpanId;
+                if (g_stubTraceCallbacks != nullptr) {
+                    g_stubTraceCallbacks->onBegin(incomingSpanId, interfaceId, static_cast<uint8_t>(methodId));
+                }
+            }
+
             REPORT_DURATION_WARNING({ index->second->Handle(methodId, channel, message); },  WarningReporting::TooLongInvokeRPC, interfaceId, methodId);
+
+            // --- Distributed Tracing: restore previous span ID ---
+            if (incomingSpanId != 0) {
+                if (g_stubTraceCallbacks != nullptr) {
+                    g_stubTraceCallbacks->onEnd(incomingSpanId);
+                }
+                g_currentTraceSpanId = previousSpanId;
+            }
         } else {
             // Oops this is an unknown interface, Do not think this could happen.
             TRACE_L1("Unknown interface. %d", interfaceId);

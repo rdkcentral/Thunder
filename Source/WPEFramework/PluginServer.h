@@ -26,6 +26,9 @@
 #include "IRemoteInstantiation.h"
 #include "WarningReportingCategories.h"
 #include "PostMortem.h"
+#ifdef THUNDER_DISTRIBUTED_TRACING
+#include "DistributedTracing.h"
+#endif
 #include <atomic>
 
 #ifdef PROCESSCONTAINERS_ENABLED
@@ -960,7 +963,18 @@ namespace PluginHost {
             private:
                 void* Acquire(const string& /* className */, const uint32_t interfaceId, const uint32_t /* versionId */) override {
                     ASSERT(interfaceId >= RPC::IDS::ID_EXTERNAL_INTERFACE_OFFSET);
-                    return (interfaceId >= RPC::IDS::ID_EXTERNAL_INTERFACE_OFFSET ? _plugin->QueryInterface(interfaceId) : nullptr);
+                    void* result = nullptr;
+                    if (interfaceId >= RPC::IDS::ID_EXTERNAL_INTERFACE_OFFSET) {
+#ifdef THUNDER_DISTRIBUTED_TRACING
+                        uint64_t _traceSpanId = PluginHost::DistributedTracing::Instance().OnCOMRPCAcquireBegin(
+                            "ExternalAccess", interfaceId);
+#endif
+                        result = _plugin->QueryInterface(interfaceId);
+#ifdef THUNDER_DISTRIBUTED_TRACING
+                        PluginHost::DistributedTracing::Instance().OnCOMRPCAcquireEnd(_traceSpanId, result != nullptr);
+#endif
+                    }
+                    return result;
                 }
                 void Dangling(Danglings&& proxies) override {
                     for (const std::pair<uint32_t, Core::IUnknown*>& entry : proxies) {
@@ -1504,7 +1518,14 @@ namespace PluginHost {
                     }
                     else {
                         string output;
+#ifdef THUNDER_DISTRIBUTED_TRACING
+                        uint64_t _traceSpanId = PluginHost::DistributedTracing::Instance().OnInvokeBegin(
+                            PluginHost::Service::Callsign(), method, channelId);
+#endif
                         result = _jsonrpc->Invoke(channelId, message.Id.Value(), token, method, message.Parameters.Value(), output);
+#ifdef THUNDER_DISTRIBUTED_TRACING
+                        PluginHost::DistributedTracing::Instance().OnInvokeEnd(_traceSpanId, result);
+#endif
 
                         if (response.IsValid() == true) {
                             if (result == static_cast<uint32_t>(~0)) {

@@ -20,6 +20,10 @@
 #include "PluginServer.h"
 #include <fstream>
 
+#ifdef THUNDER_DISTRIBUTED_TRACING
+#include "DistributedTracing.h"
+#endif
+
 #ifndef __WINDOWS__
 #include <dlfcn.h> // for dladdr
 #include <syslog.h>
@@ -274,6 +278,10 @@ POP_WARNING()
                 fprintf(stdout, EXPAND_AND_QUOTE(APPLICATION_NAME) " closing down.\n");
                 fflush(stderr);
             }
+
+#ifdef THUNDER_DISTRIBUTED_TRACING
+            PluginHost::DistributedTracing::Instance().Shutdown();
+#endif
 
             destructor->Close();
             delete destructor;
@@ -735,6 +743,10 @@ POP_WARNING()
 
             // Startup/load/initialize what we found in the configuration.
             _dispatcher = new PluginHost::Server(*_config, _background);
+
+#ifdef THUNDER_DISTRIBUTED_TRACING
+            PluginHost::DistributedTracing::Instance().Initialize();
+#endif
 
             SYSLOG(Logging::Startup, (_T(EXPAND_AND_QUOTE(APPLICATION_NAME) " actively listening.")));
 
