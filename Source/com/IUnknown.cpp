@@ -21,6 +21,13 @@
 #include "Administrator.h"
 #include "Communicator.h"
 
+#if __has_include("rdk_otlp_instrumentation.h")
+#include "rdk_otlp_instrumentation.h"
+#define RDK_OTEL_COM_ENABLED 1
+#else
+#define RDK_OTEL_COM_ENABLED 0
+#endif
+
 namespace WPEFramework {
 namespace ProxyStub {
     // -------------------------------------------------------------------------------------------
@@ -104,7 +111,24 @@ namespace ProxyStub {
         _adminLock.Unlock();
 
         if (channel.IsValid() == true) {
+#if RDK_OTEL_COM_ENABLED
+            bool _otelSpanStarted = false;
+            const char* tp = rdk_otlp_get_current_traceparent();
+            if (tp != nullptr) {
+                // methodId: generated proxy stubs always use Message(n) which adds +3 offset.
+                // AddRef(0)/Release(1)/QueryInterface(2) bypass this function entirely — no guard needed.
+                char spanName[80];
+                snprintf(spanName, sizeof(spanName), "COMRPC.if0x%X.method%u",
+                         message->Parameters().InterfaceId(),
+                         message->Parameters().MethodId() - 3);
+                rdk_otlp_start_child_from_traceparent(tp, spanName);
+                _otelSpanStarted = true;
+            }
+#endif
             result = channel->Invoke(message, waitTime);
+#if RDK_OTEL_COM_ENABLED
+            if (_otelSpanStarted) { rdk_otlp_finish_child_span(); }
+#endif
 
             if (result != Core::ERROR_NONE) {
 
