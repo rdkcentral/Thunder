@@ -52,6 +52,17 @@ target_link_libraries(${TARGET}
           CompileSettingsDebug::CompileSettingsDebug
         )
 
+find_library(RDK_OTLP_LIB rdk_otlp)
+if(RDK_OTLP_LIB)
+    target_link_libraries(${TARGET} PRIVATE rdk_otlp)
+    target_include_directories(${TARGET} PRIVATE
+        $<BUILD_INTERFACE:${CMAKE_SYSROOT}/usr/include>
+    )
+    message(STATUS "WPEFrameworkCOM: rdk_otlp found — COM-RPC OTEL tracing enabled")
+else()
+    message(STATUS "WPEFrameworkCOM: rdk_otlp not found — COM-RPC OTEL tracing disabled")
+endif()
+
 if (WARNING_REPORTING)
 target_compile_definitions(${TARGET}
 PUBLIC
