@@ -3243,8 +3243,8 @@
 <p>For larger, more complex out-of-process plugins, it is often useful to split a plugin into two separate libraries - see <a href="../split-implementation">here</a> for more details.</p>
 </div>
 <h2 id="whole-plugin-oop">Whole plugin OOP</h2>
-<p>It is also possible to run the full plugin out of process. This allows a plugin to be hosted by <code>ThunderPlugin</code> even if it was not split or specifically designed for the traditional OOP plugin model. In this mode,<code>PluginHost::IPlugin</code> itself is hosted by <code>ThunderPlugin</code>.</p>
-<p>This is mainly useful as a development and debugging option. For example, it can be used to isolate leaks crashes, or shutdown behavior in plugins that were originally designed to run in process.</p>
+<p>It is also possible to run the full plugin out of process. This allows a plugin to be hosted by <code>ThunderPlugin</code> even if it was not split or specifically designed for the traditional OOP plugin model. In this mode, <code>PluginHost::IPlugin</code> itself is hosted by <code>ThunderPlugin</code>.</p>
+<p>This is mainly useful as a development and debugging option. For example, it can be used to isolate leaks,crashes, or shutdown behavior in plugins that were originally designed to run in process.</p>
 <p>To enable this mode, add a top-level <code>root</code> section to the plugin configuration:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;locator&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;libThunderSamplePlugin.so&quot;</span><span class="p">,</span>
@@ -3257,7 +3257,6 @@
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
-<p>Currently, the plugin must expose a JSON-RPC interface to use this mode. This restriction may be removed in a future Thunder version.</p>
 <p>Other root modes may also work, but <code>Local</code> is the mode covered by this documentation.</p>
 <p><strong>Advantages</strong></p>
 <ul>
