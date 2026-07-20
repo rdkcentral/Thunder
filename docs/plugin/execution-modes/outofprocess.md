@@ -9,9 +9,9 @@ When the plugin is activated, Thunder will automatically spawn a ThunderPlugin i
 
 ## Whole plugin OOP
 
-It is also possible to run the full plugin out of process. This allows a plugin to be hosted by `ThunderPlugin` even if it was not split or specifically designed for the traditional OOP plugin model. In this mode,`PluginHost::IPlugin` itself is hosted by `ThunderPlugin`.
+It is also possible to run the full plugin out of process. This allows a plugin to be hosted by `ThunderPlugin` even if it was not split or specifically designed for the traditional OOP plugin model. In this mode, `PluginHost::IPlugin` itself is hosted by `ThunderPlugin`.
 
-This is mainly useful as a development and debugging option. For example, it can be used to isolate leaks crashes, or shutdown behavior in plugins that were originally designed to run in process.
+This is mainly useful as a development and debugging option. For example, it can be used to isolate leaks,crashes, or shutdown behavior in plugins that were originally designed to run in process.
 
 To enable this mode, add a top-level `root` section to the plugin configuration:
 
@@ -27,8 +27,6 @@ To enable this mode, add a top-level `root` section to the plugin configuration:
   }
 }
 ```
-
-Currently, the plugin must expose a JSON-RPC interface to use this mode. This restriction may be removed in a future Thunder version.
 
 Other root modes may also work, but `Local` is the mode covered by this documentation.
 
