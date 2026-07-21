@@ -3858,6 +3858,13 @@ namespace Core {
                 }
             }
 
+            bool FromObject(const IElement& source)
+            {
+                string json;
+                source.ToString(json);
+                return FromString(json);
+            }
+
             // IElement iface:
             uint16_t Serialize(char stream[], const uint16_t maxLength, uint32_t& offset) const override
             {
