@@ -174,6 +174,7 @@ namespace Core {
 
                 if (error.IsSet() == true) {
                     TRACE_L1("Parsing failed: %s", ErrorDisplayMessage(error.Value()).c_str());
+                    TRACE_L2("Parsing failed: for json: %s error: %s", text.c_str(), ErrorDisplayMessage(error.Value()).c_str());
                     realObject.Clear();
                 }
 
