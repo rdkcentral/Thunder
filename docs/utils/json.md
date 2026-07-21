@@ -247,6 +247,46 @@ if (error.IsSet()) {
 
 
 
+#### From Object
+
+Populate a Container from another `IElement` (typed Container, VariantContainer, etc.) without manually serialising to an intermediate string.
+
+`FromObject()` is not thread-safe. If the source or destination object can be accessed from multiple threads, hold the required lock before calling it.
+
+```c++
+// Typed Container populated from a JsonObject
+JsonObject source;
+source["model"] = "ES1-B";
+source["firmware"] = "R5.0";
+source["extra"] = "ignored";  // not registered in DeviceInfo
+
+DeviceInfo device;
+if (device.FromObject(source)) {
+    printf("Model: %s\n", device.Model.Value().c_str());
+    printf("Firmware: %s\n", device.Firmware.Value().c_str());
+    // "extra" was silently skipped — device has no slot for it
+}
+```
+
+```c++
+// JsonObject populated from a typed Container
+DeviceInfo source;
+source.Model = "ES1-A";
+source.Firmware = "R4.4.7";
+
+JsonObject target;
+target["old_key"] = "will-be-gone";
+
+if (target.FromObject(source)) {
+    // target now has "model" and "firmware" only — "old_key" was cleared
+    printf("Model: %s\n", target["model"].String().c_str());
+}
+```
+
+On a typed Container, only pre-registered fields are updated and unknown keys in source are silently skipped. On a VariantContainer, all keys from source are imported and previous content is discarded.
+
+Returns `false` if the source does not serialise to a valid JSON object (e.g. a scalar or array). Only fields with `IsSet() == true` in the source are transferred.
+
 ### Serialise
 
 #### To File
