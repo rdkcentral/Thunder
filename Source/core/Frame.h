@@ -226,7 +226,7 @@ namespace Core {
                 _offset += _container->GetNumber<TYPENAME>(_offset, result);
                 ASSERT(result <= Length());
 
-                buffer = &(_container->operator[](_offset));
+                buffer = (result == 0 ? nullptr : &(_container->operator[](_offset)));
 
                 return (result);
             }
