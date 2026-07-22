@@ -3978,7 +3978,7 @@
 <span class="p">}</span>
 </code></pre></div>
 <h4 id="from-object">From Object</h4>
-<p>Populate a Container from another <code>IElement</code> (typed Container, VariantContainer, etc.) without manually serialising to an intermediate string.</p>
+<p>Populate a Container from another <code>IElement</code> (typed Container, VariantContainer, etc.) without manually calling <code>ToString()</code>/<code>FromString()</code> yourself (internally it serialises to a temporary string).</p>
 <p><code>FromObject()</code> is not thread-safe. If the source or destination object can be accessed from multiple threads, hold the required lock before calling it.</p>
 <div class="highlight"><pre><span></span><code><span class="c1">// Typed Container populated from a JsonObject</span>
 <span class="n">JsonObject</span><span class="w"> </span><span class="n">source</span><span class="p">;</span>
@@ -4007,7 +4007,7 @@
 <span class="p">}</span>
 </code></pre></div>
 <p>On a typed Container, only pre-registered fields are updated and unknown keys in source are silently skipped. On a VariantContainer, all keys from source are imported and previous content is discarded.</p>
-<p>Returns <code>false</code> if the source does not serialise to a valid JSON object (e.g. a scalar or array). Only fields with <code>IsSet() == true</code> in the source are transferred.</p>
+<p>Returns <code>false</code> if the source serialises to a JSON value that cannot be deserialised into the destination container (e.g. a scalar or array; for typed containers, an empty object <code>{}</code> is also rejected). Only fields with <code>IsSet() == true</code> in the source are transferred.</p>
 <h3 id="serialise">Serialise</h3>
 <h4 id="to-file">To File</h4>
 <div class="highlight"><pre><span></span><code><span class="n">Person</span><span class="w"> </span><span class="n">person</span><span class="p">;</span>
