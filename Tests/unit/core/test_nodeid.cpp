@@ -201,6 +201,8 @@ namespace Core {
     // Domain Socket
     // =========================================================================
 
+#if !defined(__WINDOWS__)
+
     TEST(Core_NodeId, DomainSocket_Path)
     {
         const char* path = "/tmp/test_node.sock";
@@ -218,6 +220,8 @@ namespace Core {
         EXPECT_TRUE(node.IsValid());
         EXPECT_EQ(node.Size(), sizeof(struct sockaddr_un));
     }
+
+#endif // !defined(__WINDOWS__)
 
     // =========================================================================
     // Copy / Move / Equality
