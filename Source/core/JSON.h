@@ -3858,11 +3858,17 @@ namespace Core {
                 }
             }
 
-            bool FromObject(const IElement& source)
+            bool FromObject(const IElement& source, Core::OptionalType<Error>& error)
             {
                 string json;
                 source.ToString(json);
-                return FromString(json);
+                return FromString(json, error);
+            }
+
+            bool FromObject(const IElement& source)
+            {
+                Core::OptionalType<Error> error;
+                return FromObject(source, error);
             }
 
             // IElement iface:
