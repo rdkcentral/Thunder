@@ -50,15 +50,20 @@ target_link_libraries(${TARGET}
           ${NAMESPACE}Core::${NAMESPACE}Core
           ${NAMESPACE}Messaging::${NAMESPACE}Messaging
           CompileSettingsDebug::CompileSettingsDebug
+          ${CMAKE_DL_LIBS}
         )
 
+# rdk_otlp is intentionally NOT hard-linked here.
+# libWPEFrameworkCOM.so is loaded by many processes (WPEProcess, IARM daemons, etc.)
+# that must not have librdk_otlp force-loaded into them.
+# IUnknown.cpp uses dlopen(RTLD_NOLOAD) to resolve symbols only if the library is
+# already present in the process (i.e. WPEFramework, which links it via PluginHost).
 find_library(RDK_OTLP_LIB rdk_otlp)
 if(RDK_OTLP_LIB)
-    target_link_libraries(${TARGET} PRIVATE rdk_otlp)
     target_include_directories(${TARGET} PRIVATE
         $<BUILD_INTERFACE:${CMAKE_SYSROOT}/usr/include>
     )
-    message(STATUS "WPEFrameworkCOM: rdk_otlp found — COM-RPC OTEL tracing enabled")
+    message(STATUS "WPEFrameworkCOM: rdk_otlp header found — COM-RPC OTEL tracing compiled in (runtime-optional via dlopen)")
 else()
     message(STATUS "WPEFrameworkCOM: rdk_otlp not found — COM-RPC OTEL tracing disabled")
 endif()
