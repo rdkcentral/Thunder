@@ -301,9 +301,9 @@ namespace Core {
         source3.Set(_T("z"), JsonValue(3));
 
         JsonObject target;
-        target.FromObject(source1);
-        target.FromObject(source2);
-        target.FromObject(source3);
+        EXPECT_TRUE(target.FromObject(source1));
+        EXPECT_TRUE(target.FromObject(source2));
+        EXPECT_TRUE(target.FromObject(source3));
 
         EXPECT_FALSE(target.HasLabel(_T("x")));
         EXPECT_FALSE(target.HasLabel(_T("y")));
@@ -357,7 +357,7 @@ namespace Core {
         EXPECT_EQ(target.Get(_T("device")).Content(), JsonValue::type::OBJECT);
 
         JsonObject nested;
-        nested.FromString(target.Get(_T("device")).String());
+        ASSERT_TRUE(nested.FromString(target.Get(_T("device")).String()));
         EXPECT_STREQ(nested.Get(_T("model")).String().c_str(), "ES1-B");
         EXPECT_STREQ(nested.Get(_T("region")).String().c_str(), "EU");
     }

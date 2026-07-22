@@ -249,7 +249,7 @@ if (error.IsSet()) {
 
 #### From Object
 
-Populate a Container from another `IElement` (typed Container, VariantContainer, etc.) without manually serialising to an intermediate string.
+Populate a Container from another `IElement` (typed Container, VariantContainer, etc.) without manually calling `ToString()`/`FromString()` yourself (internally it serialises to a temporary string).
 
 `FromObject()` is not thread-safe. If the source or destination object can be accessed from multiple threads, hold the required lock before calling it.
 
@@ -285,7 +285,7 @@ if (target.FromObject(source)) {
 
 On a typed Container, only pre-registered fields are updated and unknown keys in source are silently skipped. On a VariantContainer, all keys from source are imported and previous content is discarded.
 
-Returns `false` if the source does not serialise to a valid JSON object (e.g. a scalar or array). Only fields with `IsSet() == true` in the source are transferred.
+ Returns `false` if the source serialises to a JSON value that cannot be deserialised into the destination container (e.g. a scalar or array; for typed containers, an empty object `{}` is also rejected). Only fields with `IsSet() == true` in the source are transferred.
 
 ### Serialise
 
