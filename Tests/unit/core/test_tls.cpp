@@ -48,8 +48,9 @@ namespace Core {
     //
     // Purpose:
     //   Tests the Crypto::SecureSocketPort TLS implementation (Gap C5).
-    //   Covers: certificate construction, accessor methods, self-signed
-    //   TLS handshake, data exchange over TLS, and certificate validation.
+    //   Covers: certificate construction, accessor methods (subject, issuer,
+    //   validity period, hostname validation), certificate copy semantics,
+    //   CertificateStore usage, and self-signed TLS handshake.
     //
     // Architecture:
     //   Uses OpenSSL C API to generate self-signed test certificates

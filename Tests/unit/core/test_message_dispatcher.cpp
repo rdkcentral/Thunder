@@ -323,7 +323,7 @@ namespace Core {
     }
 
     // =========================================================================
-    // Gap 10: Cross-Process Messaging E2E — Buffer-level coverage
+    // Gap 10: In-Process Cyclic Buffer Stress — Push/Pop ordering and volume
     // =========================================================================
 
     // High volume: rapid sequential push/pop — no data loss

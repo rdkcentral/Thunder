@@ -40,14 +40,14 @@ namespace Core {
     // TEST FILE: test_websocket_protocol.cpp
     //
     // Purpose:
-    //   Tests WebSocket protocol edge cases beyond basic text/JSON roundtrip:
-    //   - Binary data exchange
-    //   - Zero-length messages
-    //   - Large messages (multi-frame)
+    //   Tests WebSocket text echo over Unix domain sockets:
+    //   - Text echo round-trip
+    //   - Large message fragmentation (exceeding buffer size)
     //   - Rapid sequential messages
-    //   - Close frame behavior
-    //   - Ping/Pong activity tracking
-    //   - Multiple clients on same server
+    //   - Short and special-character messages
+    //   - Clean close behavior
+    //   - Multiple sequential clients on same server
+    //   - Activity tracking after send/receive
     //
     // Architecture:
     //   Thread-based server/client using SocketServerType and
