@@ -159,6 +159,13 @@ set(PUBLIC_HEADERS
 
 target_compile_options (${TARGET} PRIVATE -Wno-psabi)
 
+# GNU unique symbols make glibc retain a DSO after dlclose(). Header-defined
+# static template members can be instantiated by plugin DSOs, so this option
+# must propagate to every Core consumer that can be unloaded.
+target_compile_options(${TARGET} INTERFACE
+    $<$<CXX_COMPILER_ID:GNU>:-fno-gnu-unique>
+    )
+
 # non-buildable interface target to carry the definitions
 # All build flags that are applicable to the whole system should be set here in the 
 # core since the core is included everywhere so if they are set here, they are 
