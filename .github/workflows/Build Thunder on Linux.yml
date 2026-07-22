@@ -6,7 +6,7 @@ permissions:
 on:
   workflow_dispatch:
   push:
-    branches: ["master"]
+    branches: ["master", "development/ci-plugin-unload-check"]
     paths-ignore:
       - 'doc/**'
       - 'docs/**'
@@ -96,3 +96,29 @@ jobs:
   ThunderNanoServicesRDK:
     needs: ThunderInterfaces
     uses: WebPlatformForEmbedded/ThunderNanoServicesRDK/.github/workflows/Linux build template.yml@master
+
+  ThunderRun:
+    needs: [ThunderClientLibraries, ThunderNanoServices, ThunderNanoServicesRDK]
+    runs-on: ubuntu-24.04
+    name: Plugin unload check
+
+    steps:
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends libusb-1.0-0 zlib1g libssl3
+
+    - name: Download plugin artifacts
+      uses: actions/download-artifact@v4
+      with:
+        pattern: '*-Release-artifact'
+        merge-multiple: true
+        path: artifacts
+
+    - name: Unpack
+      run: for f in artifacts/*.tar.gz; do tar -xzf "$f"; done
+
+    - name: Show what we got
+      run: |
+        ls -la artifacts
+        find Release/install -name 'config.json' -o -name '*.so' -path '*plugin*' | head -40
