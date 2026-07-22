@@ -33,6 +33,7 @@
 
 namespace Thunder {
 namespace Core {
+    static constexpr const TCHAR* DefaultThreadName = _T("UnnamedThread");
 
     //Definitions of static members
     uint32_t Thread::_defaultStackSize = 0;
@@ -59,6 +60,13 @@ namespace Core {
 #endif
     {
         TRACE_L5("Constructor Thread <%p>", (this));
+
+        string convertedName;
+        Core::ToString((threadName != nullptr ? threadName : DefaultThreadName), convertedName);
+
+#ifdef __POSIX__
+        m_threadName = convertedName;
+#endif
 
 // Create a worker that can do actions in parallel
 #ifdef __WINDOWS__
@@ -100,16 +108,10 @@ namespace Core {
             m_sigExit.SetEvent();
         }
 
-        std::string convertedName;
-        if (threadName != nullptr) {
-            Core::ToString(threadName, convertedName);
-        }
-
 #ifdef __POSIX__
         err = pthread_attr_destroy(&attr);
         ASSERT(err == 0);
         m_ThreadId = m_hThreadInstance;
-        m_threadName = convertedName;
 #else
         if (convertedName.empty() != true) {
             ThreadName(convertedName.c_str());
