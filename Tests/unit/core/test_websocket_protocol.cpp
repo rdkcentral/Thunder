@@ -21,6 +21,7 @@
 #include <condition_variable>
 #include <mutex>
 #include <thread>
+#include <unistd.h>
 
 #include <gtest/gtest.h>
 
@@ -168,6 +169,18 @@ namespace Core {
     };
 
     // =========================================================================
+    // Helper: generate unique socket path per test invocation
+    // =========================================================================
+    static std::atomic<uint32_t> s_socketCounter{0};
+
+    static std::string UniqueSocketPath(const char* tag)
+    {
+        return std::string("/tmp/wpe_ws_") + tag + "_"
+            + std::to_string(::getpid()) + "_"
+            + std::to_string(s_socketCounter.fetch_add(1));
+    }
+
+    // =========================================================================
     // Helper: run text server in thread
     // =========================================================================
     static void RunTextServer(const std::string& connector,
@@ -260,7 +273,7 @@ namespace Core {
 
     TEST(WebSocketProtocol, TextEchoRoundTrip)
     {
-        RunTextServer("/tmp/wpe_ws_proto_0", [](ProtoTextClient& client) {
+        RunTextServer(UniqueSocketPath("echo"), [](ProtoTextClient& client) {
             const string msg = "Hello WebSocket";
             client.Submit(msg);
 
@@ -271,7 +284,7 @@ namespace Core {
 
     TEST(WebSocketProtocol, LargeMessage)
     {
-        RunTextServer("/tmp/wpe_ws_proto_1", [](ProtoTextClient& client) {
+        RunTextServer(UniqueSocketPath("large"), [](ProtoTextClient& client) {
             // 2KB message — exceeds single 1024-byte buffer, tests fragmentation
             const string msg(2048, 'A');
             client.Submit(msg);
@@ -283,7 +296,7 @@ namespace Core {
 
     TEST(WebSocketProtocol, MultipleRapidMessages)
     {
-        RunTextServer("/tmp/wpe_ws_proto_2", [](ProtoTextClient& client) {
+        RunTextServer(UniqueSocketPath("rapid"), [](ProtoTextClient& client) {
             constexpr int kCount = 10;
             for (int i = 0; i < kCount; i++) {
                 string msg = "msg_" + std::to_string(i);
@@ -297,7 +310,7 @@ namespace Core {
 
     TEST(WebSocketProtocol, ShortMessage)
     {
-        RunTextServer("/tmp/wpe_ws_proto_3", [](ProtoTextClient& client) {
+        RunTextServer(UniqueSocketPath("short"), [](ProtoTextClient& client) {
             const string msg = "x";
             client.Submit(msg);
 
@@ -308,7 +321,7 @@ namespace Core {
 
     TEST(WebSocketProtocol, SpecialCharacters)
     {
-        RunTextServer("/tmp/wpe_ws_proto_4", [](ProtoTextClient& client) {
+        RunTextServer(UniqueSocketPath("special"), [](ProtoTextClient& client) {
             const string msg = R"({"key":"value","num":42,"arr":[1,2,3]})";
             client.Submit(msg);
 
@@ -319,7 +332,7 @@ namespace Core {
 
     TEST(WebSocketProtocol, CloseIsClean)
     {
-        RunTextServer("/tmp/wpe_ws_proto_5", [](ProtoTextClient& client) {
+        RunTextServer(UniqueSocketPath("close"), [](ProtoTextClient& client) {
             // Just verify the connection opens and closes cleanly
             // (the RunTextServer helper already tests Open/Close paths)
             EXPECT_TRUE(client.IsOpen());
@@ -329,7 +342,7 @@ namespace Core {
     TEST(WebSocketProtocol, MultipleClientsSequential)
     {
         constexpr uint32_t maxWait = 8000;
-        const std::string connector = "/tmp/wpe_ws_proto_6";
+        const std::string connector = UniqueSocketPath("multi");
 
         ProtoTextServer::Reset();
         ::unlink(connector.c_str());
@@ -442,7 +455,7 @@ namespace Core {
 
     TEST(WebSocketProtocol, ActivityTracking)
     {
-        RunTextServer("/tmp/wpe_ws_proto_7", [](ProtoTextClient& client) {
+        RunTextServer(UniqueSocketPath("activity"), [](ProtoTextClient& client) {
             // After a successful send/receive, the link should have activity
             client.Submit("activity_test");
             ASSERT_TRUE(client.WaitForResponse());

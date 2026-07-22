@@ -301,6 +301,8 @@ namespace Core {
     protected:
         static void SetUpTestSuite()
         {
+            s_certPath = "/tmp/thunder_test_cert_" + std::to_string(::getpid()) + ".pem";
+            s_keyPath = "/tmp/thunder_test_key_" + std::to_string(::getpid()) + ".pem";
             s_certOk = GenerateTestCert(s_certPath, s_keyPath, "localhost", 365);
         }
 
@@ -400,6 +402,9 @@ namespace Core {
     {
         constexpr uint32_t maxWait = 10000;
 
+        // Derive a per-process ephemeral port to avoid collisions
+        const uint16_t port = static_cast<uint16_t>(14000 + (::getpid() % 1000));
+
         Crypto::Certificate cert(s_certPath.c_str());
         Crypto::Key key(s_keyPath, "");
 
@@ -414,7 +419,7 @@ namespace Core {
         std::thread serverThread([&]() {
             Crypto::SecureSocketServerType<TLSServerConnection> server(
                 cert, key,
-                ::Thunder::Core::NodeId("0.0.0.0", 14443,
+                ::Thunder::Core::NodeId("0.0.0.0", port,
                     ::Thunder::Core::NodeId::TYPE_IPV4));
 
             if (server.Open(maxWait) != ::Thunder::Core::ERROR_NONE) {
@@ -441,7 +446,7 @@ namespace Core {
                 [&]{ return serverReady.load(); })) {
                 clientDone = true;
                 serverThread.join();
-                GTEST_SKIP() << "Server failed to start";
+                GTEST_SKIP() << "Server failed to start (port " << port << " may be in use)";
             }
         }
         SleepMs(200);
@@ -451,7 +456,7 @@ namespace Core {
             bool Validate(const Crypto::Certificate&) const override { return true; }
         } acceptAll;
 
-        TLSClient client(::Thunder::Core::NodeId("127.0.0.1", 14443,
+        TLSClient client(::Thunder::Core::NodeId("127.0.0.1", port,
             ::Thunder::Core::NodeId::TYPE_IPV4));
         client.Validate(&acceptAll);
 

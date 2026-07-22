@@ -101,18 +101,29 @@ namespace Core {
 
     TEST(Core_NodeId, IPv4_DefaultMask)
     {
-        // NOTE: Thunder's DefaultMask() reads s_addr (network byte order) as a
-        // native unsigned long and checks bit 31/30.  On little-endian hosts
-        // this inspects the LAST octet, not the first.  Any address ending
-        // in .1 (last octet < 128) → result 24.
+        // DefaultMask() interprets s_addr (network byte order) as a native
+        // unsigned long and checks bits 31/30.  On little-endian hosts this
+        // inspects the LAST octet, not the first, so all addresses ending in
+        // .1 yield 24.  On big-endian hosts it inspects the FIRST octet and
+        // returns classful defaults: Class A=8, Class B=16, Class C=24.
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+        constexpr uint8_t expectedClassA = 24;
+        constexpr uint8_t expectedClassB = 24;
+        constexpr uint8_t expectedClassC = 24;
+#else
+        constexpr uint8_t expectedClassA = 8;
+        constexpr uint8_t expectedClassB = 16;
+        constexpr uint8_t expectedClassC = 24;
+#endif
+
         ::Thunder::Core::NodeId classA("10.0.0.1", 0, ::Thunder::Core::NodeId::TYPE_IPV4);
-        EXPECT_EQ(classA.DefaultMask(), 24);
+        EXPECT_EQ(classA.DefaultMask(), expectedClassA);
 
         ::Thunder::Core::NodeId classB("172.16.0.1", 0, ::Thunder::Core::NodeId::TYPE_IPV4);
-        EXPECT_EQ(classB.DefaultMask(), 24);
+        EXPECT_EQ(classB.DefaultMask(), expectedClassB);
 
         ::Thunder::Core::NodeId classC("192.168.1.1", 0, ::Thunder::Core::NodeId::TYPE_IPV4);
-        EXPECT_EQ(classC.DefaultMask(), 24);
+        EXPECT_EQ(classC.DefaultMask(), expectedClassC);
     }
 
     // =========================================================================

@@ -885,9 +885,12 @@ namespace COMRPC {
         uint32_t LastActivatedId() const { return _lastActivatedId; }
         uint32_t LastDeactivatedId() const { return _lastDeactivatedId; }
 
-        // IReferenceCounted
-        uint32_t AddRef() const override { return ::Thunder::Core::ERROR_NONE; }
-        uint32_t Release() const override { return ::Thunder::Core::ERROR_NONE; }
+        // IReferenceCounted — stack-allocated, use a simple counter
+        uint32_t AddRef() const override { return (++_refCount); }
+        uint32_t Release() const override {
+            uint32_t result = (--_refCount);
+            return (result == 0 ? ::Thunder::Core::ERROR_DESTRUCTION_SUCCEEDED : ::Thunder::Core::ERROR_NONE);
+        }
 
         BEGIN_INTERFACE_MAP(ConnectionNotificationTracker)
             INTERFACE_ENTRY(::Thunder::RPC::IRemoteConnection::INotification)
@@ -898,6 +901,7 @@ namespace COMRPC {
         std::atomic<int> _deactivated;
         uint32_t _lastActivatedId = 0;
         uint32_t _lastDeactivatedId = 0;
+        mutable std::atomic<uint32_t> _refCount{1};
     };
 
     // Verify IRemoteConnection::INotification interface can be constructed
