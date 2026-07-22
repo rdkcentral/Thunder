@@ -28,7 +28,7 @@ namespace TestCore {
 namespace Tests {
 
     // =========================================================================
-    // TEST FILE: ControllerTest.cpp
+    // TEST FILE: test_controller.cpp
     //
     // Purpose:
     //   Tests Controller plugin operations (Gap 4) and startup/shutdown
