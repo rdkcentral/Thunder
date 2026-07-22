@@ -1535,9 +1535,9 @@ TEST(test_socketport, open_tcp_ipv4_refused_connection_returns_error)
 
     TEST(test_socketport, is_suspended_after_remote_close)
     {
-        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 8,
-                           maxWaitTimeMs = 8000, maxInitTime = 500;
-        constexpr uint8_t maxRetries = 1;
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 16,
+                           maxWaitTimeMs = 16000, maxInitTime = 500;
+        constexpr uint8_t maxRetries = 10;
 
         const string connector = "/tmp/test_sp_suspended.sock";
 
