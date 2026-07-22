@@ -254,6 +254,17 @@ Populate a Container from another `IElement` (typed Container, VariantContainer,
 `FromObject()` is not thread-safe. If the source or destination object can be accessed from multiple threads, hold the required lock before calling it.
 
 ```c++
+ // Example typed container used below
+ struct DeviceInfo : public Core::JSON::Container {
+     DeviceInfo()
+     {
+         Add(_T("model"), &Model);
+         Add(_T("firmware"), &Firmware);
+     }
+     Core::JSON::String Model;
+     Core::JSON::String Firmware;
+ };
+
 // Typed Container populated from a JsonObject
 JsonObject source;
 source["model"] = "ES1-B";
