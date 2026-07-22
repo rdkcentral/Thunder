@@ -23,7 +23,40 @@
 
 #if __has_include("rdk_otlp_instrumentation.h")
 #include "rdk_otlp_instrumentation.h"
+#include <dlfcn.h>
+#include <pthread.h>
 #define RDK_OTEL_COM_ENABLED 1
+
+namespace {
+    // Function pointer types matching rdk_otlp_instrumentation.h
+    using FnGetTraceparent = const char* (*)();
+    using FnStartChild     = void (*)(const char*, const char*);
+    using FnFinishChild    = void (*)();
+
+    static FnGetTraceparent  s_getTraceparent = nullptr;
+    static FnStartChild      s_startChild     = nullptr;
+    static FnFinishChild     s_finishChild    = nullptr;
+    static pthread_once_t    s_otelOnce       = PTHREAD_ONCE_INIT;
+
+    // Called once per process via pthread_once.
+    // RTLD_NOLOAD means: only succeed if librdk_otlp.so is ALREADY loaded in this process.
+    // WPEFramework loads it (linked via PluginHost) — so tracing works there.
+    // WPEProcess, mfrmgr, IARM daemons do NOT load it — handle is null, tracing silently
+    // disabled, zero impact on their normal operation.
+    static void resolveOtelSymbols() {
+        void* handle = ::dlopen("librdk_otlp.so", RTLD_NOLOAD | RTLD_NOW);
+        if (handle == nullptr) return;
+        s_getTraceparent = reinterpret_cast<FnGetTraceparent>(::dlsym(handle, "rdk_otlp_get_current_traceparent"));
+        s_startChild     = reinterpret_cast<FnStartChild>    (::dlsym(handle, "rdk_otlp_start_child_from_traceparent"));
+        s_finishChild    = reinterpret_cast<FnFinishChild>   (::dlsym(handle, "rdk_otlp_finish_child_span"));
+        // Intentionally keep handle open — function pointers stay valid for process lifetime
+    }
+
+    static inline void ensureOtelResolved() {
+        ::pthread_once(&s_otelOnce, resolveOtelSymbols);
+    }
+}
+
 #else
 #define RDK_OTEL_COM_ENABLED 0
 #endif
@@ -113,21 +146,22 @@ namespace ProxyStub {
         if (channel.IsValid() == true) {
 #if RDK_OTEL_COM_ENABLED
             bool _otelSpanStarted = false;
-            const char* tp = rdk_otlp_get_current_traceparent();
-            if (tp != nullptr) {
-                // methodId: generated proxy stubs always use Message(n) which adds +3 offset.
-                // AddRef(0)/Release(1)/QueryInterface(2) bypass this function entirely — no guard needed.
-                char spanName[80];
-                snprintf(spanName, sizeof(spanName), "COMRPC.if0x%X.method%u",
-                         message->Parameters().InterfaceId(),
-                         message->Parameters().MethodId() - 3);
-                rdk_otlp_start_child_from_traceparent(tp, spanName);
-                _otelSpanStarted = true;
+            ensureOtelResolved();
+            if (s_getTraceparent != nullptr) {
+                const char* tp = s_getTraceparent();
+                if (tp != nullptr) {
+                    char spanName[80];
+                    snprintf(spanName, sizeof(spanName), "COMRPC.if0x%X.method%u",
+                             message->Parameters().InterfaceId(),
+                             message->Parameters().MethodId() - 3);
+                    s_startChild(tp, spanName);
+                    _otelSpanStarted = true;
+                }
             }
 #endif
             result = channel->Invoke(message, waitTime);
 #if RDK_OTEL_COM_ENABLED
-            if (_otelSpanStarted) { rdk_otlp_finish_child_span(); }
+            if (_otelSpanStarted) { s_finishChild(); }
 #endif
 
             if (result != Core::ERROR_NONE) {
