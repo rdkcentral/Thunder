@@ -3980,7 +3980,18 @@
 <h4 id="from-object">From Object</h4>
 <p>Populate a Container from another <code>IElement</code> (typed Container, VariantContainer, etc.) without manually calling <code>ToString()</code>/<code>FromString()</code> yourself (internally it serialises to a temporary string).</p>
 <p><code>FromObject()</code> is not thread-safe. If the source or destination object can be accessed from multiple threads, hold the required lock before calling it.</p>
-<div class="highlight"><pre><span></span><code><span class="c1">// Typed Container populated from a JsonObject</span>
+<div class="highlight"><pre><span></span><code><span class="w"> </span><span class="c1">// Example typed container used below</span>
+<span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">DeviceInfo</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">JSON</span><span class="o">::</span><span class="n">Container</span><span class="w"> </span><span class="p">{</span>
+<span class="w">     </span><span class="n">DeviceInfo</span><span class="p">()</span>
+<span class="w">     </span><span class="p">{</span>
+<span class="w">         </span><span class="n">Add</span><span class="p">(</span><span class="n">_T</span><span class="p">(</span><span class="s">&quot;model&quot;</span><span class="p">),</span><span class="w"> </span><span class="o">&amp;</span><span class="n">Model</span><span class="p">);</span>
+<span class="w">         </span><span class="n">Add</span><span class="p">(</span><span class="n">_T</span><span class="p">(</span><span class="s">&quot;firmware&quot;</span><span class="p">),</span><span class="w"> </span><span class="o">&amp;</span><span class="n">Firmware</span><span class="p">);</span>
+<span class="w">     </span><span class="p">}</span>
+<span class="w">     </span><span class="n">Core</span><span class="o">::</span><span class="n">JSON</span><span class="o">::</span><span class="n">String</span><span class="w"> </span><span class="n">Model</span><span class="p">;</span>
+<span class="w">     </span><span class="n">Core</span><span class="o">::</span><span class="n">JSON</span><span class="o">::</span><span class="n">String</span><span class="w"> </span><span class="n">Firmware</span><span class="p">;</span>
+<span class="w"> </span><span class="p">};</span>
+
+<span class="c1">// Typed Container populated from a JsonObject</span>
 <span class="n">JsonObject</span><span class="w"> </span><span class="n">source</span><span class="p">;</span>
 <span class="n">source</span><span class="p">[</span><span class="s">&quot;model&quot;</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;ES1-B&quot;</span><span class="p">;</span>
 <span class="n">source</span><span class="p">[</span><span class="s">&quot;firmware&quot;</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;R5.0&quot;</span><span class="p">;</span>
