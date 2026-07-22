@@ -95,7 +95,10 @@ namespace Core {
 
         void Send(const string&) override {}
 
-        static void Reset() { s_connected = false; }
+        static void Reset() {
+            std::lock_guard<std::mutex> lk(s_mutex);
+            s_connected = false;
+        }
         static bool Connected() { return s_connected; }
 
         static std::mutex s_mutex;
@@ -198,31 +201,57 @@ namespace Core {
             server.Close(maxWait);
         });
 
+        // Ensure the server thread is always joined before returning
+        auto stopServer = [&]() {
+            clientDone = true;
+            if (serverThread.joinable()) {
+                serverThread.join();
+            }
+            ::Thunder::Core::Singleton::Dispose();
+        };
+
+        bool ready = false;
         {
             std::unique_lock<std::mutex> lk(readyMutex);
-            ASSERT_TRUE(readyCV.wait_for(lk, std::chrono::seconds(10),
-                [&]{ return serverReady.load(); }));
+            ready = readyCV.wait_for(lk, std::chrono::seconds(10),
+                [&]{ return serverReady.load(); });
+        }
+        if (!ready) {
+            stopServer();
+            FAIL() << "Server did not become ready in time";
+            return;
         }
 
         SleepMs(100);
 
         ProtoTextClient client(::Thunder::Core::NodeId(connector.c_str()));
-        ASSERT_EQ(client.Open(maxWait), ::Thunder::Core::ERROR_NONE);
-        ASSERT_TRUE(client.IsOpen());
+        if (client.Open(maxWait) != ::Thunder::Core::ERROR_NONE) {
+            stopServer();
+            FAIL() << "Client Open() failed";
+            return;
+        }
+        if (!client.IsOpen()) {
+            stopServer();
+            FAIL() << "Client is not open after Open()";
+            return;
+        }
 
         {
             std::unique_lock<std::mutex> lk(ProtoTextServer::s_mutex);
-            ASSERT_TRUE(ProtoTextServer::s_cv.wait_for(lk, std::chrono::seconds(5),
-                []{ return ProtoTextServer::Connected(); }));
+            bool connected = ProtoTextServer::s_cv.wait_for(lk, std::chrono::seconds(5),
+                []{ return ProtoTextServer::Connected(); });
+            if (!connected) {
+                client.Close(maxWait);
+                stopServer();
+                FAIL() << "Server did not register client connection";
+                return;
+            }
         }
 
         clientLogic(client);
 
         EXPECT_EQ(client.Close(maxWait), ::Thunder::Core::ERROR_NONE);
-        clientDone = true;
-        serverThread.join();
-
-        ::Thunder::Core::Singleton::Dispose();
+        stopServer();
     }
 
     // =========================================================================
@@ -328,10 +357,25 @@ namespace Core {
             server.Close(maxWait);
         });
 
+        // RAII guard: always signal and join the server thread on exit
+        auto stopServer = [&]() {
+            clientsDone = true;
+            if (serverThread.joinable()) {
+                serverThread.join();
+            }
+            ::Thunder::Core::Singleton::Dispose();
+        };
+
+        bool ready = false;
         {
             std::unique_lock<std::mutex> lk(readyMutex);
-            ASSERT_TRUE(readyCV.wait_for(lk, std::chrono::seconds(10),
-                [&]{ return serverReady.load(); }));
+            ready = readyCV.wait_for(lk, std::chrono::seconds(10),
+                [&]{ return serverReady.load(); });
+        }
+        if (!ready) {
+            stopServer();
+            FAIL() << "Server did not become ready in time";
+            return;
         }
         SleepMs(100);
 
@@ -339,7 +383,11 @@ namespace Core {
         {
             ProtoTextServer::Reset();
             ProtoTextClient client1(::Thunder::Core::NodeId(connector.c_str()));
-            ASSERT_EQ(client1.Open(maxWait), ::Thunder::Core::ERROR_NONE);
+            if (client1.Open(maxWait) != ::Thunder::Core::ERROR_NONE) {
+                stopServer();
+                FAIL() << "Client1 Open() failed";
+                return;
+            }
 
             {
                 std::unique_lock<std::mutex> lk(ProtoTextServer::s_mutex);
@@ -348,7 +396,12 @@ namespace Core {
             }
 
             client1.Submit("client1_msg");
-            ASSERT_TRUE(client1.WaitForResponse());
+            if (!client1.WaitForResponse()) {
+                client1.Close(maxWait);
+                stopServer();
+                FAIL() << "Client1 did not receive response";
+                return;
+            }
             EXPECT_EQ(client1.Retrieve(), "client1_msg");
 
             client1.Close(maxWait);
@@ -360,7 +413,11 @@ namespace Core {
         {
             ProtoTextServer::Reset();
             ProtoTextClient client2(::Thunder::Core::NodeId(connector.c_str()));
-            ASSERT_EQ(client2.Open(maxWait), ::Thunder::Core::ERROR_NONE);
+            if (client2.Open(maxWait) != ::Thunder::Core::ERROR_NONE) {
+                stopServer();
+                FAIL() << "Client2 Open() failed";
+                return;
+            }
 
             {
                 std::unique_lock<std::mutex> lk(ProtoTextServer::s_mutex);
@@ -369,16 +426,18 @@ namespace Core {
             }
 
             client2.Submit("client2_msg");
-            ASSERT_TRUE(client2.WaitForResponse());
+            if (!client2.WaitForResponse()) {
+                client2.Close(maxWait);
+                stopServer();
+                FAIL() << "Client2 did not receive response";
+                return;
+            }
             EXPECT_EQ(client2.Retrieve(), "client2_msg");
 
             client2.Close(maxWait);
         }
 
-        clientsDone = true;
-        serverThread.join();
-
-        ::Thunder::Core::Singleton::Dispose();
+        stopServer();
     }
 
     TEST(WebSocketProtocol, ActivityTracking)

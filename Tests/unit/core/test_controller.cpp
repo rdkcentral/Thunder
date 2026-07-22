@@ -218,7 +218,7 @@ namespace Tests {
         ASSERT_EQ(result, Core::ERROR_NONE);
 
         // Server reference should be accessible
-        EXPECT_NO_THROW(runtime.Server());
+        runtime.Server();
 
         runtime.Deinitialize();
     }
