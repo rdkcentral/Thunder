@@ -176,4 +176,10 @@ jobs:
     - name: Tar files
       if: matrix.shared_libs == 'ON' || matrix.architecture == 'tests64'
       run: tar -czvf ${{matrix.build_type}}${{matrix.architecture == '32' && '_x86' || ''}}.tar.gz -C ${{matrix.build_type}}/install .
-      
+
+    - name: Upload
+      if: matrix.shared_libs == 'ON' || matrix.architecture == 'tests64'
+      uses: actions/upload-artifact@v4
+      with:
+        name: Thunder-${{matrix.build_type}}${{matrix.architecture == 'tests64' && (matrix.shared_libs == 'ON' && '-test' || '-static-test') || matrix.architecture == '32' && '_x86' || ''}}-artifact
+        path: ${{matrix.build_type}}${{matrix.architecture == '32' && '_x86' || ''}}.tar.gz
