@@ -24,36 +24,53 @@
 #if __has_include("rdk_otlp_instrumentation.h")
 #include "rdk_otlp_instrumentation.h"
 #include <dlfcn.h>
-#include <pthread.h>
+#include <mutex>
+#include <atomic>
 #define RDK_OTEL_COM_ENABLED 1
 
 namespace {
     // Function pointer types matching rdk_otlp_instrumentation.h
-    using FnGetTraceparent = const char* (*)();
-    using FnStartChild     = void (*)(const char*, const char*);
-    using FnFinishChild    = void (*)();
+    using FnGetTraceparent    = const char* (*)();
+    using FnStartChild        = void (*)(const char*, const char*);
+    using FnFinishChild       = void (*)();
+    using FnResumeTraceparent = void (*)(const char*);
 
-    static FnGetTraceparent  s_getTraceparent = nullptr;
-    static FnStartChild      s_startChild     = nullptr;
-    static FnFinishChild     s_finishChild    = nullptr;
-    static pthread_once_t    s_otelOnce       = PTHREAD_ONCE_INIT;
+    static FnGetTraceparent           s_getTraceparent    = nullptr;
+    static FnStartChild               s_startChild        = nullptr;
+    static FnFinishChild              s_finishChild       = nullptr;
+    static FnResumeTraceparent        s_resumeTraceparent = nullptr;
+    static std::atomic<bool>          s_otelResolved{false};
+    static std::mutex                 s_otelMutex;
 
-    // Called once per process via pthread_once.
-    // RTLD_NOLOAD means: only succeed if librdk_otlp.so is ALREADY loaded in this process.
-    // WPEFramework loads it (linked via PluginHost) — so tracing works there.
-    // WPEProcess, mfrmgr, IARM daemons do NOT load it — handle is null, tracing silently
-    // disabled, zero impact on their normal operation.
-    static void resolveOtelSymbols() {
-        void* handle = ::dlopen("librdk_otlp.so", RTLD_NOLOAD | RTLD_NOW);
-        if (handle == nullptr) return;
-        s_getTraceparent = reinterpret_cast<FnGetTraceparent>(::dlsym(handle, "rdk_otlp_get_current_traceparent"));
-        s_startChild     = reinterpret_cast<FnStartChild>    (::dlsym(handle, "rdk_otlp_start_child_from_traceparent"));
-        s_finishChild    = reinterpret_cast<FnFinishChild>   (::dlsym(handle, "rdk_otlp_finish_child_span"));
-        // Intentionally keep handle open — function pointers stay valid for process lifetime
-    }
-
+    // Retriable lazy resolution.
+    // RTLD_NOLOAD succeeds only when librdk_otlp.so is already mapped into this process.
+    // WPEFramework loads it at startup (rdk_otlp_init in PluginHost.cpp).
+    // The first UnknownProxy::Invoke() call happens during plugin boot — BEFORE
+    // rdk_otlp_init() — so dlopen fails on that first call.  We MUST NOT use
+    // pthread_once here: once it fires with a null handle we'd never retry and
+    // s_getTraceparent would stay null for the whole process lifetime.
+    // Instead we mark resolved only after we successfully obtain the symbols,
+    // so every Invoke() call before the library is loaded is a cheap miss, and
+    // the first call after rdk_otlp_init() picks up all three function pointers.
     static inline void ensureOtelResolved() {
-        ::pthread_once(&s_otelOnce, resolveOtelSymbols);
+        // Fast path: already resolved (acquire matches the release store below).
+        if (s_otelResolved.load(std::memory_order_acquire)) return;
+
+        std::lock_guard<std::mutex> lk(s_otelMutex);
+        if (s_otelResolved.load(std::memory_order_relaxed)) return; // double-check
+
+        void* handle = ::dlopen("librdk_otlp.so", RTLD_NOLOAD | RTLD_NOW);
+        if (handle == nullptr) return; // library not loaded yet — retry next call
+
+        s_getTraceparent    = reinterpret_cast<FnGetTraceparent>   (::dlsym(handle, "rdk_otlp_get_current_traceparent"));
+        s_startChild        = reinterpret_cast<FnStartChild>       (::dlsym(handle, "rdk_otlp_start_child_from_traceparent"));
+        s_finishChild       = reinterpret_cast<FnFinishChild>      (::dlsym(handle, "rdk_otlp_finish_child_span"));
+        s_resumeTraceparent = reinterpret_cast<FnResumeTraceparent>(::dlsym(handle, "rdk_otlp_resume_traceparent"));
+        // Intentionally keep handle open — function pointers stay valid for process lifetime.
+        // Only mark resolved once we have a non-null get-traceparent pointer.
+        if (s_getTraceparent != nullptr) {
+            s_otelResolved.store(true, std::memory_order_release);
+        }
     }
 }
 
@@ -146,22 +163,35 @@ namespace ProxyStub {
         if (channel.IsValid() == true) {
 #if RDK_OTEL_COM_ENABLED
             bool _otelSpanStarted = false;
+            char _otelParentTp[64] = {};   // saved copy of parent traceparent
             ensureOtelResolved();
             if (s_getTraceparent != nullptr) {
                 const char* tp = s_getTraceparent();
                 if (tp != nullptr) {
+                    // Copy the parent traceparent BEFORE starting the child.
+                    // s_startChild will overwrite the TLS slot; we need the
+                    // original string to restore it afterwards so that the next
+                    // Invoke() on the same thread still has the parent context.
+                    strncpy(_otelParentTp, tp, sizeof(_otelParentTp) - 1);
                     char spanName[80];
                     snprintf(spanName, sizeof(spanName), "COMRPC.if0x%X.method%u",
                              message->Parameters().InterfaceId(),
                              message->Parameters().MethodId() - 3);
-                    s_startChild(tp, spanName);
+                    s_startChild(_otelParentTp, spanName);
                     _otelSpanStarted = true;
                 }
             }
 #endif
             result = channel->Invoke(message, waitTime);
 #if RDK_OTEL_COM_ENABLED
-            if (_otelSpanStarted) { s_finishChild(); }
+            if (_otelSpanStarted) {
+                s_finishChild();
+                // Restore parent context so the next Invoke() on this thread
+                // still sees the parent span and generates another child.
+                if (s_resumeTraceparent != nullptr) {
+                    s_resumeTraceparent(_otelParentTp);
+                }
+            }
 #endif
 
             if (result != Core::ERROR_NONE) {
