@@ -69,6 +69,19 @@ namespace RPC {
         };
 
         class Input {
+        private:
+            // Header layout:
+            //   [0..7]   Core::instance_id  implementation  (8 bytes)
+            //   [8..11]  uint32_t           interfaceId     (4 bytes)
+            //   [12]     uint8_t            methodId        (1 byte)
+            //   [13..20] uint64_t           spanId          (8 bytes) - distributed tracing
+            // Total header size = 21 bytes
+            static constexpr uint32_t IMPLEMENTATION_OFFSET = 0;
+            static constexpr uint32_t INTERFACEID_OFFSET = sizeof(Core::instance_id);
+            static constexpr uint32_t METHODID_OFFSET = INTERFACEID_OFFSET + sizeof(uint32_t);
+            static constexpr uint32_t SPANID_OFFSET = METHODID_OFFSET + sizeof(uint8_t);
+            static constexpr uint32_t HEADER_SIZE = SPANID_OFFSET + sizeof(uint64_t);
+
         public:
             Input(const Input&) = delete;
             Input& operator=(const Input&) = delete;
@@ -79,7 +92,7 @@ namespace RPC {
 
         public:
             inline bool IsValid() const {
-                return (_data.Size() >= (sizeof(Core::instance_id) + sizeof(uint32_t) + sizeof(uint8_t)));
+                return (_data.Size() >= HEADER_SIZE);
             }
             inline void Clear()
             {
@@ -91,12 +104,13 @@ namespace RPC {
                 frameWriter.Number(implementation);
                 frameWriter.Number(interfaceId);
                 frameWriter.Number(methodId);
+                frameWriter.Number(static_cast<uint64_t>(0));  // spanId placeholder
             }
             Core::instance_id Implementation()
             {
                 Core::instance_id result = 0;
 
-                _data.GetNumber<Core::instance_id>(0, result);
+                _data.GetNumber<Core::instance_id>(IMPLEMENTATION_OFFSET, result);
 
                 return (result);
             }
@@ -104,7 +118,7 @@ namespace RPC {
             {
                 uint32_t result = 0;
 
-                _data.GetNumber<uint32_t>(sizeof(Core::instance_id), result);
+                _data.GetNumber<uint32_t>(INTERFACEID_OFFSET, result);
 
                 return (result);
             }
@@ -112,9 +126,22 @@ namespace RPC {
             {
                 uint8_t result = 0;
 
-                _data.GetNumber(sizeof(Core::instance_id) + sizeof(uint32_t), result);
+                _data.GetNumber(METHODID_OFFSET, result);
 
                 return (result);
+            }
+            uint64_t SpanId() const
+            {
+                uint64_t result = 0;
+
+                _data.GetNumber<uint64_t>(SPANID_OFFSET, result);
+
+                return (result);
+            }
+            void SetSpanId(const uint64_t spanId)
+            {
+                Frame::Writer frameWriter(_data, SPANID_OFFSET);
+                frameWriter.Number(spanId);
             }
             uint32_t Length() const
             {
@@ -122,11 +149,11 @@ namespace RPC {
             }
             inline Frame::Writer Writer()
             {
-                return (Frame::Writer(_data, (sizeof(Core::instance_id) + sizeof(uint32_t) + sizeof(uint8_t))));
+                return (Frame::Writer(_data, HEADER_SIZE));
             }
             inline const Frame::Reader Reader() const
             {
-                return (Frame::Reader(_data, (sizeof(Core::instance_id) + sizeof(uint32_t) + sizeof(uint8_t))));
+                return (Frame::Reader(_data, HEADER_SIZE));
             }
             uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, const uint32_t offset) const
             {
