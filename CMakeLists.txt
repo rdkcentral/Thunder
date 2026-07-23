@@ -84,6 +84,17 @@ else()
     message(FATAL_ERROR "Invalid CMAKE_BUILD_TYPE: '${CMAKE_BUILD_TYPE}'")
 endif()
 
+# THUNDER_DEBUG_BUILD compiles Thunder's OWN targets with -O0 -g without changing
+# CMAKE_BUILD_TYPE. add_compile_options is directory-scoped (applies to the targets
+# built in this Thunder tree) and is NOT installed/exported, so plugins - which are a
+# separate CMake build - never inherit it. The build type exported to plugins via
+# ${NAMESPACE}Config.cmake stays as-is (e.g. Release).
+option(THUNDER_DEBUG_BUILD "Compile Thunder itself with -O0 -g (plugins unaffected)" OFF)
+if(THUNDER_DEBUG_BUILD)
+    message(STATUS "THUNDER_DEBUG_BUILD=ON: Thunder compiled with -O0 -g (CMAKE_BUILD_TYPE='${CMAKE_BUILD_TYPE}' unchanged, plugins unaffected)")
+    add_compile_options(-O0 -g)
+endif()
+
 # FIX_ME: Disable fortify source.
 #         https://jira.rdkcentral.com/jira/browse/METROL-483
 #         Enabled in upstream buildroot, generates a lot of warnings, caused by missing optimalisation flags.
