@@ -142,7 +142,7 @@ jobs:
       run: |
         source venv/bin/activate
         ${{matrix.architecture == '32' && 'export PKG_CONFIG_PATH=/usr/lib/i386-linux-gnu/pkgconfig:$PKG_CONFIG_PATH' || 'PKG_CONFIG_PATH=/usr/lib/x86_64-linux-gnu/pkgconfig:$PKG_CONFIG_PATH'}}
-        tree ${{matrix.build_type}}
+        tree ${{matrix.build_type}}/staging
         cmake -G Ninja -S Thunder -B ${{matrix.build_type}}/build/Thunder \
         -DCMAKE_CXX_FLAGS="-m${{matrix.architecture == 'tests64' && '64' || matrix.architecture}}" \
         -DCMAKE_C_FLAGS="-m${{matrix.architecture == 'tests64' && '64' || matrix.architecture}}" \
@@ -151,13 +151,13 @@ jobs:
         -DBINDING="127.0.0.1" \
         -DCMAKE_BUILD_TYPE=${{matrix.build_type}} \
         -DCMAKE_INSTALL_PREFIX="${{matrix.build_type}}/install/usr" \
-        -DCMAKE_MODULE_PATH="${PWD}/${{matrix.build_type}}/staging/usr/include/WPEFramework/Modules" \
+        -DCMAKE_MODULE_PATH="${PWD}/${{matrix.build_type}}/staging/usr/include/Thunder/Modules" \
         -DCMAKE_PREFIX_PATH="${PWD}/${{matrix.build_type}}/staging/usr" \
-        -DDATA_PATH="${PWD}/${{matrix.build_type}}/install/usr/share/WPEFramework" \
-        -DPERSISTENT_PATH="${PWD}/${{matrix.build_type}}/install/var/wpeframework" \
+        -DDATA_PATH="${PWD}/${{matrix.build_type}}/install/usr/share/Thunder" \
+        -DPERSISTENT_PATH="${PWD}/${{matrix.build_type}}/install/var/Thunder" \
         -DPORT="55555" \
-        -DPROXYSTUB_PATH="${PWD}/${{matrix.build_type}}/install/usr/lib/wpeframework/proxystubs" \
-        -DSYSTEM_PATH="${PWD}/${{matrix.build_type}}/install/usr/lib/wpeframework/plugins" \
+        -DPROXYSTUB_PATH="${PWD}/${{matrix.build_type}}/install/usr/lib/thunder/proxystubs" \
+        -DSYSTEM_PATH="${PWD}/${{matrix.build_type}}/install/usr/lib/thunder/plugins" \
         -DVOLATILE_PATH="tmp" \
         -DBLUETOOTH=ON \
         -DBLUETOOTH_AUDIO_SUPPORT=ON \
@@ -173,6 +173,7 @@ jobs:
         ${{matrix.architecture == 'tests64' && '-DENABLE_TEST_RUNTIME=ON -DBUILD_TESTS=ON' || '-DPROCESSCONTAINERS=ON -DPROCESSCONTAINERS_RUNC=ON -DWARNING_REPORTING=ON'}} \
         ${{steps.regexthunder.outputs.first_match}}
         cmake --build ${{matrix.build_type}}/build/Thunder --target install
+        tree ${{matrix.build_type}}/install
 
     - name: Tar files
       if: matrix.shared_libs == 'ON' || matrix.architecture == 'tests64'
