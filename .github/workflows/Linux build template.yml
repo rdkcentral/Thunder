@@ -142,6 +142,7 @@ jobs:
       run: |
         source venv/bin/activate
         ${{matrix.architecture == '32' && 'export PKG_CONFIG_PATH=/usr/lib/i386-linux-gnu/pkgconfig:$PKG_CONFIG_PATH' || 'PKG_CONFIG_PATH=/usr/lib/x86_64-linux-gnu/pkgconfig:$PKG_CONFIG_PATH'}}
+        tree ${{matrix.build_type}}
         cmake -G Ninja -S Thunder -B ${{matrix.build_type}}/build/Thunder \
         -DCMAKE_CXX_FLAGS="-m${{matrix.architecture == 'tests64' && '64' || matrix.architecture}}" \
         -DCMAKE_C_FLAGS="-m${{matrix.architecture == 'tests64' && '64' || matrix.architecture}}" \
@@ -150,7 +151,7 @@ jobs:
         -DBINDING="127.0.0.1" \
         -DCMAKE_BUILD_TYPE=${{matrix.build_type}} \
         -DCMAKE_INSTALL_PREFIX="${{matrix.build_type}}/install/usr" \
-        -DCMAKE_MODULE_PATH="${PWD}/${{matrix.build_type}}/staging/usr/include/WPEFramework/Modules;${PWD}/${{matrix.build_type}}/staging/usr/share/WPEFramework/Modules" \
+        -DCMAKE_MODULE_PATH="${PWD}/${{matrix.build_type}}/staging/usr/include/WPEFramework/Modules" \
         -DCMAKE_PREFIX_PATH="${PWD}/${{matrix.build_type}}/staging/usr" \
         -DDATA_PATH="${PWD}/${{matrix.build_type}}/install/usr/share/WPEFramework" \
         -DPERSISTENT_PATH="${PWD}/${{matrix.build_type}}/install/var/wpeframework" \
