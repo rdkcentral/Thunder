@@ -22,7 +22,6 @@ compiler for all sources of the Framework and its Plugins
 option(POSITION_INDEPENDENT_CODE "Create position independent code on all targets including static libs" ON)
 option(EXCEPTIONS_ENABLE "Enable exception handling" OFF)
 option(PERFORMANCE_MONITOR "Include Performance Monitoring" OFF)
-option(THUNDER_DEBUG_BUILD "Compile Thunder itself with -O0 -g without changing CMAKE_BUILD_TYPE (plugins unaffected)" OFF)
 
 add_library(CompileSettings INTERFACE)
 add_library(CompileSettings::CompileSettings ALIAS CompileSettings)
@@ -100,15 +99,6 @@ elseif("${CMAKE_BUILD_TYPE}" STREQUAL "MinSizeRel")
 
 else()
     message(FATAL_ERROR "Invalid CMAKE_BUILD_TYPE: '${CMAKE_BUILD_TYPE}'")
-endif()
-
-# Optionally compile Thunder's OWN targets with -O0 -g, appended AFTER the build-type
-# flags above so it reliably wins over -Os. This does NOT change CMAKE_BUILD_TYPE, so the
-# build type exported to plugins (via ${NAMESPACE}Config.cmake) is unaffected and plugins
-# keep their optimisation. Enable with -DTHUNDER_DEBUG_BUILD=ON to debug Thunder alone.
-if(THUNDER_DEBUG_BUILD)
-    target_compile_options(CompileSettings INTERFACE -O0 -g)
-    message(STATUS "THUNDER_DEBUG_BUILD=ON: Thunder compiled with -O0 -g (CMAKE_BUILD_TYPE='${CMAKE_BUILD_TYPE}' unchanged)")
 endif()
 
 # END CompileSettings
