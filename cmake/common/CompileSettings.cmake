@@ -101,4 +101,12 @@ else()
     message(FATAL_ERROR "Invalid CMAKE_BUILD_TYPE: '${CMAKE_BUILD_TYPE}'")
 endif()
 
+# THUNDER_DEBUG_BUILD: make 'core' (the only Thunder library that links CompileSettings)
+# debuggable too, by appending -O0 -g AFTER the build-type -Os above so it wins on the
+# command line. CompileSettings is linked PRIVATE by core only and is not linked by
+# plugins, so this does not leak -O0 to plugins.
+if(THUNDER_DEBUG_BUILD)
+    target_compile_options(CompileSettings INTERFACE -O0 -g)
+endif()
+
 # END CompileSettings
