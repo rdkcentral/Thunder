@@ -106,7 +106,7 @@ jobs:
     - name: Install system dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y --no-install-recommends libusb-1.0-0 zlib1g libssl3
+        sudo apt-get install -y --no-install-recommends libusb-1.0-0 zlib1g libssl3 unzip tree openssl
 
     - name: Download plugin artifacts
       uses: actions/download-artifact@v4
@@ -114,11 +114,25 @@ jobs:
         pattern: '*-Release-artifact'
         merge-multiple: true
         path: artifacts
+    
+    - name: Show artifacts
+      run: tree artifacts
 
     - name: Unpack
-      run: for f in artifacts/*.tar.gz; do tar -xzf "$f"; done
+      run: |
+        mkdir -p runtime
+        for f in artifacts/*/*.tar.gz; do
+          echo "unpacking $f"
+          tar -xzf "$f" -C runtime \
+            --exclude='*/include/*' \
+            --exclude='*/include' \
+            --exclude='*.a' \
+            --exclude='*/cmake/*' \
+            --exclude='*/pkgconfig/*'
+        done
+        find runtime -name '*.so*' -path '*plugin*' | head -20
 
     - name: Show what we got
       run: |
-        ls -la artifacts
-        find Release/install -name 'config.json' -o -name '*.so' -path '*plugin*' | head -40
+        tree ./runtime
+        find ./runtime -name 'config.json' -o -name '*.so' -path '*plugin*' | head -40
