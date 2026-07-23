@@ -173,18 +173,18 @@ jobs:
         cmake --build ${{matrix.build_type}}/build/Thunder --target install
 
     - name: Tar files
-      if: matrix.shared_libs == 'ON' && matrix.architecture != 'tests64'
+      if: matrix.shared_libs == 'ON' || matrix.architecture == 'tests64'
       run: tar -czvf ${{matrix.build_type}}${{matrix.architecture == '32' && '_x86' || ''}}.tar.gz -C ${{matrix.build_type}}/install .
 
     - name: Upload
-      if: matrix.shared_libs == 'ON' && matrix.architecture != 'tests64'
+      if: matrix.shared_libs == 'ON' || matrix.architecture == 'tests64'
       uses: actions/upload-artifact@v4
       with:
         name: Thunder-${{matrix.build_type}}${{matrix.architecture == 'tests64' && (matrix.shared_libs == 'ON' && '-test' || '-static-test') || matrix.architecture == '32' && '_x86' || ''}}-artifact
         path: ${{matrix.build_type}}${{matrix.architecture == '32' && '_x86' || ''}}.tar.gz
 
     - name: Package Thunder
-      if: matrix.architecture != 'tests64'
+      if: matrix.shared_libs == 'ON' && matrix.architecture != 'tests64'
       run: |
         mkdir -p ${{matrix.build_type}}/package
         cmake --install ${{matrix.build_type}}/build/Thunder --prefix ${{matrix.build_type}}/package/runtime-pkg --component Thunder_Runtime
@@ -192,29 +192,29 @@ jobs:
         cmake --install ${{matrix.build_type}}/build/Thunder --prefix ${{matrix.build_type}}/package/test-pkg   --component Thunder_Test
 
     - name: Tar packages
-      if: matrix.architecture != 'tests64'
+      if: matrix.shared_libs == 'ON' && matrix.architecture != 'tests64'
       run: |
-        tar -czvf Thunder-${{matrix.build_type}}-${{matrix.architecture}}-${{matrix.shared_libs == 'ON' && 'shared' || 'static'}}-runtime.tar.gz -C ${{matrix.build_type}}/package/runtime-pkg .
-        tar -czvf Thunder-${{matrix.build_type}}-${{matrix.architecture}}-${{matrix.shared_libs == 'ON' && 'shared' || 'static'}}-dev.tar.gz     -C ${{matrix.build_type}}/package/dev-pkg .
-        tar -czvf Thunder-${{matrix.build_type}}-${{matrix.architecture}}-${{matrix.shared_libs == 'ON' && 'shared' || 'static'}}-test.tar.gz    -C ${{matrix.build_type}}/package/test-pkg .
+        tar -czvf Thunder-${{matrix.build_type}}-${{matrix.architecture}}-runtime.tar.gz -C ${{matrix.build_type}}/package/runtime-pkg .
+        tar -czvf Thunder-${{matrix.build_type}}-${{matrix.architecture}}-dev.tar.gz     -C ${{matrix.build_type}}/package/dev-pkg .
+        tar -czvf Thunder-${{matrix.build_type}}-${{matrix.architecture}}-test.tar.gz    -C ${{matrix.build_type}}/package/test-pkg .
 
     - name: Upload runtime package
-      if: matrix.architecture != 'tests64'
+      if: matrix.shared_libs == 'ON' && matrix.architecture != 'tests64'
       uses: actions/upload-artifact@v4
       with:
-        name: Thunder-${{matrix.build_type}}-${{matrix.architecture}}-${{matrix.shared_libs == 'ON' && 'shared' || 'static'}}-runtime-artifact
-        path: Thunder-${{matrix.build_type}}-${{matrix.architecture}}-${{matrix.shared_libs == 'ON' && 'shared' || 'static'}}-runtime.tar.gz
+        name: Thunder-${{matrix.build_type}}-${{matrix.architecture}}-runtime-artifact
+        path: Thunder-${{matrix.build_type}}-${{matrix.architecture}}-runtime.tar.gz
 
     - name: Upload dev package
-      if: matrix.architecture != 'tests64'
+      if: matrix.shared_libs == 'ON' && matrix.architecture != 'tests64'
       uses: actions/upload-artifact@v4
       with:
-        name: Thunder-${{matrix.build_type}}-${{matrix.architecture}}-${{matrix.shared_libs == 'ON' && 'shared' || 'static'}}-dev-artifact
-        path: Thunder-${{matrix.build_type}}-${{matrix.architecture}}-${{matrix.shared_libs == 'ON' && 'shared' || 'static'}}-dev.tar.gz
+        name: Thunder-${{matrix.build_type}}-${{matrix.architecture}}-dev-artifact
+        path: Thunder-${{matrix.build_type}}-${{matrix.architecture}}-dev.tar.gz
 
     - name: Upload test package
-      if:  matrix.architecture != 'tests64'
+      if:  matrix.shared_libs == 'ON' && matrix.architecture != 'tests64'
       uses: actions/upload-artifact@v4
       with:
-        name: Thunder-${{matrix.build_type}}-${{matrix.architecture}}-${{matrix.shared_libs == 'ON' && 'shared' || 'static'}}-test-artifact
-        path: Thunder-${{matrix.build_type}}-${{matrix.architecture}}-${{matrix.shared_libs == 'ON' && 'shared' || 'static'}}-test.tar.gz
+        name: Thunder-${{matrix.build_type}}-${{matrix.architecture}}-test-artifact
+        path: Thunder-${{matrix.build_type}}-${{matrix.architecture}}-test.tar.gz
