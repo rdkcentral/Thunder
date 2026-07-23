@@ -182,3 +182,39 @@ jobs:
       with:
         name: Thunder-${{matrix.build_type}}${{matrix.architecture == 'tests64' && (matrix.shared_libs == 'ON' && '-test' || '-static-test') || matrix.architecture == '32' && '_x86' || ''}}-artifact
         path: ${{matrix.build_type}}${{matrix.architecture == '32' && '_x86' || ''}}.tar.gz
+
+    - name: Package Thunder
+      if: matrix.shared_libs == 'ON' || matrix.architecture == 'tests64'
+      run: |
+        mkdir -p ${{matrix.build_type}}/package
+        cmake --install ${{matrix.build_type}}/build/Thunder --prefix ${{matrix.build_type}}/package/runtime-pkg --component Thunder_Runtime
+        cmake --install ${{matrix.build_type}}/build/Thunder --prefix ${{matrix.build_type}}/package/dev-pkg     --component Thunder_Development
+        cmake --install ${{matrix.build_type}}/build/Thunder --prefix ${{matrix.build_type}}/package/test-pkg   --component Thunder_Test
+
+    - name: Tar packages
+      if: matrix.shared_libs == 'ON' || matrix.architecture == 'tests64'
+      run: |
+        tar -czvf Thunder-${{matrix.build_type}}-runtime.tar.gz -C ${{matrix.build_type}}/package/runtime-pkg .
+        tar -czvf Thunder-${{matrix.build_type}}-dev.tar.gz     -C ${{matrix.build_type}}/package/dev-pkg .
+        tar -czvf Thunder-${{matrix.build_type}}-test.tar.gz    -C ${{matrix.build_type}}/package/test-pkg .
+
+    - name: Upload runtime package
+      if: matrix.shared_libs == 'ON' || matrix.architecture == 'tests64'
+      uses: actions/upload-artifact@v4
+      with:
+        name: Thunder-${{matrix.build_type}}-runtime-artifact
+        path: Thunder-${{matrix.build_type}}-runtime.tar.gz
+
+    - name: Upload dev package
+      if: matrix.shared_libs == 'ON' || matrix.architecture == 'tests64'
+      uses: actions/upload-artifact@v4
+      with:
+        name: Thunder-${{matrix.build_type}}-dev-artifact
+        path: Thunder-${{matrix.build_type}}-dev.tar.gz
+
+    - name: Upload test package
+      if: matrix.shared_libs == 'ON' || matrix.architecture == 'tests64'
+      uses: actions/upload-artifact@v4
+      with:
+        name: Thunder-${{matrix.build_type}}-test-artifact
+        path: Thunder-${{matrix.build_type}}-test.tar.gz
