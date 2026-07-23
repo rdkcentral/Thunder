@@ -247,6 +247,57 @@ if (error.IsSet()) {
 
 
 
+#### From Object
+
+Populate a Container from another `IElement` (typed Container, VariantContainer, etc.) without manually calling `ToString()`/`FromString()` yourself (internally it serialises to a temporary string).
+
+`FromObject()` is not thread-safe. If the source or destination object can be accessed from multiple threads, hold the required lock before calling it.
+
+```c++
+ // Example typed container used below
+ struct DeviceInfo : public Core::JSON::Container {
+     DeviceInfo()
+     {
+         Add(_T("model"), &Model);
+         Add(_T("firmware"), &Firmware);
+     }
+     Core::JSON::String Model;
+     Core::JSON::String Firmware;
+ };
+
+// Typed Container populated from a JsonObject
+JsonObject source;
+source["model"] = "ES1-B";
+source["firmware"] = "R5.0";
+source["extra"] = "ignored";  // not registered in DeviceInfo
+
+DeviceInfo device;
+if (device.FromObject(source)) {
+    printf("Model: %s\n", device.Model.Value().c_str());
+    printf("Firmware: %s\n", device.Firmware.Value().c_str());
+    // "extra" was silently skipped — device has no slot for it
+}
+```
+
+```c++
+// JsonObject populated from a typed Container
+DeviceInfo source;
+source.Model = "ES1-A";
+source.Firmware = "R4.4.7";
+
+JsonObject target;
+target["old_key"] = "will-be-gone";
+
+if (target.FromObject(source)) {
+    // target now has "model" and "firmware" only — "old_key" was cleared
+    printf("Model: %s\n", target["model"].String().c_str());
+}
+```
+
+On a typed Container, only pre-registered fields are updated and unknown keys in source are silently skipped. On a VariantContainer, all keys from source are imported and previous content is discarded.
+
+ Returns `false` if the source serialises to a JSON value that cannot be deserialised into the destination container (e.g. a scalar or array; for typed containers, an empty object `{}` is also rejected). Only fields with `IsSet() == true` in the source are transferred.
+
 ### Serialise
 
 #### To File
