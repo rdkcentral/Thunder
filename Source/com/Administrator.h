@@ -558,14 +558,10 @@ namespace RPC {
         Dispatcher _dispatcher;
         Core::ThreadPool _threadPoolEngine;
     };
-}
 
-} // namespace RPC
-
-// ----------------------------------------------------------------------------------------------------
-// Distributed Tracing Thread-Local API (outside the class, in namespace RPC)
-// ----------------------------------------------------------------------------------------------------
-namespace RPC {
+    // ----------------------------------------------------------------------------------------------------
+    // Distributed Tracing Thread-Local API
+    // ----------------------------------------------------------------------------------------------------
 
     // Thread-local span ID for distributed tracing.
     // Set by DistributedTracing in the WPEFramework process before a COM-RPC proxy call,
@@ -584,6 +580,8 @@ namespace RPC {
     };
 
     EXTERNAL void SetCOMRPCStubTraceCallbacks(ICOMRPCStubTraceCallbacks* callbacks);
+
+}
 
 } // namespace RPC
 
