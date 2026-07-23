@@ -113,17 +113,17 @@ namespace Core {
     TEST(JSONFromObject, TypedContainer_OnlyRegisteredSlotsUpdated)
     {
         JsonObject source;
-        source.Set(_T("model"), JsonValue(string("ES1-A")));
-        source.Set(_T("firmware"), JsonValue(string("R4.4.7")));
-        source.Set(_T("extra"), JsonValue(string("ignored")));
+        source.Set(_T("model"), JsonValue(_T("ES1-A")));
+        source.Set(_T("firmware"), JsonValue(_T("R4.4.7")));
+        source.Set(_T("extra"), JsonValue(_T("ignored")));
 
         DeviceInfo target;
         bool result = target.FromObject(source);
 
         EXPECT_TRUE(result);
 
-        EXPECT_STREQ(target.model.Value().c_str(), "ES1-A");
-        EXPECT_STREQ(target.firmware.Value().c_str(), "R4.4.7");
+        EXPECT_STREQ(target.model.Value().c_str(), _T("ES1-A"));
+        EXPECT_STREQ(target.firmware.Value().c_str(), _T("R4.4.7"));
 
         EXPECT_FALSE(target.HasLabel(_T("extra")));
     }
@@ -142,7 +142,7 @@ namespace Core {
 
         EXPECT_TRUE(result);
 
-        EXPECT_STREQ(target.model.Value().c_str(), "ES1-A");
+        EXPECT_STREQ(target.model.Value().c_str(), _T("ES1-A"));
         EXPECT_FALSE(target.firmware.IsSet());
     }
 
@@ -162,8 +162,8 @@ namespace Core {
 
         EXPECT_TRUE(result);
 
-        EXPECT_STREQ(target.status.Value().c_str(), "ok");
-        EXPECT_STREQ(target.device.model.Value().c_str(), "ES1-B");
+        EXPECT_STREQ(target.status.Value().c_str(), _T("ok"));
+        EXPECT_STREQ(target.device.model.Value().c_str(), _T("ES1-B"));
 
         EXPECT_FALSE(target.device.region.IsSet());
     }
@@ -172,15 +172,15 @@ namespace Core {
     TEST(JSONFromObject, TypedContainer_FromObject_VariantContainer)
     {
         JsonObject source;
-        source.Set(_T("model"), JsonValue(string("ES1-B")));
-        source.Set(_T("firmware"), JsonValue(string("R5.0")));
+        source.Set(_T("model"), JsonValue(_T("ES1-B")));
+        source.Set(_T("firmware"), JsonValue(_T("R5.0")));
 
         DeviceInfo target;
         bool result = target.FromObject(source);
 
         EXPECT_TRUE(result);
-        EXPECT_STREQ(target.model.Value().c_str(), "ES1-B");
-        EXPECT_STREQ(target.firmware.Value().c_str(), "R5.0");
+        EXPECT_STREQ(target.model.Value().c_str(), _T("ES1-B"));
+        EXPECT_STREQ(target.firmware.Value().c_str(), _T("R5.0"));
     }
 
     // 4.6: Cross-type: VariantContainer ← typed Container
@@ -191,14 +191,14 @@ namespace Core {
         source.firmware = _T("R4.4.7");
 
         JsonObject target;
-        target.Set(_T("old_key"), JsonValue(string("will-be-gone")));
+        target.Set(_T("old_key"), JsonValue(_T("will-be-gone")));
 
         bool result = target.FromObject(source);
 
         EXPECT_TRUE(result);
 
-        EXPECT_STREQ(target.Get(_T("model")).String().c_str(), "ES1-A");
-        EXPECT_STREQ(target.Get(_T("firmware")).String().c_str(), "R4.4.7");
+        EXPECT_STREQ(target.Get(_T("model")).String().c_str(), _T("ES1-A"));
+        EXPECT_STREQ(target.Get(_T("firmware")).String().c_str(), _T("R4.4.7"));
 
         EXPECT_FALSE(target.HasLabel(_T("old_key")));
     }
@@ -217,8 +217,8 @@ namespace Core {
 
         EXPECT_TRUE(result);
 
-        EXPECT_STREQ(target.model.Value().c_str(), "ES1-A");
-        EXPECT_STREQ(target.firmware.Value().c_str(), "R4.4.7");
+        EXPECT_STREQ(target.model.Value().c_str(), _T("ES1-A"));
+        EXPECT_STREQ(target.firmware.Value().c_str(), _T("R4.4.7"));
     }
 
     // 4.8: Null fields from source are imported
@@ -232,7 +232,7 @@ namespace Core {
         bool result = target.FromObject(source);
 
         EXPECT_TRUE(result);
-        EXPECT_STREQ(target.model.Value().c_str(), "ES1-A");
+        EXPECT_STREQ(target.model.Value().c_str(), _T("ES1-A"));
         EXPECT_TRUE(target.firmware.IsNull());
         EXPECT_TRUE(target.firmware.IsSet());
     }
@@ -283,7 +283,7 @@ namespace Core {
 
         EXPECT_TRUE(result);
 
-        EXPECT_STREQ(target.a.Value().c_str(), "hello");
+        EXPECT_STREQ(target.a.Value().c_str(), _T("hello"));
         EXPECT_FALSE(target.b.IsSet());
         EXPECT_FALSE(target.c.IsSet());
     }
@@ -337,8 +337,8 @@ namespace Core {
         bool result = target.FromObject(target);
 
         EXPECT_TRUE(result);
-        EXPECT_STREQ(target.model.Value().c_str(), "ES1-A");
-        EXPECT_STREQ(target.firmware.Value().c_str(), "R4.4.7");
+        EXPECT_STREQ(target.model.Value().c_str(), _T("ES1-A"));
+        EXPECT_STREQ(target.firmware.Value().c_str(), _T("R4.4.7"));
     }
 
     // 4.15: Cross-type: VariantContainer <- typed Container with nested object
@@ -353,33 +353,33 @@ namespace Core {
         bool result = target.FromObject(source);
 
         EXPECT_TRUE(result);
-        EXPECT_STREQ(target.Get(_T("status")).String().c_str(), "ok");
+        EXPECT_STREQ(target.Get(_T("status")).String().c_str(), _T("ok"));
         EXPECT_EQ(target.Get(_T("device")).Content(), JsonValue::type::OBJECT);
 
         JsonObject nested;
         ASSERT_TRUE(nested.FromString(target.Get(_T("device")).String()));
-        EXPECT_STREQ(nested.Get(_T("model")).String().c_str(), "ES1-B");
-        EXPECT_STREQ(nested.Get(_T("region")).String().c_str(), "EU");
+        EXPECT_STREQ(nested.Get(_T("model")).String().c_str(), _T("ES1-B"));
+        EXPECT_STREQ(nested.Get(_T("region")).String().c_str(), _T("EU"));
     }
 
     // 4.16: Cross-type: typed Container <- VariantContainer with nested object
     TEST(JSONFromObject, TypedContainer_FromObject_VariantContainerNested)
     {
         JsonObject source;
-        source.Set(_T("status"), JsonValue(string("ok")));
+        source.Set(_T("status"), JsonValue(_T("ok")));
 
         JsonObject nested;
-        nested.Set(_T("model"), JsonValue(string("ES1-C")));
-        nested.Set(_T("region"), JsonValue(string("US")));
+        nested.Set(_T("model"), JsonValue(_T("ES1-C")));
+        nested.Set(_T("region"), JsonValue(_T("US")));
         source.Set(_T("device"), JsonValue(nested));
 
         DeviceResponse target;
         bool result = target.FromObject(source);
 
         EXPECT_TRUE(result);
-        EXPECT_STREQ(target.status.Value().c_str(), "ok");
-        EXPECT_STREQ(target.device.model.Value().c_str(), "ES1-C");
-        EXPECT_STREQ(target.device.region.Value().c_str(), "US");
+        EXPECT_STREQ(target.status.Value().c_str(), _T("ok"));
+        EXPECT_STREQ(target.device.model.Value().c_str(), _T("ES1-C"));
+        EXPECT_STREQ(target.device.region.Value().c_str(), _T("US"));
     }
 
 
