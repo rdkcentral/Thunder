@@ -42,16 +42,21 @@ namespace {
     static std::atomic<bool>          s_otelResolved{false};
     static std::mutex                 s_otelMutex;
 
-    // Retriable lazy resolution.
-    // RTLD_NOLOAD succeeds only when librdk_otlp.so is already mapped into this process.
-    // WPEFramework loads it at startup (rdk_otlp_init in PluginHost.cpp).
-    // The first UnknownProxy::Invoke() call happens during plugin boot — BEFORE
-    // rdk_otlp_init() — so dlopen fails on that first call.  We MUST NOT use
-    // pthread_once here: once it fires with a null handle we'd never retry and
-    // s_getTraceparent would stay null for the whole process lifetime.
-    // Instead we mark resolved only after we successfully obtain the symbols,
-    // so every Invoke() call before the library is loaded is a cheap miss, and
-    // the first call after rdk_otlp_init() picks up all three function pointers.
+    // Retriable lazy resolution using RTLD_DEFAULT.
+    //
+    // RTLD_DEFAULT searches the global symbol table of ALL currently-loaded libraries.
+    // This avoids the fragile dlopen("librdk_otlp.so", RTLD_NOLOAD) approach which
+    // fails on device when the library is registered under a versioned soname
+    // (e.g. librdk_otlp.so.0) or a full install path rather than the bare basename.
+    //
+    // Behaviour:
+    //   Before rdk_otlp_init(): rdk_otlp_get_current_traceparent not in global table
+    //                           → dlsym returns null → return, retry next Invoke()
+    //   After  rdk_otlp_init(): symbol is present → resolve all four pointers once
+    //                           → mark s_otelResolved, zero overhead on all future calls
+    //
+    // WPEProcess / mfrmgr / IARM daemons never load librdk_otlp.so so the symbol is
+    // never present → tracing silently disabled, zero impact on those processes.
     static inline void ensureOtelResolved() {
         // Fast path: already resolved (acquire matches the release store below).
         if (s_otelResolved.load(std::memory_order_acquire)) return;
@@ -59,18 +64,16 @@ namespace {
         std::lock_guard<std::mutex> lk(s_otelMutex);
         if (s_otelResolved.load(std::memory_order_relaxed)) return; // double-check
 
-        void* handle = ::dlopen("librdk_otlp.so", RTLD_NOLOAD | RTLD_NOW);
-        if (handle == nullptr) return; // library not loaded yet — retry next call
+        // Probe for the key symbol; null means librdk_otlp.so is not loaded yet.
+        void* fn = ::dlsym(RTLD_DEFAULT, "rdk_otlp_get_current_traceparent");
+        if (fn == nullptr) return; // not loaded yet — retry on next Invoke()
 
-        s_getTraceparent    = reinterpret_cast<FnGetTraceparent>   (::dlsym(handle, "rdk_otlp_get_current_traceparent"));
-        s_startChild        = reinterpret_cast<FnStartChild>       (::dlsym(handle, "rdk_otlp_start_child_from_traceparent"));
-        s_finishChild       = reinterpret_cast<FnFinishChild>      (::dlsym(handle, "rdk_otlp_finish_child_span"));
-        s_resumeTraceparent = reinterpret_cast<FnResumeTraceparent>(::dlsym(handle, "rdk_otlp_resume_traceparent"));
-        // Intentionally keep handle open — function pointers stay valid for process lifetime.
-        // Only mark resolved once we have a non-null get-traceparent pointer.
-        if (s_getTraceparent != nullptr) {
-            s_otelResolved.store(true, std::memory_order_release);
-        }
+        s_getTraceparent    = reinterpret_cast<FnGetTraceparent>   (fn);
+        s_startChild        = reinterpret_cast<FnStartChild>       (::dlsym(RTLD_DEFAULT, "rdk_otlp_start_child_from_traceparent"));
+        s_finishChild       = reinterpret_cast<FnFinishChild>      (::dlsym(RTLD_DEFAULT, "rdk_otlp_finish_child_span"));
+        s_resumeTraceparent = reinterpret_cast<FnResumeTraceparent>(::dlsym(RTLD_DEFAULT, "rdk_otlp_resume_traceparent"));
+        // All four pointers obtained from the global table — mark permanently resolved.
+        s_otelResolved.store(true, std::memory_order_release);
     }
 }
 
