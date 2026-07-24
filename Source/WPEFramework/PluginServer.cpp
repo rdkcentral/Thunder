@@ -20,6 +20,10 @@
 #include "PluginServer.h"
 #include "Controller.h"
 
+#ifdef THUNDER_DISTRIBUTED_TRACING
+#include "DistributedTracing.h"
+#endif
+
 #ifndef __WINDOWS__
 #include <syslog.h>
 #endif

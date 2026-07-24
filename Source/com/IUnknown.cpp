@@ -99,6 +99,12 @@ namespace ProxyStub {
     {
         uint32_t result = Core::ERROR_UNAVAILABLE | COM_ERROR;
 
+        // --- Distributed Tracing: stamp thread-local span ID into outgoing message ---
+        uint64_t spanId = RPC::GetCurrentTraceSpanId();
+        if (spanId != 0) {
+            message->Parameters().SetSpanId(spanId);
+        }
+
         _adminLock.Lock();
 	    Core::ProxyType<Core::IPCChannel> channel (_channel);
         _adminLock.Unlock();

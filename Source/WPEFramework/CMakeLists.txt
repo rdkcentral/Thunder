@@ -75,6 +75,30 @@ if(WARNING_REPORTING)
     target_sources(${TARGET} PRIVATE WarningReportingCategories.cpp)
 endif()
 
+# ---------------------------------------------------------------------------
+# Distributed Tracing (optional, uses rdk_otlp_instrumentation shared library)
+# ---------------------------------------------------------------------------
+option(DISTRIBUTED_TRACING "Enable distributed tracing via rdk_otlp_instrumentation" OFF)
+
+if(DISTRIBUTED_TRACING)
+    find_library(RDK_OTEL_LIB rdk_otel_instrumentation)
+    if(NOT RDK_OTEL_LIB)
+        message(FATAL_ERROR "DISTRIBUTED_TRACING enabled but librdk_otel_instrumentation not found")
+    endif()
+
+    target_sources(${TARGET} PRIVATE DistributedTracing.cpp)
+
+    target_compile_definitions(${TARGET} PRIVATE THUNDER_DISTRIBUTED_TRACING)
+
+    target_include_directories(${TARGET} PRIVATE
+        ${CMAKE_SYSROOT}/usr/include
+    )
+
+    target_link_libraries(${TARGET} PRIVATE ${RDK_OTEL_LIB})
+
+    message(STATUS "Distributed tracing ENABLED (rdk_otlp_instrumentation)")
+endif()
+
 if (PROCESSCONTAINERS)
     target_link_libraries(${TARGET}
         PRIVATE
