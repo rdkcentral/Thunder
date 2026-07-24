@@ -48,7 +48,7 @@ namespace PluginHost {
         if (service.IsValid() == true) {
             _state = COMPLETE | (type & 0xF0);
             _service = service;
-        } else if (errorCode == Core::ERROR_BAD_REQUEST) {
+        } else if ((errorCode == Core::ERROR_BAD_REQUEST) || (errorCode == Core::ERROR_NOT_EXIST)) {
             _state = OBLIVIOUS | (type & 0xF0);
         } else if (errorCode == Core::ERROR_INVALID_SIGNATURE) {
             _state = INVALID_VERSION | (type & 0xF0);
