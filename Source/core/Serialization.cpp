@@ -244,19 +244,19 @@ POP_WARNING()
                 const uint8_t tens = (remainder / 10);
                 const uint8_t ones = (remainder - (tens * 10));
 
-                result[j++] = static_cast<char>(TCHAR('0') + hundreds);
-                result[j++] = static_cast<char>(TCHAR('0') + tens);
-                result[j++] = static_cast<char>(TCHAR('0') + ones);
+                result[j++] = static_cast<TCHAR>(TCHAR('0') + hundreds);
+                result[j++] = static_cast<TCHAR>(TCHAR('0') + tens);
+                result[j++] = static_cast<TCHAR>(TCHAR('0') + ones);
             }
             else if (current >= 10) {
                 const uint8_t tens = (current / 10);
                 const uint8_t ones = (current - tens * 10);
 
-                result[j++] = static_cast<char>(TCHAR('0') + tens);
-                result[j++] = static_cast<char>(TCHAR('0') + ones);
+                result[j++] = static_cast<TCHAR>(TCHAR('0') + tens);
+                result[j++] = static_cast<TCHAR>(TCHAR('0') + ones);
             }
             else {
-                result[j++] = static_cast<char>(TCHAR('0') + current);
+                result[j++] = static_cast<TCHAR>(TCHAR('0') + current);
             }
 
             if (i < length - 1) {
