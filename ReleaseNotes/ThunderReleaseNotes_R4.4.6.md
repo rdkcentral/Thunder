@@ -34,7 +34,7 @@ Added a mutex lock around `Core::SystemInfo::GetEnvironment()` and `SetEnvironme
 
 ### Change: Messaging Subsystem Backport from R5
 
-Backported messaging improvements from Thunder R5 to R4_4. Changes include formatting adjustments, opt-in stdout/stderr redirect (disabled by default), and a compatibility API to retrieve message controls for all modules, preserving backward compatibility with existing integrations (PR [#2114](https://github.com/rdkcentral/Thunder/pull/2114)).
+Backported messaging improvements from Thunder R5 to R4_4, including telemetry support, improved message handling, opt-in stdout/stderr redirection (disabled by default), and a compatibility API to retrieve message controls for all modules. These changes preserve compatibility with existing integrations (PR [#2114](https://github.com/rdkcentral/Thunder/pull/2114)).
 
 ### Change: ThunderExtensions Initial 4.4 Backport
 
