@@ -148,7 +148,7 @@ POP_WARNING()
 
     static const TCHAR hex_chars[] = "0123456789abcdef";
 
-    void EXTERNAL ToHexString(const uint8_t object[], const uint32_t length, string& result, const TCHAR delimiter)
+    void ToHexString(const uint8_t object[], const uint32_t length, string& result, const TCHAR delimiter)
     {
         ASSERT(object != nullptr);
 
@@ -164,7 +164,7 @@ POP_WARNING()
         }
     }
 
-    uint32_t EXTERNAL FromHexString(const string& hexString, uint8_t* object, const uint32_t maxLength, const TCHAR delimiter)
+    uint32_t FromHexString(const string& hexString, uint8_t object[], const uint32_t maxLength, const TCHAR delimiter)
     {
         ASSERT((object != nullptr) && (maxLength > 0));
         uint8_t highNibble;
@@ -218,6 +218,136 @@ POP_WARNING()
         object.resize(std::min(maxSize, maxLength));
 
         return (FromHexString(hexString, object.data(), static_cast<uint32_t>(object.size()), delimiter));
+    }
+
+    void ToDecString(const uint8_t object[], const uint32_t length, string& result, const TCHAR delimiter)
+    {
+        ASSERT(object != nullptr);
+
+        uint32_t targetLength = (length > 0? (length - 1) : 0); // dots
+
+        for (uint32_t i = 0; i < length; ++i) {
+            const uint8_t current = object[i];
+            targetLength += (current >= 100) ? 3 : ((current >= 10) ? 2 : 1);
+        }
+
+        const uint32_t index = static_cast<uint32_t>(result.length());
+        result.resize(index + targetLength);
+
+        for (uint32_t i = 0, j = index; i < length; i++) {
+            const uint8_t current = object[i];
+
+            if (current >= 100) {
+                const uint8_t hundreds = (current / 100);
+                const uint8_t reminder = (current - (hundreds * 100));
+                const uint8_t tens = (reminder / 10);
+                const uint8_t ones = (reminder - (tens * 10));
+
+                result[j++] = static_cast<char>(TCHAR('0') + hundreds);
+                result[j++] = static_cast<char>(TCHAR('0') + tens);
+                result[j++] = static_cast<char>(TCHAR('0') + ones);
+            }
+            else if (current >= 10) {
+                const uint8_t tens = (current / 10);
+                const uint8_t ones = (current - tens * 10);
+
+                result[j++] = static_cast<char>(TCHAR('0') + tens);
+                result[j++] = static_cast<char>(TCHAR('0') + ones);
+            }
+            else {
+                result[j++] = static_cast<char>(TCHAR('0') + current);
+            }
+
+            if (i < length - 1) {
+                result[j++] = delimiter;
+            }
+        }
+
+        ASSERT((result.length() - index) == targetLength);
+    }
+
+    uint32_t FromDecString(const string& decString, uint8_t object[], uint32_t maxLength, const TCHAR delimiter)
+    {
+        ASSERT(object != nullptr);
+
+        uint32_t count = 0;
+        uint16_t current = 0;
+        bool haveValue = false;
+        bool failure = false;
+
+        for (uint32_t i = 0; (i < static_cast<uint32_t>(decString.length())) && (failure == false); ++i) {
+            const TCHAR c = decString[i];
+
+            if ((c >= TCHAR('0')) && (c <= TCHAR('9'))) {
+                current = ((current * 10) + (c - TCHAR('0')));
+                haveValue = true;
+
+                if (current > 255) {
+                    failure = true;
+                }
+            }
+            else if (c == delimiter) {
+                if ((haveValue == true) && (count < maxLength)) {
+                    object[count++] = static_cast<uint8_t>(current);
+                    current = 0;
+                    haveValue = false;
+                }
+                else {
+                    failure = true;
+                }
+            }
+            else {
+                failure = true;
+            }
+        }
+
+        if ((haveValue == true) && ((current <= 255) && (count < maxLength)) && (failure == false)) {
+            object[count++] = static_cast<uint8_t>(current);
+        }
+        else {
+            count = 0;
+        }
+
+        return (count);
+    }
+
+    void ToDecString(const std::vector<uint8_t>& object, string& result, const TCHAR delimiter)
+    {
+        ToDecString(object.data(), static_cast<uint32_t>(object.size()), result, delimiter);
+    }
+
+    uint32_t FromDecString(const string& decString, std::vector<uint8_t>& object, const uint32_t maxLength, const TCHAR delimiter)
+    {
+        ASSERT(object.empty() == true);
+
+        uint32_t actual = 0;
+
+        uint32_t maxSize = 0;
+
+        if (decString.empty() == false) {
+            maxSize = 1;
+
+            for (uint32_t i = 0; i < static_cast<uint32_t>(decString.length()); i++) {
+                if (decString[i] == delimiter) {
+                    maxSize++;
+                }
+            }
+        }
+
+        if ((maxSize != 0) && (maxSize <= maxLength)) {
+
+            object.resize(maxSize);
+
+            actual = FromDecString(decString, object.data(), static_cast<uint32_t>(object.size()), delimiter);
+
+            ASSERT(actual <= maxSize);
+
+            if (actual < maxSize) {
+                object.resize(actual);
+            }
+        }
+
+        return (actual);
     }
 
     static const TCHAR base64_chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
