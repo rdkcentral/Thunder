@@ -82,13 +82,14 @@ Selected features of the ProxyStub Generator and JsonGenerator have been backpor
 - C-style fixed array support
 - `Core::OptionalType<T>` support
 - `Core::Time` support
+- Support for installing hooks for notification registration status (new `@statuslistener` tag)
 - Support for indexed notifications with `@index` (dot-delimited)
 - Support for legacy indexed notifications with `@index:deprecated` (`@`-delimited)
 - Custom naming case conventions
 - Non-`@optional` parameters are runtime-checked; a trace is printed if absent on a call
 - `@default` tag to initialise `@optional` parameters
 - New `@wrapped` tag to enclose a single result parameter in an additional object
-- New buffer encodings: `@encode:mac`, `@encode:hex`, `@encode:array`
+- New byte buffer and C-style array encodings: `@encode:mac`, `@encode:hex`, `@encode:array`
 - `@encode:base64` added as an alias for `@base64`; `@encode:bitmask` as an alias for `@bitmask`
 - `@restrict:nonempty` for strings
 - JSON container classes now include move constructors and assignment operators
