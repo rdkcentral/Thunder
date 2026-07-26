@@ -3911,7 +3911,6 @@
 <span class="c1">// Insert at end (index == Length()):</span>
 <span class="n">values</span><span class="p">.</span><span class="n">Insert</span><span class="p">(</span><span class="n">values</span><span class="p">.</span><span class="n">Length</span><span class="p">(),</span><span class="w"> </span><span class="n">e</span><span class="p">);</span>
 <span class="c1">// values == [&quot;A&quot;, &quot;B&quot;, &quot;C&quot;, &quot;D&quot;, &quot;E&quot;]</span>
-<span class="err">```</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;E&quot;</span><span class="p">]</span>
 </code></pre></div>
 <p><code>Remove(index)</code> erases the element at <code>index</code>; later elements shift down.</p>
 <p><div class="highlight"><pre><span></span><code><span class="n">Thunder</span><span class="o">::</span><span class="n">Core</span><span class="o">::</span><span class="n">JSON</span><span class="o">::</span><span class="n">ArrayType</span><span class="o">&lt;</span><span class="n">Core</span><span class="o">::</span><span class="n">JSON</span><span class="o">::</span><span class="n">String</span><span class="o">&gt;</span><span class="w"> </span><span class="n">values</span><span class="p">;</span>
@@ -4071,9 +4070,9 @@
 
 <span class="c1">// Typed Container populated from a JsonObject</span>
 <span class="n">JsonObject</span><span class="w"> </span><span class="n">source</span><span class="p">;</span>
-<span class="n">source</span><span class="p">[</span><span class="s">&quot;model&quot;</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;ES1-B&quot;</span><span class="p">;</span>
-<span class="n">source</span><span class="p">[</span><span class="s">&quot;firmware&quot;</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;R5.0&quot;</span><span class="p">;</span>
-<span class="n">source</span><span class="p">[</span><span class="s">&quot;extra&quot;</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;ignored&quot;</span><span class="p">;</span><span class="w">  </span><span class="c1">// not registered in DeviceInfo</span>
+<span class="n">source</span><span class="p">[</span><span class="s">&quot;model&quot;</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_T</span><span class="p">(</span><span class="s">&quot;ES1-B&quot;</span><span class="p">);</span>
+<span class="n">source</span><span class="p">[</span><span class="s">&quot;firmware&quot;</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_T</span><span class="p">(</span><span class="s">&quot;R5.0&quot;</span><span class="p">);</span>
+<span class="n">source</span><span class="p">[</span><span class="s">&quot;extra&quot;</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_T</span><span class="p">(</span><span class="s">&quot;ignored&quot;</span><span class="p">);</span><span class="w">  </span><span class="c1">// not registered in DeviceInfo</span>
 
 <span class="n">DeviceInfo</span><span class="w"> </span><span class="n">device</span><span class="p">;</span>
 <span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">device</span><span class="p">.</span><span class="n">FromObject</span><span class="p">(</span><span class="n">source</span><span class="p">))</span><span class="w"> </span><span class="p">{</span>
