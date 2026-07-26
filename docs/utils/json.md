@@ -132,7 +132,6 @@ values.Insert(2, c);
 // Insert at end (index == Length()):
 values.Insert(values.Length(), e);
 // values == ["A", "B", "C", "D", "E"]
-```, "E"]
 ```
 
 `Remove(index)` erases the element at `index`; later elements shift down.
@@ -327,9 +326,9 @@ Populate a Container from another `IElement` (typed Container, VariantContainer,
 
 // Typed Container populated from a JsonObject
 JsonObject source;
-source["model"] = "ES1-B";
-source["firmware"] = "R5.0";
-source["extra"] = "ignored";  // not registered in DeviceInfo
+source["model"] = _T("ES1-B");
+source["firmware"] = _T("R5.0");
+source["extra"] = _T("ignored");  // not registered in DeviceInfo
 
 DeviceInfo device;
 if (device.FromObject(source)) {

@@ -36,10 +36,13 @@ namespace Core {
     TEST(JSONARRAY, InsertAtHead)
     {
         JsonArray array;
+        ::Thunder::Core::JSON::String head;
 
         array.Add() = _T("middle");
         array.Add() = _T("tail");
-        array.Insert(0, ::Thunder::Core::JSON::String(_T("head")));
+        head = _T("head");
+
+        array.Insert(0, head);
 
         EXPECT_EQ(3u, array.Length());
         EXPECT_STREQ("head", array[0].Value().c_str());
@@ -50,10 +53,13 @@ namespace Core {
     TEST(JSONARRAY, InsertAtTail)
     {
         JsonArray array;
+        ::Thunder::Core::JSON::String three;
 
         array.Add() = _T("one");
         array.Add() = _T("two");
-        array.Insert(array.Length(), ::Thunder::Core::JSON::String(_T("three")));
+        three = _T("three");
+
+        array.Insert(array.Length(), three);
 
         EXPECT_EQ(3u, array.Length());
         EXPECT_STREQ("one", array[0].Value().c_str());
@@ -64,10 +70,13 @@ namespace Core {
     TEST(JSONARRAY, InsertMidArray)
     {
         JsonArray array;
+        ::Thunder::Core::JSON::String center;
 
         array.Add() = _T("left");
         array.Add() = _T("right");
-        array.Insert(1, ::Thunder::Core::JSON::String(_T("center")));
+        center = _T("center");
+
+        array.Insert(1, center);
 
         EXPECT_EQ(3u, array.Length());
         EXPECT_STREQ("left", array[0].Value().c_str());
@@ -140,8 +149,10 @@ namespace Core {
         array.Add() = _T("alpha");
         array.Add() = _T("gamma");
         beta = _T("beta");
+
         array.Insert(1, beta);
         array.Remove(0);
+
         array.Add() = _T("delta");
 
         array.ToString(serialized);
@@ -227,7 +238,7 @@ namespace Core {
         EXPECT_STREQ("C", array[2].Value().c_str());
     }
 
-    TEST(JSONARRAY, MoveThroughInsertAndDelete)
+    TEST(JSONARRAY, MoveThroughInsertAndRemove)
     {
         JsonArray array;
         std::string serialized;
@@ -238,7 +249,7 @@ namespace Core {
 
         ::Thunder::Core::JSON::String moved = array[0];
         array.Remove(0);
-        array.Insert(1,moved);
+        array.Insert(1, moved);
 
         array.ToString(serialized);
 
