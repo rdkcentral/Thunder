@@ -96,8 +96,68 @@ The following JSON data type representations are available:
 * `Core::JSON::Float`
 * `Core::JSON::Double`
 * `Core::JSON::ArrayType<T>` - An array containing objects of type `T`, where T is either a primative JSON type (e.g. Core::JSON::String) or a Core::JSON::Container object
-* `Core::JSON::EnumType<T>` - A string that will be converted to a C++ enum
+    * `Add()` appends in $O(1)$.
+    * `Insert(index, element)` inserts a copy before `index` and `Remove(index)` erases the element at `index`; both are $O(n)$ because the backing store is a `std::list`.
+    * For `Insert()`/`Remove()`, the list first needs a linear walk from `begin()` to `index` (cost: $O(n)$). The final `insert`/`erase` operation at that located iterator is $O(1)$, but the total operation is still $O(n)$.
+    * For large arrays, avoid repeatedly calling `Insert()`/`Remove()` inside tight loops. Repeated index-based mutations can lead to quadratic behavior over time.
+    * If you are only appending, prefer `Add()` (or `Insert(Length(), element)`), because append does not need index traversal and remains $O(1)$.
+    * Out-of-range access for `operator[]`, `Insert()`, and `Remove()` follows the same debug-assert / release-undefined contract.
+    * These mutation helpers are not thread-safe; callers must hold any required lock.
+    * Serialisation includes only elements whose `IsSet()` is true. For wrapper types where constructor-based values may remain unset (for example `Core::JSON::String`, `Core::JSON::NumberType<>`, `Core::JSON::Float`/`Core::JSON::Double`, and `Core::JSON::Boolean`), assign through `operator=` (or otherwise ensure `IsSet()` is true) before calling `Insert()`.
 
+#### ArrayType mutation examples
+
+`Insert(index, element)` inserts *before* `index`.
+
+```cpp
+Thunder::Core::JSON::ArrayType<Core::JSON::String> values;
+Thunder::Core::JSON::String a;
+Thunder::Core::JSON::String c;
+Thunder::Core::JSON::String e;
+
+a = _T("A");
+c = _T("C");
+e = _T("E");
+values.Add() = _T("B");
+values.Add() = _T("D");
+
+// Insert at front (index == 0):
+values.Insert(0, a);
+// values == ["A", "B", "D"]
+
+// Insert in middle:
+values.Insert(2, c);
+// values == ["A", "B", "C", "D"]
+
+// Insert at end (index == Length()):
+values.Insert(values.Length(), e);
+// values == ["A", "B", "C", "D", "E"]
+```, "E"]
+```
+
+`Remove(index)` erases the element at `index`; later elements shift down.
+
+```cpp
+Thunder::Core::JSON::ArrayType<Core::JSON::String> values;
+values.Add() = _T("A");
+values.Add() = _T("B");
+values.Add() = _T("C");
+values.Add() = _T("D");
+values.Add() = _T("E");
+
+// Remove from front:
+values.Remove(0);
+// values == ["B", "C", "D", "E"]
+
+// Remove from middle:
+values.Remove(1);
+// values == ["B", "D", "E"]
+
+// Remove from end:
+values.Remove(values.Length() - 1);
+// values == ["B", "D"]
+```
+* `Core::JSON::EnumType<T>` - A string that will be converted to a C++ enum
 #### Enums
 
 Thunder supports deserialising JSON strings directly to a C++ enum. This is useful when you need to restrict the possible values of a string to a known set.
