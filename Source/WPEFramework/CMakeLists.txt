@@ -81,7 +81,7 @@ endif()
 option(DISTRIBUTED_TRACING "Enable distributed tracing via rdk_otlp_instrumentation" OFF)
 
 if(DISTRIBUTED_TRACING)
-    find_library(RDK_OTEL_LIB rdk_otel_instrumentation)
+    find_library(RDK_OTEL_LIB rdk_otlp)
     if(NOT RDK_OTEL_LIB)
         message(FATAL_ERROR "DISTRIBUTED_TRACING enabled but librdk_otel_instrumentation not found")
     endif()
