@@ -3322,6 +3322,43 @@ namespace Core {
                 return (_data.back());
             }
 
+            void Insert(uint32_t index, const ELEMENT& element)
+            {
+                ASSERT(index <= Length());
+
+                if (index == Length()) {
+                    Add(element);
+                }
+                else {
+                    uint32_t skip = index;
+                    typename std::list<ELEMENT>::iterator locator = _data.begin();
+
+                    while (skip != 0) {
+                        locator++;
+                        skip--;
+                    }
+
+                    ASSERT(locator != _data.end());
+                    _data.insert(locator, element);
+                }
+            }
+
+            void Remove(uint32_t index)
+            {
+                ASSERT(index < Length());
+
+                uint32_t skip = index;
+                typename std::list<ELEMENT>::iterator locator = _data.begin();
+
+                while (skip != 0) {
+                    locator++;
+                    skip--;
+                }
+
+                ASSERT(locator != _data.end());
+                _data.erase(locator);
+            }
+
             ELEMENT& operator[](const uint32_t index)
             {
                 uint32_t skip = index;
