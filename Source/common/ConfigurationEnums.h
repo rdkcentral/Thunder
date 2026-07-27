@@ -20,7 +20,7 @@
 #ifndef __CONFIGURATIONENUMS_H
 #define __CONFIGURATIONENUMS_H
 
-#include <cstdint>
+#include "Module.h"
 
 namespace Thunder {
 namespace Plugin {
