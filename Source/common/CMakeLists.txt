@@ -1,7 +1,11 @@
 set(TARGET ${NAMESPACE}Common)
 
+JsonGenerator(CODE NAMESPACE Thunder::Plugin::Configuration INPUT "${CMAKE_CURRENT_SOURCE_DIR}/ConfigurationEnums.h" OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/json" CPP_INTERFACE_PATH common INCLUDE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/..")
+file(GLOB CONFIGURATION_ENUM_SOURCES "${CMAKE_CURRENT_BINARY_DIR}/json/JsonEnum_*.cpp")
+
 add_library(${TARGET}
         Channel.cpp
+        ${CONFIGURATION_ENUM_SOURCES}
         JSONRPC.cpp
         Metadata.cpp
         Module.cpp
@@ -18,6 +22,7 @@ set(PUBLIC_HEADERS
         common.h
         Config.h
         Configuration.h
+        ConfigurationEnums.h
         JSONRPC.h
         Metadata.h
         Request.h

@@ -181,7 +181,7 @@ namespace Plugin {
         public:
             ProbeConfig Probe;
             Core::JSON::ArrayType<Core::JSON::String> Resumes;
-            Core::JSON::ArrayType<Core::JSON::EnumType<PluginHost::ISubSystem::subsystem>> SubSystems;
+            Core::JSON::ArrayType<Core::JSON::EnumType<Configuration::subsystem>> SubSystems;
             Core::JSON::Boolean Ui;
         };
 
