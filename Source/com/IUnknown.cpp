@@ -102,6 +102,7 @@ namespace ProxyStub {
         // --- Distributed Tracing: stamp thread-local span ID into outgoing message ---
         uint64_t spanId = RPC::GetCurrentTraceSpanId();
         if (spanId != 0) {
+            RPC::StoreCurrentTraceContextForSpanId(spanId);
             message->Parameters().SetSpanId(spanId);
         }
 

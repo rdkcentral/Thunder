@@ -49,6 +49,8 @@ option(DISABLE_USE_COMPLEMENTARY_CODE_SET
         "Disable the complementary code set" OFF)
 option(ENABLE_CONFIG_OVERRIDE
         "Enable persistent configuration overrides." OFF)
+option(DISTRIBUTED_TRACING
+    "Enable distributed tracing via rdk_otlp_instrumentation" OFF)
 
 if(HIDE_NON_EXTERNAL_SYMBOLS)
     set(CMAKE_CXX_VISIBILITY_PRESET hidden)

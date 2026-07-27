@@ -39,6 +39,11 @@ namespace PluginHost {
         return prefix + "." + callsign;
     }
 
+    std::string DistributedTracing::MakeSpanContextKey(const uint64_t spanId)
+    {
+        return std::string("Thunder.comrpc.span.") + std::to_string(spanId);
+    }
+
     // =========================================================================
     // Singleton
     // =========================================================================
@@ -260,8 +265,15 @@ namespace PluginHost {
         auto& self = Instance();
         if (!self._enabled.load()) return;
 
-        std::string ctxKey = "Thunder.comrpc." + std::to_string(interfaceId) +
-                             "." + std::to_string(methodId);
+        std::string ctxKey = MakeSpanContextKey(parentSpanId);
+
+        char traceId[33] = {0}, parentId[17] = {0}, flags[3] = {0};
+        bool hasParent = rdk_otlp_get_trace_context(ctxKey.c_str(),
+                                                    traceId, parentId, flags);
+
+        if (!hasParent) {
+            return;
+        }
 
         rdk_otlp_start_child_span(ctxKey.c_str(), "comrpc.stub.handle");
 

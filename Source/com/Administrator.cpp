@@ -20,6 +20,10 @@
 #include "Administrator.h"
 #include "IUnknown.h"
 
+#ifdef THUNDER_DISTRIBUTED_TRACING
+#include <rdk_otlp_instrumentation.h>
+#endif
+
 namespace WPEFramework {
 
 namespace {
@@ -28,6 +32,13 @@ namespace {
 
     // Stub-side trace callbacks (set by DistributedTracing in WPEFramework process)
     RPC::ICOMRPCStubTraceCallbacks* g_stubTraceCallbacks = nullptr;
+
+#ifdef THUNDER_DISTRIBUTED_TRACING
+    std::string TraceContextKeyFromSpanId(const uint64_t spanId)
+    {
+        return std::string("Thunder.comrpc.span.") + std::to_string(spanId);
+    }
+#endif
 }
 
 namespace RPC {
@@ -38,6 +49,25 @@ namespace RPC {
 
     uint64_t GetCurrentTraceSpanId() {
         return g_currentTraceSpanId;
+    }
+
+    void StoreCurrentTraceContextForSpanId(const uint64_t spanId) {
+#ifdef THUNDER_DISTRIBUTED_TRACING
+        if (spanId == 0) {
+            return;
+        }
+
+        char traceId[33] = {0};
+        char activeSpanId[17] = {0};
+        if (rdk_otlp_get_active_trace_context(traceId, activeSpanId) == false) {
+            return;
+        }
+
+        const std::string contextKey(TraceContextKeyFromSpanId(spanId));
+        rdk_otlp_store_trace_context(contextKey.c_str(), traceId, activeSpanId, "01");
+#else
+        VARIABLE_IS_NOT_USED(spanId);
+#endif
     }
 
     void SetCOMRPCStubTraceCallbacks(ICOMRPCStubTraceCallbacks* callbacks) {

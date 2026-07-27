@@ -75,11 +75,6 @@ if(WARNING_REPORTING)
     target_sources(${TARGET} PRIVATE WarningReportingCategories.cpp)
 endif()
 
-# ---------------------------------------------------------------------------
-# Distributed Tracing (optional, uses rdk_otlp_instrumentation shared library)
-# ---------------------------------------------------------------------------
-option(DISTRIBUTED_TRACING "Enable distributed tracing via rdk_otlp_instrumentation" OFF)
-
 if(DISTRIBUTED_TRACING)
     find_library(RDK_OTEL_LIB rdk_otel_instrumentation)
     if(NOT RDK_OTEL_LIB)

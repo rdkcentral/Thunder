@@ -102,6 +102,7 @@ namespace PluginHost {
 
         static std::string MakeContextKey(const std::string& prefix,
                                           const std::string& callsign);
+        static std::string MakeSpanContextKey(uint64_t spanId);
 
         uint64_t NextSpanId();
 
