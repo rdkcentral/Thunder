@@ -30,6 +30,7 @@
 #include "DistributedTracing.h"
 #endif
 #include <atomic>
+#include <cctype>
 
 #ifdef PROCESSCONTAINERS_ENABLED
 #include "../processcontainers/ProcessContainer.h"
@@ -966,8 +967,9 @@ namespace PluginHost {
                     void* result = nullptr;
                     if (interfaceId >= RPC::IDS::ID_EXTERNAL_INTERFACE_OFFSET) {
 #ifdef THUNDER_DISTRIBUTED_TRACING
+                        const char* _traceparent = rdk_otlp_get_current_traceparent();
                         uint64_t _traceSpanId = PluginHost::DistributedTracing::Instance().OnCOMRPCAcquireBegin(
-                            "ExternalAccess", interfaceId);
+                            "ExternalAccess", interfaceId, _traceparent);
 #endif
                         result = _plugin->QueryInterface(interfaceId);
 #ifdef THUNDER_DISTRIBUTED_TRACING
@@ -1501,6 +1503,55 @@ namespace PluginHost {
                     Core::InterlockedIncrement(_activity);
                     uint32_t result;
                     string method(message.Designator.Value());
+                    string cleanedParams(message.Parameters.Value());
+                    string traceparent;
+
+                    {
+                        const string tpKey = "\"traceparent\"";
+                        const size_t keyPos = cleanedParams.find(tpKey);
+
+                        if (keyPos != string::npos) {
+                            const size_t colonPos = cleanedParams.find(':', keyPos + tpKey.length());
+                            if (colonPos != string::npos) {
+                                size_t valueStart = colonPos + 1;
+                                while ((valueStart < cleanedParams.length())
+                                    && (std::isspace(static_cast<unsigned char>(cleanedParams[valueStart])) != 0)) {
+                                    ++valueStart;
+                                }
+
+                                if ((valueStart < cleanedParams.length()) && (cleanedParams[valueStart] == '"')) {
+                                    ++valueStart;
+                                    const size_t valueEnd = cleanedParams.find('"', valueStart);
+                                    if (valueEnd != string::npos) {
+                                        traceparent = cleanedParams.substr(valueStart, valueEnd - valueStart);
+
+                                        size_t removeStart = keyPos;
+                                        size_t removeEnd = valueEnd + 1;
+
+                                        size_t left = removeStart;
+                                        while ((left > 0) && (std::isspace(static_cast<unsigned char>(cleanedParams[left - 1])) != 0)) {
+                                            --left;
+                                        }
+
+                                        if ((left > 0) && (cleanedParams[left - 1] == ',')) {
+                                            removeStart = left - 1;
+                                        } else {
+                                            size_t right = removeEnd;
+                                            while ((right < cleanedParams.length())
+                                                && (std::isspace(static_cast<unsigned char>(cleanedParams[right])) != 0)) {
+                                                ++right;
+                                            }
+                                            if ((right < cleanedParams.length()) && (cleanedParams[right] == ',')) {
+                                                removeEnd = right + 1;
+                                            }
+                                        }
+
+                                        cleanedParams.erase(removeStart, removeEnd - removeStart);
+                                    }
+                                }
+                            }
+                        }
+                    }
 
                     if (message.Id.IsSet() == true) {
                         response = Core::ProxyType<Core::JSONRPC::Message>(IFactories::Instance().JSONRPC());
@@ -1508,7 +1559,7 @@ namespace PluginHost {
                         response->Id = message.Id.Value();
                     }
 
-                    if ((result = _jsonrpc->Validate(token, method, message.Parameters.Value())) == Core::ERROR_PRIVILIGED_REQUEST) {
+                    if ((result = _jsonrpc->Validate(token, method, cleanedParams)) == Core::ERROR_PRIVILIGED_REQUEST) {
                         if (response.IsValid() == true) {
                             response->Error.SetError(Core::ERROR_PRIVILIGED_REQUEST);
                             response->Error.Text = _T("method invokation not allowed.");
@@ -1530,9 +1581,9 @@ namespace PluginHost {
                         string output;
 #ifdef THUNDER_DISTRIBUTED_TRACING
                         uint64_t _traceSpanId = PluginHost::DistributedTracing::Instance().OnInvokeBegin(
-                            PluginHost::Service::Callsign(), method, channelId);
+                            PluginHost::Service::Callsign(), method, channelId, traceparent.c_str());
 #endif
-                        result = _jsonrpc->Invoke(channelId, message.Id.Value(), token, method, message.Parameters.Value(), output);
+                        result = _jsonrpc->Invoke(channelId, message.Id.Value(), token, method, cleanedParams, output);
 #ifdef THUNDER_DISTRIBUTED_TRACING
                         PluginHost::DistributedTracing::Instance().OnInvokeEnd(_traceSpanId, result);
 #endif

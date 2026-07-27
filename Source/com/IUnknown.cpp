@@ -21,6 +21,10 @@
 #include "Administrator.h"
 #include "Communicator.h"
 
+#ifdef THUNDER_DISTRIBUTED_TRACING
+#include <rdk_otlp_instrumentation.h>
+#endif
+
 namespace WPEFramework {
 namespace ProxyStub {
     // -------------------------------------------------------------------------------------------
@@ -99,12 +103,13 @@ namespace ProxyStub {
     {
         uint32_t result = Core::ERROR_UNAVAILABLE | COM_ERROR;
 
-        // --- Distributed Tracing: stamp thread-local span ID into outgoing message ---
-        uint64_t spanId = RPC::GetCurrentTraceSpanId();
-        if (spanId != 0) {
-            RPC::StoreCurrentTraceContextForSpanId(spanId);
-            message->Parameters().SetSpanId(spanId);
-        }
+        // --- Distributed Tracing: stamp traceparent into outgoing message ---
+#ifdef THUNDER_DISTRIBUTED_TRACING
+        const char* traceparent = rdk_otlp_get_current_traceparent();
+        message->Parameters().SetTraceParent(traceparent);
+#else
+        message->Parameters().SetTraceParent(nullptr);
+#endif
 
         _adminLock.Lock();
 	    Core::ProxyType<Core::IPCChannel> channel (_channel);

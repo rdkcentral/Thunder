@@ -570,13 +570,12 @@ namespace RPC {
     // so chained COM-RPC calls from the stub also carry the trace context.
     EXTERNAL void SetCurrentTraceSpanId(uint64_t spanId);
     EXTERNAL uint64_t GetCurrentTraceSpanId();
-    EXTERNAL void StoreCurrentTraceContextForSpanId(uint64_t spanId);
 
     // Callback interface for stub-side distributed tracing.
     // Registered by DistributedTracing to receive notifications when a COM-RPC
     // message arrives with a non-zero span ID.
     struct ICOMRPCStubTraceCallbacks {
-        void (*onBegin)(uint64_t parentSpanId, uint32_t interfaceId, uint8_t methodId);
+        void (*onBegin)(uint64_t parentSpanId, uint32_t interfaceId, uint8_t methodId, const char* traceparent);
         void (*onEnd)(uint64_t parentSpanId);
     };
 

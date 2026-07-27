@@ -20,10 +20,6 @@
 #include "Administrator.h"
 #include "IUnknown.h"
 
-#ifdef THUNDER_DISTRIBUTED_TRACING
-#include <rdk_otlp_instrumentation.h>
-#endif
-
 namespace WPEFramework {
 
 namespace {
@@ -32,13 +28,6 @@ namespace {
 
     // Stub-side trace callbacks (set by DistributedTracing in WPEFramework process)
     RPC::ICOMRPCStubTraceCallbacks* g_stubTraceCallbacks = nullptr;
-
-#ifdef THUNDER_DISTRIBUTED_TRACING
-    std::string TraceContextKeyFromSpanId(const uint64_t spanId)
-    {
-        return std::string("Thunder.comrpc.span.") + std::to_string(spanId);
-    }
-#endif
 }
 
 namespace RPC {
@@ -49,25 +38,6 @@ namespace RPC {
 
     uint64_t GetCurrentTraceSpanId() {
         return g_currentTraceSpanId;
-    }
-
-    void StoreCurrentTraceContextForSpanId(const uint64_t spanId) {
-#ifdef THUNDER_DISTRIBUTED_TRACING
-        if (spanId == 0) {
-            return;
-        }
-
-        char traceId[33] = {0};
-        char activeSpanId[17] = {0};
-        if (rdk_otlp_get_active_trace_context(traceId, activeSpanId) == false) {
-            return;
-        }
-
-        const std::string contextKey(TraceContextKeyFromSpanId(spanId));
-        rdk_otlp_store_trace_context(contextKey.c_str(), traceId, activeSpanId, "01");
-#else
-        VARIABLE_IS_NOT_USED(spanId);
-#endif
     }
 
     void SetCOMRPCStubTraceCallbacks(ICOMRPCStubTraceCallbacks* callbacks) {
@@ -203,22 +173,28 @@ namespace RPC {
         if (index != _stubs.end()) {
             uint32_t methodId(message->Parameters().MethodId());
 
-            // --- Distributed Tracing: propagate span ID from message to thread-local ---
-            uint64_t incomingSpanId = message->Parameters().SpanId();
+            // --- Distributed Tracing: propagate active trace state from traceparent to thread-local ---
+            char traceparent[56] = {0};
+            message->Parameters().TraceParent(traceparent, sizeof(traceparent));
+            const bool hasTraceParent = (traceparent[0] != '\0');
             uint64_t previousSpanId = g_currentTraceSpanId;
-            if (incomingSpanId != 0) {
-                g_currentTraceSpanId = incomingSpanId;
+            if (hasTraceParent) {
+                g_currentTraceSpanId = 1;
                 if (g_stubTraceCallbacks != nullptr) {
-                    g_stubTraceCallbacks->onBegin(incomingSpanId, interfaceId, static_cast<uint8_t>(methodId));
+                    g_stubTraceCallbacks->onBegin(
+                        0,
+                        interfaceId,
+                        static_cast<uint8_t>(methodId),
+                        traceparent);
                 }
             }
 
             REPORT_DURATION_WARNING({ index->second->Handle(methodId, channel, message); },  WarningReporting::TooLongInvokeRPC, interfaceId, methodId);
 
-            // --- Distributed Tracing: restore previous span ID ---
-            if (incomingSpanId != 0) {
+            // --- Distributed Tracing: restore previous active trace state ---
+            if (hasTraceParent) {
                 if (g_stubTraceCallbacks != nullptr) {
-                    g_stubTraceCallbacks->onEnd(incomingSpanId);
+                    g_stubTraceCallbacks->onEnd(0);
                 }
                 g_currentTraceSpanId = previousSpanId;
             }
