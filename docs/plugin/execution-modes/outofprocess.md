@@ -11,7 +11,7 @@ When the plugin is activated, Thunder will automatically spawn a ThunderPlugin i
 
 It is also possible to run the full plugin out of process. This allows a plugin to be hosted by `ThunderPlugin` even if it was not split or specifically designed for the traditional OOP plugin model. In this mode, `PluginHost::IPlugin` itself is hosted by `ThunderPlugin`.
 
-This is mainly useful as a development and debugging option. For example, it can be used to isolate leaks,crashes, or shutdown behavior in plugins that were originally designed to run in process.
+This is mainly useful as a development and debugging option. For example, it can be used to isolate leaks, crashes, or shutdown behavior in plugins that were originally designed to run in process.
 
 To enable this mode, add a top-level `root` section to the plugin configuration:
 
