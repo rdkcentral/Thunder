@@ -95,22 +95,24 @@ The following JSON data type representations are available:
         * `Core::JSON::OctSInt32` - represent a base-8 integer of width uint32_t
 * `Core::JSON::Float`
 * `Core::JSON::Double`
-* `Core::JSON::ArrayType<T>` - An array containing objects of type `T`, where T is either a primative JSON type (e.g. Core::JSON::String) or a Core::JSON::Container object
-    * `Add()` appends in $O(1)$.
-    * `Insert(index, element)` inserts a copy before `index` and `Remove(index)` erases the element at `index`; both are $O(n)$ because the backing store is a `std::list`.
-    * For `Insert()`/`Remove()`, the list first needs a linear walk from `begin()` to `index` (cost: $O(n)$). The final `insert`/`erase` operation at that located iterator is $O(1)$, but the total operation is still $O(n)$.
-    * For large arrays, avoid repeatedly calling `Insert()`/`Remove()` inside tight loops. Repeated index-based mutations can lead to quadratic behavior over time.
-    * If you are only appending, prefer `Add()` (or `Insert(Length(), element)`), because append does not need index traversal and remains $O(1)$.
+* `Core::JSON::ArrayType<T>` - An array containing objects of type `T`, where T is either a primative JSON type (e.g. Core::JSON::String) or a Core::JSON::Container object.
+    * Complexity summary:
+        * `Add()` (append): $O(1)$
+        * `Insert(index, element)`: worst-case $O(n)$ (linear walk to `index`; insertion at located iterator is constant)
+        * `Insert(Length(), element)`: equivalent to append in the current implementation
+        * `Remove(index)`: $O(n)$ overall (linear walk to `index`; erase at located iterator is constant)
+    * For large arrays, avoid repeated index-based mutation (`Insert()`/`Remove()`) in tight loops; cumulative cost can become quadratic.
+    * `Insert(Length(), element)` is functionally equivalent to append; use `Add()` when append intent should be explicit.
     * Out-of-range access for `operator[]`, `Insert()`, and `Remove()` follows the same debug-assert / release-undefined contract.
     * These mutation helpers are not thread-safe; callers must hold any required lock.
-    * Serialisation includes only elements whose `IsSet()` is true. For wrapper types where constructor-based values may remain unset (for example `Core::JSON::String`, `Core::JSON::NumberType<>`, `Core::JSON::Float`/`Core::JSON::Double`, and `Core::JSON::Boolean`), assign through `operator=` (or otherwise ensure `IsSet()` is true) before calling `Insert()`.
+    * `Length()` reports stored element count. Serialisation includes only elements whose `IsSet()` is true. For wrapper types where constructor-based values may remain unset (for example `Core::JSON::String`, `Core::JSON::NumberType<>`, `Core::JSON::Float`/`Core::JSON::Double`, and `Core::JSON::Boolean`), assign through `operator=` (or otherwise ensure `IsSet()` is true) before calling `Insert()`.
 
 #### ArrayType mutation examples
 
 `Insert(index, element)` inserts *before* `index`.
 
 ```cpp
-Thunder::Core::JSON::ArrayType<Core::JSON::String> values;
+Thunder::Core::JSON::ArrayType<Thunder::Core::JSON::String> values;
 Thunder::Core::JSON::String a;
 Thunder::Core::JSON::String c;
 Thunder::Core::JSON::String e;
@@ -137,7 +139,7 @@ values.Insert(values.Length(), e);
 `Remove(index)` erases the element at `index`; later elements shift down.
 
 ```cpp
-Thunder::Core::JSON::ArrayType<Core::JSON::String> values;
+Thunder::Core::JSON::ArrayType<Thunder::Core::JSON::String> values;
 values.Add() = _T("A");
 values.Add() = _T("B");
 values.Add() = _T("C");
