@@ -80,8 +80,13 @@ namespace RPC {
             static constexpr uint32_t IMPLEMENTATION_OFFSET = 0;
             static constexpr uint32_t INTERFACEID_OFFSET = sizeof(Core::instance_id);
             static constexpr uint32_t METHODID_OFFSET = INTERFACEID_OFFSET + sizeof(uint32_t);
+<<<<<<< HEAD
             static constexpr uint32_t RESERVED_OFFSET = METHODID_OFFSET + sizeof(uint8_t);
             static constexpr uint32_t TRACEPARENT_OFFSET = RESERVED_OFFSET + sizeof(uint64_t);
+=======
+            static constexpr uint32_t SPANID_OFFSET = METHODID_OFFSET + sizeof(uint8_t);
+            static constexpr uint32_t TRACEPARENT_OFFSET = SPANID_OFFSET + sizeof(uint64_t);
+>>>>>>> 591f3ae1a304747a199e4dde3948bb6b10e7a35a
             static constexpr uint32_t TRACEPARENT_MAX_LENGTH = 56;
             static constexpr uint32_t HEADER_SIZE = TRACEPARENT_OFFSET + TRACEPARENT_MAX_LENGTH;
 
@@ -107,7 +112,11 @@ namespace RPC {
                 frameWriter.Number(implementation);
                 frameWriter.Number(interfaceId);
                 frameWriter.Number(methodId);
+<<<<<<< HEAD
                 frameWriter.Number(static_cast<uint64_t>(0));  // reserved legacy field
+=======
+                frameWriter.Number(static_cast<uint64_t>(0));  // spanId placeholder
+>>>>>>> 591f3ae1a304747a199e4dde3948bb6b10e7a35a
 
                 _data.Size(HEADER_SIZE);
                 ::memset(&(_data[TRACEPARENT_OFFSET]), 0, TRACEPARENT_MAX_LENGTH);
@@ -144,8 +153,21 @@ namespace RPC {
                     ::strncpy(reinterpret_cast<char*>(&(_data[TRACEPARENT_OFFSET])), traceparent, TRACEPARENT_MAX_LENGTH - 1);
                 }
             }
+<<<<<<< HEAD
             void TraceParent(char traceparent[], const uint16_t length) const
             {
+=======
+            void SetTraceParent(const char traceparent[])
+            {
+                ::memset(&(_data[TRACEPARENT_OFFSET]), 0, TRACEPARENT_MAX_LENGTH);
+
+                if (traceparent != nullptr) {
+                    ::strncpy(reinterpret_cast<char*>(&(_data[TRACEPARENT_OFFSET])), traceparent, TRACEPARENT_MAX_LENGTH - 1);
+                }
+            }
+            void TraceParent(char traceparent[], const uint16_t length) const
+            {
+>>>>>>> 591f3ae1a304747a199e4dde3948bb6b10e7a35a
                 if ((traceparent == nullptr) || (length == 0)) {
                     return;
                 }
