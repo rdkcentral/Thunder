@@ -81,6 +81,7 @@ namespace Telemetry {
 #define TELEMETRY(CATEGORY, VALUE)                                                                                                                       \
     do {                                                                                                                                                 \
         static_assert(std::is_base_of<WPEFramework::Telemetry::BaseTelemetryType<CATEGORY>, CATEGORY>::value, "TELEMETRY() only for Telemetry controls");\
+        printf("[TELEMETRY_DEBUG] TELEMETRY() called with category: %s, value: %s isEnabled:%s ", CATEGORY::Metadata().Module().c_str(), VALUE, CATEGORY::IsEnabled() ? "true" : "false"); \
         if (CATEGORY::IsEnabled() == true) {                                                                                                             \
             WPEFramework::Core::Messaging::MessageInfo __info__(                                                                                         \
                 CATEGORY::Metadata(),                                                                                                                    \
