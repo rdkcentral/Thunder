@@ -74,13 +74,16 @@ namespace RPC {
             //   [0..7]   Core::instance_id  implementation  (8 bytes)
             //   [8..11]  uint32_t           interfaceId     (4 bytes)
             //   [12]     uint8_t            methodId        (1 byte)
-            //   [13..20] uint64_t           spanId          (8 bytes) - distributed tracing
-            // Total header size = 21 bytes
+            //   [13..20] uint64_t           reserved        (8 bytes) - legacy tracing field
+            //   [21..76] char[56]           traceparent     (56 bytes incl NUL) - distributed tracing
+            // Total header size = 77 bytes
             static constexpr uint32_t IMPLEMENTATION_OFFSET = 0;
             static constexpr uint32_t INTERFACEID_OFFSET = sizeof(Core::instance_id);
             static constexpr uint32_t METHODID_OFFSET = INTERFACEID_OFFSET + sizeof(uint32_t);
             static constexpr uint32_t SPANID_OFFSET = METHODID_OFFSET + sizeof(uint8_t);
-            static constexpr uint32_t HEADER_SIZE = SPANID_OFFSET + sizeof(uint64_t);
+            static constexpr uint32_t TRACEPARENT_OFFSET = SPANID_OFFSET + sizeof(uint64_t);
+            static constexpr uint32_t TRACEPARENT_MAX_LENGTH = 56;
+            static constexpr uint32_t HEADER_SIZE = TRACEPARENT_OFFSET + TRACEPARENT_MAX_LENGTH;
 
         public:
             Input(const Input&) = delete;
@@ -105,6 +108,9 @@ namespace RPC {
                 frameWriter.Number(interfaceId);
                 frameWriter.Number(methodId);
                 frameWriter.Number(static_cast<uint64_t>(0));  // spanId placeholder
+
+                _data.Size(HEADER_SIZE);
+                ::memset(&(_data[TRACEPARENT_OFFSET]), 0, TRACEPARENT_MAX_LENGTH);
             }
             Core::instance_id Implementation()
             {
@@ -138,10 +144,23 @@ namespace RPC {
 
                 return (result);
             }
-            void SetSpanId(const uint64_t spanId)
+            void SetTraceParent(const char traceparent[])
             {
-                Frame::Writer frameWriter(_data, SPANID_OFFSET);
-                frameWriter.Number(spanId);
+                ::memset(&(_data[TRACEPARENT_OFFSET]), 0, TRACEPARENT_MAX_LENGTH);
+
+                if (traceparent != nullptr) {
+                    ::strncpy(reinterpret_cast<char*>(&(_data[TRACEPARENT_OFFSET])), traceparent, TRACEPARENT_MAX_LENGTH - 1);
+                }
+            }
+            void TraceParent(char traceparent[], const uint16_t length) const
+            {
+                if ((traceparent == nullptr) || (length == 0)) {
+                    return;
+                }
+
+                const uint16_t copyLength = (length < TRACEPARENT_MAX_LENGTH ? length : TRACEPARENT_MAX_LENGTH);
+                ::memcpy(traceparent, &(_data[TRACEPARENT_OFFSET]), copyLength);
+                traceparent[copyLength - 1] = '\0';
             }
             uint32_t Length() const
             {

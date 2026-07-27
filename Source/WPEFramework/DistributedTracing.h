@@ -33,7 +33,7 @@ namespace PluginHost {
 
     // Metadata tracked per active span (timing, callsign, operation)
     struct SpanMetadata {
-        std::string contextKey;     // shared-memory key used with rdk_otlp wrapper
+        std::string contextKey;
         std::string callsign;
         std::string operation;
         std::chrono::steady_clock::time_point startTime;
@@ -58,9 +58,8 @@ namespace PluginHost {
      * Traces plugin-to-plugin and plugin-to-Thunder interactions through
      * JSON-RPC and COM-RPC paths only.
      *
-     * Trace context propagation happens through POSIX shared memory
-     * (/rdk_trace_context) managed by the wrapper — no Thunder-specific
-     * propagation mechanism needed.
+    * JSON-RPC and COM-RPC method handlers consume propagated traceparent
+    * values to start child spans.
      */
     class DistributedTracing {
     public:
@@ -79,30 +78,27 @@ namespace PluginHost {
         // =========================================================================
 
         uint64_t OnInvokeBegin(const std::string& callsign, const std::string& method,
-                               uint32_t channelId);
+                       uint32_t channelId, const char* traceparent);
         void OnInvokeEnd(uint64_t spanId, uint32_t result);
 
         // =========================================================================
         // COM-RPC Interface Tracing (Cross-Process Plugin Communication)
         // =========================================================================
 
-        uint64_t OnCOMRPCAcquireBegin(const std::string& callsign, uint32_t interfaceId);
+        uint64_t OnCOMRPCAcquireBegin(const std::string& callsign, uint32_t interfaceId,
+                          const char* traceparent);
         void OnCOMRPCAcquireEnd(uint64_t spanId, bool success);
 
         // =========================================================================
         // COM-RPC Per-Method Stub Tracing (via span ID in RPC::Data::Input)
         // =========================================================================
 
-        static void OnCOMRPCStubBegin(uint64_t parentSpanId, uint32_t interfaceId, uint8_t methodId);
+        static void OnCOMRPCStubBegin(uint64_t parentSpanId, uint32_t interfaceId, uint8_t methodId, const char* traceparent);
         static void OnCOMRPCStubEnd(uint64_t parentSpanId);
 
     private:
         DistributedTracing();
         ~DistributedTracing();
-
-        static std::string MakeContextKey(const std::string& prefix,
-                                          const std::string& callsign);
-        static std::string MakeSpanContextKey(uint64_t spanId);
 
         uint64_t NextSpanId();
 

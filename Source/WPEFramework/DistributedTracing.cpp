@@ -30,21 +30,6 @@ namespace WPEFramework {
 namespace PluginHost {
 
     // =========================================================================
-    // Helpers
-    // =========================================================================
-
-    std::string DistributedTracing::MakeContextKey(
-        const std::string& prefix, const std::string& callsign)
-    {
-        return prefix + "." + callsign;
-    }
-
-    std::string DistributedTracing::MakeSpanContextKey(const uint64_t spanId)
-    {
-        return std::string("Thunder.comrpc.span.") + std::to_string(spanId);
-    }
-
-    // =========================================================================
     // Singleton
     // =========================================================================
     DistributedTracing& DistributedTracing::Instance() {
@@ -114,24 +99,17 @@ namespace PluginHost {
 
     uint64_t DistributedTracing::OnInvokeBegin(
         const std::string& callsign, const std::string& method,
-        uint32_t channelId)
+        uint32_t channelId, const char* traceparent)
     {
         if (!_enabled.load()) return 0;
 
-        std::string ctxKey = MakeContextKey("Thunder.jsonrpc", callsign);
-
-        // Thunder must NOT start a parent trace on its own.
-        // Only create a child span if an upstream component already started a trace.
-        char traceId[33] = {0}, parentSpanId[17] = {0}, flags[3] = {0};
-        bool hasParent = rdk_otlp_get_trace_context(ctxKey.c_str(),
-                                                     traceId, parentSpanId, flags);
-
-        if (!hasParent) {
+        // Start a child span only when upstream provided a valid traceparent.
+        if ((traceparent == nullptr) || (traceparent[0] == '\0')) {
             return 0;
         }
 
         uint64_t spanId = NextSpanId();
-        rdk_otlp_start_child_span(ctxKey.c_str(), "jsonrpc.invoke");
+        rdk_otlp_start_child_from_traceparent(traceparent, "jsonrpc.invoke");
 
         rdk_otlp_set_span_attribute_string("plugin.callsign", callsign.c_str());
         rdk_otlp_set_span_attribute_string("rpc.method", method.c_str());
@@ -146,7 +124,7 @@ namespace PluginHost {
         RPC::SetCurrentTraceSpanId(spanId);
 
         SpanMetadata meta;
-        meta.contextKey = ctxKey;
+        meta.contextKey = "jsonrpc.traceparent";
         meta.callsign = callsign;
         meta.operation = method;
 
@@ -188,24 +166,17 @@ namespace PluginHost {
     // =========================================================================
 
     uint64_t DistributedTracing::OnCOMRPCAcquireBegin(
-        const std::string& callsign, uint32_t interfaceId)
+        const std::string& callsign, uint32_t interfaceId,
+        const char* traceparent)
     {
         if (!_enabled.load()) return 0;
 
-        std::string ctxKey = MakeContextKey("Thunder.comrpc", callsign);
-
-        // Thunder must NOT start a parent trace on its own.
-        // Only create a child span if an upstream component already started a trace.
-        char traceId[33] = {0}, parentSpanId[17] = {0}, flags[3] = {0};
-        bool hasParent = rdk_otlp_get_trace_context(ctxKey.c_str(),
-                                                     traceId, parentSpanId, flags);
-
-        if (!hasParent) {
+        if ((traceparent == nullptr) || (traceparent[0] == '\0')) {
             return 0;
         }
 
         uint64_t spanId = NextSpanId();
-        rdk_otlp_start_child_span(ctxKey.c_str(), "comrpc.acquire");
+        rdk_otlp_start_child_from_traceparent(traceparent, "comrpc.acquire");
 
         rdk_otlp_set_span_attribute_string("plugin.callsign", callsign.c_str());
         rdk_otlp_set_span_attribute_string("rpc.system", "comrpc");
@@ -217,7 +188,7 @@ namespace PluginHost {
         RPC::SetCurrentTraceSpanId(spanId);
 
         SpanMetadata meta;
-        meta.contextKey = ctxKey;
+        meta.contextKey = "comrpc.acquire.traceparent";
         meta.callsign = callsign;
         meta.operation = "comrpc.acquire";
 
@@ -260,22 +231,16 @@ namespace PluginHost {
     // =========================================================================
 
     /* static */ void DistributedTracing::OnCOMRPCStubBegin(
-        uint64_t parentSpanId, uint32_t interfaceId, uint8_t methodId)
+        uint64_t parentSpanId, uint32_t interfaceId, uint8_t methodId, const char* traceparent)
     {
         auto& self = Instance();
         if (!self._enabled.load()) return;
 
-        std::string ctxKey = MakeSpanContextKey(parentSpanId);
-
-        char traceId[33] = {0}, parentId[17] = {0}, flags[3] = {0};
-        bool hasParent = rdk_otlp_get_trace_context(ctxKey.c_str(),
-                                                    traceId, parentId, flags);
-
-        if (!hasParent) {
+        if ((traceparent != nullptr) && (traceparent[0] != '\0')) {
+            rdk_otlp_start_child_from_traceparent(traceparent, "comrpc.stub.handle");
+        } else {
             return;
         }
-
-        rdk_otlp_start_child_span(ctxKey.c_str(), "comrpc.stub.handle");
 
         rdk_otlp_set_span_attribute_string("rpc.system", "comrpc");
         rdk_otlp_set_span_attribute_string("rdk.component", "Thunder");
@@ -283,10 +248,12 @@ namespace PluginHost {
 
         std::string ifStr = std::to_string(interfaceId);
         std::string methStr = std::to_string(methodId);
-        std::string parentStr = std::to_string(parentSpanId);
         rdk_otlp_set_span_attribute_string("comrpc.interface_id", ifStr.c_str());
         rdk_otlp_set_span_attribute_string("comrpc.method_id", methStr.c_str());
-        rdk_otlp_set_span_attribute_string("comrpc.parent_span_id", parentStr.c_str());
+        if (parentSpanId != 0) {
+            std::string parentStr = std::to_string(parentSpanId);
+            rdk_otlp_set_span_attribute_string("comrpc.parent_span_id", parentStr.c_str());
+        }
     }
 
     /* static */ void DistributedTracing::OnCOMRPCStubEnd(uint64_t parentSpanId)
