@@ -5289,9 +5289,16 @@ namespace PluginHost {
                     }
                     break;
                 }
-                case Request::INCOMPLETE: 
-                // nothing to do for now, jira ticket created...
-                break;
+                case Request::INCOMPLETE: {
+                    SYSLOG(Logging::Error, (_T("Routing did not complete for request path [%s]"), request->Path.c_str()));
+
+                    Core::ProxyType<Web::Response> response(IFactories::Instance().Response());
+                    response->ErrorCode = Web::STATUS_INTERNAL_SERVER_ERROR;
+                    response->Message = _T("Request routing did not complete.");
+
+                    Submit(response);
+                    break;
+                }
                 default: {
                     // I think we handled every possible situation
                     ASSERT(false);
