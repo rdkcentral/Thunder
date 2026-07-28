@@ -509,6 +509,7 @@ namespace Plugin {
             result.Locator = Locator;
             result.ClassName = ClassName;
             result.StartMode = static_cast<PluginHost::IShell::startmode>(StartMode.Value());
+            result.Resumed = Resumed;
             result.Configuration = Configuration;
 
             if (Communicator.IsSet() == true) {
