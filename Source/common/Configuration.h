@@ -508,6 +508,7 @@ namespace Plugin {
             result.Locator = Locator;
             result.ClassName = ClassName;
             result.StartMode = StartMode;
+            result.Resumed =  Resumed;
             result.Configuration = Configuration;
 
             if (Communicator.IsSet() == true) {
