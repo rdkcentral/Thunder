@@ -24,7 +24,6 @@
 
 #include "Module.h"
 #include <plugins/IVirtualInput.h>
-#include <utility>
 
 namespace Thunder {
 namespace PluginHost {
