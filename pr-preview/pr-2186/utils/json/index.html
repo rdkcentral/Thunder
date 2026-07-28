@@ -3875,12 +3875,13 @@
 </li>
 <li><code>Core::JSON::Float</code></li>
 <li><code>Core::JSON::Double</code></li>
-<li><code>Core::JSON::ArrayType&lt;T&gt;</code> - An array containing objects of type <code>T</code>, where T is either a primative JSON type (e.g. Core::JSON::String) or a Core::JSON::Container object.<ul>
+<li><code>Core::JSON::ArrayType&lt;T&gt;</code> - An array containing objects of type <code>T</code>, where T is either a primitive JSON type (e.g. Core::JSON::String) or a Core::JSON::Container object.<ul>
 <li>Complexity summary:<ul>
 <li><code>Add()</code> (append): $O(1)$</li>
-<li><code>Insert(index, element)</code>: worst-case $O(n)$ (linear walk to <code>index</code>; insertion at located iterator is constant)</li>
-<li><code>Insert(Length(), element)</code>: equivalent to append in the current implementation</li>
-<li><code>Remove(index)</code>: $O(n)$ overall (linear walk to <code>index</code>; erase at located iterator is constant)</li>
+<li><code>Insert(index)</code>: worst-case $O(n)$; inserts a default-constructed element before <code>index</code> and returns a reference to it</li>
+<li><code>Insert(index, element)</code>: worst-case $O(n)$; inserts <code>element</code> before <code>index</code> and returns a reference to the inserted copy</li>
+<li><code>Insert(Length(), ...)</code>: equivalent to append in the current implementation</li>
+<li><code>Remove(index)</code>: $O(n)$ overall; erases the element at <code>index</code> and returns a pointer to the next element (or <code>nullptr</code> if the tail was removed)</li>
 </ul>
 </li>
 <li>For large arrays, avoid repeated index-based mutation (<code>Insert()</code>/<code>Remove()</code>) in tight loops; cumulative cost can become quadratic.</li>
@@ -3892,7 +3893,7 @@
 </li>
 </ul>
 <h4 id="arraytype-mutation-examples">ArrayType mutation examples</h4>
-<p><code>Insert(index, element)</code> inserts <em>before</em> <code>index</code>.</p>
+<p><code>Insert(index)</code> and <code>Insert(index, element)</code> insert <em>before</em> <code>index</code> and return a reference to the inserted element.</p>
 <div class="highlight"><pre><span></span><code><span class="n">Thunder</span><span class="o">::</span><span class="n">Core</span><span class="o">::</span><span class="n">JSON</span><span class="o">::</span><span class="n">ArrayType</span><span class="o">&lt;</span><span class="n">Thunder</span><span class="o">::</span><span class="n">Core</span><span class="o">::</span><span class="n">JSON</span><span class="o">::</span><span class="n">String</span><span class="o">&gt;</span><span class="w"> </span><span class="n">values</span><span class="p">;</span>
 <span class="n">Thunder</span><span class="o">::</span><span class="n">Core</span><span class="o">::</span><span class="n">JSON</span><span class="o">::</span><span class="n">String</span><span class="w"> </span><span class="n">a</span><span class="p">;</span>
 <span class="n">Thunder</span><span class="o">::</span><span class="n">Core</span><span class="o">::</span><span class="n">JSON</span><span class="o">::</span><span class="n">String</span><span class="w"> </span><span class="n">c</span><span class="p">;</span>
@@ -3916,7 +3917,7 @@
 <span class="n">values</span><span class="p">.</span><span class="n">Insert</span><span class="p">(</span><span class="n">values</span><span class="p">.</span><span class="n">Length</span><span class="p">(),</span><span class="w"> </span><span class="n">e</span><span class="p">);</span>
 <span class="c1">// values == [&quot;A&quot;, &quot;B&quot;, &quot;C&quot;, &quot;D&quot;, &quot;E&quot;]</span>
 </code></pre></div>
-<p><code>Remove(index)</code> erases the element at <code>index</code>; later elements shift down.</p>
+<p><code>Remove(index)</code> erases the element at <code>index</code>, returns a pointer to the next element (or <code>nullptr</code> when the tail is removed), and shifts later elements down.</p>
 <p><div class="highlight"><pre><span></span><code><span class="n">Thunder</span><span class="o">::</span><span class="n">Core</span><span class="o">::</span><span class="n">JSON</span><span class="o">::</span><span class="n">ArrayType</span><span class="o">&lt;</span><span class="n">Thunder</span><span class="o">::</span><span class="n">Core</span><span class="o">::</span><span class="n">JSON</span><span class="o">::</span><span class="n">String</span><span class="o">&gt;</span><span class="w"> </span><span class="n">values</span><span class="p">;</span>
 <span class="n">values</span><span class="p">.</span><span class="n">Add</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_T</span><span class="p">(</span><span class="s">&quot;A&quot;</span><span class="p">);</span>
 <span class="n">values</span><span class="p">.</span><span class="n">Add</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_T</span><span class="p">(</span><span class="s">&quot;B&quot;</span><span class="p">);</span>
