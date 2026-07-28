@@ -20,17 +20,19 @@
 #include "Administrator.h"
 #include "IUnknown.h"
 
+#include <atomic>
+
 namespace WPEFramework {
 
 namespace {
     // Stub-side trace callbacks (set by DistributedTracing in WPEFramework process)
-    RPC::ICOMRPCStubTraceCallbacks* g_stubTraceCallbacks = nullptr;
+    std::atomic<RPC::ICOMRPCStubTraceCallbacks*> g_stubTraceCallbacks{nullptr};
 }
 
 namespace RPC {
 
     void SetCOMRPCStubTraceCallbacks(ICOMRPCStubTraceCallbacks* callbacks) {
-        g_stubTraceCallbacks = callbacks;
+        g_stubTraceCallbacks.store(callbacks, std::memory_order_release);
     }
 
     Administrator::Administrator()
@@ -166,22 +168,23 @@ namespace RPC {
             char traceparent[56] = {0};
             message->Parameters().TraceParent(traceparent, sizeof(traceparent));
             const bool hasTraceParent = (traceparent[0] != '\0');
-            if (hasTraceParent) {
-                if (g_stubTraceCallbacks != nullptr) {
-                    g_stubTraceCallbacks->onBegin(
-                        interfaceId,
-                        static_cast<uint8_t>(methodId),
-                        traceparent);
-                }
+            RPC::ICOMRPCStubTraceCallbacks* traceCallbacks = hasTraceParent
+                ? g_stubTraceCallbacks.load(std::memory_order_acquire)
+                : nullptr;
+            if (traceCallbacks != nullptr && traceCallbacks->onBegin != nullptr && traceCallbacks->onEnd != nullptr) {
+                traceCallbacks->onBegin(
+                    interfaceId,
+                    static_cast<uint8_t>(methodId),
+                    traceparent);
+            } else {
+                traceCallbacks = nullptr;
             }
 
             REPORT_DURATION_WARNING({ index->second->Handle(methodId, channel, message); },  WarningReporting::TooLongInvokeRPC, interfaceId, methodId);
 
             // --- Distributed Tracing: finish stub span ---
-            if (hasTraceParent) {
-                if (g_stubTraceCallbacks != nullptr) {
-                    g_stubTraceCallbacks->onEnd();
-                }
+            if (traceCallbacks != nullptr) {
+                traceCallbacks->onEnd();
             }
         } else {
             // Oops this is an unknown interface, Do not think this could happen.

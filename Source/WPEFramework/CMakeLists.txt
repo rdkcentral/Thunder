@@ -78,7 +78,7 @@ endif()
 if(DISTRIBUTED_TRACING)
     find_library(RDK_OTEL_LIB rdk_otlp)
     if(NOT RDK_OTEL_LIB)
-        message(FATAL_ERROR "DISTRIBUTED_TRACING enabled but librdk_otel_instrumentation not found")
+        message(FATAL_ERROR "DISTRIBUTED_TRACING enabled but librdk_otlp not found")
     endif()
 
     target_sources(${TARGET} PRIVATE DistributedTracing.cpp)

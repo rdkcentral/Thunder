@@ -84,6 +84,7 @@ namespace RPC {
             static constexpr uint32_t TRACEPARENT_OFFSET = RESERVED_OFFSET + sizeof(uint64_t);
             static constexpr uint32_t TRACEPARENT_MAX_LENGTH = 56;
             static constexpr uint32_t HEADER_SIZE = TRACEPARENT_OFFSET + TRACEPARENT_MAX_LENGTH;
+            static constexpr uint32_t LEGACY_HEADER_SIZE = METHODID_OFFSET + sizeof(uint8_t);
 
         public:
             Input(const Input&) = delete;
@@ -95,7 +96,7 @@ namespace RPC {
 
         public:
             inline bool IsValid() const {
-                return (_data.Size() >= HEADER_SIZE);
+                return (_data.Size() >= LEGACY_HEADER_SIZE);
             }
             inline void Clear()
             {
@@ -138,6 +139,11 @@ namespace RPC {
             }
             void SetTraceParent(const char traceparent[])
             {
+                // Only write traceparent if the buffer is large enough
+                if (_data.Size() < HEADER_SIZE) {
+                    return;
+                }
+
                 ::memset(&(_data[TRACEPARENT_OFFSET]), 0, TRACEPARENT_MAX_LENGTH);
 
                 if (traceparent != nullptr) {
@@ -147,6 +153,12 @@ namespace RPC {
             void TraceParent(char traceparent[], const uint16_t length) const
             {
                 if ((traceparent == nullptr) || (length == 0)) {
+                    return;
+                }
+
+                // Legacy messages may not contain the traceparent field
+                if (_data.Size() < HEADER_SIZE) {
+                    traceparent[0] = '\0';
                     return;
                 }
 
@@ -160,11 +172,11 @@ namespace RPC {
             }
             inline Frame::Writer Writer()
             {
-                return (Frame::Writer(_data, HEADER_SIZE));
+                return (Frame::Writer(_data, (_data.Size() >= HEADER_SIZE) ? HEADER_SIZE : LEGACY_HEADER_SIZE));
             }
             inline const Frame::Reader Reader() const
             {
-                return (Frame::Reader(_data, HEADER_SIZE));
+                return (Frame::Reader(_data, (_data.Size() >= HEADER_SIZE) ? HEADER_SIZE : LEGACY_HEADER_SIZE));
             }
             uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, const uint32_t offset) const
             {
