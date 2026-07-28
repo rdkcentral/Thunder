@@ -52,6 +52,26 @@ target_link_libraries(${TARGET}
           CompileSettingsDebug::CompileSettingsDebug
         )
 
+if(DISTRIBUTED_TRACING)
+    target_compile_definitions(${TARGET} PRIVATE THUNDER_DISTRIBUTED_TRACING)
+    find_library(RDK_OTLP_LIB rdk_otlp
+                 PATHS ${CMAKE_SYSROOT}/usr/lib
+                 NO_DEFAULT_PATH)
+    if(RDK_OTLP_LIB)
+        target_link_libraries(${TARGET} PRIVATE ${RDK_OTLP_LIB})
+    else()
+        message(FATAL_ERROR "DISTRIBUTED_TRACING enabled but librdk_otlp not found.")
+    endif()
+    find_path(RDK_OTLP_INCLUDE_DIR rdk_otlp_instrumentation.h
+              PATHS ${CMAKE_SYSROOT}/usr/include
+              NO_DEFAULT_PATH)
+    if(RDK_OTLP_INCLUDE_DIR)
+        target_include_directories(${TARGET} PRIVATE ${RDK_OTLP_INCLUDE_DIR})
+    else()
+        message(FATAL_ERROR "DISTRIBUTED_TRACING enabled but rdk_otlp_instrumentation.h not found.")
+    endif()
+endif()
+
 if (WARNING_REPORTING)
 target_compile_definitions(${TARGET}
 PUBLIC
