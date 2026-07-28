@@ -53,7 +53,7 @@ target_link_libraries(${TARGET}
         )
 
 if(DISTRIBUTED_TRACING)
-        find_library(RDK_OTEL_LIB rdk_otel_instrumentation)
+        find_library(RDK_OTEL_LIB rdk_otlp)
         if(NOT RDK_OTEL_LIB)
                 message(FATAL_ERROR "DISTRIBUTED_TRACING enabled but librdk_otel_instrumentation not found")
         endif()
