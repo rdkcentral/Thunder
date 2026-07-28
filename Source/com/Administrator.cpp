@@ -20,8 +20,22 @@
 #include "Administrator.h"
 #include "IUnknown.h"
 
+#include <atomic>
+
 namespace WPEFramework {
+
+namespace {
+    // Stub-side trace callbacks — set by DistributedTracing in the WPEFramework process.
+    // Stored as an atomic pointer so reads on COM-RPC worker threads are race-free.
+    static std::atomic<RPC::ICOMRPCStubTraceCallbacks*> g_stubTraceCallbacks{nullptr};
+} // anonymous namespace
+
 namespace RPC {
+
+    void SetCOMRPCStubTraceCallbacks(ICOMRPCStubTraceCallbacks* callbacks)
+    {
+        g_stubTraceCallbacks.store(callbacks, std::memory_order_release);
+    }
 
     Administrator::Administrator()
         : _adminLock()
@@ -151,7 +165,28 @@ namespace RPC {
 
         if (index != _stubs.end()) {
             uint32_t methodId(message->Parameters().MethodId());
+
+            // -----------------------------------------------------------------
+            // Distributed Tracing: read traceparent from message header and
+            // fire stub-side callbacks so DistributedTracing can start a child
+            // span linked to the caller's trace.
+            // -----------------------------------------------------------------
+            char traceparent[56] = {};
+            message->Parameters().TraceParent(traceparent, sizeof(traceparent));
+            const bool hasTraceparent = (traceparent[0] != '\0');
+
+            ICOMRPCStubTraceCallbacks* cbs =
+                g_stubTraceCallbacks.load(std::memory_order_acquire);
+
+            if (hasTraceparent && (cbs != nullptr)) {
+                cbs->onBegin(interfaceId, static_cast<uint8_t>(methodId), traceparent);
+            }
+
             REPORT_DURATION_WARNING({ index->second->Handle(methodId, channel, message); },  WarningReporting::TooLongInvokeRPC, interfaceId, methodId);
+
+            if (hasTraceparent && (cbs != nullptr)) {
+                cbs->onEnd(interfaceId, static_cast<uint8_t>(methodId));
+            }
         } else {
             // Oops this is an unknown interface, Do not think this could happen.
             TRACE_L1("Unknown interface. %d", interfaceId);
