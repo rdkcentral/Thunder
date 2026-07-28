@@ -185,7 +185,7 @@ namespace Plugin {
                     if (error.IsSet() == true) {
                         SYSLOG(Logging::ParsingError, (_T("Parsing failed with %s"), ErrorDisplayMessage(error.Value()).c_str()));
                     }
-                    *this = settings;
+                    *this = std::move(settings);
 
                     if (Locator.Value().empty() == true) {
                         Locator = info->Locator();
