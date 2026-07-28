@@ -107,7 +107,7 @@ namespace Plugin {
             };
 
         public:
-            Broadcaster(Probe& parent, const Core::NodeId address,  const uint8_t timeToLive)
+            Broadcaster(Probe& parent, const Core::NodeId& address,  const uint8_t timeToLive)
                 : Core::SocketDatagram(false, address.AnyInterface(), address, 1024, 1024)
                 , _parent(parent)
                 , _adminLock()
