@@ -3377,6 +3377,23 @@ namespace Core {
 
             }
 
+            inline ELEMENT& Insert(const uint32_t index, ELEMENT&& element)
+            {
+                ASSERT(index <= Length());
+
+                typename std::list<ELEMENT>::iterator locator = _data.begin();
+                uint32_t skip = index;
+
+                while (skip != 0) {
+                    ++locator;
+                    --skip;
+                }
+
+                locator = _data.insert(locator, std::move(element));
+
+                return (*locator);
+            }
+
             inline ELEMENT* Remove(const uint32_t index)
             {
                 ASSERT(index < Length());
