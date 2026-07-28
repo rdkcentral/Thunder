@@ -21,6 +21,13 @@
 #include "Administrator.h"
 #include "Communicator.h"
 
+#ifdef THUNDER_DISTRIBUTED_TRACING
+// librdk_otlp.so is installed on the device at boot — hard-link is safe.
+// libWPEFrameworkCOM.so is loaded by both WPEFramework and WPEProcess;
+// both processes can find librdk_otlp.so in the shared library path.
+#include <rdk_otlp_instrumentation.h>
+#endif // THUNDER_DISTRIBUTED_TRACING
+
 namespace WPEFramework {
 namespace ProxyStub {
     // -------------------------------------------------------------------------------------------
@@ -98,6 +105,14 @@ namespace ProxyStub {
     uint32_t UnknownProxy::Invoke(Core::ProxyType<RPC::InvokeMessage>& message, const uint32_t waitTime) const
     {
         uint32_t result = Core::ERROR_UNAVAILABLE | COM_ERROR;
+
+#ifdef THUNDER_DISTRIBUTED_TRACING
+        // Stamp the active W3C traceparent into the outgoing COM-RPC message header
+        // so the stub side (Administrator.cpp) can create a child span linked to the
+        // correct parent trace.  rdk_otlp_get_current_traceparent() reads TLS — valid
+        // here because we are on the caller's thread (the proxy runs inline).
+        message->Parameters().SetTraceParent(rdk_otlp_get_current_traceparent());
+#endif // THUNDER_DISTRIBUTED_TRACING
 
         _adminLock.Lock();
 	    Core::ProxyType<Core::IPCChannel> channel (_channel);
