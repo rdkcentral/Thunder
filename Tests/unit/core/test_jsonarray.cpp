@@ -33,6 +33,24 @@ namespace Core {
 
     using JsonArray = ::Thunder::Core::JSON::ArrayType<::Thunder::Core::JSON::String>;
 
+    TEST(JSONARRAY, InsertEmptyAtHead)
+    {
+        JsonArray array;
+        std::string serialized;
+
+        array.Add() = _T("middle");
+        array.Add() = _T("tail");
+        array.Insert(0) = _T("head");
+
+        EXPECT_EQ(3u, array.Length());
+        EXPECT_STREQ("head", array[0].Value().c_str());
+        EXPECT_STREQ("middle", array[1].Value().c_str());
+        EXPECT_STREQ("tail", array[2].Value().c_str());
+
+        array.ToString(serialized);
+        EXPECT_EQ(R"(["head","middle","tail"])", serialized);
+    }
+
     TEST(JSONARRAY, InsertAtHead)
     {
         JsonArray array;
@@ -82,6 +100,38 @@ namespace Core {
         EXPECT_STREQ("left", array[0].Value().c_str());
         EXPECT_STREQ("center", array[1].Value().c_str());
         EXPECT_STREQ("right", array[2].Value().c_str());
+    }
+
+    TEST(JSONARRAY, InsertEmptyMidAndSerialize)
+    {
+        JsonArray array;
+        std::string serialized;
+
+        array.Add() = _T("A");
+        array.Add() = _T("C");
+        array.Insert(1) = _T("B");
+
+        EXPECT_EQ(3u, array.Length());
+        EXPECT_STREQ("B", array[1].Value().c_str());
+
+        array.ToString(serialized);
+        EXPECT_EQ(R"(["A","B","C"])", serialized);
+    }
+
+    TEST(JSONARRAY, InsertEmptyAtTailAndSerialize)
+    {
+        JsonArray array;
+        std::string serialized;
+
+        array.Add() = _T("X");
+        array.Add() = _T("Y");
+        array.Insert(array.Length()) = _T("Z");
+
+        EXPECT_EQ(3u, array.Length());
+        EXPECT_STREQ("Z", array[2].Value().c_str());
+
+        array.ToString(serialized);
+        EXPECT_EQ(R"(["X","Y","Z"])", serialized);
     }
 
     TEST(JSONARRAY, AppendAndCheckLength)
@@ -159,6 +209,29 @@ namespace Core {
 
         EXPECT_EQ(3u, array.Length());
         EXPECT_EQ(R"(["beta","gamma","delta"])", serialized);
+    }
+
+    TEST(JSONARRAY, RemoveReturnsNextElement)
+    {
+        JsonArray array;
+        std::string serialized;
+
+        array.Add() = _T("A");
+        array.Add() = _T("B");
+        array.Add() = _T("C");
+
+        ::Thunder::Core::JSON::String* next = array.Remove(0);
+        ASSERT_NE(nullptr, next);
+        EXPECT_STREQ("B", next->Value().c_str());
+
+        next = array.Remove(1);
+        EXPECT_EQ(nullptr, next);
+
+        EXPECT_EQ(1u, array.Length());
+        EXPECT_STREQ("B", array[0].Value().c_str());
+
+        array.ToString(serialized);
+        EXPECT_EQ(R"(["B"])", serialized);
     }
 
     TEST(JSONARRAY, RemoveAllElements)

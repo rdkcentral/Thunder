@@ -95,12 +95,13 @@ The following JSON data type representations are available:
         * `Core::JSON::OctSInt32` - represent a base-8 integer of width uint32_t
 * `Core::JSON::Float`
 * `Core::JSON::Double`
-* `Core::JSON::ArrayType<T>` - An array containing objects of type `T`, where T is either a primative JSON type (e.g. Core::JSON::String) or a Core::JSON::Container object.
+* `Core::JSON::ArrayType<T>` - An array containing objects of type `T`, where T is either a primitive JSON type (e.g. Core::JSON::String) or a Core::JSON::Container object.
     * Complexity summary:
         * `Add()` (append): $O(1)$
-        * `Insert(index, element)`: worst-case $O(n)$ (linear walk to `index`; insertion at located iterator is constant)
-        * `Insert(Length(), element)`: equivalent to append in the current implementation
-        * `Remove(index)`: $O(n)$ overall (linear walk to `index`; erase at located iterator is constant)
+        * `Insert(index)`: worst-case $O(n)$; inserts a default-constructed element before `index` and returns a reference to it
+        * `Insert(index, element)`: worst-case $O(n)$; inserts `element` before `index` and returns a reference to the inserted copy
+        * `Insert(Length(), ...)`: equivalent to append in the current implementation
+        * `Remove(index)`: $O(n)$ overall; erases the element at `index` and returns a pointer to the next element (or `nullptr` if the tail was removed)
     * For large arrays, avoid repeated index-based mutation (`Insert()`/`Remove()`) in tight loops; cumulative cost can become quadratic.
     * `Insert(Length(), element)` is functionally equivalent to append; use `Add()` when append intent should be explicit.
     * Out-of-range access for `operator[]`, `Insert()`, and `Remove()` follows the same debug-assert / release-undefined contract.
@@ -109,7 +110,7 @@ The following JSON data type representations are available:
 
 #### ArrayType mutation examples
 
-`Insert(index, element)` inserts *before* `index`.
+`Insert(index)` and `Insert(index, element)` insert *before* `index` and return a reference to the inserted element.
 
 ```cpp
 Thunder::Core::JSON::ArrayType<Thunder::Core::JSON::String> values;
@@ -136,7 +137,7 @@ values.Insert(values.Length(), e);
 // values == ["A", "B", "C", "D", "E"]
 ```
 
-`Remove(index)` erases the element at `index`; later elements shift down.
+`Remove(index)` erases the element at `index`, returns a pointer to the next element (or `nullptr` when the tail is removed), and shifts later elements down.
 
 ```cpp
 Thunder::Core::JSON::ArrayType<Thunder::Core::JSON::String> values;

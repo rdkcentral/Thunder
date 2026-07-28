@@ -3341,12 +3341,13 @@ namespace Core {
                 return (_data.back());
             }
 
-            void Insert(uint32_t index, const ELEMENT& element)
+            inline ELEMENT& Insert(const uint32_t index)
             {
                 ASSERT(index <= Length());
 
                 if (index == Length()) {
-                    Add(element);
+                    _data.push_back(ELEMENT());
+                    return (_data.back());
                 }
                 else {
                     uint32_t skip = index;
@@ -3358,11 +3359,32 @@ namespace Core {
                     }
 
                     ASSERT(locator != _data.end());
-                    _data.insert(locator, element);
+                    return (*(_data.insert(locator, ELEMENT())));
                 }
             }
 
-            void Remove(uint32_t index)
+            inline ELEMENT& Insert(const uint32_t index, const ELEMENT& element)
+            {
+                ASSERT(index <= Length());
+
+                if (index == Length()) {
+                    _data.push_back(element);
+                    return (_data.back());
+                } else {
+                    uint32_t skip = index;
+                    typename std::list<ELEMENT>::iterator locator = _data.begin();
+
+                    while (skip != 0) {
+                        locator++;
+                        skip--;
+                    }
+
+                    ASSERT(locator != _data.end());
+                    return (*(_data.insert(locator, element)));
+                }
+            }
+
+            inline ELEMENT* Remove(const uint32_t index)
             {
                 ASSERT(index < Length());
 
@@ -3375,7 +3397,9 @@ namespace Core {
                 }
 
                 ASSERT(locator != _data.end());
-                _data.erase(locator);
+                typename std::list<ELEMENT>::iterator next = _data.erase(locator);
+
+                return ((next != _data.end()) ? &(*next) : nullptr);
             }
 
             ELEMENT& operator[](const uint32_t index)
