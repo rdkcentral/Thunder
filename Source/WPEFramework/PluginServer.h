@@ -26,6 +26,9 @@
 #include "IRemoteInstantiation.h"
 #include "WarningReportingCategories.h"
 #include "PostMortem.h"
+#ifdef THUNDER_DISTRIBUTED_TRACING
+#include "DistributedTracing.h"
+#endif
 #include <atomic>
 
 #ifdef PROCESSCONTAINERS_ENABLED
@@ -1514,7 +1517,50 @@ namespace PluginHost {
                     }
                     else {
                         string output;
+#ifdef THUNDER_DISTRIBUTED_TRACING
+                        // Distributed tracing — JSON-RPC path.
+                        //
+                        // The W3C traceparent was injected into params as "_tp" by
+                        // JSONRPCLink on the caller side.  We extract it here and
+                        // strip it before the handler sees it (zero plugin changes).
+                        //
+                        // We do NOT read TLS here: this runs on Thunder's thread pool,
+                        // not the caller's thread, so TLS has no active span.
+                        string _dtParams(message.Parameters.Value());
+                        char   _dtTraceparent[64] = {};
+                        {
+                            // Look for "_tp":"<value>" and remove it from params.
+                            const string tpKey = "\"_tp\"";
+                            size_t keyPos = _dtParams.find(tpKey);
+                            if (keyPos != string::npos) {
+                                size_t valStart = _dtParams.find('"', keyPos + tpKey.size() + 1); // skip ':'
+                                if (valStart != string::npos) {
+                                    ++valStart;
+                                    size_t valEnd = _dtParams.find('"', valStart);
+                                    if (valEnd != string::npos) {
+                                        string tpVal = _dtParams.substr(valStart, valEnd - valStart);
+                                        if (tpVal.size() < sizeof(_dtTraceparent)) {
+                                            ::memcpy(_dtTraceparent, tpVal.c_str(), tpVal.size());
+                                        }
+                                        // Strip the _tp key-value pair (and adjacent comma if any).
+                                        size_t eraseFrom = keyPos;
+                                        size_t eraseTo   = valEnd + 1; // include closing '"'
+                                        if (eraseFrom > 0 && _dtParams[eraseFrom-1] == ',') --eraseFrom;
+                                        else if (eraseTo < _dtParams.size() && _dtParams[eraseTo] == ',') ++eraseTo;
+                                        _dtParams.erase(eraseFrom, eraseTo - eraseFrom);
+                                    }
+                                }
+                            }
+                        }
+                        const uint64_t _dtSpanId =
+                            PluginHost::DistributedTracing::Instance().OnInvokeBegin(
+                                PluginHost::Service::Callsign(), method, channelId,
+                                _dtTraceparent[0] != '\0' ? _dtTraceparent : nullptr);
+                        result = _jsonrpc->Invoke(channelId, message.Id.Value(), token, method, _dtParams, output);
+                        PluginHost::DistributedTracing::Instance().OnInvokeEnd(_dtSpanId, result);
+#else
                         result = _jsonrpc->Invoke(channelId, message.Id.Value(), token, method, message.Parameters.Value(), output);
+#endif
 
                         if (response.IsValid() == true) {
                             if (result == static_cast<uint32_t>(~0)) {
