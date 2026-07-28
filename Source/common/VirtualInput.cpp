@@ -790,8 +790,7 @@ POP_WARNING()
         _service.Visit(
             [ &container ](const VirtualInputChannelServer::Client& element)
             {
-                string result = element.Extension().Name();
-                container.push_back(result);
+                container.push_back(element.Extension().Name());
             }
         );
 
