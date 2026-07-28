@@ -69,6 +69,24 @@ namespace RPC {
         };
 
         class Input {
+        private:
+            // Fixed header layout (backward-compatible):
+            //   [0 .. sizeof(instance_id)-1]          implementation
+            //   [sizeof(instance_id) .. +3]            interfaceId  (uint32_t)
+            //   [sizeof(instance_id)+4]                methodId     (uint8_t)
+            //   --- legacy header ends here (LEGACY_HEADER_SIZE = 13 bytes on 64-bit) ---
+            //   [LEGACY_HEADER_SIZE .. +55]            traceparent  (char[56], zero-filled)
+            //
+            // IsValid() still accepts the legacy 13-byte minimum so that old senders
+            // work correctly; TraceParent() returns an empty string for short messages.
+            static constexpr uint32_t IMPLEMENTATION_OFFSET = 0;
+            static constexpr uint32_t INTERFACEID_OFFSET    = sizeof(Core::instance_id);
+            static constexpr uint32_t METHODID_OFFSET       = INTERFACEID_OFFSET + sizeof(uint32_t);
+            static constexpr uint32_t LEGACY_HEADER_SIZE    = METHODID_OFFSET + sizeof(uint8_t);
+            static constexpr uint32_t TRACEPARENT_OFFSET    = LEGACY_HEADER_SIZE;
+            static constexpr uint32_t TRACEPARENT_MAX_LEN   = 56; // "00-<32>-<16>-01\0" fits in 56
+            static constexpr uint32_t FULL_HEADER_SIZE      = TRACEPARENT_OFFSET + TRACEPARENT_MAX_LEN;
+
         public:
             Input(const Input&) = delete;
             Input& operator=(const Input&) = delete;
@@ -79,7 +97,8 @@ namespace RPC {
 
         public:
             inline bool IsValid() const {
-                return (_data.Size() >= (sizeof(Core::instance_id) + sizeof(uint32_t) + sizeof(uint8_t)));
+                // Accept both legacy (13-byte) and extended (69-byte) messages.
+                return (_data.Size() >= LEGACY_HEADER_SIZE);
             }
             inline void Clear()
             {
@@ -91,12 +110,15 @@ namespace RPC {
                 frameWriter.Number(implementation);
                 frameWriter.Number(interfaceId);
                 frameWriter.Number(methodId);
+                // Reserve traceparent field, zero-filled (no traceparent by default).
+                _data.Size(FULL_HEADER_SIZE);
+                ::memset(&(_data[TRACEPARENT_OFFSET]), 0, TRACEPARENT_MAX_LEN);
             }
             Core::instance_id Implementation()
             {
                 Core::instance_id result = 0;
 
-                _data.GetNumber<Core::instance_id>(0, result);
+                _data.GetNumber<Core::instance_id>(IMPLEMENTATION_OFFSET, result);
 
                 return (result);
             }
@@ -104,7 +126,7 @@ namespace RPC {
             {
                 uint32_t result = 0;
 
-                _data.GetNumber<uint32_t>(sizeof(Core::instance_id), result);
+                _data.GetNumber<uint32_t>(INTERFACEID_OFFSET, result);
 
                 return (result);
             }
@@ -112,9 +134,40 @@ namespace RPC {
             {
                 uint8_t result = 0;
 
-                _data.GetNumber(sizeof(Core::instance_id) + sizeof(uint32_t), result);
+                _data.GetNumber(METHODID_OFFSET, result);
 
                 return (result);
+            }
+            // Returns the W3C traceparent string stamped into the header, or empty if
+            // the message was produced by a legacy sender with a short header.
+            void TraceParent(char* traceparent, const uint16_t length) const
+            {
+                if ((traceparent == nullptr) || (length == 0)) {
+                    return;
+                }
+                traceparent[0] = '\0';
+                if (_data.Size() < FULL_HEADER_SIZE) {
+                    // Legacy short message — no traceparent field present.
+                    return;
+                }
+                const uint16_t copyLen = (length < TRACEPARENT_MAX_LEN ? length : TRACEPARENT_MAX_LEN);
+                ::memcpy(traceparent, &(_data[TRACEPARENT_OFFSET]), copyLen);
+                traceparent[copyLen - 1] = '\0';
+            }
+            // Stamps a W3C traceparent string into the header. Pass nullptr to clear.
+            void SetTraceParent(const char* traceparent)
+            {
+                if (_data.Size() < FULL_HEADER_SIZE) {
+                    // Extend the buffer if Set() was not called yet (shouldn't happen).
+                    _data.Size(FULL_HEADER_SIZE);
+                }
+                if ((traceparent == nullptr) || (traceparent[0] == '\0')) {
+                    ::memset(&(_data[TRACEPARENT_OFFSET]), 0, TRACEPARENT_MAX_LEN);
+                } else {
+                    ::memset(&(_data[TRACEPARENT_OFFSET]), 0, TRACEPARENT_MAX_LEN);
+                    ::strncpy(reinterpret_cast<char*>(&(_data[TRACEPARENT_OFFSET])),
+                              traceparent, TRACEPARENT_MAX_LEN - 1);
+                }
             }
             uint32_t Length() const
             {
@@ -122,11 +175,11 @@ namespace RPC {
             }
             inline Frame::Writer Writer()
             {
-                return (Frame::Writer(_data, (sizeof(Core::instance_id) + sizeof(uint32_t) + sizeof(uint8_t))));
+                return (Frame::Writer(_data, FULL_HEADER_SIZE));
             }
             inline const Frame::Reader Reader() const
             {
-                return (Frame::Reader(_data, (sizeof(Core::instance_id) + sizeof(uint32_t) + sizeof(uint8_t))));
+                return (Frame::Reader(_data, (_data.Size() >= FULL_HEADER_SIZE ? FULL_HEADER_SIZE : LEGACY_HEADER_SIZE)));
             }
             uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, const uint32_t offset) const
             {
