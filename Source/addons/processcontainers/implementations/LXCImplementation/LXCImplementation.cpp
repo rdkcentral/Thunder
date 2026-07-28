@@ -247,12 +247,10 @@ namespace ProcessContainers {
 
         // Not sure if "read < sizeof(buffer)" is really needed, but it is checked in official lxc tools sources
         if ((read > 0) && (read < sizeof(buffer))) {
-            uint64_t allocated;
-            int32_t scanned = sscanf(buffer, "%llu", &allocated);
-
-            result->Allocated(allocated);
-
-            if (scanned != 1) {
+            uint64_t allocated {};
+            if (::sscanf(buffer, "%llu", &allocated) == 1) {
+                result->Allocated(allocated);
+            } else {
                 TRACE(Trace::Warning, (_T("Could not read allocated memory of LXC container")));
             }
         }
