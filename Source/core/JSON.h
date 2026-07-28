@@ -3345,55 +3345,48 @@ namespace Core {
             {
                 ASSERT(index <= Length());
 
-                if (index == Length()) {
-                    _data.push_back(ELEMENT());
-                    return (_data.back());
-                }
-                else {
-                    uint32_t skip = index;
-                    typename std::list<ELEMENT>::iterator locator = _data.begin();
+                typename std::list<ELEMENT>::iterator locator = _data.begin();
+                uint32_t skip = index;
 
-                    while (skip != 0) {
-                        locator++;
-                        skip--;
-                    }
-
-                    ASSERT(locator != _data.end());
-                    return (*(_data.insert(locator, ELEMENT())));
+                while (skip != 0) {
+                    ++locator;
+                    --skip;
                 }
+
+                locator = _data.insert(locator, ELEMENT());
+
+                return (*locator);
+
             }
 
             inline ELEMENT& Insert(const uint32_t index, const ELEMENT& element)
             {
                 ASSERT(index <= Length());
 
-                if (index == Length()) {
-                    _data.push_back(element);
-                    return (_data.back());
-                } else {
-                    uint32_t skip = index;
-                    typename std::list<ELEMENT>::iterator locator = _data.begin();
+                typename std::list<ELEMENT>::iterator locator = _data.begin();
+                uint32_t skip = index;
 
-                    while (skip != 0) {
-                        locator++;
-                        skip--;
-                    }
-
-                    ASSERT(locator != _data.end());
-                    return (*(_data.insert(locator, element)));
+                while (skip != 0) {
+                    ++locator;
+                    --skip;
                 }
+
+                locator = _data.insert(locator, element);
+
+                return (*locator);
+
             }
 
             inline ELEMENT* Remove(const uint32_t index)
             {
                 ASSERT(index < Length());
 
-                uint32_t skip = index;
                 typename std::list<ELEMENT>::iterator locator = _data.begin();
+                uint32_t skip = index;
 
                 while (skip != 0) {
-                    locator++;
-                    skip--;
+                    ++locator;
+                    --skip;
                 }
 
                 ASSERT(locator != _data.end());
