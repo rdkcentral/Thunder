@@ -24,6 +24,7 @@
 
 #include "Module.h"
 #include <plugins/IVirtualInput.h>
+#include <utility>
 
 namespace Thunder {
 namespace PluginHost {
@@ -310,8 +311,8 @@ POP_WARNING()
             {
                 _consumers.push_back(consumer);
             }
-            Iterator(const std::list<string>&& consumer)
-                : _consumers(consumer)
+            Iterator(std::list<string>&& consumer)
+                : _consumers(std::move(consumer))
                 , _index()
                 , _position(~0)
             {
