@@ -1236,9 +1236,7 @@ namespace PluginHost {
     
                 _configLock.Lock();
                 if (selectedNode.IsValid() == true) {
-                    _accessor = selectedNode;
-                    result = _accessor;
-                    
+                    _accessor = std::move(selectedNode);
                 }
             } else if (result.IsAnyInterface() == true) {
                 // TODO: We should iterate here over all interfaces to find a suitable IPv4 address or IPv6.
@@ -1246,11 +1244,11 @@ namespace PluginHost {
 
                 _configLock.Lock();
                 if (selectedNode.IsValid() == true) {
-                    _accessor = selectedNode;
+                    _accessor = std::move(selectedNode);
                 }
             } else {
                 _configLock.Lock();
-                _accessor = result;
+                _accessor = std::move(result);
             }
             string hostaddress;
             if (_accessor.IsValid() == false) {
