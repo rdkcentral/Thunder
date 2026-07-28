@@ -423,7 +423,7 @@ namespace Core {
 #else
         int fd;
         TCHAR buffer[128];
-        int VmSize = 0;
+        uint64_t virtualPages {};
 
         snprintf(buffer, sizeof(buffer), "/proc/%d/statm", _pid);
         if ((fd = open(buffer, O_RDONLY)) != -1) {
@@ -431,8 +431,9 @@ namespace Core {
             if ((readAmount = read(fd, buffer, sizeof(buffer))) > 0) {
                 ssize_t nulIndex = std::min(readAmount, static_cast<ssize_t>(sizeof(buffer) - 1));
                 buffer[nulIndex] = '\0';
-                sscanf(buffer, "%d", &VmSize);
-                result = VmSize * PageSize;
+                if (::sscanf(buffer, "%" SCNu64, &virtualPages) == 1) {
+                    result = virtualPages * static_cast<uint64_t>(PageSize);
+                }
             }
             close(fd);
         }
@@ -454,7 +455,8 @@ namespace Core {
 #else
         int fd;
         TCHAR buffer[128];
-        int VmRSS = 0;
+        uint64_t virtualPages {};
+        uint64_t residentPages {};
 
         snprintf(buffer, sizeof(buffer), "/proc/%d/statm", _pid);
         if ((fd = open(buffer, O_RDONLY)) != -1) {
@@ -462,8 +464,9 @@ namespace Core {
             if ((readAmount = read(fd, buffer, sizeof(buffer))) > 0) {
                 ssize_t nulIndex = std::min(readAmount, static_cast<ssize_t>(sizeof(buffer) - 1));
                 buffer[nulIndex] = '\0';
-                sscanf(buffer, "%*d %d", &VmRSS);
-                result = VmRSS * PageSize;
+                if (::sscanf(buffer, "%" SCNu64 " %" SCNu64, &virtualPages, &residentPages) == 2) {
+                    result = residentPages * static_cast<uint64_t>(PageSize);
+                }
             }
             close(fd);
         }
@@ -485,7 +488,9 @@ namespace Core {
 #else
         int fd;
         TCHAR buffer[128];
-        int Share = 0;
+        uint64_t virtualPages {};
+        uint64_t residentPages {};
+        uint64_t sharedPages {};
 
         snprintf(buffer, sizeof(buffer), "/proc/%d/statm", _pid);
         if ((fd = open(buffer, O_RDONLY)) != -1) {
@@ -493,8 +498,9 @@ namespace Core {
             if ((readAmount = read(fd, buffer, sizeof(buffer))) > 0) {
                 ssize_t nulIndex = std::min(readAmount, static_cast<ssize_t>(sizeof(buffer) - 1));
                 buffer[nulIndex] = '\0';
-                sscanf(buffer, "%*d %*d %d", &Share);
-                result = Share * PageSize;
+                if (::sscanf(buffer, "%" SCNu64 " %" SCNu64 " %" SCNu64, &virtualPages, &residentPages, &sharedPages) == 3) {
+                    result = sharedPages * static_cast<uint64_t>(PageSize);
+                }
             }
             close(fd);
         }
