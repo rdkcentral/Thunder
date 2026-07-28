@@ -292,7 +292,7 @@ namespace RPC {
 
             _adminLock.Unlock();
         }
-        bool UnregisterUnknownProxy(const ProxyStub::UnknownProxy& proxy, uintptr_t channelId);
+        void UnregisterUnknownProxy(const ProxyStub::UnknownProxy& proxy, uintptr_t channelId);
 
    private:
         // ----------------------------------------------------------------------------------------------------
@@ -558,6 +558,30 @@ namespace RPC {
         Dispatcher _dispatcher;
         Core::ThreadPool _threadPoolEngine;
     };
+
+    // -----------------------------------------------------------------------
+    // COM-RPC Distributed Tracing API
+    // -----------------------------------------------------------------------
+    //
+    // Callback interface registered by DistributedTracing (WPEFramework process).
+    // Administrator::Invoke() calls these on the stub side when an incoming
+    // COM-RPC message carries a non-empty traceparent.
+    //
+    // Implementations must be fully thread-safe — callbacks fire on COM-RPC
+    // worker threads.
+    //
+    struct EXTERNAL ICOMRPCStubTraceCallbacks {
+        // Called just BEFORE the stub handles the method.
+        // traceparent: W3C traceparent string from the incoming message.
+        void (*onBegin)(uint32_t interfaceId, uint8_t methodId, const char* traceparent);
+
+        // Called just AFTER the stub has finished handling the method.
+        void (*onEnd)(uint32_t interfaceId, uint8_t methodId);
+    };
+
+    // Register/unregister stub-side trace callbacks.
+    // Thread-safe. Passing nullptr clears the current registration.
+    EXTERNAL void SetCOMRPCStubTraceCallbacks(ICOMRPCStubTraceCallbacks* callbacks);
 }
 
 } // namespace RPC
