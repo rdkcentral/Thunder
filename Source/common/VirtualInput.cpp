@@ -593,7 +593,7 @@ POP_WARNING()
     {
         memset(&_uidev, 0, sizeof(_uidev));
 
-        strncpy(_uidev.name, inputName.c_str(), UINPUT_MAX_NAME_SIZE);
+        ::snprintf(_uidev.name, sizeof(_uidev.name), "%s", inputName.c_str());
         _uidev.id.bustype = BUS_USB;
         _uidev.id.vendor = 0x1234;
         _uidev.id.product = 0xfedc;
