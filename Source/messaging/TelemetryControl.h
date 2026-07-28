@@ -41,7 +41,7 @@ namespace Telemetry {
 
     public:
         inline static void Announce() {
-            IsEnabled();
+            Enable(true);
         }
 
         inline static bool IsEnabled() {
