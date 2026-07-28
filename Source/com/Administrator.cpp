@@ -23,22 +23,11 @@
 namespace WPEFramework {
 
 namespace {
-    // Thread-local span ID for distributed tracing context propagation
-    thread_local uint64_t g_currentTraceSpanId = 0;
-
     // Stub-side trace callbacks (set by DistributedTracing in WPEFramework process)
     RPC::ICOMRPCStubTraceCallbacks* g_stubTraceCallbacks = nullptr;
 }
 
 namespace RPC {
-
-    void SetCurrentTraceSpanId(uint64_t spanId) {
-        g_currentTraceSpanId = spanId;
-    }
-
-    uint64_t GetCurrentTraceSpanId() {
-        return g_currentTraceSpanId;
-    }
 
     void SetCOMRPCStubTraceCallbacks(ICOMRPCStubTraceCallbacks* callbacks) {
         g_stubTraceCallbacks = callbacks;
@@ -173,16 +162,13 @@ namespace RPC {
         if (index != _stubs.end()) {
             uint32_t methodId(message->Parameters().MethodId());
 
-            // --- Distributed Tracing: propagate active trace state from traceparent to thread-local ---
+            // --- Distributed Tracing: extract traceparent and invoke stub callbacks ---
             char traceparent[56] = {0};
             message->Parameters().TraceParent(traceparent, sizeof(traceparent));
             const bool hasTraceParent = (traceparent[0] != '\0');
-            uint64_t previousSpanId = g_currentTraceSpanId;
             if (hasTraceParent) {
-                g_currentTraceSpanId = 1;
                 if (g_stubTraceCallbacks != nullptr) {
                     g_stubTraceCallbacks->onBegin(
-                        0,
                         interfaceId,
                         static_cast<uint8_t>(methodId),
                         traceparent);
@@ -191,12 +177,11 @@ namespace RPC {
 
             REPORT_DURATION_WARNING({ index->second->Handle(methodId, channel, message); },  WarningReporting::TooLongInvokeRPC, interfaceId, methodId);
 
-            // --- Distributed Tracing: restore previous active trace state ---
+            // --- Distributed Tracing: finish stub span ---
             if (hasTraceParent) {
                 if (g_stubTraceCallbacks != nullptr) {
-                    g_stubTraceCallbacks->onEnd(0);
+                    g_stubTraceCallbacks->onEnd();
                 }
-                g_currentTraceSpanId = previousSpanId;
             }
         } else {
             // Oops this is an unknown interface, Do not think this could happen.

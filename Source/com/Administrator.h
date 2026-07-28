@@ -563,20 +563,12 @@ namespace RPC {
     // Distributed Tracing Thread-Local API
     // ----------------------------------------------------------------------------------------------------
 
-    // Thread-local span ID for distributed tracing.
-    // Set by DistributedTracing in the WPEFramework process before a COM-RPC proxy call,
-    // read by UnknownProxy::Invoke() to stamp it into the outgoing message.
-    // On the stub side, Administrator::Invoke() reads it from the message and sets it
-    // so chained COM-RPC calls from the stub also carry the trace context.
-    EXTERNAL void SetCurrentTraceSpanId(uint64_t spanId);
-    EXTERNAL uint64_t GetCurrentTraceSpanId();
-
     // Callback interface for stub-side distributed tracing.
     // Registered by DistributedTracing to receive notifications when a COM-RPC
-    // message arrives with a non-zero span ID.
+    // message arrives with a traceparent in the header.
     struct ICOMRPCStubTraceCallbacks {
-        void (*onBegin)(uint64_t parentSpanId, uint32_t interfaceId, uint8_t methodId, const char* traceparent);
-        void (*onEnd)(uint64_t parentSpanId);
+        void (*onBegin)(uint32_t interfaceId, uint8_t methodId, const char* traceparent);
+        void (*onEnd)();
     };
 
     EXTERNAL void SetCOMRPCStubTraceCallbacks(ICOMRPCStubTraceCallbacks* callbacks);

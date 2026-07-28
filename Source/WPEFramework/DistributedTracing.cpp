@@ -38,8 +38,7 @@ namespace PluginHost {
     }
 
     DistributedTracing::DistributedTracing()
-        : _enabled(false)
-        , _spanCounter(0) {
+        : _enabled(false) {
     }
 
     DistributedTracing::~DistributedTracing() {
@@ -75,40 +74,29 @@ namespace PluginHost {
 
         RPC::SetCOMRPCStubTraceCallbacks(nullptr);
 
-        {
-            std::lock_guard<std::mutex> lock(_spanLock);
-            for (auto& entry : _activeSpans) {
-                rdk_otlp_finish_child_span();
-            }
-            _activeSpans.clear();
-        }
-
         rdk_otlp_force_flush();
         rdk_otlp_shutdown();
 
         SYSLOG(Logging::Shutdown, (_T("DistributedTracing: Shutdown complete")));
     }
 
-    uint64_t DistributedTracing::NextSpanId() {
-        return ++_spanCounter;
-    }
-
     // =========================================================================
     // JSON-RPC Invoke Tracing
     // =========================================================================
 
-    uint64_t DistributedTracing::OnInvokeBegin(
+    bool DistributedTracing::OnInvokeBegin(
         const std::string& callsign, const std::string& method,
-        uint32_t channelId, const char* traceparent)
+        uint32_t channelId)
     {
-        if (!_enabled.load()) return 0;
+        if (!_enabled.load()) return false;
 
-        // Start a child span only when upstream provided a valid traceparent.
+        const char* traceparent = rdk_otlp_get_current_traceparent();
+
+        // Start a child span only when an active traceparent exists.
         if ((traceparent == nullptr) || (traceparent[0] == '\0')) {
-            return 0;
+            return false;
         }
 
-        uint64_t spanId = NextSpanId();
         rdk_otlp_start_child_from_traceparent(traceparent, "jsonrpc.invoke");
 
         rdk_otlp_set_span_attribute_string("plugin.callsign", callsign.c_str());
@@ -119,40 +107,14 @@ namespace PluginHost {
         std::string channelStr = std::to_string(channelId);
         rdk_otlp_set_span_attribute_string("rpc.channel_id", channelStr.c_str());
 
-        // Set the span ID in the thread-local so that any COM-RPC proxy calls
-        // made during this JSON-RPC invoke carry the span ID in the message.
-        RPC::SetCurrentTraceSpanId(spanId);
-
-        SpanMetadata meta;
-        meta.contextKey = "jsonrpc.traceparent";
-        meta.callsign = callsign;
-        meta.operation = method;
-
-        std::lock_guard<std::mutex> lock(_spanLock);
-        _activeSpans[spanId] = std::move(meta);
-
-        return spanId;
+        return true;
     }
 
-    void DistributedTracing::OnInvokeEnd(uint64_t spanId, uint32_t result) {
-        if (!_enabled.load() || spanId == 0) return;
-
-        RPC::SetCurrentTraceSpanId(0);
-
-        SpanMetadata meta;
-        {
-            std::lock_guard<std::mutex> lock(_spanLock);
-            auto it = _activeSpans.find(spanId);
-            if (it == _activeSpans.end()) return;
-            meta = std::move(it->second);
-            _activeSpans.erase(it);
-        }
+    void DistributedTracing::OnInvokeEnd(bool spanActive, uint32_t result) {
+        if (!_enabled.load() || !spanActive) return;
 
         std::string resultStr = std::to_string(result);
         rdk_otlp_set_span_attribute_string("rpc.result_code", resultStr.c_str());
-
-        std::string durationStr = std::to_string(meta.ElapsedMs());
-        rdk_otlp_set_span_attribute_string("rpc.duration_ms", durationStr.c_str());
 
         if (result != 0) {
             rdk_otlp_set_span_attribute_string("otel.status_code", "ERROR");
@@ -165,17 +127,17 @@ namespace PluginHost {
     // COM-RPC Interface Tracing
     // =========================================================================
 
-    uint64_t DistributedTracing::OnCOMRPCAcquireBegin(
-        const std::string& callsign, uint32_t interfaceId,
-        const char* traceparent)
+    bool DistributedTracing::OnCOMRPCAcquireBegin(
+        const std::string& callsign, uint32_t interfaceId)
     {
-        if (!_enabled.load()) return 0;
+        if (!_enabled.load()) return false;
+
+        const char* traceparent = rdk_otlp_get_current_traceparent();
 
         if ((traceparent == nullptr) || (traceparent[0] == '\0')) {
-            return 0;
+            return false;
         }
 
-        uint64_t spanId = NextSpanId();
         rdk_otlp_start_child_from_traceparent(traceparent, "comrpc.acquire");
 
         rdk_otlp_set_span_attribute_string("plugin.callsign", callsign.c_str());
@@ -185,39 +147,14 @@ namespace PluginHost {
         std::string ifIdStr = std::to_string(interfaceId);
         rdk_otlp_set_span_attribute_string("comrpc.interface_id", ifIdStr.c_str());
 
-        RPC::SetCurrentTraceSpanId(spanId);
-
-        SpanMetadata meta;
-        meta.contextKey = "comrpc.acquire.traceparent";
-        meta.callsign = callsign;
-        meta.operation = "comrpc.acquire";
-
-        std::lock_guard<std::mutex> lock(_spanLock);
-        _activeSpans[spanId] = std::move(meta);
-
-        return spanId;
+        return true;
     }
 
-    void DistributedTracing::OnCOMRPCAcquireEnd(uint64_t spanId, bool success) {
-        if (!_enabled.load() || spanId == 0) return;
-
-        RPC::SetCurrentTraceSpanId(0);
-
-        SpanMetadata meta;
-        {
-            std::lock_guard<std::mutex> lock(_spanLock);
-            auto it = _activeSpans.find(spanId);
-            if (it == _activeSpans.end()) return;
-            meta = std::move(it->second);
-            _activeSpans.erase(it);
-        }
+    void DistributedTracing::OnCOMRPCAcquireEnd(bool spanActive, bool success) {
+        if (!_enabled.load() || !spanActive) return;
 
         rdk_otlp_set_span_attribute_string("comrpc.acquire.success",
                                             success ? "true" : "false");
-
-        std::string durationStr = std::to_string(meta.ElapsedMs());
-        rdk_otlp_set_span_attribute_string("comrpc.acquire.duration_ms",
-                                            durationStr.c_str());
 
         if (!success) {
             rdk_otlp_set_span_attribute_string("otel.status_code", "ERROR");
@@ -231,7 +168,7 @@ namespace PluginHost {
     // =========================================================================
 
     /* static */ void DistributedTracing::OnCOMRPCStubBegin(
-        uint64_t parentSpanId, uint32_t interfaceId, uint8_t methodId, const char* traceparent)
+        uint32_t interfaceId, uint8_t methodId, const char* traceparent)
     {
         auto& self = Instance();
         if (!self._enabled.load()) return;
@@ -250,13 +187,9 @@ namespace PluginHost {
         std::string methStr = std::to_string(methodId);
         rdk_otlp_set_span_attribute_string("comrpc.interface_id", ifStr.c_str());
         rdk_otlp_set_span_attribute_string("comrpc.method_id", methStr.c_str());
-        if (parentSpanId != 0) {
-            std::string parentStr = std::to_string(parentSpanId);
-            rdk_otlp_set_span_attribute_string("comrpc.parent_span_id", parentStr.c_str());
-        }
     }
 
-    /* static */ void DistributedTracing::OnCOMRPCStubEnd(uint64_t parentSpanId)
+    /* static */ void DistributedTracing::OnCOMRPCStubEnd()
     {
         auto& self = Instance();
         if (!self._enabled.load()) return;

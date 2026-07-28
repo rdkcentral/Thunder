@@ -22,30 +22,11 @@
 #ifdef THUNDER_DISTRIBUTED_TRACING
 
 #include <string>
-#include <unordered_map>
-#include <mutex>
 #include <atomic>
-#include <chrono>
 
 namespace WPEFramework {
 
 namespace PluginHost {
-
-    // Metadata tracked per active span (timing, callsign, operation)
-    struct SpanMetadata {
-        std::string contextKey;
-        std::string callsign;
-        std::string operation;
-        std::chrono::steady_clock::time_point startTime;
-
-        SpanMetadata()
-            : startTime(std::chrono::steady_clock::now()) {}
-
-        double ElapsedMs() const {
-            return std::chrono::duration<double, std::milli>(
-                std::chrono::steady_clock::now() - startTime).count();
-        }
-    };
 
     /**
      * Distributed tracing manager for Thunder core.
@@ -77,36 +58,29 @@ namespace PluginHost {
         // JSON-RPC Invoke Tracing (Plugin-to-Plugin Communication)
         // =========================================================================
 
-        uint64_t OnInvokeBegin(const std::string& callsign, const std::string& method,
-                       uint32_t channelId, const char* traceparent);
-        void OnInvokeEnd(uint64_t spanId, uint32_t result);
+        bool OnInvokeBegin(const std::string& callsign, const std::string& method,
+                       uint32_t channelId);
+        void OnInvokeEnd(bool spanActive, uint32_t result);
 
         // =========================================================================
         // COM-RPC Interface Tracing (Cross-Process Plugin Communication)
         // =========================================================================
 
-        uint64_t OnCOMRPCAcquireBegin(const std::string& callsign, uint32_t interfaceId,
-                          const char* traceparent);
-        void OnCOMRPCAcquireEnd(uint64_t spanId, bool success);
+        bool OnCOMRPCAcquireBegin(const std::string& callsign, uint32_t interfaceId);
+        void OnCOMRPCAcquireEnd(bool spanActive, bool success);
 
         // =========================================================================
-        // COM-RPC Per-Method Stub Tracing (via span ID in RPC::Data::Input)
+        // COM-RPC Per-Method Stub Tracing (via traceparent in message header)
         // =========================================================================
 
-        static void OnCOMRPCStubBegin(uint64_t parentSpanId, uint32_t interfaceId, uint8_t methodId, const char* traceparent);
-        static void OnCOMRPCStubEnd(uint64_t parentSpanId);
+        static void OnCOMRPCStubBegin(uint32_t interfaceId, uint8_t methodId, const char* traceparent);
+        static void OnCOMRPCStubEnd();
 
     private:
         DistributedTracing();
         ~DistributedTracing();
 
-        uint64_t NextSpanId();
-
         std::atomic<bool> _enabled;
-        std::atomic<uint64_t> _spanCounter;
-
-        mutable std::mutex _spanLock;
-        std::unordered_map<uint64_t, SpanMetadata> _activeSpans;
     };
 
 } // namespace PluginHost
