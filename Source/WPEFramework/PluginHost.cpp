@@ -20,6 +20,10 @@
 #include "PluginServer.h"
 #include "core/Library.h"
 
+#ifdef THUNDER_DISTRIBUTED_TRACING
+#include "DistributedTracing.h"
+#endif
+
 #include <fstream>
 
 #ifndef __WINDOWS__
@@ -279,7 +283,9 @@ POP_WARNING()
 
             destructor->Close();
             delete destructor;
-            delete _config;
+#ifdef THUNDER_DISTRIBUTED_TRACING
+            PluginHost::DistributedTracing::Instance().Shutdown();
+#endif
             _config = nullptr;
 
 
@@ -784,6 +790,10 @@ POP_WARNING()
 
             // Startup/load/initialize what we found in the configuration.
             _dispatcher = new PluginHost::Server(*_config, _background);
+
+#ifdef THUNDER_DISTRIBUTED_TRACING
+            PluginHost::DistributedTracing::Instance().Initialize();
+#endif
 
             SYSLOG(Logging::Startup, (_T(EXPAND_AND_QUOTE(APPLICATION_NAME) " actively listening.")));
 
