@@ -68,7 +68,7 @@ namespace Core {
     {
         bool status = true;
 
-        for (uint8_t i = 0; i < length; i++) {
+        for (uint16_t i = 0; i < length; i++) {
             char highNibble = hash.c_str()[i * 2];
             char lowNibble = hash.c_str()[(i * 2) + 1];
             if (isxdigit(highNibble) && isxdigit(lowNibble)) {
