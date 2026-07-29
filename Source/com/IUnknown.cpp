@@ -22,7 +22,7 @@
 #include "Communicator.h"
 
 #ifdef THUNDER_DISTRIBUTED_TRACING
-#include <rdk_otlp_instrumentation.h>
+#include <DistributedTracing.h>
 #endif
 
 namespace WPEFramework {
@@ -105,10 +105,8 @@ namespace ProxyStub {
 
         // --- Distributed Tracing: stamp traceparent into outgoing message ---
 #ifdef THUNDER_DISTRIBUTED_TRACING
-        const char* traceparent = rdk_otlp_get_current_traceparent();
+        const char* traceparent = PluginHost::DistributedTracing::Instance().GetCurrentTraceparent();
         message->Parameters().SetTraceParent(traceparent);
-#else
-        message->Parameters().SetTraceParent(nullptr);
 #endif
 
         _adminLock.Lock();

@@ -7,6 +7,10 @@
 #include <client/linux/handler/exception_handler.h>
 #endif
 
+#ifdef THUNDER_DISTRIBUTED_TRACING
+#include <DistributedTracing.h>
+#endif
+
 MODULE_NAME_DECLARATION(BUILD_REFERENCE)
 
 namespace WPEFramework {
@@ -637,6 +641,10 @@ int main(int argc, char** argv)
         // Due to the LXC container support all ID's get mapped. For the MessageBuffer, use the host given ID.
         Messaging::MessageUnit::Instance().Open(options.Exchange);
 
+#ifdef THUNDER_DISTRIBUTED_TRACING
+        PluginHost::DistributedTracing::Instance().Initialize();
+#endif
+
         if (remoteNode.IsValid()) {
             void* base = nullptr;
 
@@ -662,6 +670,9 @@ int main(int argc, char** argv)
         }
 
         //close messaging unit before singletons are cleared
+#ifdef THUNDER_DISTRIBUTED_TRACING
+        PluginHost::DistributedTracing::Instance().Shutdown();
+#endif
         Messaging::MessageUnit::Instance().Close();
     }
 

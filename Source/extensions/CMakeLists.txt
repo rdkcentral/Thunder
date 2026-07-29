@@ -46,3 +46,6 @@ if(WARNING_REPORTING)
     add_subdirectory(warningreporting)
 endif()
 
+if(DISTRIBUTED_TRACING)
+    add_subdirectory(distributedtracing)
+endif()

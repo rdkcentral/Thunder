@@ -19,28 +19,24 @@
 
 #pragma once
 
-#ifdef THUNDER_DISTRIBUTED_TRACING
-
 #include <string>
 #include <atomic>
+#include <cstdint>
 
 namespace WPEFramework {
 
 namespace PluginHost {
 
     /**
-     * Distributed tracing manager for Thunder core.
+     * Distributed tracing manager for Thunder.
      *
-     * Delegates ALL OTEL operations to the shared rdk_otlp_instrumentation
-     * library (librdk_otel_instrumentation.so). This ensures Thunder participates
-     * in the same distributed traces as Rbus, tr181, RFC, and every other RDK
-     * component that uses the wrapper.
+     * Built as a separate shared library (libWPEFrameworkDistributedTracing.so)
+     * under Source/extensions/distributedtracing/ so that both WPEFramework
+     * and WPEProcess can link and initialize it.
      *
-     * Traces plugin-to-plugin and plugin-to-Thunder interactions through
-     * JSON-RPC and COM-RPC paths only.
-     *
-    * JSON-RPC and COM-RPC method handlers consume propagated traceparent
-    * values to start child spans.
+     * Delegates all OTEL operations to the shared rdk_otlp_instrumentation
+     * library. This ensures Thunder participates in the same distributed traces
+     * as Rbus, tr181, RFC, and every other RDK component that uses the wrapper.
      */
     class DistributedTracing {
     public:
@@ -53,6 +49,14 @@ namespace PluginHost {
         void Initialize();
         void Shutdown();
         bool IsEnabled() const { return _enabled.load(); }
+
+        // =========================================================================
+        // Traceparent access (for COM-RPC proxy side)
+        // =========================================================================
+
+        // Returns the current traceparent from rdk_otlp TLS, or nullptr if
+        // tracing is not enabled or no traceparent is active.
+        const char* GetCurrentTraceparent() const;
 
         // =========================================================================
         // JSON-RPC Invoke Tracing (Plugin-to-Plugin Communication)
@@ -86,5 +90,3 @@ namespace PluginHost {
 } // namespace PluginHost
 
 } // namespace WPEFramework
-
-#endif // THUNDER_DISTRIBUTED_TRACING

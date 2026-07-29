@@ -23,7 +23,7 @@
 #include <fstream>
 
 #ifdef THUNDER_DISTRIBUTED_TRACING
-#include "DistributedTracing.h"
+#include <DistributedTracing.h>
 #endif
 
 #ifndef __WINDOWS__

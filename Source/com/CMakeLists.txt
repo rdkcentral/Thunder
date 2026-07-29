@@ -53,18 +53,9 @@ target_link_libraries(${TARGET}
         )
 
 if(DISTRIBUTED_TRACING)
-        find_library(RDK_OTEL_LIB rdk_otlp)
-        if(NOT RDK_OTEL_LIB)
-                message(FATAL_ERROR "DISTRIBUTED_TRACING enabled but librdk_otel_instrumentation not found")
-        endif()
-
         target_compile_definitions(${TARGET} PRIVATE THUNDER_DISTRIBUTED_TRACING)
 
-        target_include_directories(${TARGET} PRIVATE
-                ${CMAKE_SYSROOT}/usr/include
-        )
-
-        target_link_libraries(${TARGET} PRIVATE ${RDK_OTEL_LIB})
+        target_link_libraries(${TARGET} PRIVATE ${NAMESPACE}DistributedTracing::${NAMESPACE}DistributedTracing)
 endif()
 
 if (WARNING_REPORTING)

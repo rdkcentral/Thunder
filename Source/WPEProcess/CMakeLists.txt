@@ -59,6 +59,11 @@ if(BREAKPAD_FOUND)
     target_include_directories(${TARGET} PUBLIC ${BREAKPAD_INCLUDE_DIRS})
 endif(BREAKPAD_FOUND)
 
+if(DISTRIBUTED_TRACING)
+    target_compile_definitions(${TARGET} PRIVATE THUNDER_DISTRIBUTED_TRACING)
+    target_link_libraries(${TARGET} PRIVATE ${NAMESPACE}DistributedTracing::${NAMESPACE}DistributedTracing)
+endif()
+
 set_target_properties(${TARGET} PROPERTIES
         CXX_STANDARD 11
         CXX_STANDARD_REQUIRED YES

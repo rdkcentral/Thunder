@@ -17,8 +17,6 @@
  * limitations under the License.
  */
 
-#ifdef THUNDER_DISTRIBUTED_TRACING
-
 #include "DistributedTracing.h"
 #include "Module.h"
 #include <com/Administrator.h>
@@ -78,6 +76,17 @@ namespace PluginHost {
         rdk_otlp_shutdown();
 
         SYSLOG(Logging::Shutdown, (_T("DistributedTracing: Shutdown complete")));
+    }
+
+    // =========================================================================
+    // Traceparent access
+    // =========================================================================
+
+    const char* DistributedTracing::GetCurrentTraceparent() const {
+        if (!_enabled.load()) {
+            return nullptr;
+        }
+        return rdk_otlp_get_current_traceparent();
     }
 
     // =========================================================================
@@ -200,5 +209,3 @@ namespace PluginHost {
 } // namespace PluginHost
 
 } // namespace WPEFramework
-
-#endif // THUNDER_DISTRIBUTED_TRACING

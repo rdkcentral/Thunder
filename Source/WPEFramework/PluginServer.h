@@ -27,7 +27,7 @@
 #include "WarningReportingCategories.h"
 #include "PostMortem.h"
 #ifdef THUNDER_DISTRIBUTED_TRACING
-#include "DistributedTracing.h"
+#include <DistributedTracing.h>
 #endif
 #include <atomic>
 #include <cctype>
