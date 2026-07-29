@@ -25,13 +25,13 @@
 
 #include <core/core.h>
 
-namespace Thunder {
+namespace WPEFramework {
 namespace Tests {
 namespace Core {
 
-    struct DeviceInfo : public ::Thunder::Core::JSON::Container {
+    struct DeviceInfo : public ::WPEFramework::Core::JSON::Container {
         DeviceInfo()
-            : ::Thunder::Core::JSON::Container()
+            : ::WPEFramework::Core::JSON::Container()
             , model()
             , firmware()
         {
@@ -39,13 +39,13 @@ namespace Core {
             Add(_T("firmware"), &firmware);
         }
 
-        ::Thunder::Core::JSON::String model;
-        ::Thunder::Core::JSON::String firmware;
+        ::WPEFramework::Core::JSON::String model;
+        ::WPEFramework::Core::JSON::String firmware;
     };
 
-    struct NestedDevice : public ::Thunder::Core::JSON::Container {
+    struct NestedDevice : public ::WPEFramework::Core::JSON::Container {
         NestedDevice()
-            : ::Thunder::Core::JSON::Container()
+            : ::WPEFramework::Core::JSON::Container()
             , model()
             , region()
         {
@@ -53,13 +53,13 @@ namespace Core {
             Add(_T("region"), &region);
         }
 
-        ::Thunder::Core::JSON::String model;
-        ::Thunder::Core::JSON::String region;
+        ::WPEFramework::Core::JSON::String model;
+        ::WPEFramework::Core::JSON::String region;
     };
 
-    struct DeviceResponse : public ::Thunder::Core::JSON::Container {
+    struct DeviceResponse : public ::WPEFramework::Core::JSON::Container {
         DeviceResponse()
-            : ::Thunder::Core::JSON::Container()
+            : ::WPEFramework::Core::JSON::Container()
             , status()
             , device()
         {
@@ -67,13 +67,13 @@ namespace Core {
             Add(_T("device"), &device);
         }
 
-        ::Thunder::Core::JSON::String status;
+        ::WPEFramework::Core::JSON::String status;
         NestedDevice device;
     };
 
-    struct ThreeFields : public ::Thunder::Core::JSON::Container {
+    struct ThreeFields : public ::WPEFramework::Core::JSON::Container {
         ThreeFields()
-            : ::Thunder::Core::JSON::Container()
+            : ::WPEFramework::Core::JSON::Container()
             , a()
             , b()
             , c()
@@ -83,9 +83,9 @@ namespace Core {
             Add(_T("c"), &c);
         }
 
-        ::Thunder::Core::JSON::String a;
-        ::Thunder::Core::JSON::String b;
-        ::Thunder::Core::JSON::String c;
+        ::WPEFramework::Core::JSON::String a;
+        ::WPEFramework::Core::JSON::String b;
+        ::WPEFramework::Core::JSON::String c;
     };
 
     // 4.1: VariantContainer ← VariantContainer (replace semantics)
@@ -240,7 +240,7 @@ namespace Core {
     // 4.9: Returns false for invalid source (scalar as source)
     TEST(JSONFromObject, ReturnsFalse_ScalarSource)
     {
-        ::Thunder::Core::JSON::String scalar;
+        ::WPEFramework::Core::JSON::String scalar;
         scalar = _T("just a string");
 
         DeviceInfo target;
@@ -315,7 +315,7 @@ namespace Core {
     // 4.13: ArrayType as source returns false
     TEST(JSONFromObject, ReturnsFalse_ArraySource)
     {
-        ::Thunder::Core::JSON::ArrayType<::Thunder::Core::JSON::String> arr;
+        ::WPEFramework::Core::JSON::ArrayType<::WPEFramework::Core::JSON::String> arr;
         arr.Add() = _T("item1");
         arr.Add() = _T("item2");
 
@@ -385,4 +385,4 @@ namespace Core {
 
 } // Core
 } // Tests
-} // Thunder
+} // WPEFramework
