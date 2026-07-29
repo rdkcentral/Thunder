@@ -20,13 +20,11 @@
 #ifndef __WEBBRIDGEPLUGINSERVER_H
 #define __WEBBRIDGEPLUGINSERVER_H
 #include "Module.h"
-#include "Service.h"
 #include "SystemInfo.h"
 #include "Config.h"
 #include "IRemoteInstantiation.h"
 #include "WarningReportingCategories.h"
 #include "PostMortem.h"
-#include "core/Trace.h"
 #include <atomic>
 
 #ifndef HOSTING_COMPROCESS
