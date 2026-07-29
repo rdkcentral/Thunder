@@ -582,6 +582,12 @@ namespace RPC {
     // Register/unregister stub-side trace callbacks.
     // Thread-safe. Passing nullptr clears the current registration.
     EXTERNAL void SetCOMRPCStubTraceCallbacks(ICOMRPCStubTraceCallbacks* callbacks);
+
+    // Returns true only in processes that have registered stub-side trace callbacks,
+    // which is always done after rdk_otlp_init().  Use this to gate proxy-side calls
+    // to rdk_otlp_get_current_traceparent() so that processes which never call
+    // rdk_otlp_init() (e.g. external COM-RPC clients) do not SIGSEGV.
+    EXTERNAL bool IsCOMRPCTracingEnabled();
 }
 
 } // namespace RPC
