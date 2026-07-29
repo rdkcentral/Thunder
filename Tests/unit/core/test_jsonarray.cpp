@@ -27,11 +27,11 @@
 
 #include <core/core.h>
 
-namespace Thunder {
+namespace WPEFramework {
 namespace Tests {
 namespace Core {
 
-    using JsonArray = ::Thunder::Core::JSON::ArrayType<::Thunder::Core::JSON::String>;
+    using JsonArray = ::WPEFramework::Core::JSON::ArrayType<::WPEFramework::Core::JSON::String>;
 
     TEST(JSONARRAY, InsertEmptyAtHead)
     {
@@ -54,7 +54,7 @@ namespace Core {
     TEST(JSONARRAY, InsertAtHead)
     {
         JsonArray array;
-        ::Thunder::Core::JSON::String head;
+        ::WPEFramework::Core::JSON::String head;
 
         array.Add() = _T("middle");
         array.Add() = _T("tail");
@@ -71,7 +71,7 @@ namespace Core {
     TEST(JSONARRAY, InsertAtTail)
     {
         JsonArray array;
-        ::Thunder::Core::JSON::String three;
+        ::WPEFramework::Core::JSON::String three;
 
         array.Add() = _T("one");
         array.Add() = _T("two");
@@ -88,7 +88,7 @@ namespace Core {
     TEST(JSONARRAY, InsertMidArray)
     {
         JsonArray array;
-        ::Thunder::Core::JSON::String center;
+        ::WPEFramework::Core::JSON::String center;
 
         array.Add() = _T("left");
         array.Add() = _T("right");
@@ -126,7 +126,7 @@ namespace Core {
         array.Add() = _T("B");
         array.Add() = _T("C");
 
-        ::Thunder::Core::JSON::String element;
+        ::WPEFramework::Core::JSON::String element;
         element = _T("A");
         array.Insert(0, std::move(element));
 
@@ -147,7 +147,7 @@ namespace Core {
         array.Add() = _T("first");
         array.Add() = _T("third");
 
-        ::Thunder::Core::JSON::String element;
+        ::WPEFramework::Core::JSON::String element;
         element = _T("second");
         array.Insert(1, std::move(element));
 
@@ -234,7 +234,7 @@ namespace Core {
     {
         JsonArray array;
         std::string serialized;
-        ::Thunder::Core::JSON::String beta;
+        ::WPEFramework::Core::JSON::String beta;
 
         array.Add() = _T("alpha");
         array.Add() = _T("gamma");
@@ -260,7 +260,7 @@ namespace Core {
         array.Add() = _T("B");
         array.Add() = _T("C");
 
-        ::Thunder::Core::JSON::String* next = array.Remove(0);
+        ::WPEFramework::Core::JSON::String* next = array.Remove(0);
         ASSERT_NE(nullptr, next);
         EXPECT_STREQ("B", next->Value().c_str());
 
@@ -360,7 +360,7 @@ namespace Core {
         array.Add() = _T("second");
         array.Add() = _T("third");
 
-        ::Thunder::Core::JSON::String moved = array[0];
+        ::WPEFramework::Core::JSON::String moved = array[0];
         array.Remove(0);
         array.Insert(1, moved);
 
@@ -372,4 +372,4 @@ namespace Core {
 
 } // Core
 } // Tests
-} // Thunder
+} // WPEFramework
