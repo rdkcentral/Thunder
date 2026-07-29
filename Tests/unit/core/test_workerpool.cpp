@@ -1379,7 +1379,7 @@ namespace Core {
         }
         ~Trigger() {
             Stop();
-            _decoupledJob.Revoke();
+            _decoupledJob.Revoke(::Thunder::Core::infinite);
         }
 
     public:
