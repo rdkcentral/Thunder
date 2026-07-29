@@ -788,12 +788,16 @@ POP_WARNING()
             StartLoopbackInterface();
 #endif
 
-            // Startup/load/initialize what we found in the configuration.
-            _dispatcher = new PluginHost::Server(*_config, _background);
-
 #ifdef THUNDER_DISTRIBUTED_TRACING
+            // Initialize BEFORE new Server(): Server's constructor activates autostart OOP
+            // plugins, which opens COM-RPC channels and immediately fires
+            // UnknownProxy::Invoke() in this process. rdk_otlp_get_current_traceparent()
+            // inside Invoke() will SIGSEGV if librdk_otlp is not yet initialized.
             PluginHost::DistributedTracing::Instance().Initialize();
 #endif
+
+            // Startup/load/initialize what we found in the configuration.
+            _dispatcher = new PluginHost::Server(*_config, _background);
 
             SYSLOG(Logging::Startup, (_T(EXPAND_AND_QUOTE(APPLICATION_NAME) " actively listening.")));
 
