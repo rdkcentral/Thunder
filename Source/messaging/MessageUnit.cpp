@@ -379,7 +379,7 @@ ENUM_CONVERSION_END(WPEFramework::Core::Messaging::OutputMode)
 #else
             const bool sendDirect    = (outputMode == Core::Messaging::OutputMode::DIRECT) || (outputMode == Core::Messaging::OutputMode::ALL);
             const bool sendToHandler = (outputMode == Core::Messaging::OutputMode::HANDLER) || (outputMode == Core::Messaging::OutputMode::ALL);
-
+            TRACE_L1("MessageUnit::Push: sendDirect=%s, sendToHandler=%s", (sendDirect ? "true" : "false"), (sendToHandler ? "true" : "false"));
             if (sendDirect == true) {
                 _direct.Output(messageInfo, message);
             }
