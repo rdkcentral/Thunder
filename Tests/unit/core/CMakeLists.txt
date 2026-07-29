@@ -90,67 +90,11 @@ add_executable(${TEST_RUNNER_NAME}
       WPEFrameworkMessaging
    )
 else()
-<<<<<<< HEAD
    target_sources(${TEST_RUNNER_NAME} PRIVATE test_tracing.cpp)
    target_link_libraries(${TEST_RUNNER_NAME}
       WPEFrameworkTracing
    )
 endif() ]]
-=======
-add_executable(${TEST_RUNNER_NAME}
-   test_databuffer.cpp
-   test_dataelement.cpp
-   test_dataelementfile.cpp
-   test_enumerate.cpp
-   test_event.cpp
-   test_filesystem.cpp
-   test_frametype.cpp
-   test_hash.cpp
-   test_hex2strserialization.cpp
-   test_iso639.cpp
-   test_iterator.cpp
-   test_json_from_object.cpp
-   test_jsonobject.cpp
-   test_jsonparser.cpp
-   test_jsonrpc_handler.cpp
-   test_jsonstring.cpp
-   test_keyvalue.cpp
-   test_library.cpp
-   test_lockablecontainer.cpp
-   test_measurementtype.cpp
-   test_memberavailability.cpp
-   test_messageException.cpp
-   test_serviceadministrator.cpp
-   test_networkinfo.cpp
-   test_nodeid.cpp
-   test_numbertype.cpp
-   test_optional.cpp
-   test_parser.cpp
-   test_portability.cpp
-   test_processinfo.cpp
-   test_queue.cpp
-   test_rangetype.cpp
-   test_readwritelock.cpp
-   test_rectangle.cpp
-   test_semaphore.cpp
-   test_singleton.cpp
-   test_statetrigger.cpp
-   test_stopwatch.cpp
-   test_synchronize.cpp
-   test_systeminfo.cpp
-   test_textfragment.cpp
-   test_textreader.cpp
-   test_thread.cpp
-   test_threadpool.cpp
-   test_time.cpp
-   test_timer.cpp
-   #test_valuerecorder.cpp
-   test_workerpool.cpp
-   test_xgetopt.cpp
-   test_jsonrpclink_dso.cpp
-)
-endif()
->>>>>>> 95cdb894 (Added FromObject API to populate a JSON Container from the)
 
 set_source_files_properties(test_systeminfo.cpp PROPERTIES COMPILE_OPTIONS "-fexceptions")
 
