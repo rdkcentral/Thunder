@@ -111,7 +111,14 @@ namespace ProxyStub {
         // so the stub side (Administrator.cpp) can create a child span linked to the
         // correct parent trace.  rdk_otlp_get_current_traceparent() reads TLS — valid
         // here because we are on the caller's thread (the proxy runs inline).
-        message->Parameters().SetTraceParent(rdk_otlp_get_current_traceparent());
+        //
+        // Guard: only call into librdk_otlp when this process has registered stub
+        // callbacks (which always happens after rdk_otlp_init()).  This protects any
+        // process that loads libWPEFrameworkCOM.so but never calls rdk_otlp_init()
+        // — e.g. external COM-RPC client daemons — from a SIGSEGV.
+        if (RPC::IsCOMRPCTracingEnabled()) {
+            message->Parameters().SetTraceParent(rdk_otlp_get_current_traceparent());
+        }
 #endif // THUNDER_DISTRIBUTED_TRACING
 
         _adminLock.Lock();
