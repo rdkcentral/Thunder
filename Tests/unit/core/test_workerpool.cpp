@@ -476,7 +476,7 @@ namespace Core {
 
         std::vector<::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>> jobs;
         // Create Jobs with more than Queue size. i.e, queueSize + additionalJobs
-        for (uint8_t i = 0; i < queueSize + additionalJobs; ++i) {
+        for (uint16_t i = 0; i < static_cast<uint16_t>(queueSize + additionalJobs); ++i) {
             jobs.push_back(::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>(::Thunder::Core::ProxyType<TestJob<WorkerPoolTester>>::Create(workerPool, TestJob<WorkerPoolTester>::INITIATED, 100)));
         }
 
@@ -550,7 +550,7 @@ namespace Core {
 
         std::vector<::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>> jobs;
         // Create Jobs with more than Queue size. i.e, queueSize + additionalJobs
-        for (uint8_t i = 0; i < queueSize + additionalJobs; ++i) {
+        for (uint16_t i = 0; i < static_cast<uint16_t>(queueSize + additionalJobs); ++i) {
             jobs.push_back(::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>(::Thunder::Core::ProxyType<TestJob<WorkerPoolTester>>::Create(workerPool, TestJob<WorkerPoolTester>::INITIATED, 100)));
         }
 
@@ -639,7 +639,7 @@ namespace Core {
 
         std::vector<::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>> jobs;
         // Create Jobs with more than Queue size. i.e, queueSize + additionalJobs
-        for (uint8_t i = 0; i < queueSize + additionalJobs; ++i) {
+        for (uint16_t i = 0; i < static_cast<uint16_t>(queueSize + additionalJobs); ++i) {
             jobs.push_back(::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>(::Thunder::Core::ProxyType<TestJob<WorkerPoolTester>>::Create(workerPool, TestJob<WorkerPoolTester>::INITIATED, 500, false, true)));
         }
 
@@ -792,7 +792,7 @@ namespace Core {
 
         std::vector<::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>> jobs;
         // Create Jobs with more than Queue size. i.e, queueSize + additionalJobs
-        for (uint8_t i = 0; i < queueSize + additionalJobs; ++i) {
+        for (uint16_t i = 0; i < static_cast<uint16_t>(queueSize + additionalJobs); ++i) {
             jobs.push_back(::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>(::Thunder::Core::ProxyType<TestJob<WorkerPoolTester>>::Create(workerPool, TestJob<WorkerPoolTester>::INITIATED, 500, false, true)));
         }
 
@@ -976,7 +976,7 @@ namespace Core {
 
         std::vector<::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>> jobs;
         // Create Jobs with more than Queue size. i.e, queueSize + additionalJobs
-        for (uint8_t i = 0; i < queueSize + additionalJobs; ++i) {
+        for (uint16_t i = 0; i < static_cast<uint16_t>(queueSize + additionalJobs); ++i) {
             jobs.push_back(::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>(::Thunder::Core::ProxyType<TestJob<WorkerPoolTester>>::Create(workerPool, TestJob<WorkerPoolTester>::INITIATED, 100)));
         }
 
@@ -1040,7 +1040,7 @@ namespace Core {
 
         std::vector<::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>> jobs;
         // Create Jobs with more than Queue size. i.e, queueSize + additionalJobs
-        for (uint8_t i = 0; i < queueSize + additionalJobs; ++i) {
+        for (uint16_t i = 0; i < static_cast<uint16_t>(queueSize + additionalJobs); ++i) {
             jobs.push_back(::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>(::Thunder::Core::ProxyType<TestJob<WorkerPoolTester>>::Create(workerPool, TestJob<WorkerPoolTester>::INITIATED, 100, false, false, true)));
         }
 
@@ -1253,7 +1253,7 @@ namespace Core {
         {
             std::vector<::Thunder::Core::ProxyType<WorkerJobTester>> jobs;
             // Create Jobs with more than Queue size. i.e, queueSize + additionalJobs
-            for (uint8_t i = 0; i < queueSize + additionalJobs; ++i) {
+            for (uint16_t i = 0; i < static_cast<uint16_t>(queueSize + additionalJobs); ++i) {
                 jobs.push_back(::Thunder::Core::ProxyType<WorkerJobTester>(::Thunder::Core::ProxyType<WorkerJobTester>::Create(0)));
             }
             for (size_t i = 0; i < jobs.size(); ++i) {
