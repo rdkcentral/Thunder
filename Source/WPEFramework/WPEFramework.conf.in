@@ -200,3 +200,8 @@ if boolean('@MESSAGING@'):
   __reporting.add("settings", __reporting_settings)
 
   messaging.add("reporting", __reporting)
+  __telemetry = JSON()
+  __telemetry.add("abbreviated", True)
+  __telemetry.add("output", "handler")
+
+  messaging.add("telemetry", __telemetry)
