@@ -37,6 +37,11 @@ namespace RPC {
         g_stubTraceCallbacks.store(callbacks, std::memory_order_release);
     }
 
+    bool IsCOMRPCTracingEnabled()
+    {
+        return (g_stubTraceCallbacks.load(std::memory_order_acquire) != nullptr);
+    }
+
     Administrator::Administrator()
         : _adminLock()
         , _stubs()
