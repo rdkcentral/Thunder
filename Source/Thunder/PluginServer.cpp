@@ -94,7 +94,7 @@ namespace PluginHost {
         DefaultSecurity(const DefaultSecurity&) = delete;
         DefaultSecurity& operator=(const DefaultSecurity&) = delete;
 
-        DefaultSecurity(const string& prefix, const string jsonrpcPath, const string& controllerName)
+        DefaultSecurity(const string& prefix, const string& jsonrpcPath, const string& controllerName)
             : _hasSecurity(true)
             , _controllerPath(prefix + '/' + controllerName)
             , _jsonrpcPath(jsonrpcPath)
