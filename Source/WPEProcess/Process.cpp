@@ -7,6 +7,11 @@
 #include <client/linux/handler/exception_handler.h>
 #endif
 
+#ifdef THUNDER_DISTRIBUTED_TRACING
+#include <rdk_otlp_instrumentation.h>
+#include <com/Administrator.h>
+#endif
+
 MODULE_NAME_DECLARATION(BUILD_REFERENCE)
 
 namespace WPEFramework {
@@ -656,8 +661,39 @@ int main(int argc, char** argv)
             // Register an interface to handle incoming requests for interfaces.
             if ((base = Process::AcquireInterfaces(options)) != nullptr) {
 
+#ifdef THUNDER_DISTRIBUTED_TRACING
+                // Initialise librdk_otlp in this WPEProcess so that:
+                //  1) UnknownProxy::Invoke() can safely call rdk_otlp_get_current_traceparent()
+                //     when stamping outgoing reverse COM-RPC calls.
+                //  2) Stub-side spans are created when an incoming COM-RPC message carries
+                //     a traceparent injected by the main-process proxy.
+                rdk_otlp_init(callsign.empty() ? "WPEProcess" : callsign.c_str(), "R4.4");
+
+                static RPC::ICOMRPCStubTraceCallbacks wpeProcessStubCbs = {
+                    [](uint32_t interfaceId, uint8_t methodId, const char* traceparent) {
+                        if ((traceparent != nullptr) && (traceparent[0] != '\0')) {
+                            char spanName[80];
+                            ::snprintf(spanName, sizeof(spanName),
+                                       "WPEProcess.comrpc.if0x%X.method%u",
+                                       interfaceId, static_cast<unsigned>(methodId));
+                            rdk_otlp_start_child_from_traceparent(traceparent, spanName);
+                        }
+                    },
+                    [](uint32_t /*interfaceId*/, uint8_t /*methodId*/) {
+                        rdk_otlp_finish_child_span();
+                    }
+                };
+                RPC::SetCOMRPCStubTraceCallbacks(&wpeProcessStubCbs);
+#endif // THUNDER_DISTRIBUTED_TRACING
+
                 TRACE_L1("Allright time to start running");
                 process.Run(options.ProxyStubPath, options.InterfaceId, base, options.Exchange);
+
+#ifdef THUNDER_DISTRIBUTED_TRACING
+                RPC::SetCOMRPCStubTraceCallbacks(nullptr);
+                rdk_otlp_force_flush();
+                rdk_otlp_shutdown();
+#endif // THUNDER_DISTRIBUTED_TRACING
             }
         }
 
