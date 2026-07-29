@@ -2003,6 +2003,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#arraytype-mutation-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ArrayType mutation examples
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#enums" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3489,6 +3500,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#arraytype-mutation-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ArrayType mutation examples
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#enums" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3853,9 +3875,69 @@
 </li>
 <li><code>Core::JSON::Float</code></li>
 <li><code>Core::JSON::Double</code></li>
-<li><code>Core::JSON::ArrayType&lt;T&gt;</code> - An array containing objects of type <code>T</code>, where T is either a primative JSON type (e.g. Core::JSON::String) or a Core::JSON::Container object</li>
-<li><code>Core::JSON::EnumType&lt;T&gt;</code> - A string that will be converted to a C++ enum</li>
+<li><code>Core::JSON::ArrayType&lt;T&gt;</code> - An array containing objects of type <code>T</code>, where T is either a primitive JSON type (e.g. Core::JSON::String) or a Core::JSON::Container object.<ul>
+<li>Complexity summary:<ul>
+<li><code>Add()</code> (append): $O(1)$</li>
+<li><code>Insert(index)</code>: worst-case $O(n)$; inserts a default-constructed element before <code>index</code> and returns a reference to it</li>
+<li><code>Insert(index, element)</code>: worst-case $O(n)$; inserts <code>element</code> before <code>index</code> and returns a reference to the inserted copy</li>
+<li><code>Insert(Length(), ...)</code>: equivalent to append in the current implementation</li>
+<li><code>Remove(index)</code>: $O(n)$ overall; erases the element at <code>index</code> and returns a pointer to the next element (or <code>nullptr</code> if the tail was removed)</li>
 </ul>
+</li>
+<li>For large arrays, avoid repeated index-based mutation (<code>Insert()</code>/<code>Remove()</code>) in tight loops; cumulative cost can become quadratic.</li>
+<li><code>Insert(Length(), element)</code> is functionally equivalent to append; use <code>Add()</code> when append intent should be explicit.</li>
+<li>Out-of-range access for <code>operator[]</code>, <code>Insert()</code>, and <code>Remove()</code> follows the same debug-assert / release-undefined contract.</li>
+<li>These mutation helpers are not thread-safe; callers must hold any required lock.</li>
+<li><code>Length()</code> reports stored element count. Serialisation includes only elements whose <code>IsSet()</code> is true. For wrapper types where constructor-based values may remain unset (for example <code>Core::JSON::String</code>, <code>Core::JSON::NumberType&lt;&gt;</code>, <code>Core::JSON::Float</code>/<code>Core::JSON::Double</code>, and <code>Core::JSON::Boolean</code>), assign through <code>operator=</code> (or otherwise ensure <code>IsSet()</code> is true) before calling <code>Insert()</code>.</li>
+</ul>
+</li>
+</ul>
+<h4 id="arraytype-mutation-examples">ArrayType mutation examples</h4>
+<p><code>Insert(index)</code> and <code>Insert(index, element)</code> insert <em>before</em> <code>index</code> and return a reference to the inserted element.</p>
+<div class="highlight"><pre><span></span><code><span class="n">Thunder</span><span class="o">::</span><span class="n">Core</span><span class="o">::</span><span class="n">JSON</span><span class="o">::</span><span class="n">ArrayType</span><span class="o">&lt;</span><span class="n">Thunder</span><span class="o">::</span><span class="n">Core</span><span class="o">::</span><span class="n">JSON</span><span class="o">::</span><span class="n">String</span><span class="o">&gt;</span><span class="w"> </span><span class="n">values</span><span class="p">;</span>
+<span class="n">Thunder</span><span class="o">::</span><span class="n">Core</span><span class="o">::</span><span class="n">JSON</span><span class="o">::</span><span class="n">String</span><span class="w"> </span><span class="n">a</span><span class="p">;</span>
+<span class="n">Thunder</span><span class="o">::</span><span class="n">Core</span><span class="o">::</span><span class="n">JSON</span><span class="o">::</span><span class="n">String</span><span class="w"> </span><span class="n">c</span><span class="p">;</span>
+<span class="n">Thunder</span><span class="o">::</span><span class="n">Core</span><span class="o">::</span><span class="n">JSON</span><span class="o">::</span><span class="n">String</span><span class="w"> </span><span class="n">e</span><span class="p">;</span>
+
+<span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_T</span><span class="p">(</span><span class="s">&quot;A&quot;</span><span class="p">);</span>
+<span class="n">c</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_T</span><span class="p">(</span><span class="s">&quot;C&quot;</span><span class="p">);</span>
+<span class="n">e</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_T</span><span class="p">(</span><span class="s">&quot;E&quot;</span><span class="p">);</span>
+<span class="n">values</span><span class="p">.</span><span class="n">Add</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_T</span><span class="p">(</span><span class="s">&quot;B&quot;</span><span class="p">);</span>
+<span class="n">values</span><span class="p">.</span><span class="n">Add</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_T</span><span class="p">(</span><span class="s">&quot;D&quot;</span><span class="p">);</span>
+
+<span class="c1">// Insert at front (index == 0):</span>
+<span class="n">values</span><span class="p">.</span><span class="n">Insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">a</span><span class="p">);</span>
+<span class="c1">// values == [&quot;A&quot;, &quot;B&quot;, &quot;D&quot;]</span>
+
+<span class="c1">// Insert in middle:</span>
+<span class="n">values</span><span class="p">.</span><span class="n">Insert</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">c</span><span class="p">);</span>
+<span class="c1">// values == [&quot;A&quot;, &quot;B&quot;, &quot;C&quot;, &quot;D&quot;]</span>
+
+<span class="c1">// Insert at end (index == Length()):</span>
+<span class="n">values</span><span class="p">.</span><span class="n">Insert</span><span class="p">(</span><span class="n">values</span><span class="p">.</span><span class="n">Length</span><span class="p">(),</span><span class="w"> </span><span class="n">e</span><span class="p">);</span>
+<span class="c1">// values == [&quot;A&quot;, &quot;B&quot;, &quot;C&quot;, &quot;D&quot;, &quot;E&quot;]</span>
+</code></pre></div>
+<p><code>Remove(index)</code> erases the element at <code>index</code>, returns a pointer to the next element (or <code>nullptr</code> when the tail is removed), and shifts later elements down.</p>
+<p><div class="highlight"><pre><span></span><code><span class="n">Thunder</span><span class="o">::</span><span class="n">Core</span><span class="o">::</span><span class="n">JSON</span><span class="o">::</span><span class="n">ArrayType</span><span class="o">&lt;</span><span class="n">Thunder</span><span class="o">::</span><span class="n">Core</span><span class="o">::</span><span class="n">JSON</span><span class="o">::</span><span class="n">String</span><span class="o">&gt;</span><span class="w"> </span><span class="n">values</span><span class="p">;</span>
+<span class="n">values</span><span class="p">.</span><span class="n">Add</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_T</span><span class="p">(</span><span class="s">&quot;A&quot;</span><span class="p">);</span>
+<span class="n">values</span><span class="p">.</span><span class="n">Add</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_T</span><span class="p">(</span><span class="s">&quot;B&quot;</span><span class="p">);</span>
+<span class="n">values</span><span class="p">.</span><span class="n">Add</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_T</span><span class="p">(</span><span class="s">&quot;C&quot;</span><span class="p">);</span>
+<span class="n">values</span><span class="p">.</span><span class="n">Add</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_T</span><span class="p">(</span><span class="s">&quot;D&quot;</span><span class="p">);</span>
+<span class="n">values</span><span class="p">.</span><span class="n">Add</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_T</span><span class="p">(</span><span class="s">&quot;E&quot;</span><span class="p">);</span>
+
+<span class="c1">// Remove from front:</span>
+<span class="n">values</span><span class="p">.</span><span class="n">Remove</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
+<span class="c1">// values == [&quot;B&quot;, &quot;C&quot;, &quot;D&quot;, &quot;E&quot;]</span>
+
+<span class="c1">// Remove from middle:</span>
+<span class="n">values</span><span class="p">.</span><span class="n">Remove</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+<span class="c1">// values == [&quot;B&quot;, &quot;D&quot;, &quot;E&quot;]</span>
+
+<span class="c1">// Remove from end:</span>
+<span class="n">values</span><span class="p">.</span><span class="n">Remove</span><span class="p">(</span><span class="n">values</span><span class="p">.</span><span class="n">Length</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+<span class="c1">// values == [&quot;B&quot;, &quot;D&quot;]</span>
+</code></pre></div>
+* <code>Core::JSON::EnumType&lt;T&gt;</code> - A string that will be converted to a C++ enum</p>
 <h4 id="enums">Enums</h4>
 <p>Thunder supports deserialising JSON strings directly to a C++ enum. This is useful when you need to restrict the possible values of a string to a known set.</p>
 <p>To do this, an enum conversion must be defined first to map the enum to string</p>
@@ -3993,9 +4075,9 @@
 
 <span class="c1">// Typed Container populated from a JsonObject</span>
 <span class="n">JsonObject</span><span class="w"> </span><span class="n">source</span><span class="p">;</span>
-<span class="n">source</span><span class="p">[</span><span class="s">&quot;model&quot;</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;ES1-B&quot;</span><span class="p">;</span>
-<span class="n">source</span><span class="p">[</span><span class="s">&quot;firmware&quot;</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;R5.0&quot;</span><span class="p">;</span>
-<span class="n">source</span><span class="p">[</span><span class="s">&quot;extra&quot;</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;ignored&quot;</span><span class="p">;</span><span class="w">  </span><span class="c1">// not registered in DeviceInfo</span>
+<span class="n">source</span><span class="p">[</span><span class="s">&quot;model&quot;</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_T</span><span class="p">(</span><span class="s">&quot;ES1-B&quot;</span><span class="p">);</span>
+<span class="n">source</span><span class="p">[</span><span class="s">&quot;firmware&quot;</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_T</span><span class="p">(</span><span class="s">&quot;R5.0&quot;</span><span class="p">);</span>
+<span class="n">source</span><span class="p">[</span><span class="s">&quot;extra&quot;</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_T</span><span class="p">(</span><span class="s">&quot;ignored&quot;</span><span class="p">);</span><span class="w">  </span><span class="c1">// not registered in DeviceInfo</span>
 
 <span class="n">DeviceInfo</span><span class="w"> </span><span class="n">device</span><span class="p">;</span>
 <span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">device</span><span class="p">.</span><span class="n">FromObject</span><span class="p">(</span><span class="n">source</span><span class="p">))</span><span class="w"> </span><span class="p">{</span>
