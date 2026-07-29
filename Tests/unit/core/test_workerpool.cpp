@@ -1379,7 +1379,12 @@ namespace Core {
         }
         ~Trigger() {
             Stop();
-            _decoupledJob.Revoke(::Thunder::Core::infinite);
+            _decoupledJob.Revoke();
+            // Revoke() skips the wait when the job is actively dispatching (proxy is invalid).
+            // Spin until dispatch completes so Job is not destroyed while still running.
+            while (_decoupledJob.IsIdle() == false) {
+                SleepMs(1);
+            }
         }
 
     public:
