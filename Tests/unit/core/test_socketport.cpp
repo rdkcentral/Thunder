@@ -586,23 +586,26 @@ namespace Core {
     {
         const string path = "/tmp/test_sp_closenowait.sock";
         ::unlink(path.c_str());
-        TestDatagram sock(::Thunder::Core::NodeId(path.c_str()));
 
-        ASSERT_EQ(sock.Open(1000), ::Thunder::Core::ERROR_NONE);
-        EXPECT_TRUE(sock.IsOpen());
+        {
+            TestDatagram sock(::Thunder::Core::NodeId(path.c_str()));
 
-        // Close(0) returns immediately without waiting for the far end.
-        EXPECT_NO_FATAL_FAILURE(sock.Close(0));
+            ASSERT_EQ(sock.Open(1000), ::Thunder::Core::ERROR_NONE);
+            EXPECT_TRUE(sock.IsOpen());
 
-        // The socket is not yet fully deregistered from the ResourceMonitor.
-        // Wait for IsClosed() before Singleton::Dispose() to avoid the debug
-        // assert that fires if resources are still registered at teardown.
-        uint32_t waited = 0;
-        while (!sock.IsClosed() && waited < 1000) {
-            SleepMs(10);
-            waited += 10;
-        }
-        EXPECT_TRUE(sock.IsClosed());
+            // Close(0) returns immediately without waiting for the far end.
+            EXPECT_NO_FATAL_FAILURE(sock.Close(0));
+
+            // Wait for IsClosed() before the socket goes out of scope so
+            // it is fully deregistered from the ResourceMonitor before
+            // Singleton::Dispose() runs.
+            uint32_t waited = 0;
+            while (!sock.IsClosed() && waited < 1000) {
+                SleepMs(10);
+                waited += 10;
+            }
+            EXPECT_TRUE(sock.IsClosed());
+        } // sock destroyed here: deregistered from ResourceMonitor before Dispose()
 
         ::Thunder::Core::Singleton::Dispose();
     }
