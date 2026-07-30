@@ -3322,6 +3322,77 @@ namespace Core {
                 return (_data.back());
             }
 
+            inline ELEMENT& Insert(const uint32_t index)
+            {
+                ASSERT(index <= Length());
+
+                typename std::list<ELEMENT>::iterator locator = _data.begin();
+                uint32_t skip = index;
+
+                while (skip != 0) {
+                    ++locator;
+                    --skip;
+                }
+
+                locator = _data.insert(locator, ELEMENT());
+
+                return (*locator);
+
+            }
+
+            inline ELEMENT& Insert(const uint32_t index, const ELEMENT& element)
+            {
+                ASSERT(index <= Length());
+
+                typename std::list<ELEMENT>::iterator locator = _data.begin();
+                uint32_t skip = index;
+
+                while (skip != 0) {
+                    ++locator;
+                    --skip;
+                }
+
+                locator = _data.insert(locator, element);
+
+                return (*locator);
+
+            }
+
+            inline ELEMENT& Insert(const uint32_t index, ELEMENT&& element)
+            {
+                ASSERT(index <= Length());
+
+                typename std::list<ELEMENT>::iterator locator = _data.begin();
+                uint32_t skip = index;
+
+                while (skip != 0) {
+                    ++locator;
+                    --skip;
+                }
+
+                locator = _data.insert(locator, std::move(element));
+
+                return (*locator);
+            }
+
+            inline ELEMENT* Remove(const uint32_t index)
+            {
+                ASSERT(index < Length());
+
+                typename std::list<ELEMENT>::iterator locator = _data.begin();
+                uint32_t skip = index;
+
+                while (skip != 0) {
+                    ++locator;
+                    --skip;
+                }
+
+                ASSERT(locator != _data.end());
+                typename std::list<ELEMENT>::iterator next = _data.erase(locator);
+
+                return ((next != _data.end()) ? &(*next) : nullptr);
+            }
+
             ELEMENT& operator[](const uint32_t index)
             {
                 uint32_t skip = index;
