@@ -4229,7 +4229,7 @@ namespace PluginHost {
                         locals.insert(index, std::pair<string,string>(callsign, metadata));
                     });
 
-                    for (auto entry : locals) {
+                    for (const auto& entry : locals) {
                         metaData.Add().FromString(entry.second);
                     }
                 }
