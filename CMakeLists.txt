@@ -137,15 +137,35 @@ if(APPLE)
     set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 endif()
 
-if (ENABLE_CODE_COVERAGE)
-  include (CodeCoverage)
-  append_coverage_compiler_flags()
-  set(COVERAGE_EXCLUDES
-    "${CMAKE_CURRENT_BINARY_DIR}/Tests/unit*"
-    "${CMAKE_CURRENT_BINARY_DIR}/Tests/unit/core/*")
-  setup_target_for_coverage_gcovr_html(NAME "coverage")
-  setup_target_for_coverage_gcovr_xml(NAME "coverage-report")
-  add_definitions(-DWITH_CODE_COVERAGE=1)
+include(CMakeDependentOption)
+
+cmake_dependent_option(ENABLE_CODE_COVERAGE "Enable gcov/gcovr code coverage instrumentation" OFF 
+    "CMAKE_BUILD_TYPE STREQUAL Debug" OFF)
+
+if(ENABLE_CODE_COVERAGE)
+    message(STATUS "Code coverage instrumentation enabled")
+
+    include(CodeCoverage)
+
+    append_coverage_compiler_flags()
+    
+    set(COVERAGE_EXCLUDES
+        "${CMAKE_CURRENT_BINARY_DIR}/Tests/unit*"
+        "${CMAKE_CURRENT_BINARY_DIR}/Tests/unit/core/*"
+        "${CMAKE_CURRENT_BINARY_DIR}/Tests/statemachine/*"
+    )
+    setup_target_for_coverage_gcovr_html(
+        NAME "coverage-html-report"
+        GCOVR_ARGS --gcov-ignore-parse-errors=negative_hits.warn_once_per_file
+        EXCLUDE_THROW_BRANCHES ON
+        EXCLUDE_UNREACHABLE_BRANCHES ON
+    )
+    setup_target_for_coverage_gcovr_xml(
+        NAME "coverage-xml-report"
+        GCOVR_ARGS --gcov-ignore-parse-errors=negative_hits.warn_once_per_file
+        EXCLUDE_THROW_BRANCHES ON
+        EXCLUDE_UNREACHABLE_BRANCHES ON
+    )
 endif()
 
 if(BUILD_TESTS)

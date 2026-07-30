@@ -7,6 +7,7 @@ option(MESSAGEBUFFER_TEST "Test message buffer" OFF)
 option(UNRAVELLER "reveal thread details" OFF)
 option(STREAMJSON_GARBAGE_TEST "Reproducer for issue #1963: infinite loop on garbage data in StreamJSONType::ReceiveData()" OFF)
 option(ENABLE_TEST_RUNTIME "Build Thunder test support library for plugin integration tests" OFF)
+option(STATEMACHINE_TEST "Test for the state machine plugin" OFF)
 
 if(BUILD_TESTS)
     add_subdirectory(unit)
@@ -42,6 +43,10 @@ endif()
 
 if(UNRAVELLER)
     add_subdirectory(unraveller)
+endif()
+
+if(STATEMACHINE_TEST)
+    add_subdirectory(statemachine)
 endif()
 
 if(STREAMJSON_GARBAGE_TEST)
