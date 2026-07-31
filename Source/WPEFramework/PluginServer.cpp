@@ -414,7 +414,6 @@ namespace PluginHost
     /* virtual */ Core::hresult Server::Service::Activate(const PluginHost::IShell::reason why)
     {
         Core::hresult result = Core::ERROR_NONE;
-        Core::StopWatch stopwatch;
 
         Lock();
 
@@ -498,7 +497,7 @@ namespace PluginHost
                 if (HasError() == true) {
                     result = Core::ERROR_GENERAL;
 
-
+                    SYSLOG(Logging::Startup, (_T("Activation of plugin [%s]:[%s], failed. Error [%s]"), className.c_str(), callSign.c_str(), ErrorMessage().c_str()));
                     if( _administrator.Configuration().LegacyInitialize() == false ) {
                         Deactivate(reason::INITIALIZATION_FAILED);
                     } else {
@@ -528,6 +527,7 @@ namespace PluginHost
                         }
                     }
 
+                    SYSLOG(Logging::Startup, (_T("Activated plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
                     Lock();
                     State(ACTIVATED);
                     _administrator.Activated(callSign, this);
