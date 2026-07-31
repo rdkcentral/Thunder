@@ -3950,10 +3950,7 @@ namespace PluginHost {
 
                 Core::ProxyType<IShell> service;
 
-                FromIdentifier(callsign, service);
-
-                if (service.IsValid() == true) {
-
+                if (FromIdentifier(callsign, service) == Core::ERROR_NONE) {
                     result = service->QueryInterface(id);
                 }
 
@@ -4200,7 +4197,7 @@ namespace PluginHost {
 
                 workingList.reserve(_services.size());
 
-                for (auto entry : _services) {
+                for (const auto& entry : _services) {
 
                     std::vector<Core::ProxyType<Service>>::iterator index = workingList.begin();
 
