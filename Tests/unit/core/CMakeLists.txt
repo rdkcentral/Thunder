@@ -181,13 +181,14 @@ else()
 endif()
 
 target_link_libraries(${TEST_RUNNER_NAME}
-    ${GTEST_LIBRARY}
-    ${CMAKE_THREAD_LIBS_INIT}
-    ${NAMESPACE}Core::${NAMESPACE}Core
-    ${NAMESPACE}COM::${NAMESPACE}COM
-    ${NAMESPACE}Plugins::${NAMESPACE}Plugins
-    ${NAMESPACE}WebSocket::${NAMESPACE}WebSocket
-    ${NAMESPACE}Cryptalgo::${NAMESPACE}Cryptalgo
+    PRIVATE
+        ${GTEST_LIBRARY}
+        ${CMAKE_THREAD_LIBS_INIT}
+        ${NAMESPACE}Core::${NAMESPACE}Core
+        ${NAMESPACE}COM::${NAMESPACE}COM
+        ${NAMESPACE}Plugins::${NAMESPACE}Plugins
+        ${NAMESPACE}WebSocket::${NAMESPACE}WebSocket
+        ${NAMESPACE}Cryptalgo::${NAMESPACE}Cryptalgo
 )
 
 if(MESSAGING)
