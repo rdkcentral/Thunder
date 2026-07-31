@@ -17,8 +17,7 @@
  * limitations under the License.
  */
 
-#ifndef __CONFIGURATIONENUMS_H
-#define __CONFIGURATIONENUMS_H
+#pragma once
 
 #include "Module.h"
 
@@ -66,8 +65,5 @@ namespace Plugin {
             INSTALLATION /* @text Installation */
         };
     }
-
 }
 }
-
-#endif // __CONFIGURATIONENUMS_H
