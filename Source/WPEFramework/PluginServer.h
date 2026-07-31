@@ -1906,9 +1906,6 @@ namespace PluginHost {
                 Core::Library result;
                 string lastError;
                 string lastPath;
-                Core::StopWatch stopwatch;
-
-                SYSLOG(Logging::Startup, (_T("[TS-Profile] [TID: %" PRIu64 "] LoadLibrary START for [%s] plugin [%s], monotonic time: %" PRIu64 ""), static_cast<uint64_t>(::gettid()), name.c_str(), Callsign().c_str(), Core::Time::Now().Ticks()));
 
                 std::vector<string> all_paths = GetLibrarySearchPaths(name);
                 std::vector<string>::const_iterator iter = std::begin(all_paths);
@@ -1919,21 +1916,15 @@ namespace PluginHost {
                     if (libraryToLoad.Exists() == true) {
                         lastPath = *iter;
 
-                        SYSLOG(Logging::Startup, (_T("[TS-Profile] [TID: %" PRIu64 "] Attempting to load library path [%s] for plugin [%s], elapsed: %" PRIu64 " ms, monotonic time: %" PRIu64 ""), static_cast<uint64_t>(::gettid()), iter->c_str(), Callsign().c_str(), (stopwatch.Elapsed() / Core::Time::TicksPerMillisecond), Core::Time::Now().Ticks()));
-
                         // Loading a library, in the static initializers, might register Service::MetaData structures. As
                         // the dlopen has a process wide system lock, make sure that the, during open used lock of the 
                         // ServiceAdministrator, is already taken before entering the dlopen. This can only be achieved
                         // by forwarding this call to the ServiceAdministrator, so please so...
                         Core::Library newLib = Core::ServiceAdministrator::Instance().LoadLibrary(iter->c_str());
 
-                        SYSLOG(Logging::Startup, (_T("[TS-Profile] [TID: %" PRIu64 "] ServiceAdministrator::LoadLibrary returned for [%s] plugin [%s], loaded: %s, elapsed: %" PRIu64 " ms, monotonic time: %" PRIu64 ""), static_cast<uint64_t>(::gettid()), iter->c_str(), Callsign().c_str(), newLib.IsLoaded() ? _T("yes") : _T("no"), (stopwatch.Elapsed() / Core::Time::TicksPerMillisecond), Core::Time::Now().Ticks()));
-
                         if (newLib.IsLoaded() == true) {
-                            SYSLOG(Logging::Startup, (_T("[TS-Profile] [TID: %" PRIu64 "] Loading symbols from library [%s] for plugin [%s], elapsed: %" PRIu64 " ms, monotonic time: %" PRIu64 ""), static_cast<uint64_t>(::gettid()), iter->c_str(), Callsign().c_str(), (stopwatch.Elapsed() / Core::Time::TicksPerMillisecond), Core::Time::Now().Ticks()));
                             Core::System::ModuleBuildRefImpl moduleBuildRef = reinterpret_cast<Core::System::ModuleBuildRefImpl>(newLib.LoadFunction(_T("ModuleBuildRef")));
                             Core::System::ModuleServiceMetadataImpl moduleServiceMetadata = reinterpret_cast<Core::System::ModuleServiceMetadataImpl>(newLib.LoadFunction(_T("ModuleServiceMetadata")));
-                            SYSLOG(Logging::Startup, (_T("[TS-Profile] [TID: %" PRIu64 "] Symbols loaded from library [%s] for plugin [%s], moduleBuildRef: %s, moduleServiceMetadata: %s, elapsed: %" PRIu64 " ms, monotonic time: %" PRIu64 ""), static_cast<uint64_t>(::gettid()), iter->c_str(), Callsign().c_str(), moduleBuildRef != nullptr ? _T("found") : _T("missing"), moduleServiceMetadata != nullptr ? _T("found") : _T("missing"), (stopwatch.Elapsed() / Core::Time::TicksPerMillisecond), Core::Time::Now().Ticks()));
                             if ((moduleBuildRef != nullptr) && (moduleServiceMetadata != nullptr)) {
                                 result = newLib;
                                 if (_metadata.IsValid() == false) {
@@ -1953,8 +1944,6 @@ namespace PluginHost {
                     }
                     ++iter;
                 }
-
-                SYSLOG(Logging::Startup, (_T("[TS-Profile] [TID: %" PRIu64 "] LoadLibrary END for [%s] plugin [%s], loaded: %s, elapsed: %" PRIu64 " ms, monotonic time: %" PRIu64 ""), static_cast<uint64_t>(::gettid()), name.c_str(), Callsign().c_str(), result.IsLoaded() ? _T("yes") : _T("no"), (stopwatch.Elapsed() / Core::Time::TicksPerMillisecond), Core::Time::Now().Ticks()));
 
                 if (result.IsLoaded() == false) {
                     if (lastPath.empty() == true) {
@@ -1977,37 +1966,27 @@ namespace PluginHost {
                 const string classNameString(PluginHost::Service::Configuration().ClassName.Value());
                 const TCHAR* className(classNameString.c_str());
                 uint32_t version(static_cast<uint32_t>(~0));
-                Core::StopWatch stopwatch;
-
-                SYSLOG(Logging::Startup, (_T("[TS-Profile] [TID: %" PRIu64 "] AcquireInterfaces START for plugin [%s]:[%s], locator [%s], monotonic time: %" PRIu64 ""), static_cast<uint64_t>(::gettid()), ClassName().c_str(), Callsign().c_str(), locator.c_str(), Core::Time::Now().Ticks()));
 
                 if (locator.empty() == true) {
-                    SYSLOG(Logging::Startup, (_T("[TS-Profile] [TID: %" PRIu64 "] Instantiating local class [%s] for plugin [%s]:[%s], elapsed: %" PRIu64 " ms, monotonic time: %" PRIu64 ""), static_cast<uint64_t>(::gettid()), className, ClassName().c_str(), Callsign().c_str(), (stopwatch.Elapsed() / Core::Time::TicksPerMillisecond), Core::Time::Now().Ticks()));
                     Core::ServiceAdministrator& admin(Core::ServiceAdministrator::Instance());
                     newIF = admin.Instantiate<IPlugin>(Core::Library(), className, version);
-                    SYSLOG(Logging::Startup, (_T("[TS-Profile] [TID: %" PRIu64 "] Instantiated local class [%s] for plugin [%s]:[%s], result: %s, elapsed: %" PRIu64 " ms, monotonic time: %" PRIu64 ""), static_cast<uint64_t>(::gettid()), className, ClassName().c_str(), Callsign().c_str(), newIF != nullptr ? _T("success") : _T("failed"), (stopwatch.Elapsed() / Core::Time::TicksPerMillisecond), Core::Time::Now().Ticks()));
                     if (newIF == nullptr) {
                         ErrorMessage(_T("local class definitions/version does not exist"));
                     }
                 } else {
-                    SYSLOG(Logging::Startup, (_T("[TS-Profile] [TID: %" PRIu64 "] Before Loading Library [%s] for plugin [%s]:[%s], elapsed: %" PRIu64 " ms, monotonic time: %" PRIu64 ""), static_cast<uint64_t>(::gettid()), locator.c_str(), ClassName().c_str(), Callsign().c_str(), (stopwatch.Elapsed() / Core::Time::TicksPerMillisecond), Core::Time::Now().Ticks()));
                     _library = LoadLibrary(locator);
-                    SYSLOG(Logging::Startup, (_T("[TS-Profile] [TID: %" PRIu64 "] After Loading Library [%s] for plugin [%s]:[%s], loaded: %s, elapsed: %" PRIu64 " ms, monotonic time: %" PRIu64 ""), static_cast<uint64_t>(::gettid()), locator.c_str(), ClassName().c_str(), Callsign().c_str(), _library.IsLoaded() ? _T("yes") : _T("no"), (stopwatch.Elapsed() / Core::Time::TicksPerMillisecond), Core::Time::Now().Ticks()));
                     if (_library.IsLoaded() == false) {
                         ErrorMessage(_T("Library could not be loaded"));
                     }
                     else {
-                        SYSLOG(Logging::Startup, (_T("[TS-Profile] [TID: %" PRIu64 "] Before Instantiate class [%s] from Library [%s] for plugin [%s]:[%s], elapsed: %" PRIu64 " ms, monotonic time: %" PRIu64 ""), static_cast<uint64_t>(::gettid()), className, locator.c_str(), ClassName().c_str(), Callsign().c_str(), (stopwatch.Elapsed() / Core::Time::TicksPerMillisecond), Core::Time::Now().Ticks()));
                         if ((newIF = Core::ServiceAdministrator::Instance().Instantiate<IPlugin>(_library, className, version)) == nullptr) {
                             ErrorMessage(_T("class definitions/version does not exist"));
                             _library = Core::Library();
                         }
-                        SYSLOG(Logging::Startup, (_T("[TS-Profile] [TID: %" PRIu64 "] After Instantiate class [%s] from Library [%s] for plugin [%s]:[%s], result: %s, elapsed: %" PRIu64 " ms, monotonic time: %" PRIu64 ""), static_cast<uint64_t>(::gettid()), className, locator.c_str(), ClassName().c_str(), Callsign().c_str(), newIF != nullptr ? _T("success") : _T("failed"), (stopwatch.Elapsed() / Core::Time::TicksPerMillisecond), Core::Time::Now().Ticks()));
                     }
                 }
 
                 if (newIF != nullptr) {
-                    SYSLOG(Logging::Startup, (_T("[TS-Profile] [TID: %" PRIu64 "] Querying interfaces for plugin [%s]:[%s], elapsed: %" PRIu64 " ms, monotonic time: %" PRIu64 ""), static_cast<uint64_t>(::gettid()), ClassName().c_str(), Callsign().c_str(), (stopwatch.Elapsed() / Core::Time::TicksPerMillisecond), Core::Time::Now().Ticks()));
                     _extended = newIF->QueryInterface<IPluginExtended>();
                     _webRequest = newIF->QueryInterface<IWeb>();
                     _webSocket = newIF->QueryInterface<IWebSocket>();
@@ -2026,7 +2005,6 @@ namespace PluginHost {
                         _webSecurity = _administrator.Configuration().Security();
                         _webSecurity->AddRef();
                     }
-                    SYSLOG(Logging::Startup, (_T("[TS-Profile] [TID: %" PRIu64 "] QueryInterface complete for plugin [%s]:[%s], elapsed: %" PRIu64 " ms, monotonic time: %" PRIu64 ""), static_cast<uint64_t>(::gettid()), ClassName().c_str(), Callsign().c_str(), (stopwatch.Elapsed() / Core::Time::TicksPerMillisecond), Core::Time::Now().Ticks()));
 
                     _pluginHandling.Lock();
                     _handler = newIF;
@@ -2043,9 +2021,6 @@ namespace PluginHost {
                     _external.SetInterface(newIF);
 
                     _pluginHandling.Unlock();
-                    SYSLOG(Logging::Startup, (_T("[TS-Profile] [TID: %" PRIu64 "] AcquireInterfaces END for plugin [%s]:[%s], elapsed: %" PRIu64 " ms, monotonic time: %" PRIu64 ""), static_cast<uint64_t>(::gettid()), ClassName().c_str(), Callsign().c_str(), (stopwatch.Elapsed() / Core::Time::TicksPerMillisecond), Core::Time::Now().Ticks()));
-                } else {
-                    SYSLOG(Logging::Startup, (_T("[TS-Profile] [TID: %" PRIu64 "] AcquireInterfaces END (failed) for plugin [%s]:[%s], elapsed: %" PRIu64 " ms, monotonic time: %" PRIu64 ""), static_cast<uint64_t>(::gettid()), ClassName().c_str(), Callsign().c_str(), (stopwatch.Elapsed() / Core::Time::TicksPerMillisecond), Core::Time::Now().Ticks()));
                 }
             }
             void ReleaseInterfaces()

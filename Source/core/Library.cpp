@@ -20,13 +20,9 @@
 #include "Library.h"
 #include "Sync.h"
 #include "Trace.h"
-#include "SystemInfo.h"
-#include <inttypes.h>
 
 #ifdef __LINUX__
 #include <fstream>
-#include <sys/syscall.h>
-#include <unistd.h>
 #endif
 
 namespace WPEFramework {
@@ -105,26 +101,10 @@ namespace Core {
         , _error()
     {
 #ifdef __LINUX__
-        uint64_t startTicks = SystemInfo::Instance().Ticks();
-        uint64_t tid = static_cast<uint64_t>(syscall(SYS_gettid));
-        TRACE_L1("[TS-Profile] [TID: %" PRIu64 "] dlopen START for library [%s], monotonic time: %" PRIu64 "", tid, fileName, startTicks);
-        
         void* handle = dlopen(fileName, RTLD_LAZY);
-        
-        uint64_t endTicks = SystemInfo::Instance().Ticks();
-        uint64_t elapsedMs = (endTicks - startTicks) / 1000; // Ticks are in microseconds
-        TRACE_L1("[TS-Profile] [TID: %" PRIu64 "] dlopen END for library [%s], elapsed: %" PRIu64 " ms, monotonic time: %" PRIu64 "", tid, fileName, elapsedMs, endTicks);
 #endif
 #ifdef __WINDOWS__
-        uint64_t startTicks = SystemInfo::Instance().Ticks();
-        uint64_t tid = static_cast<uint64_t>(::GetCurrentThreadId());
-        TRACE_L1("[TS-Profile] [TID: %" PRIu64 "] LoadLibrary START for library [%s], monotonic time: %" PRIu64 "", tid, fileName, startTicks);
-        
         HMODULE handle = ::LoadLibrary(fileName);
-        
-        uint64_t endTicks = SystemInfo::Instance().Ticks();
-        uint64_t elapsedMs = (endTicks - startTicks) / 1000;
-        TRACE_L1("[TS-Profile] [TID: %" PRIu64 "] LoadLibrary END for library [%s], elapsed: %" PRIu64 " ms, monotonic time: %" PRIu64 "", tid, fileName, elapsedMs, endTicks);
 #endif
 
         if (handle != nullptr) {
@@ -133,7 +113,7 @@ namespace Core {
             _refCountedHandle->_referenceCount = 1;
             _refCountedHandle->_handle = handle;
             _refCountedHandle->_name = fileName;
-            TRACE_L1("[TS-Profile] [TID: %" PRIu64 "] Loaded library: %s", tid, fileName);
+            TRACE_L1("Loaded library: %s\n", fileName);
 
             // Trigger the callback to notify that a library has been loaded
             if (g_loadCallback)
@@ -144,11 +124,10 @@ namespace Core {
        } else {
 #ifdef __LINUX__
             _error = dlerror();
-            TRACE_L1("[TS-Profile] [TID: %" PRIu64 "] Failed to load library: %s, error %s, monotonic time: %" PRIu64 "", tid, fileName, _error.c_str(), SystemInfo::Instance().Ticks());
+            TRACE_L1("Failed to load library: %s, error %s", fileName, _error.c_str());
 #endif
 #ifdef __WINDOWS__
             _error = "Could not load library.";
-            TRACE_L1("[TS-Profile] [TID: %" PRIu64 "] Failed to load library: %s, monotonic time: %" PRIu64 "", tid, fileName, SystemInfo::Instance().Ticks());
 #endif
         }
     }

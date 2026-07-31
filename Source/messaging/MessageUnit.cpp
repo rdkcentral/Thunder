@@ -373,13 +373,8 @@ ENUM_CONVERSION_END(WPEFramework::Core::Messaging::OutputMode)
         */
         /* virtual */ void MessageUnit::Push(const Core::Messaging::MessageInfo& messageInfo, const Core::Messaging::IEvent* message, Core::Messaging::OutputMode outputMode)
         {
-#if 0
-            _direct.Mode(false, _settings.IsAbbreviated());
-            _direct.Output(messageInfo, message);
-#else
             const bool sendDirect    = (outputMode == Core::Messaging::OutputMode::DIRECT) || (outputMode == Core::Messaging::OutputMode::ALL);
             const bool sendToHandler = (outputMode == Core::Messaging::OutputMode::HANDLER) || (outputMode == Core::Messaging::OutputMode::ALL);
-            TRACE_L1("MessageUnit::Push: sendDirect=%s, sendToHandler=%s", (sendDirect ? "true" : "false"), (sendToHandler ? "true" : "false"));
             if (sendDirect == true) {
                 _direct.Output(messageInfo, message);
             }
@@ -414,7 +409,6 @@ ENUM_CONVERSION_END(WPEFramework::Core::Messaging::OutputMode)
                     _direct.Output(messageInfo, message);
                 }
             }
-#endif
         }
     } // namespace Messaging
 }
