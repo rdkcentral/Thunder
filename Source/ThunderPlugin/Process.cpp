@@ -692,10 +692,10 @@ int main(int argc, char** argv)
 
         TRACE_L1("Opening a message file with ID: [%d].", options.Exchange);
 
-    #ifdef __CORE_MESSAGING__
+#ifdef __CORE_MESSAGING__
         // Due to the LXC container support all ID's get mapped. For the MessageBuffer, use the host given ID.
         Messaging::MessageUnit::Instance().Open(options.Exchange);
-    #endif
+#endif
 
         if (remoteNode.IsValid()) {
             void* base = nullptr;
@@ -722,9 +722,9 @@ int main(int argc, char** argv)
         }
 
         // Close messaging unit before singletons are cleared.
-    #ifdef __CORE_MESSAGING__
+#ifdef __CORE_MESSAGING__
         Messaging::MessageUnit::Instance().Close();
-    #endif
+#endif
     }
 
     TRACE_L1("End of Process!!!!");

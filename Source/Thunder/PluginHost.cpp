@@ -741,9 +741,9 @@ int main(int argc, char** argv)
         }
 #endif
 
-    #ifdef __CORE_MESSAGING__
+#ifdef __CORE_MESSAGING__
         MessagingInitialization(options.configFile, options.flushMode);
-    #endif
+#endif
 
         SYSLOG(Logging::Startup, (_T(EXPAND_AND_QUOTE(APPLICATION_NAME))));
         SYSLOG(Logging::Startup, (_T("Starting time: %s"), Core::Time::Now().ToRFC1123(false).c_str()));
@@ -751,14 +751,14 @@ int main(int argc, char** argv)
         SYSLOG(Logging::Startup, (_T("Tree ref:      " _T(EXPAND_AND_QUOTE(TREE_REFERENCE)))));
         SYSLOG(Logging::Startup, (_T("Build ref:     " _T(EXPAND_AND_QUOTE(BUILD_REFERENCE)))));
         SYSLOG(Logging::Startup, (_T("Version:       %d:%d:%d"), Versioning::Major, Versioning::Minor, Versioning::Minor));
-    #ifdef __CORE_MESSAGING__
+#ifdef __CORE_MESSAGING__
         if (_config->MessagingCategoriesFile() == false) {
             SYSLOG(Logging::Startup, (_T("Messages [INT]:  %s"), options.configFile));
             }
             else {
             SYSLOG(Logging::Startup, (_T("Messages [EXT]:  %s"), _config->MessagingCategories().c_str()));
         }
-    #endif
+#endif
 
         // Before we do any translation of IP, make sure we have the right network info...
         if (_config->IPv6() == false) {

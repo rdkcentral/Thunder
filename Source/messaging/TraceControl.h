@@ -36,7 +36,6 @@
 
 #define TRACE(CATEGORY, PARAMETERS)                                                     \
     do {                                                                                \
-        static_assert(std::is_base_of<Thunder::Core::Messaging::BaseCategoryType<Thunder::Core::Messaging::Metadata::type::TRACING>, CATEGORY>::value, "TRACE() only for Tracing controls"); \
         using __control__ = TRACE_CONTROL(CATEGORY);                                    \
         if (__control__::IsEnabled() == true) {                                         \
             CATEGORY __data__ PARAMETERS;                                               \
@@ -57,7 +56,6 @@
 
 #define TRACE_GLOBAL(CATEGORY, PARAMETERS)                                              \
     do {                                                                                \
-        static_assert(std::is_base_of<Thunder::Core::Messaging::BaseCategoryType<Thunder::Core::Messaging::Metadata::type::TRACING>, CATEGORY>::value, "TRACE_GLOBAL() only for Tracing controls"); \
         using __control__ = TRACE_CONTROL(CATEGORY);                                    \
         if (__control__::IsEnabled() == true) {                                         \
             CATEGORY __data__ PARAMETERS;                                               \
@@ -94,11 +92,10 @@
 
 #define TRACE_ENABLED(CATEGORY) true
 
-#define TRACE(CATEGORY, PARAMETERS)                                                                                                                                                          \
-    do {                                                                                                                                                                                     \
-        static_assert(std::is_base_of<Thunder::Core::Messaging::BaseCategoryType<Thunder::Core::Messaging::Metadata::type::TRACING>, CATEGORY>::value, "TRACE() only for Tracing controls"); \
-        CATEGORY __data__ PARAMETERS;                                                                                                                                                        \
-        TRACE_L1("%s: %s", Thunder::Core::ClassNameOnly(typeid(CATEGORY).name()).Text().c_str(), __data__.Data());                                                                           \
+#define TRACE(CATEGORY, PARAMETERS)                                                                                \
+    do {                                                                                                           \
+        CATEGORY __data__ PARAMETERS;                                                                              \
+        TRACE_L1("%s: %s", Thunder::Core::ClassNameOnly(typeid(CATEGORY).name()).Text().c_str(), __data__.Data()); \
     } while(false)
 
 #define TRACE_GLOBAL(CATEGORY, PARAMETERS) TRACE(CATEGORY, PARAMETERS)
