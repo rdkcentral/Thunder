@@ -191,7 +191,9 @@ target_link_libraries(${TEST_RUNNER_NAME}
 )
 
 if(MESSAGING)
-    target_link_libraries(${TEST_RUNNER_NAME} ${NAMESPACE}Messaging::${NAMESPACE}Messaging)
+    target_link_libraries(${TEST_RUNNER_NAME}
+        PRIVATE
+            ${NAMESPACE}Messaging::${NAMESPACE}Messaging)
 endif()
 
 install(
