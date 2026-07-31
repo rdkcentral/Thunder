@@ -38,7 +38,13 @@ namespace PluginHost {
     class ConsoleOptions : public Core::Options {
     public:
         ConsoleOptions(int argumentCount, TCHAR* arguments[])
-            : Core::Options(argumentCount, arguments, _T(":bhc:fF"))
+            : Core::Options(argumentCount, arguments,
+#ifdef __CORE_MESSAGING__
+                _T(":bhc:fF")
+#else
+                _T(":bhc")
+#endif
+            )
             , configFile(Server::ConfigFile)
 #ifdef __CORE_MESSAGING__
             , flushMode(Messaging::MessageUnit::flush::OFF)
@@ -607,11 +613,17 @@ int main(int argc, char** argv)
         syslog(LOG_ERR, EXPAND_AND_QUOTE(APPLICATION_NAME) " Daemon failed to start. Incorrect Options.");
 #endif
         if ((_background == false) && (options.RequestUsage())) {
+#ifdef __CORE_MESSAGING__
             fprintf(stderr, "Usage: " EXPAND_AND_QUOTE(APPLICATION_NAME) " [-c <config file>] [-b] [-fF]\n");
+#else
+            fprintf(stderr, "Usage: " EXPAND_AND_QUOTE(APPLICATION_NAME) " [-c <config file>] [-b]\n");
+#endif
             fprintf(stderr, "       -c <config file>  Define the configuration file to use.\n");
             fprintf(stderr, "       -b                Run " EXPAND_AND_QUOTE(APPLICATION_NAME) " in the background.\n");
+#ifdef __CORE_MESSAGING__
             fprintf(stderr, "       -f                Flush messaging information also to syslog/console, none abbreviated\n");
             fprintf(stderr, "       -F                Flush messaging information also to syslog/console, abbreviated\n");
+#endif
         }
         exit(EXIT_FAILURE);
     }
