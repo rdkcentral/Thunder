@@ -80,9 +80,9 @@ else()
 endif()
 
 if(MESSAGING)
-        target_link_libraries(${TARGET}
-                PRIVATE
-                        ${NAMESPACE}Messaging::${NAMESPACE}Messaging)
+    target_link_libraries(${TARGET}
+        PRIVATE
+            ${NAMESPACE}Messaging::${NAMESPACE}Messaging)
 endif()
 
 set_target_properties(${TARGET} PROPERTIES

@@ -128,10 +128,11 @@ namespace Logging {
 #else
 #define SYSLOG_ANNOUNCE(CATEGORY)
 
-#define SYSLOG(CATEGORY, PARAMETERS)     \
-    do {                                 \
-        CATEGORY __data__ PARAMETERS;    \
-        TRACE_L1("%s", __data__.Data()); \
+#define SYSLOG(CATEGORY, PARAMETERS)                                                                                                        \
+    do {                                                                                                                                    \
+        static_assert(std::is_base_of<Thunder::Logging::BaseLoggingType<CATEGORY>, CATEGORY>::value, "SYSLOG() only for Logging controls"); \
+        CATEGORY __data__ PARAMETERS;                                                                                                       \
+        TRACE_L1("%s: %s", Thunder::Core::ClassNameOnly(typeid(CATEGORY).name()).Text().c_str(), __data__.Data());                          \
     } while(false)
 
 #define SYSLOG_GLOBAL(CATEGORY, PARAMETERS) \

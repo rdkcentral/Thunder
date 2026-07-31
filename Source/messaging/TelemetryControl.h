@@ -72,27 +72,27 @@ namespace Telemetry {
     EXTERNAL_HIDDEN typename BaseTelemetryType<CATEGORY>::Control
         BaseTelemetryType<CATEGORY>::_control(false);
 #else
-    inline void ConsoleTelemetry(const string& value)
+    inline void ConsoleTelemetry(const string& category, const string& value)
     {
-        TRACE_L1("%s", value.c_str());
+        TRACE_L1("%s: %s", category.c_str(), value.c_str());
     }
 
     template <typename VALUE, std::enable_if_t<std::is_integral_v<std::decay_t<VALUE>> && std::is_signed_v<std::decay_t<VALUE>>, int> = 0>
-    inline void ConsoleTelemetry(const VALUE value)
+    inline void ConsoleTelemetry(const string& category, const VALUE value)
     {
-        TRACE_L1("%lld", static_cast<int64_t>(value));
+        TRACE_L1("%s: %lld", category.c_str(), static_cast<int64_t>(value));
     }
 
     template <typename VALUE, std::enable_if_t<std::is_integral_v<std::decay_t<VALUE>> && std::is_unsigned_v<std::decay_t<VALUE>>, int> = 0>
-    inline void ConsoleTelemetry(const VALUE value)
+    inline void ConsoleTelemetry(const string& category, const VALUE value)
     {
-        TRACE_L1("%llu", static_cast<uint64_t>(value));
+        TRACE_L1("%s: %llu", category.c_str(), static_cast<uint64_t>(value));
     }
 
     template <typename VALUE, std::enable_if_t<std::is_floating_point_v<std::decay_t<VALUE>>, int> = 0>
-    inline void ConsoleTelemetry(const VALUE value)
+    inline void ConsoleTelemetry(const string& category, const VALUE value)
     {
-        TRACE_L1("%g", static_cast<double>(value));
+        TRACE_L1("%s: %g", category.c_str(), static_cast<double>(value));
     }
 
     template <typename CATEGORY>
@@ -136,8 +136,9 @@ namespace Telemetry {
 #else
 #define TELEMETRY_ANNOUNCE(CATEGORY)
 
-#define TELEMETRY(CATEGORY, VALUE)                   \
-    do {                                             \
-        Thunder::Telemetry::ConsoleTelemetry(VALUE); \
+#define TELEMETRY(CATEGORY, VALUE)                                                                                                                  \
+    do {                                                                                                                                            \
+        static_assert(std::is_base_of<Thunder::Telemetry::BaseTelemetryType<CATEGORY>, CATEGORY>::value, "TELEMETRY() only for Telemetry controls");\
+        Thunder::Telemetry::ConsoleTelemetry(Thunder::Core::ClassNameOnly(typeid(CATEGORY).name()).Text(), VALUE);                                  \
     } while(false)
 #endif

@@ -495,9 +495,7 @@ namespace PluginHost {
             fflush(stderr);
         }
 
-    #ifdef __CORE_MESSAGING__
         Logging::DumpException(_T("General"));
-    #endif
 
         ExitHandler::Destruct();
     }

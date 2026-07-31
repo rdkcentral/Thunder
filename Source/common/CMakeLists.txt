@@ -41,16 +41,15 @@ target_link_libraries(${TARGET}
         )
 
 if(MESSAGING)
-        target_link_libraries(${TARGET}
-                PUBLIC
-                        ${NAMESPACE}Messaging::${NAMESPACE}Messaging)
+    target_link_libraries(${TARGET}
+        PUBLIC
+            ${NAMESPACE}Messaging::${NAMESPACE}Messaging)
 endif()
 
 if (WARNING_REPORTING)
     target_link_libraries(${TARGET}
-           PUBLIC
-              ${NAMESPACE}WarningReporting::${NAMESPACE}WarningReporting
-            )
+        PUBLIC
+            ${NAMESPACE}WarningReporting::${NAMESPACE}WarningReporting)
 endif()
 
 target_include_directories(${TARGET}

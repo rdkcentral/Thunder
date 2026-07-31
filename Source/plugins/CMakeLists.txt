@@ -80,14 +80,13 @@ target_link_libraries(${TARGET}
 if(MESSAGING)
     target_link_libraries(${TARGET}
         PRIVATE
-        ${NAMESPACE}Messaging::${NAMESPACE}Messaging)
+            ${NAMESPACE}Messaging::${NAMESPACE}Messaging)
 endif()
 
 if (WARNING_REPORTING)
     target_link_libraries(${TARGET}
-           PUBLIC 
-              ${NAMESPACE}WarningReporting::${NAMESPACE}WarningReporting
-            )
+        PUBLIC 
+            ${NAMESPACE}WarningReporting::${NAMESPACE}WarningReporting)
 endif()
 
 # when compiling proxy/stubs we should ignore deprecated warnings (which are treated as erros nowadays) 
@@ -102,9 +101,9 @@ target_link_libraries(${TARGET_PROXYSTUBS}
         )
 
 if(MESSAGING)
-        target_link_libraries(${TARGET_PROXYSTUBS}
-                PRIVATE
-                        ${NAMESPACE}Messaging::${NAMESPACE}Messaging)
+    target_link_libraries(${TARGET_PROXYSTUBS}
+        PRIVATE
+            ${NAMESPACE}Messaging::${NAMESPACE}Messaging)
 endif()
 
 target_include_directories( ${TARGET}
