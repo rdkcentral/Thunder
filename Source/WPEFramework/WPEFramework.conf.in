@@ -200,8 +200,14 @@ if boolean('@MESSAGING@'):
   __reporting.add("settings", __reporting_settings)
 
   messaging.add("reporting", __reporting)
+  __telemetry = JSON()
+  __telemetry.add("abbreviated", True)
   if ('@FLUSH@' == 'true'):
-    __telemetry = JSON()
-    __telemetry.add("abbreviated", True)
     __telemetry.add("output", "handler")
-    messaging.add("telemetry", __telemetry)
+  __telemetry_settings = []
+  __telemetry_enable={
+    "enabled": True
+  }
+  __telemetry_settings.append(__telemetry_enable)
+  __telemetry.add("settings", __telemetry_settings)
+  messaging.add("telemetry", __telemetry)
