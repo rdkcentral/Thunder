@@ -116,15 +116,11 @@ namespace Plugin {
                 , _answer(Core::ProxyType<Web::TextBody>::Create())
                 , _destinations()
             {
-                string text;
                 _request.Verb = Web::Request::HTTP_MSEARCH;
                 _request.ST = SearchTarget;
 
                 if (Open(1000) == Core::ERROR_NONE) {
-                    Destination newEntry;
-                    newEntry._destination = address;
-                    newEntry._timeToLive = timeToLive;
-                    _destinations.push_back(newEntry);
+                    _destinations.push_back(Destination {address, timeToLive});
                     Core::SocketDatagram::Trigger();
                 } else {
                     ASSERT(false);
