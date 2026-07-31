@@ -40,7 +40,9 @@ namespace PluginHost {
         ConsoleOptions(int argumentCount, TCHAR* arguments[])
             : Core::Options(argumentCount, arguments, _T(":bhc:fF"))
             , configFile(Server::ConfigFile)
+#ifdef __CORE_MESSAGING__
             , flushMode(Messaging::MessageUnit::flush::OFF)
+#endif
         {
             Parse();
         }
@@ -50,7 +52,9 @@ namespace PluginHost {
 
     public:
         const TCHAR* configFile;
+#ifdef __CORE_MESSAGING__
         Messaging::MessageUnit::flush flushMode;
+#endif
 
     private:
         virtual void Option(const TCHAR option, const TCHAR* argument)
@@ -59,12 +63,14 @@ namespace PluginHost {
             case 'c':
                 configFile = argument;
                 break;
+#ifdef __CORE_MESSAGING__
             case 'f':
                 flushMode = Messaging::MessageUnit::flush::FLUSH;
                 break;
             case 'F':
                 flushMode = Messaging::MessageUnit::flush::FLUSH_ABBREVIATED;
                 break;
+#endif
 #ifndef __WINDOWS__
             case 'b':
                 _background = true;
@@ -286,7 +292,9 @@ namespace PluginHost {
             closelog();
 #endif
 
+#ifdef __CORE_MESSAGING__
             Messaging::MessageUnit::Instance().Close();
+#endif
 
 #ifndef __WINDOWS__
             if (_background) {
@@ -487,11 +495,14 @@ namespace PluginHost {
             fflush(stderr);
         }
 
+    #ifdef __CORE_MESSAGING__
         Logging::DumpException(_T("General"));
+    #endif
 
         ExitHandler::Destruct();
     }
 
+#ifdef __CORE_MESSAGING__
     void MessagingInitialization(const string& pathName, const Messaging::MessageUnit::flush flushMode) {
         string messagingSettings;
 
@@ -569,6 +580,7 @@ namespace PluginHost {
 #endif
         }
     }
+#endif
     } // extern "C"
 }
 }
@@ -731,7 +743,9 @@ int main(int argc, char** argv)
         }
 #endif
 
+    #ifdef __CORE_MESSAGING__
         MessagingInitialization(options.configFile, options.flushMode);
+    #endif
 
         SYSLOG(Logging::Startup, (_T(EXPAND_AND_QUOTE(APPLICATION_NAME))));
         SYSLOG(Logging::Startup, (_T("Starting time: %s"), Core::Time::Now().ToRFC1123(false).c_str()));
@@ -739,12 +753,14 @@ int main(int argc, char** argv)
         SYSLOG(Logging::Startup, (_T("Tree ref:      " _T(EXPAND_AND_QUOTE(TREE_REFERENCE)))));
         SYSLOG(Logging::Startup, (_T("Build ref:     " _T(EXPAND_AND_QUOTE(BUILD_REFERENCE)))));
         SYSLOG(Logging::Startup, (_T("Version:       %d:%d:%d"), Versioning::Major, Versioning::Minor, Versioning::Minor));
+    #ifdef __CORE_MESSAGING__
         if (_config->MessagingCategoriesFile() == false) {
             SYSLOG(Logging::Startup, (_T("Messages [INT]:  %s"), options.configFile));
             }
             else {
             SYSLOG(Logging::Startup, (_T("Messages [EXT]:  %s"), _config->MessagingCategories().c_str()));
         }
+    #endif
 
         // Before we do any translation of IP, make sure we have the right network info...
         if (_config->IPv6() == false) {

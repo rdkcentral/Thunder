@@ -96,12 +96,18 @@ target_link_libraries(${TARGET}
           ${NAMESPACE}Core::${NAMESPACE}Core
           ${NAMESPACE}Cryptalgo::${NAMESPACE}Cryptalgo
           ${NAMESPACE}COM::${NAMESPACE}COM
-          ${NAMESPACE}Messaging::${NAMESPACE}Messaging
           ${NAMESPACE}WebSocket::${NAMESPACE}WebSocket
           ${NAMESPACE}Plugins::${NAMESPACE}Plugins
           ${NAMESPACE}COMProcess::${NAMESPACE}COMProcess  # For COM executable define
           Threads::Threads
         )
+
+if(MESSAGING)
+        target_link_libraries(${TARGET}
+                PRIVATE
+                    ${NAMESPACE}Messaging::${NAMESPACE}Messaging
+                )
+endif()
 
 if(WARNING_REPORTING)
     target_sources(${TARGET} PRIVATE WarningReportingCategories.cpp)

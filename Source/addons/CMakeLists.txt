@@ -26,6 +26,18 @@ option(PROCESSCONTAINERS
 option(WARNING_REPORTING
         "Include warning reporting in the build." OFF)
 
+if(NOT MESSAGING)
+    if(LOCALTRACER)
+        message(STATUS "Messaging disabled, LocalTracer support disabled")
+        set(LOCALTRACER OFF CACHE BOOL "Include local tracing support library in the build." FORCE)
+    endif()
+
+    if(WARNING_REPORTING)
+        message(STATUS "Messaging disabled, WarningReporting support disabled")
+        set(WARNING_REPORTING OFF CACHE BOOL "Include warning reporting in the build." FORCE)
+    endif()
+endif()
+
 if(HIBERNATESUPPORT)
     add_subdirectory(hibernate)
 endif()

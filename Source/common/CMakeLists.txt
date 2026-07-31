@@ -33,13 +33,19 @@ target_link_libraries(${TARGET}
         PUBLIC
           ${NAMESPACE}Core::${NAMESPACE}Core
           ${NAMESPACE}Cryptalgo::${NAMESPACE}Cryptalgo
-          ${NAMESPACE}Messaging::${NAMESPACE}Messaging
           ${NAMESPACE}COM::${NAMESPACE}COM
           ${NAMESPACE}WebSocket::${NAMESPACE}WebSocket
         PRIVATE
           ${NAMESPACE}Plugins::${NAMESPACE}Plugins
           CompileSettingsDebug::CompileSettingsDebug
         )
+
+if(MESSAGING)
+                target_link_libraries(${TARGET}
+                                PUBLIC
+                                        ${NAMESPACE}Messaging::${NAMESPACE}Messaging
+                                )
+endif()
 
 if (WARNING_REPORTING)
     target_link_libraries(${TARGET}

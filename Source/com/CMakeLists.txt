@@ -49,9 +49,15 @@ target_compile_options(${TARGET} PRIVATE -Wno-psabi)
 target_link_libraries(${TARGET}
         PRIVATE
           ${NAMESPACE}Core::${NAMESPACE}Core
-          ${NAMESPACE}Messaging::${NAMESPACE}Messaging
           CompileSettingsDebug::CompileSettingsDebug
         )
+
+if(MESSAGING)
+                target_link_libraries(${TARGET}
+                                PRIVATE
+                                        ${NAMESPACE}Messaging::${NAMESPACE}Messaging
+                                )
+endif()
 
 if (WARNING_REPORTING)
 target_compile_definitions(${TARGET}

@@ -68,7 +68,6 @@ if(APPLE)
         PRIVATE
         CompileSettingsDebug
         ${NAMESPACE}Core::${NAMESPACE}Core
-        ${NAMESPACE}Messaging::${NAMESPACE}Messaging
         "-Wl,-force_load" ${CONTAINERS}
     )
 else()
@@ -76,9 +75,15 @@ else()
         PRIVATE
         CompileSettingsDebug
         ${NAMESPACE}Core::${NAMESPACE}Core
-        ${NAMESPACE}Messaging::${NAMESPACE}Messaging
         -Wl,--whole-archive ${CONTAINERS} -Wl,--no-whole-archive
     )
+endif()
+
+if(MESSAGING)
+                target_link_libraries(${TARGET}
+                                PRIVATE
+                                        ${NAMESPACE}Messaging::${NAMESPACE}Messaging
+                                )
 endif()
 
 set_target_properties(${TARGET} PROPERTIES

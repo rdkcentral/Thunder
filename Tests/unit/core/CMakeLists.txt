@@ -48,7 +48,6 @@ add_executable(${TEST_RUNNER_NAME}
    test_lockablecontainer.cpp
    test_measurementtype.cpp
    test_memberavailability.cpp
-   test_message_dispatcher.cpp
    test_messageException.cpp
    test_serviceadministrator.cpp
    test_networkinfo.cpp
@@ -99,6 +98,10 @@ add_executable(${TEST_RUNNER_NAME}
    test_cryptalgo.cpp
    test_jwt.cpp
 )
+
+if(MESSAGING)
+    target_sources(${TEST_RUNNER_NAME} PRIVATE test_message_dispatcher.cpp)
+endif()
 
 target_include_directories(${TEST_RUNNER_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/Source/addons)
 target_include_directories(${TEST_RUNNER_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/Source/Thunder)
@@ -184,9 +187,12 @@ target_link_libraries(${TEST_RUNNER_NAME}
     ${NAMESPACE}COM::${NAMESPACE}COM
     ${NAMESPACE}Plugins::${NAMESPACE}Plugins
     ${NAMESPACE}WebSocket::${NAMESPACE}WebSocket
-    ${NAMESPACE}Messaging::${NAMESPACE}Messaging
     ${NAMESPACE}Cryptalgo::${NAMESPACE}Cryptalgo
 )
+
+if(MESSAGING)
+    target_link_libraries(${TEST_RUNNER_NAME} ${NAMESPACE}Messaging::${NAMESPACE}Messaging)
+endif()
 
 install(
     TARGETS ${TEST_RUNNER_NAME}
