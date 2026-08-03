@@ -21,7 +21,7 @@
 
 #include "Module.h"
 
-#if defined(_THUNDER_PRODUCTION) && defined(__CORE_MESSAGING__)
+#ifdef _THUNDER_PRODUCTION
 
 #define TRACE_CONTROL(CATEGORY)
 #define TRACE_ENABLED(CATEGORY)
