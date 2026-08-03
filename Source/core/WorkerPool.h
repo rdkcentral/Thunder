@@ -397,6 +397,10 @@ POP_WARNING()
 
             return (result);
         }
+        uint32_t Pending() const
+        {
+            return (_threadPool.Pending());
+        }
         const Metadata& Snapshot() const
         {
             _metadata.Slot[0].WorkerId = _timer.ThreadId();

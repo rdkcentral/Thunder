@@ -133,6 +133,11 @@ namespace PluginHost {
             ~WorkerPoolImplementation() override = default;
 
         public:
+            void Submit(const Core::ProxyType<Core::IDispatch>& job) override
+            {
+                Core::WorkerPool::Submit(job);
+                SYSLOG(Logging::Startup, (_T("WorkerPool queue filled: %u / %u"), Core::WorkerPool::Pending(), static_cast<uint32_t>(64 * THREADPOOL_COUNT)));
+            }
             void Idle() {
                 // Could be that we can now drop the dynamic library...
                 Core::ServiceAdministrator::Instance().FlushLibraries();

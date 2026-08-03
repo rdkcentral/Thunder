@@ -386,6 +386,8 @@ namespace Core {
                 }
             }
 
+            TRACE_L1("ResourceMonitor filled file descriptors: %d", filledFileDescriptors);
+
             if (filledFileDescriptors > 1) {
                 _adminLock.Unlock();
 
