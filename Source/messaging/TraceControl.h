@@ -23,6 +23,8 @@
 
 #if defined(_THUNDER_PRODUCTION) && defined(__CORE_MESSAGING__)
 
+#define TRACE_CONTROL(CATEGORY)
+#define TRACE_ENABLED(CATEGORY)
 #define TRACE(CATEGORY, PARAMETERS)
 #define TRACE_GLOBAL(CATEGORY, PARAMETERS)
 #define TRACE_DURATION(CODE, ...)
@@ -89,6 +91,8 @@
     } while(false)
 
 #else
+
+#define TRACE_CONTROL(CATEGORY)
 
 #define TRACE_ENABLED(CATEGORY) true
 
