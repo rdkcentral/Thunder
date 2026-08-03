@@ -59,9 +59,9 @@ if (PLUGIN_CONTROLLER_UI_ENABLED STREQUAL "false")
 endif()
 
 if (FLUSH_LOGS)
-    set(FLUSH "true")
+    set(FLUSH true)
 else()
-    set(FLUSH "false")
+    set(FLUSH false)
 endif()
 
 if(CMAKE_VERSION VERSION_LESS 3.20.0 AND LEGACY_CONFIG_GENERATOR)
