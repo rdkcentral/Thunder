@@ -42,7 +42,7 @@ namespace PluginHost {
 #ifdef __CORE_MESSAGING__
                 _T(":bhc:fF")
 #else
-                _T(":bhc")
+                _T(":bhc:")
 #endif
             )
             , configFile(Server::ConfigFile)
