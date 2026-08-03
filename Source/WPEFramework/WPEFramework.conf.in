@@ -83,7 +83,7 @@ if boolean('@MESSAGING@'):
   messaging = JSON()
   messaging.add("path", '@MESSAGECONTROL_PATH@')
   messaging.add("port", '@MESSAGING_PORT@')
-  messaging.add("flush", '@FLUSH@')
+  messaging.add("flush", boolean('@FLUSH@'))
 
   __notification = {
        "category" : "Notification",

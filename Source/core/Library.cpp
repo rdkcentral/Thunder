@@ -126,9 +126,6 @@ namespace Core {
             _error = dlerror();
             TRACE_L1("Failed to load library: %s, error %s", fileName, _error.c_str());
 #endif
-#ifdef __WINDOWS__
-            _error = "Could not load library.";
-#endif
         }
     }
     Library::Library(const Library& copy)
