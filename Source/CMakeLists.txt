@@ -25,15 +25,7 @@ option(CRYPTALGO
 option(WEBSOCKET
         "Include the websocket library." ON)
 option(MESSAGING
-        "Include the messaging library." OFF)
-
-if(NOT MESSAGING)
-        if(LOCALTRACER)
-                message(STATUS "Messaging disabled, LocalTracer support disabled")
-                set(LOCALTRACER OFF CACHE BOOL "Include local tracing support library in the build." FORCE)
-        endif()
-endif()
-
+        "Include the messaging library." ON)
 option(COM
         "Include the COM library." ON)
 option(PROCESS
