@@ -118,6 +118,7 @@ namespace Core {
                 _queue.push_back(a_Entry);
 
                 // Determine the new state.
+                TRACE_L1("QueueType::Post threadId = %llu, _state = %d", static_cast<unsigned long long>(Core::Thread::ThreadId()), static_cast<int>(_state.GetState()));
                 _state.SetState(IsFull() ? LIMITED : ENTRIES);
 
                 Result = true;
@@ -149,7 +150,10 @@ namespace Core {
 
                         // Determine the new state.
                         _state.SetState(IsFull() ? LIMITED : ENTRIES);
+
+                        TRACE_L1("QueueType::Insert _state-1 = %d", static_cast<int>(_state.GetState()));
                     } else {
+                        TRACE_L1("QueueType::Insert _state-2 = %d", static_cast<int>(_state.GetState()));
                         // We are moving into a wait, release the lock.
                         _adminLock.Unlock();
 
