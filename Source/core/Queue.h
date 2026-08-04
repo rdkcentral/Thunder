@@ -29,6 +29,7 @@
 
 #include <algorithm>
 #include <queue>
+#include <thread>
 
 #include "Module.h"
 #include "StateTrigger.h"
@@ -118,7 +119,7 @@ namespace Core {
                 _queue.push_back(a_Entry);
 
                 // Determine the new state.
-                TRACE_L1("QueueType::Post threadId = %llu, _state = %d", static_cast<unsigned long long>(Core::Thread::ThreadId()), static_cast<int>(_state.GetState()));
+                TRACE_L1("QueueType::Post threadId = %llu, _state = %d", static_cast<unsigned long long>(std::hash<std::thread::id>{}(std::this_thread::get_id())), static_cast<int>(_state.GetState()));
                 _state.SetState(IsFull() ? LIMITED : ENTRIES);
 
                 Result = true;
