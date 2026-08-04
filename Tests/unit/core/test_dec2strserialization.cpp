@@ -32,7 +32,7 @@ namespace Thunder {
 namespace Tests {
 namespace Core {
 
-    TEST(Dec2StrSerialization, serialiation) {
+    TEST(Dec2StrSerialization, serialization) {
         uint8_t object[] = {0xC0, 0xA8, 0x01, 0xFF};
 
         string output;
@@ -108,6 +108,24 @@ namespace Core {
 
         EXPECT_EQ(length, 2); // !!!
         EXPECT_EQ(memcmp(expected, buffer, sizeof(buffer)), 0);
+    }
+
+    TEST(Dec2StrSerialization, deserialization_negative_4) {
+        string str = "292.168.1.355";
+        uint8_t buffer[8] = {0};
+
+        uint16_t length = ::Thunder::Core::FromDecString(str, buffer, sizeof(buffer), '.');
+
+        EXPECT_EQ(length, 0);
+    }
+
+    TEST(Dec2StrSerialization, deserialization_negative_4) {
+        string str = "C0.168.1.255";
+        uint8_t buffer[8] = {0};
+
+        uint16_t length = ::Thunder::Core::FromDecString(str, buffer, sizeof(buffer), '.');
+
+        EXPECT_EQ(length, 0);
     }
 
 } // Core

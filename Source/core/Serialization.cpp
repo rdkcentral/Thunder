@@ -294,21 +294,23 @@ POP_WARNING()
                     haveValue = false;
                 }
                 else {
-                    failure = true;
+                    failure = true; // double or leading delimiter
                 }
             }
             else {
-                failure = true;
+                failure = true; // invalid character
             }
         }
 
-        if ((haveValue == true) && (current <= 255) && (failure == false)) {
-            if (count < maxLength) {
-                object[count++] = static_cast<uint8_t>(current);
-            }
-        }
-        else {
+        if (failure == true) {
             count = 0;
+        }
+        else if (count < maxLength) {
+            if (haveValue == true) {
+                object[count++] = static_cast<uint8_t>(current);
+            else {
+                count = 0; // trailing delimiter
+            }
         }
 
         return (count);
