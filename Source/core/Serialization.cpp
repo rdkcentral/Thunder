@@ -325,21 +325,17 @@ POP_WARNING()
     uint32_t FromDecString(const string& decString, std::vector<uint8_t>& object, const uint32_t maxLength, const TCHAR delimiter)
     {
         ASSERT(object.empty() == true);
+        ASSERT(maxLength != 0);
 
         uint32_t actual = 0;
-
         uint32_t maxSize = 0;
 
         if (decString.empty() == false) {
             maxSize = 1;
 
-            for (uint32_t i = 0; i < static_cast<uint32_t>(decString.length()); i++) {
+            for (uint32_t i = 0; ((i < static_cast<uint32_t>(decString.length())) && (maxSize < maxLength)); i++) {
                 if (decString[i] == delimiter) {
                     maxSize++;
-
-                    if (maxSize == maxLength) {
-                        break;
-                    }
                 }
             }
         }
