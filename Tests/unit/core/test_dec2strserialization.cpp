@@ -41,6 +41,15 @@ namespace Core {
         EXPECT_EQ(output, "192.168.1.255");
     }
 
+    TEST(Dec2StrSerialization, serialization_long) {
+        uint8_t object[] = {0xC0, 0xA8, 0x01, 0xFF, 0x01, 0xFF};
+
+        string output;
+        ::Thunder::Core::ToDecString(object, sizeof(object), output, '.');
+
+        EXPECT_EQ(output, "192.168.1.255.1.255");
+    }
+
     TEST(Dec2StrSerialization, deserialization) {
         string str = "192.168.1.255";
         uint8_t expected[] = {0xC0, 0xA8, 0x01, 0xFF};
@@ -48,7 +57,18 @@ namespace Core {
 
         uint16_t length = ::Thunder::Core::FromDecString(str, buffer, sizeof(buffer), '.');
 
-        EXPECT_EQ(length, 4);
+        EXPECT_EQ(length, sizeof(expected)));
+        EXPECT_EQ(memcmp(expected, buffer, sizeof(expected)), 0);
+    }
+
+    TEST(Dec2StrSerialization, deserialization_long) {
+        string str = "192.168.1.255.1.255";
+        uint8_t expected[] = {0xC0, 0xA8, 0x01, 0xFF, 0x01, 0xFF};
+        uint8_t buffer[8] = {0};
+
+        uint16_t length = ::Thunder::Core::FromDecString(str, buffer, sizeof(buffer), '.');
+
+        EXPECT_EQ(length, sizeof(expected));
         EXPECT_EQ(memcmp(expected, buffer, sizeof(expected)), 0);
     }
 
@@ -59,8 +79,19 @@ namespace Core {
 
         uint16_t length = ::Thunder::Core::FromDecString(str, buffer, sizeof(buffer), '.');
 
-        EXPECT_EQ(length, 4);
+        EXPECT_EQ(length, sizeof(expected));
         EXPECT_EQ(memcmp(expected, buffer, sizeof(expected)), 0);
+    }
+
+    TEST(Dec2StrSerialization, deserialization_truncated) {
+        string str = "192.168.1.255";
+        uint8_t expected[] = {0xC0, 0xA8, 0x01, 0xFF};
+        uint8_t buffer[2] = {0};
+
+        uint16_t length = ::Thunder::Core::FromDecString(str, buffer, sizeof(buffer), '.');
+
+        EXPECT_EQ(length, sizeof(buffer)); // !!!
+        EXPECT_EQ(memcmp(expected, buffer, sizeof(buffer)), 0);
     }
 
     TEST(Dec2StrSerialization, deserialization_negative_1) {
@@ -99,18 +130,25 @@ namespace Core {
         EXPECT_EQ(length, 0);
     }
 
-    TEST(Dec2StrSerialization, deserialization_negative_5) {
-        string str = "192.168.1.255";
-        uint8_t expected[] = {0xC0, 0xA8, 0x01, 0xFF};
-        uint8_t buffer[2] = {0};
+    TEST(Dec2StrSerialization, deserialization_negative_5 {
+        string str = "192.168.1.255.";
+        uint8_t buffer[4] = {0};
 
         uint16_t length = ::Thunder::Core::FromDecString(str, buffer, sizeof(buffer), '.');
 
-        EXPECT_EQ(length, 2); // !!!
-        EXPECT_EQ(memcmp(expected, buffer, sizeof(buffer)), 0);
+        EXPECT_EQ(length, 0);
     }
 
     TEST(Dec2StrSerialization, deserialization_negative_6) {
+        string str = "192.168.1.255.355.";
+        uint8_t buffer[4] = {0};
+
+        uint16_t length = ::Thunder::Core::FromDecString(str, buffer, sizeof(buffer), '.');
+
+        EXPECT_EQ(length, 0);
+    }
+
+    TEST(Dec2StrSerialization, deserialization_negative_7) {
         string str = "292.168.1.355";
         uint8_t buffer[8] = {0};
 
@@ -119,7 +157,7 @@ namespace Core {
         EXPECT_EQ(length, 0);
     }
 
-    TEST(Dec2StrSerialization, deserialization_negative_7) {
+    TEST(Dec2StrSerialization, deserialization_negative_8) {
         string str = "C0.168.1.255";
         uint8_t buffer[8] = {0};
 
