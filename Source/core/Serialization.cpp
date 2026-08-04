@@ -275,7 +275,7 @@ POP_WARNING()
         bool haveValue = false;
         bool failure = false;
 
-        for (uint32_t i = 0; (i < static_cast<uint32_t>(decString.length())) && (failure == false); ++i) {
+        for (uint32_t i = 0; (i < static_cast<uint32_t>(decString.length())) && (count < maxLength) && (failure == false)); ++i) {
             const TCHAR c = decString[i];
 
             if ((c >= TCHAR('0')) && (c <= TCHAR('9'))) {
@@ -287,7 +287,7 @@ POP_WARNING()
                 }
             }
             else if (c == delimiter) {
-                if ((haveValue == true) && (count < maxLength)) {
+                if (haveValue == true) {
                     object[count++] = static_cast<uint8_t>(current);
                     current = 0;
                     haveValue = false;
@@ -301,8 +301,10 @@ POP_WARNING()
             }
         }
 
-        if ((haveValue == true) && ((current <= 255) && (count < maxLength)) && (failure == false)) {
-            object[count++] = static_cast<uint8_t>(current);
+        if ((haveValue == true) && (current <= 255) && (failure == false)) {
+            if (count < maxLength) {
+                object[count++] = static_cast<uint8_t>(current);
+            }
         }
         else {
             count = 0;
