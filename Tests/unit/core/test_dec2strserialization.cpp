@@ -110,7 +110,7 @@ namespace Core {
         EXPECT_EQ(memcmp(expected, buffer, sizeof(buffer)), 0);
     }
 
-    TEST(Dec2StrSerialization, deserialization_negative_4) {
+    TEST(Dec2StrSerialization, deserialization_negative_6) {
         string str = "292.168.1.355";
         uint8_t buffer[8] = {0};
 
@@ -119,7 +119,7 @@ namespace Core {
         EXPECT_EQ(length, 0);
     }
 
-    TEST(Dec2StrSerialization, deserialization_negative_4) {
+    TEST(Dec2StrSerialization, deserialization_negative_7) {
         string str = "C0.168.1.255";
         uint8_t buffer[8] = {0};
 
