@@ -135,12 +135,8 @@ namespace Plugin {
             void Ping(const uint8_t timeToLive)
             {
                 if (IsOpen()) {
-                    Destination newEntry;
-                    newEntry._destination = RemoteNode();
-                    newEntry._timeToLive = timeToLive;
-
                     _adminLock.Lock();
-                    _destinations.push_back(newEntry);
+                    _destinations.push_back(Destination { RemoteNode(), timeToLive });
                     _adminLock.Unlock();
 
                     Core::SocketDatagram::Trigger();

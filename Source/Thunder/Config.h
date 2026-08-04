@@ -1319,8 +1319,7 @@ namespace PluginHost {
 
             }
             if (_binder.IsValid() == false) {
-                Core::NodeId binder(_binding.c_str(), _portNumber);
-                _binder = binder;
+                _binder = Core::NodeId(_binding.c_str(), _portNumber);
             }
             else {
                 _binder.PortNumber(_portNumber);

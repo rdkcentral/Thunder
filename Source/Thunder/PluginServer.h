@@ -2307,7 +2307,7 @@ namespace PluginHost {
                     , _position(0) {
                 }
                 Iterator(Shells&& services)
-                    : _container(services)
+                    : _container(std::move(services))
                     , _index()
                     , _position(0) {
                 }
