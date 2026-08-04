@@ -90,7 +90,7 @@ namespace Core {
 
         uint16_t length = ::Thunder::Core::FromDecString(str, buffer, sizeof(buffer), '.');
 
-        EXPECT_EQ(length, sizeof(buffer)); // !!!
+        EXPECT_EQ(length, sizeof(buffer)); // truncates to capacity!
         EXPECT_EQ(memcmp(expected, buffer, sizeof(buffer)), 0);
     }
 

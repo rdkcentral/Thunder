@@ -336,11 +336,15 @@ POP_WARNING()
             for (uint32_t i = 0; i < static_cast<uint32_t>(decString.length()); i++) {
                 if (decString[i] == delimiter) {
                     maxSize++;
+
+                    if (maxSize == maxLength) {
+                        break;
+                    }
                 }
             }
         }
 
-        if ((maxSize != 0) && (maxSize <= maxLength)) {
+        if (maxSize != 0) {
 
             object.resize(maxSize);
 
