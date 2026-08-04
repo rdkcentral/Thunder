@@ -65,7 +65,7 @@ namespace Core {
         Core::ToString((threadName != nullptr ? threadName : DefaultThreadName), convertedName);
 
 #ifdef __POSIX__
-        m_threadName = convertedName;
+        m_threadName = std::move(convertedName);
 #endif
 
 // Create a worker that can do actions in parallel
