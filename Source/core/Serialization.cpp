@@ -223,8 +223,9 @@ POP_WARNING()
     void ToDecString(const uint8_t object[], const uint32_t length, string& result, const TCHAR delimiter)
     {
         ASSERT(object != nullptr);
+        ASSERT(delimiter != '\0');
 
-        uint32_t targetLength = (length > 0? (length - 1) : 0); // dots
+        uint32_t targetLength = (length > 0 ? (length - 1) : 0); // delimiters
 
         for (uint32_t i = 0; i < length; ++i) {
             const uint8_t current = object[i];
@@ -239,23 +240,23 @@ POP_WARNING()
 
             if (current >= 100) {
                 const uint8_t hundreds = (current / 100);
-                const uint8_t reminder = (current - (hundreds * 100));
-                const uint8_t tens = (reminder / 10);
-                const uint8_t ones = (reminder - (tens * 10));
+                const uint8_t remainder = (current - (hundreds * 100));
+                const uint8_t tens = (remainder / 10);
+                const uint8_t ones = (remainder - (tens * 10));
 
-                result[j++] = static_cast<char>(TCHAR('0') + hundreds);
-                result[j++] = static_cast<char>(TCHAR('0') + tens);
-                result[j++] = static_cast<char>(TCHAR('0') + ones);
+                result[j++] = static_cast<TCHAR>(TCHAR('0') + hundreds);
+                result[j++] = static_cast<TCHAR>(TCHAR('0') + tens);
+                result[j++] = static_cast<TCHAR>(TCHAR('0') + ones);
             }
             else if (current >= 10) {
                 const uint8_t tens = (current / 10);
                 const uint8_t ones = (current - tens * 10);
 
-                result[j++] = static_cast<char>(TCHAR('0') + tens);
-                result[j++] = static_cast<char>(TCHAR('0') + ones);
+                result[j++] = static_cast<TCHAR>(TCHAR('0') + tens);
+                result[j++] = static_cast<TCHAR>(TCHAR('0') + ones);
             }
             else {
-                result[j++] = static_cast<char>(TCHAR('0') + current);
+                result[j++] = static_cast<TCHAR>(TCHAR('0') + current);
             }
 
             if (i < length - 1) {
@@ -268,8 +269,8 @@ POP_WARNING()
 
     uint32_t FromDecString(const string& decString, uint8_t object[], uint32_t maxLength, const TCHAR delimiter)
     {
-        ASSERT(object != nullptr);
-
+        ASSERT((object != nullptr) && (maxLength > 0));
+        ASSERT(delimiter != '\0');
         uint32_t count = 0;
         uint16_t current = 0;
         bool haveValue = false;
