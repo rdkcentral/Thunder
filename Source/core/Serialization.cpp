@@ -276,7 +276,7 @@ POP_WARNING()
         bool haveValue = false;
         bool failure = false;
 
-        for (uint32_t i = 0; (i < static_cast<uint32_t>(decString.length())) && (count < maxLength) && (failure == false)); ++i) {
+        for (uint32_t i = 0; ((i < static_cast<uint32_t>(decString.length())) && (count < maxLength) && (failure == false)); ++i) {
             const TCHAR c = decString[i];
 
             if ((c >= TCHAR('0')) && (c <= TCHAR('9'))) {
