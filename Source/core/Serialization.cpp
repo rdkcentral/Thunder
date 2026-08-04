@@ -308,6 +308,7 @@ POP_WARNING()
         else if (count < maxLength) {
             if (haveValue == true) {
                 object[count++] = static_cast<uint8_t>(current);
+            }
             else {
                 count = 0; // trailing delimiter
             }
