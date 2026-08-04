@@ -31,11 +31,6 @@ if(NOT MESSAGING)
         message(STATUS "Messaging disabled, LocalTracer support disabled")
         set(LOCALTRACER OFF CACHE BOOL "Include local tracing support library in the build." FORCE)
     endif()
-
-    if(WARNING_REPORTING)
-        message(STATUS "Messaging disabled, WarningReporting support disabled")
-        set(WARNING_REPORTING OFF CACHE BOOL "Include warning reporting in the build." FORCE)
-    endif()
 endif()
 
 if(HIBERNATESUPPORT)
