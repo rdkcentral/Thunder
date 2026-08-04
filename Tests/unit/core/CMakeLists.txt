@@ -36,6 +36,8 @@ add_executable(${TEST_RUNNER_NAME}
    #test_ipcclient.cpp
    test_iso639.cpp
    test_iterator.cpp
+   test_json_from_object.cpp
+   test_jsonarray.cpp
    test_jsonobject.cpp
    test_jsonparser.cpp
    test_keyvalue.cpp
