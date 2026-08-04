@@ -57,7 +57,7 @@ namespace Core {
 
         uint16_t length = ::Thunder::Core::FromDecString(str, buffer, sizeof(buffer), '.');
 
-        EXPECT_EQ(length, sizeof(expected)));
+        EXPECT_EQ(length, sizeof(expected));
         EXPECT_EQ(memcmp(expected, buffer, sizeof(expected)), 0);
     }
 
@@ -130,7 +130,7 @@ namespace Core {
         EXPECT_EQ(length, 0);
     }
 
-    TEST(Dec2StrSerialization, deserialization_negative_5 {
+    TEST(Dec2StrSerialization, deserialization_negative_5) {
         string str = "192.168.1.255.";
         uint8_t buffer[4] = {0};
 
