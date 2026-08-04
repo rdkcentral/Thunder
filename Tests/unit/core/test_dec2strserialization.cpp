@@ -36,7 +36,7 @@ namespace Core {
         uint8_t object[] = {0xC0, 0xA8, 0x01, 0xFF};
 
         string output;
-        ::Thunder::Core::ToDecString(object, sizeof(object), output);
+        ::Thunder::Core::ToDecString(object, sizeof(object), output, '.');
 
         EXPECT_EQ(output, "192.168.1.255");
     }
@@ -46,7 +46,7 @@ namespace Core {
         uint8_t expected[] = {0xC0, 0xA8, 0x01, 0xFF};
         uint8_t buffer[8] = {0};
 
-        uint16_t length = ::Thunder::Core::FromDecString(str, buffer, sizeof(buffer));
+        uint16_t length = ::Thunder::Core::FromDecString(str, buffer, sizeof(buffer), '.');
 
         EXPECT_EQ(length, 4);
         EXPECT_EQ(memcmp(expected, buffer, sizeof(expected)), 0);
@@ -57,7 +57,7 @@ namespace Core {
         uint8_t expected[] = {0xC0, 0xA8, 0x01, 0xFF};
         uint8_t buffer[4] = {0};
 
-        uint16_t length = ::Thunder::Core::FromDecString(str, buffer, sizeof(buffer));
+        uint16_t length = ::Thunder::Core::FromDecString(str, buffer, sizeof(buffer), '.');
 
         EXPECT_EQ(length, 4);
         EXPECT_EQ(memcmp(expected, buffer, sizeof(expected)), 0);
@@ -67,7 +67,7 @@ namespace Core {
         string str = "192.168.1.";
         uint8_t buffer[8] = {0};
 
-        uint16_t length = ::Thunder::Core::FromDecString(str, buffer, sizeof(buffer));
+        uint16_t length = ::Thunder::Core::FromDecString(str, buffer, sizeof(buffer), '.');
 
         EXPECT_EQ(length, 0);
     }
@@ -76,7 +76,7 @@ namespace Core {
         string str = "192.168..255";
         uint8_t buffer[8] = {0};
 
-        uint16_t length = ::Thunder::Core::FromDecString(str, buffer, sizeof(buffer));
+        uint16_t length = ::Thunder::Core::FromDecString(str, buffer, sizeof(buffer), '.');
 
         EXPECT_EQ(length, 0);
     }
@@ -85,7 +85,7 @@ namespace Core {
         string str = ".192.168.1.255";
         uint8_t buffer[8] = {0};
 
-        uint16_t length = ::Thunder::Core::FromDecString(str, buffer, sizeof(buffer));
+        uint16_t length = ::Thunder::Core::FromDecString(str, buffer, sizeof(buffer), '.');
 
         EXPECT_EQ(length, 0);
     }
@@ -94,7 +94,7 @@ namespace Core {
         string str = "292.168.1.255";
         uint8_t buffer[8] = {0};
 
-        uint16_t length = ::Thunder::Core::FromDecString(str, buffer, sizeof(buffer));
+        uint16_t length = ::Thunder::Core::FromDecString(str, buffer, sizeof(buffer), '.');
 
         EXPECT_EQ(length, 0);
     }
@@ -104,7 +104,7 @@ namespace Core {
         uint8_t expected[] = {0xC0, 0xA8, 0x01, 0xFF};
         uint8_t buffer[2] = {0};
 
-        uint16_t length = ::Thunder::Core::FromDecString(str, buffer, sizeof(buffer));
+        uint16_t length = ::Thunder::Core::FromDecString(str, buffer, sizeof(buffer), '.');
 
         EXPECT_EQ(length, 2); // !!!
         EXPECT_EQ(memcmp(expected, buffer, sizeof(buffer)), 0);
