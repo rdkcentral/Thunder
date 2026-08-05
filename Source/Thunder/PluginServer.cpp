@@ -996,7 +996,7 @@ namespace PluginHost {
             SYSLOG(Logging::Startup, (_T("Automatic metadata discovery and plugin versioning is DISABLED!!!")));
         }
         else {
-            for (auto service : _services)
+            for (const auto& service : _services)
             {
                 service.second->LoadMetadata();
                 for (const PluginHost::ISubSystem::subsystem& entry : service.second->SubSystemControl()) {

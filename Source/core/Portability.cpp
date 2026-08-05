@@ -232,7 +232,7 @@ void DumpCallStack(const Thunder::Core::thread_id threadId VARIABLE_IS_NOT_USED,
             }
         }
 
-        stackList.push_back(entry);
+        stackList.push_back(std::move(entry));
     }
 
 #else
