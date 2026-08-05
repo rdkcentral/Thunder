@@ -110,11 +110,11 @@ namespace Plugin {
             }
         }
 
-        Core::JSON::ArrayType<Core::JSON::EnumType<PluginHost::ISubSystem::subsystem>>::ConstIterator eventListIterator(static_cast<const Config&>(config).SubSystems.Elements());
+        Core::JSON::ArrayType<Core::JSON::EnumType<Configuration::subsystem>>::ConstIterator eventListIterator(static_cast<const Config&>(config).SubSystems.Elements());
 
         // Insert the subsystems found in the config..
         while (eventListIterator.Next() == true) {
-            PluginHost::ISubSystem::subsystem current = eventListIterator.Current().Value();
+            PluginHost::ISubSystem::subsystem current = static_cast<PluginHost::ISubSystem::subsystem>(eventListIterator.Current().Value());
 
             if (current >= PluginHost::ISubSystem::END_LIST) {
                 Core::EnumerateType<PluginHost::ISubSystem::subsystem> name(current);

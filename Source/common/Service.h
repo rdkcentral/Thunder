@@ -65,7 +65,7 @@ namespace PluginHost {
             }
             inline void StartMode(const PluginHost::IShell::startmode value)
             {
-                _config.StartMode = value;
+                _config.StartMode = static_cast<Plugin::Configuration::startmode>(value);
             }
             inline void SystemRootPath(const string& value)
             {
@@ -141,7 +141,7 @@ namespace PluginHost {
             , _config(plugin, webPrefix, persistentPath, dataPath, volatilePath)
             , _notifiers()
         {
-            if ( (plugin.StartMode.IsSet() == true) && (plugin.StartMode.Value() == PluginHost::IShell::startmode::UNAVAILABLE) ) {
+            if ((plugin.StartMode.IsSet() == true) && (plugin.StartMode.Value() == Plugin::Configuration::startmode::UNAVAILABLE)) {
                 _state = UNAVAILABLE;
             }
         }
@@ -217,7 +217,7 @@ namespace PluginHost {
         }
         bool Resumed() const override
         {
-            return ((_config.Configuration().Resumed.IsSet() ? _config.Configuration().Resumed.Value() : (_config.Configuration().StartMode.Value() == PluginHost::IShell::startmode::ACTIVATED)));
+            return ((_config.Configuration().Resumed.IsSet() ? _config.Configuration().Resumed.Value() : (_config.Configuration().StartMode.Value() == Plugin::Configuration::startmode::ACTIVATED)));
         }
         Core::hresult Resumed(const bool resumed) override
         {
@@ -226,7 +226,7 @@ namespace PluginHost {
         }
         PluginHost::IShell::startmode StartMode() const override
         {
-            return _config.Configuration().StartMode.Value();
+            return static_cast<PluginHost::IShell::startmode>(_config.Configuration().StartMode.Value());
         }
         Core::hresult StartMode(const PluginHost::IShell::startmode value) override
         {

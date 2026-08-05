@@ -20,7 +20,7 @@
 #pragma once
 
 #include "Module.h"
-
+#include <common/ConfigurationEnums.h>
 
 namespace Thunder {
 
@@ -547,7 +547,7 @@ namespace PluginHost {
             Core::JSON::String EthernetCard;
             Core::JSON::ArrayType<Plugin::Config> Plugins;
             Core::JSON::ArrayType<Plugin::Config::Environment> Environments;
-            Core::JSON::ArrayType<Core::JSON::EnumType<PluginHost::IShell::reason>> ExitReasons;
+            Core::JSON::ArrayType<Core::JSON::EnumType<Plugin::Configuration::reason>> ExitReasons;
             Core::JSON::DecSInt32 Latitude;
             Core::JSON::DecSInt32 Longitude;
             Core::JSON::Boolean DelegatedReleases;
@@ -870,10 +870,10 @@ namespace PluginHost {
                 }
 
                 if ((config.ExitReasons.IsSet() == true) && (config.ExitReasons.Length() > 0)) {
-                    Core::JSON::ArrayType<Core::JSON::EnumType<PluginHost::IShell::reason>>::Iterator index(config.ExitReasons.Elements());
+                    Core::JSON::ArrayType<Core::JSON::EnumType<Plugin::Configuration::reason>>::Iterator index(config.ExitReasons.Elements());
 
                     while (index.Next() == true) {
-                        _reasons.push_back(index.Current().Value());
+                        _reasons.push_back(static_cast<PluginHost::IShell::reason>(index.Current().Value()));
                     }
                 }
 
