@@ -269,7 +269,7 @@ namespace ProcessContainers {
 
             while (position < read) {
                 int32_t charsRead = 0;
-                int32_t scanned = ::sscanf(buffer + position, "%s %" SCNu64 "%n", name, &value, &charsRead);
+                int32_t scanned = ::sscanf(buffer + position, "%127s %" SCNu64 "%n", name, &value, &charsRead);
 
                 if (scanned != 2) {
                     break;
