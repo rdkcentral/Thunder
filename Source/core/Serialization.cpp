@@ -21,9 +21,10 @@
 
 namespace Thunder {
 namespace Core {
+
 PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE)
 
-    void ToString(const wchar_t realString[], std::string& result)
+    void EXTERNAL ToString(const wchar_t realString[], std::string& result)
     {
 #if defined(__WINDOWS__) || defined(__LINUX__)
 
@@ -46,7 +47,7 @@ PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE)
 #endif
     }
 
-    void ToString(const char realString[], std::wstring& result)
+    void EXTERNAL ToString(const char realString[], std::wstring& result)
     {
         int requiredSize = static_cast<int>(::mbstowcs(nullptr, realString, 0));
 
@@ -73,7 +74,7 @@ PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE)
     }
 
 #ifndef __CORE_NO_WCHAR_SUPPORT__
-    string ToString(const wchar_t realString[], unsigned int length)
+    string EXTERNAL ToString(const wchar_t realString[], unsigned int length)
     {
 #ifdef _UNICODE
 
@@ -116,7 +117,7 @@ PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE)
 
 #endif // __CORE_NO_WCHAR_SUPPORT__
 
-    string ToString(const char realString[], unsigned int length)
+    string EXTERNAL ToString(const char realString[], unsigned int length)
     {
 #ifdef _UNICODE
 
@@ -148,7 +149,7 @@ POP_WARNING()
 
     static const TCHAR hex_chars[] = "0123456789abcdef";
 
-    void ToHexString(const uint8_t object[], const uint32_t length, string& result, const TCHAR delimiter)
+    void EXTERNAL ToHexString(const uint8_t object[], const uint32_t length, string& result, const TCHAR delimiter)
     {
         ASSERT(object != nullptr);
 
@@ -164,7 +165,7 @@ POP_WARNING()
         }
     }
 
-    uint32_t FromHexString(const string& hexString, uint8_t object[], const uint32_t maxLength, const TCHAR delimiter)
+    uint32_t EXTERNAL FromHexString(const string& hexString, uint8_t object[], const uint32_t maxLength, const TCHAR delimiter)
     {
         ASSERT((object != nullptr) && (maxLength > 0));
         uint8_t highNibble;
@@ -205,12 +206,12 @@ POP_WARNING()
         return bufferIndex;
     }
 
-    void ToHexString(const std::vector<uint8_t>& object, string& result, const TCHAR delimiter)
+    void EXTERNAL ToHexString(const std::vector<uint8_t>& object, string& result, const TCHAR delimiter)
     {
         ToHexString(object.data(), static_cast<uint32_t>(object.size()), result, delimiter);
     }
 
-    uint32_t FromHexString(const string& hexString, std::vector<uint8_t>& object, const uint32_t maxLength, const TCHAR delimiter)
+    uint32_t EXTERNAL FromHexString(const string& hexString, std::vector<uint8_t>& object, const uint32_t maxLength, const TCHAR delimiter)
     {
         const uint32_t maxSize = static_cast<uint32_t>(delimiter == '\0' ? (hexString.size() / 2) : ((hexString.size() + 1) / 3 ));
 
@@ -220,7 +221,7 @@ POP_WARNING()
         return (FromHexString(hexString, object.data(), static_cast<uint32_t>(object.size()), delimiter));
     }
 
-    void ToDecString(const uint8_t object[], const uint32_t length, string& result, const TCHAR delimiter)
+    void EXTERNAL ToDecString(const uint8_t object[], const uint32_t length, string& result, const TCHAR delimiter)
     {
         ASSERT(object != nullptr);
         ASSERT(delimiter != '\0');
@@ -267,7 +268,7 @@ POP_WARNING()
         ASSERT((result.length() - index) == targetLength);
     }
 
-    uint32_t FromDecString(const string& decString, uint8_t object[], uint32_t maxLength, const TCHAR delimiter)
+    uint32_t EXTERNAL FromDecString(const string& decString, uint8_t object[], uint32_t maxLength, const TCHAR delimiter)
     {
         ASSERT((object != nullptr) && (maxLength > 0));
         ASSERT(delimiter != '\0');
@@ -317,12 +318,12 @@ POP_WARNING()
         return (count);
     }
 
-    void ToDecString(const std::vector<uint8_t>& object, string& result, const TCHAR delimiter)
+    void EXTERNAL ToDecString(const std::vector<uint8_t>& object, string& result, const TCHAR delimiter)
     {
         ToDecString(object.data(), static_cast<uint32_t>(object.size()), result, delimiter);
     }
 
-    uint32_t FromDecString(const string& decString, std::vector<uint8_t>& object, const uint32_t maxLength, const TCHAR delimiter)
+    uint32_t EXTERNAL FromDecString(const string& decString, std::vector<uint8_t>& object, const uint32_t maxLength, const TCHAR delimiter)
     {
         ASSERT(object.empty() == true);
         ASSERT(maxLength != 0);
@@ -360,7 +361,7 @@ POP_WARNING()
                                         "abcdefghijklmnopqrstuvwxyz"
                                         "0123456789+/";
 
-    void ToString(const uint8_t object[], const uint32_t length, const bool padding, string& result)
+    void EXTERNAL ToString(const uint8_t object[], const uint32_t length, const bool padding, string& result)
     {
         uint8_t state = 0;
         uint32_t index = 0;
@@ -396,7 +397,7 @@ POP_WARNING()
         }
     }
 
-    uint32_t FromString(const string& newValue, uint8_t object[], uint32_t& length, const TCHAR* ignoreList)
+    uint32_t EXTERNAL FromString(const string& newValue, uint8_t object[], uint32_t& length, const TCHAR* ignoreList)
     {
         uint8_t state = 0;
         uint32_t index = 0;
@@ -445,7 +446,7 @@ POP_WARNING()
         return (index);
     }
 
-    uint16_t FromString(const string& newValue, uint8_t object[], uint16_t& length, const TCHAR* ignoreList)
+    uint16_t EXTERNAL FromString(const string& newValue, uint8_t object[], uint16_t& length, const TCHAR* ignoreList)
     {
         uint32_t tempLength = length;
         const uint16_t result = FromString(newValue, object, tempLength, ignoreList);
@@ -453,7 +454,7 @@ POP_WARNING()
         return (result);
     }
 
-    uint8_t FromString(const string& newValue, uint8_t object[], uint8_t& length, const TCHAR* ignoreList)
+    uint8_t EXTERNAL FromString(const string& newValue, uint8_t object[], uint8_t& length, const TCHAR* ignoreList)
     {
         uint32_t tempLength = length;
         const uint8_t result = FromString(newValue, object, tempLength, ignoreList);
@@ -461,12 +462,12 @@ POP_WARNING()
         return (result);
     }
 
-    void ToString(const std::vector<uint8_t>& object, const bool padding, string& result)
+    void EXTERNAL ToString(const std::vector<uint8_t>& object, const bool padding, string& result)
     {
         ToString(object.data(), static_cast<uint32_t>(object.size()), padding, result);
     }
 
-    uint32_t FromString(const string& value, std::vector<uint8_t>& object, uint32_t& length, const TCHAR* ignoreList)
+    uint32_t EXTERNAL FromString(const string& value, std::vector<uint8_t>& object, uint32_t& length, const TCHAR* ignoreList)
     {
         const uint8_t padding = ((value.size() > 0 && (value[value.size() - 1] == '=')) + (value.size() > 1 && (value[value.size() - 2] == '=')));
         const uint32_t maxSize = static_cast<uint32_t>(((value.size() / 4) * 3) - padding);
@@ -482,7 +483,7 @@ POP_WARNING()
         return (result);
     }
 
-    bool CodePointToUTF16(const uint32_t codePoint, uint16_t& lowPart, uint16_t& highPart) {
+    bool EXTERNAL CodePointToUTF16(const uint32_t codePoint, uint16_t& lowPart, uint16_t& highPart) {
 
         bool translated = true;
 
@@ -511,7 +512,8 @@ POP_WARNING()
 
         return (translated);
     }
-    bool UTF16ToCodePoint(const uint16_t lowPart, const uint16_t highPart, uint32_t& codePoint) {
+
+    bool EXTERNAL UTF16ToCodePoint(const uint16_t lowPart, const uint16_t highPart, uint32_t& codePoint) {
         bool translated = true;
         if (highPart == 0) {
             codePoint = lowPart;
@@ -527,7 +529,7 @@ POP_WARNING()
         return (translated);
     }
 
-    int8_t ToCodePoint(const TCHAR* data, const uint8_t length,  uint32_t& codePoint) {
+    int8_t EXTERNAL ToCodePoint(const TCHAR* data, const uint8_t length,  uint32_t& codePoint) {
 
         bool invalid = false;
         #ifdef _UNICODE
@@ -557,7 +559,8 @@ POP_WARNING()
 
         return (invalid ? -(following + 1) : (following + 1));
     }
-    int8_t FromCodePoint(uint32_t codePoint, TCHAR* data, const uint8_t length) {
+
+    int8_t EXTERNAL FromCodePoint(uint32_t codePoint, TCHAR* data, const uint8_t length) {
         #ifdef _UNICODE
         static_assert(sizeof(TCHAR) != sizeof(char), "UTF16 to code point needs an implementation")
         #else
@@ -604,5 +607,5 @@ POP_WARNING()
         return (result);
     }
 
-}
 } // namespace Core
+}
