@@ -37,8 +37,9 @@ namespace Core {
         setenv("TZ", zone.c_str(), 1);
         tzset();
         struct tm timeInfo {};
-        localtime_r(&defineTime, &timeInfo);
-        return timeInfo.tm_gmtoff;
+        const struct tm* result = localtime_r(&defineTime, &timeInfo);
+        EXPECT_NE(result, nullptr);
+        return (result != nullptr ? timeInfo.tm_gmtoff : 0);
     }
 
     std::string ExecuteCmd(const char* cmd) {
