@@ -73,16 +73,20 @@ target_link_libraries(${TARGET}
           ${NAMESPACE}Common
         PRIVATE
           ${NAMESPACE}Cryptalgo::${NAMESPACE}Cryptalgo
-          ${NAMESPACE}Messaging::${NAMESPACE}Messaging
           ${NAMESPACE}WebSocket::${NAMESPACE}WebSocket
           CompileSettingsDebug::CompileSettingsDebug
         )
 
+if(MESSAGING)
+    target_link_libraries(${TARGET}
+        PRIVATE
+            ${NAMESPACE}Messaging::${NAMESPACE}Messaging)
+endif()
+
 if (WARNING_REPORTING)
     target_link_libraries(${TARGET}
-           PUBLIC 
-              ${NAMESPACE}WarningReporting::${NAMESPACE}WarningReporting
-            )
+        PUBLIC 
+            ${NAMESPACE}WarningReporting::${NAMESPACE}WarningReporting)
 endif()
 
 # when compiling proxy/stubs we should ignore deprecated warnings (which are treated as erros nowadays) 
@@ -94,8 +98,13 @@ target_link_libraries(${TARGET_PROXYSTUBS}
           CompileSettingsDebug::CompileSettingsDebug
           ${NAMESPACE}Core::${NAMESPACE}Core
           ${NAMESPACE}COM::${NAMESPACE}COM
-          ${NAMESPACE}Messaging::${NAMESPACE}Messaging
         )
+
+if(MESSAGING)
+    target_link_libraries(${TARGET_PROXYSTUBS}
+        PRIVATE
+            ${NAMESPACE}Messaging::${NAMESPACE}Messaging)
+endif()
 
 target_include_directories( ${TARGET}
         PUBLIC

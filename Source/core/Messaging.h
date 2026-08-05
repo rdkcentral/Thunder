@@ -289,14 +289,20 @@ namespace Core {
 }
 }
 
-#define DEFINE_MESSAGING_CATEGORY(BASECATEGORY, CATEGORY)   \
-    class EXTERNAL CATEGORY : public BASECATEGORY {         \
-    private:                                                \
-        using BaseClass = BASECATEGORY;                     \
-    public:                                                 \
-        using BaseClass::BaseClass;                         \
-        CATEGORY() = default;                               \
-        ~CATEGORY() = default;                              \
-        CATEGORY(const CATEGORY&) = delete;                 \
-        CATEGORY& operator=(const CATEGORY&) = delete;      \
+#ifdef __CORE_MESSAGING__
+    #define MESSAGING_CATEGORY_EXTERNAL EXTERNAL
+#else
+    #define MESSAGING_CATEGORY_EXTERNAL
+#endif
+
+#define DEFINE_MESSAGING_CATEGORY(BASECATEGORY, CATEGORY)              \
+    class MESSAGING_CATEGORY_EXTERNAL CATEGORY : public BASECATEGORY { \
+    private:                                                           \
+        using BaseClass = BASECATEGORY;                                \
+    public:                                                            \
+        using BaseClass::BaseClass;                                    \
+        CATEGORY() = default;                                          \
+        ~CATEGORY() = default;                                         \
+        CATEGORY(const CATEGORY&) = delete;                            \
+        CATEGORY& operator=(const CATEGORY&) = delete;                 \
     };

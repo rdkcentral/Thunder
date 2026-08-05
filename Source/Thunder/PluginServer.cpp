@@ -379,6 +379,7 @@ namespace PluginHost {
                 result = Core::ERROR_PENDING_CONDITIONS;
                 State(PRECONDITION);
 
+#ifdef __CORE_MESSAGING__
                 if (Thunder::Messaging::LocalLifetimeType<Activity, &Thunder::Core::System::MODULE_NAME, Thunder::Core::Messaging::Metadata::type::TRACING>::IsEnabled() == true) {
                     string feedback;
                     uint8_t index = 1;
@@ -400,6 +401,7 @@ namespace PluginHost {
 
                     TRACE(Activity, (_T("Delta preconditions: %s"), feedback.c_str()));
                 }
+#endif
 
                 Unlock();
 
