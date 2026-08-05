@@ -37,7 +37,7 @@
 		<ClInclude Include="Config.h" />
 		<ClInclude Include="Configuration.h" />
 		<CustomBuild Include="ConfigurationEnums.h">
-			<Command>python "$(ToolPath)\JsonGenerator\JsonGenerator.py" -I "$(FrameworkPath)\" -c --namespace Thunder::Plugin::Configuration --emit-cpp-interface-path common -o "$(ProjectDir)/json" "%(FullPath)" --force</Command>
+			<Command>python "$(ToolPath)\JsonGenerator\JsonGenerator.py" -I "$(FrameworkPath)\" -c --namespace Thunder::Plugin::Configuration --case-convention legacy --emit-cpp-interface-path common -o "$(ProjectDir)/json" "%(FullPath)" --force</Command>
 			<Outputs>$(ProjectDir)json/JsonEnum_%(Filename).cpp</Outputs>
 		</CustomBuild>
 		<ClInclude Include="JSONRPC.h" />

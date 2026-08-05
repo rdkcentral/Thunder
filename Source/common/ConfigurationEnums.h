@@ -27,42 +27,42 @@ namespace Plugin {
     namespace Configuration {
         // @encode:text
         enum class reason : uint8_t {
-            REQUESTED /* @text Requested */,
-            AUTOMATIC /* @text Automatic */,
-            FAILURE /* @text Failure */,
-            MEMORY_EXCEEDED /* @text MemoryExceeded */,
-            STARTUP /* @text Startup */,
-            SHUTDOWN /* @text Shutdown */,
-            CONDITIONS /* @text Conditions */,
-            WATCHDOG_EXPIRED /* @text WatchdogExpired */,
-            INITIALIZATION_FAILED /* @text InitializationFailed */,
-            INSTANTIATION_FAILED /* @text InstantiationFailed */
+            REQUESTED,
+            AUTOMATIC,
+            FAILURE,
+            MEMORY_EXCEEDED,
+            STARTUP,
+            SHUTDOWN,
+            CONDITIONS,
+            WATCHDOG_EXPIRED,
+            INITIALIZATION_FAILED,
+            INSTANTIATION_FAILED
         };
 
         // @encode:text
         enum class startmode : uint8_t {
-            UNAVAILABLE /* @text Unavailable */,
-            DEACTIVATED /* @text Deactivated */,
-            ACTIVATED /* @text Activated */
+            UNAVAILABLE,
+            DEACTIVATED,
+            ACTIVATED
         };
 
         // @encode:text
         enum class subsystem : uint32_t {
-            PLATFORM /* @text Platform */,
-            SECURITY /* @text Security */,
-            NETWORK /* @text Network */,
-            IDENTIFIER /* @text Identifier */,
-            GRAPHICS /* @text Graphics */,
-            INTERNET /* @text Internet */,
-            LOCATION /* @text Location */,
-            TIME /* @text Time */,
-            PROVISIONING /* @text Provisioning */,
-            DECRYPTION /* @text Decryption */,
+            PLATFORM,
+            SECURITY,
+            NETWORK,
+            IDENTIFIER,
+            GRAPHICS,
+            INTERNET,
+            LOCATION,
+            TIME,
+            PROVISIONING,
+            DECRYPTION,
             WEBSOURCE /* @text WebSource */,
-            STREAMING /* @text Streaming */,
-            BLUETOOTH /* @text Bluetooth */,
-            CRYPTOGRAPHY /* @text Cryptography */,
-            INSTALLATION /* @text Installation */
+            STREAMING,
+            BLUETOOTH,
+            CRYPTOGRAPHY,
+            INSTALLATION
         };
     }
 }
