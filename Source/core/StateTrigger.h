@@ -26,7 +26,7 @@
 
 #include "Module.h"
 #include "Trace.h"
-
+#include "Thread.h"
 #ifdef __UNIX__
 #include <unistd.h>
 #endif

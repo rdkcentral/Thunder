@@ -30,6 +30,7 @@
 #include <algorithm>
 #include <queue>
 #include <thread>
+#include "Thread.h"
 
 #include "Module.h"
 #include "StateTrigger.h"
