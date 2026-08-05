@@ -78,7 +78,7 @@ namespace Core {
         // receiver (consumer). The consumer is the one that calls the
         // Receive method.
         // -------------------------------------------------------------------
-        bool Remove(const CONTEXT& a_Entry)
+        bool Remove(const CONTEXT& a_Entry, const char* caller = __builtin_FUNCTION())
         {
             bool l_Removed = false;
 
@@ -97,6 +97,7 @@ namespace Core {
                 }
 
                 // Determine the new state.
+                TRACE_L1("[WorkerPool] Queue depth: %u / %u (Remove) caller:%s TID:%lu", static_cast<uint32_t>(_queue.size()), _maxSlots, caller, static_cast<unsigned long>(Thread::ThreadId()));
                 _state.SetState(IsEmpty() ? EMPTY : ENTRIES);
             }
 
@@ -106,7 +107,7 @@ namespace Core {
             return (l_Removed);
         }
 
-        bool Post(const CONTEXT& a_Entry)
+        bool Post(const CONTEXT& a_Entry, const char* caller = __builtin_FUNCTION())
         {
             bool Result = false;
 
@@ -119,7 +120,7 @@ namespace Core {
                 _queue.push_back(a_Entry);
 
                 // Determine the new state.
-                TRACE_L1("QueueType::Post threadId = %llu, _state = %d", static_cast<unsigned long long>(std::hash<std::thread::id>{}(std::this_thread::get_id())), static_cast<int>(_state.GetState()));
+                TRACE_L1("[WorkerPool] Queue depth: %u / %u (Post) caller:%s TID:%lu", static_cast<uint32_t>(_queue.size()), _maxSlots, caller, static_cast<unsigned long>(Thread::ThreadId()));
                 _state.SetState(IsFull() ? LIMITED : ENTRIES);
 
                 Result = true;
@@ -131,7 +132,7 @@ namespace Core {
             return (Result);
         }
 
-        bool Insert(const CONTEXT& a_Entry, uint32_t a_WaitTime)
+        bool Insert(const CONTEXT& a_Entry, uint32_t a_WaitTime, const char* caller = __builtin_FUNCTION())
         {
             bool l_Posted = false;
             bool l_Triggered = true;
@@ -150,11 +151,9 @@ namespace Core {
                         _queue.push_back(a_Entry);
 
                         // Determine the new state.
+                        TRACE_L1("[WorkerPool] Queue depth: %u / %u (Insert) caller:%s TID:%lu", static_cast<uint32_t>(_queue.size()), _maxSlots, caller, static_cast<unsigned long>(Thread::ThreadId()));
                         _state.SetState(IsFull() ? LIMITED : ENTRIES);
-
-                        TRACE_L1("QueueType::Insert _state-1 = %d", static_cast<int>(_state.GetState()));
                     } else {
-                        TRACE_L1("QueueType::Insert _state-2 = %d", static_cast<int>(_state.GetState()));
                         // We are moving into a wait, release the lock.
                         _adminLock.Unlock();
 
@@ -177,7 +176,7 @@ namespace Core {
             return (l_Posted);
         }
 
-        bool Extract(CONTEXT& a_Result, uint32_t a_WaitTime)
+        bool Extract(CONTEXT& a_Result, uint32_t a_WaitTime, const char* caller = __builtin_FUNCTION())
         {
             bool l_Received = false;
             bool l_Triggered = true;
@@ -200,6 +199,7 @@ namespace Core {
                         _queue.erase(index);
 
                         // Determine the new state.
+                        TRACE_L1("[WorkerPool] Queue depth: %u / %u (Extract) caller:%s TID:%lu", static_cast<uint32_t>(_queue.size()), _maxSlots, caller, static_cast<unsigned long>(Thread::ThreadId()));
                         _state.SetState(IsEmpty() ? EMPTY : ENTRIES);
                     } else {
                         // We are moving into a wait, release the lock.
@@ -224,12 +224,13 @@ namespace Core {
             return (l_Received);
         }
 
-        void Enable()
+        void Enable(const char* caller = __builtin_FUNCTION())
         {
             // This needs to be atomic. Make sure it is.
             _adminLock.Lock();
 
             if (_state == DISABLED) {
+                TRACE_L1("[WorkerPool] Queue state: EMPTY (Enable) caller:%s TID:%lu", caller, static_cast<unsigned long>(Thread::ThreadId()));
                 _state.SetState(EMPTY);
             }
 
@@ -237,13 +238,14 @@ namespace Core {
             _adminLock.Unlock();
         }
 
-        void Disable()
+        void Disable(const char* caller = __builtin_FUNCTION())
         {
             // This needs to be atomic. Make sure it is.
             _adminLock.Lock();
 
             if (_state != DISABLED) {
                 // Change the state
+                TRACE_L1("[WorkerPool] Queue state: DISABLED (Disable) caller:%s TID:%lu", caller, static_cast<unsigned long>(Thread::ThreadId()));
                 _state.SetState(DISABLED);
             }
 

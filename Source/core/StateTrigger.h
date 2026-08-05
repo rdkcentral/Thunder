@@ -165,6 +165,9 @@ namespace Core {
         if (a_State != m_State) {
             m_State = a_State;
 
+            TRACE_L1("[WorkerPool-SetState] Queue depth: %u / %u (SetState) TID:%lu", static_cast<uint32_t>(_queue.size()), _maxSlots, static_cast<unsigned long>(Thread::ThreadId()));
+
+
             // Unlock report it if someone is waiting.
             if (m_InterestCount > 0) {
                 m_StateChange.SetEvent();
