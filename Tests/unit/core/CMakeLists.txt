@@ -38,6 +38,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_iso639.cpp
    test_iterator.cpp
    test_json_from_object.cpp
+   test_jsonarray.cpp
    test_jsonobject.cpp
    test_jsonparser.cpp
    test_jsonrpc_handler.cpp
@@ -122,6 +123,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_iso639.cpp
    test_iterator.cpp
    test_json_from_object.cpp
+   test_jsonarray.cpp
    test_jsonobject.cpp
    test_jsonparser.cpp
    test_jsonrpc_handler.cpp
