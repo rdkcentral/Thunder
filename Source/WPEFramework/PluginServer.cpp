@@ -498,6 +498,7 @@ namespace PluginHost
                     result = Core::ERROR_GENERAL;
 
                     SYSLOG(Logging::Startup, (_T("Activation of plugin [%s]:[%s], failed. Error [%s]"), className.c_str(), callSign.c_str(), ErrorMessage().c_str()));
+
                     if( _administrator.Configuration().LegacyInitialize() == false ) {
                         Deactivate(reason::INITIALIZATION_FAILED);
                     } else {

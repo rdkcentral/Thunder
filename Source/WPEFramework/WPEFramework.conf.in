@@ -83,7 +83,7 @@ if boolean('@MESSAGING@'):
   messaging = JSON()
   messaging.add("path", '@MESSAGECONTROL_PATH@')
   messaging.add("port", '@MESSAGING_PORT@')
-  messaging.add("flush", boolean('@FLUSH@'))
+  messaging.add("flush", boolean('@FLUSH_LOGS@'))
 
   __notification = {
        "category" : "Notification",
@@ -202,8 +202,7 @@ if boolean('@MESSAGING@'):
   messaging.add("reporting", __reporting)
   __telemetry = JSON()
   __telemetry.add("abbreviated", True)
-  if boolean('@FLUSH@'):
-    __telemetry.add("output", "handler")
+  __telemetry.add("output", "handler")
   __telemetry_settings = []
   __telemetry_enable={
     "enabled": True
