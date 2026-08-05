@@ -20,13 +20,17 @@
 #pragma once
 
 #include "Module.h"
+#include <inttypes.h>
+#ifdef __CORE_MESSAGING__
 #include "Control.h"
 #include "MessageUnit.h"
+#endif
 
 namespace Thunder {
 
 namespace Telemetry {
 
+#ifdef __CORE_MESSAGING__
     template <typename CATEGORY>
     class BaseTelemetryType : public Core::Messaging::BaseCategoryType<Core::Messaging::Metadata::type::TELEMETRY> {
     public:
@@ -68,6 +72,44 @@ namespace Telemetry {
     template <typename CATEGORY>
     EXTERNAL_HIDDEN typename BaseTelemetryType<CATEGORY>::Control
         BaseTelemetryType<CATEGORY>::_control(false);
+#else
+    inline void ConsoleTelemetry(const string& category, const string& value)
+    {
+        TRACE_L1("%s: %s", category.c_str(), value.c_str());
+    }
+
+    template <typename VALUE, std::enable_if_t<std::is_integral_v<std::decay_t<VALUE>> && std::is_signed_v<std::decay_t<VALUE>>, int> = 0>
+    inline void ConsoleTelemetry(const string& category, const VALUE value)
+    {
+        TRACE_L1("%s: %" PRId64, category.c_str(), static_cast<int64_t>(value));
+    }
+
+    template <typename VALUE, std::enable_if_t<std::is_integral_v<std::decay_t<VALUE>> && std::is_unsigned_v<std::decay_t<VALUE>>, int> = 0>
+    inline void ConsoleTelemetry(const string& category, const VALUE value)
+    {
+        TRACE_L1("%s: %" PRIu64, category.c_str(), static_cast<uint64_t>(value));
+    }
+
+    template <typename VALUE, std::enable_if_t<std::is_floating_point_v<std::decay_t<VALUE>>, int> = 0>
+    inline void ConsoleTelemetry(const string& category, const VALUE value)
+    {
+        TRACE_L1("%s: %g", category.c_str(), static_cast<double>(value));
+    }
+
+    template <typename CATEGORY>
+    class BaseTelemetryType : public Core::Messaging::BaseCategoryType<Core::Messaging::Metadata::type::TELEMETRY> {
+    public:
+        using BaseClass = Core::Messaging::BaseCategoryType<Core::Messaging::Metadata::type::TELEMETRY>;
+
+        BaseTelemetryType(const BaseTelemetryType&) = delete;
+        BaseTelemetryType& operator=(const BaseTelemetryType&) = delete;
+
+        BaseTelemetryType() = default;
+        ~BaseTelemetryType() = default;
+
+        using BaseClass::BaseClass;
+    };
+#endif
 
 } // namespace Telemetry
 }
@@ -75,6 +117,7 @@ namespace Telemetry {
 #define DEFINE_TELEMETRY_CATEGORY(CATEGORY) \
     DEFINE_MESSAGING_CATEGORY(Thunder::Telemetry::BaseTelemetryType<CATEGORY>, CATEGORY)
 
+#ifdef __CORE_MESSAGING__
 #define TELEMETRY_ANNOUNCE(CATEGORY) \
     Thunder::Telemetry::BaseTelemetryType<CATEGORY>::Announce();
 
@@ -91,3 +134,12 @@ namespace Telemetry {
             Thunder::Messaging::MessageUnit::Instance().Push(__telemetry__, &__message__, CATEGORY::Routing());                                     \
         }                                                                                                                                           \
     } while(false)
+#else
+#define TELEMETRY_ANNOUNCE(CATEGORY)
+
+#define TELEMETRY(CATEGORY, VALUE)                                                                                                                  \
+    do {                                                                                                                                            \
+        static_assert(std::is_base_of<Thunder::Telemetry::BaseTelemetryType<CATEGORY>, CATEGORY>::value, "TELEMETRY() only for Telemetry controls");\
+        Thunder::Telemetry::ConsoleTelemetry(Thunder::Core::ClassNameOnly(typeid(CATEGORY).name()).Text(), VALUE);                                  \
+    } while(false)
+#endif

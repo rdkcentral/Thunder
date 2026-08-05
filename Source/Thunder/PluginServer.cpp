@@ -416,6 +416,7 @@ namespace PluginHost {
 
                 _queryInterfaceLock.Unlock();
 
+#ifdef __CORE_MESSAGING__
                 if (Thunder::Messaging::LocalLifetimeType<Activity, &Thunder::Core::System::MODULE_NAME, Thunder::Core::Messaging::Metadata::type::TRACING>::IsEnabled() == true) {
 
                     string feedback;
@@ -438,6 +439,7 @@ namespace PluginHost {
 
                     TRACE(Activity, (_T("Delta preconditions: %s"), feedback.c_str()));
                 }
+#endif
 
                 Unlock();
 
