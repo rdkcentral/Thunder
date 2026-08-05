@@ -39,7 +39,18 @@ namespace WarningReporting {
 
     struct EXTERNAL IWarningReportingUnit {
 
+        #ifdef __CORE_MESSAGING__
         struct EXTERNAL IWarningReportingControl : public Core::Messaging::IControl {
+        #else
+        struct EXTERNAL IWarningReportingControl {
+            virtual ~IWarningReportingControl() = default;
+            virtual void Enable(bool enable) = 0;
+            virtual bool Enable() const = 0;
+            virtual void Routing(Core::Messaging::OutputMode routing) = 0;
+            virtual Core::Messaging::OutputMode Routing() const = 0;
+            virtual void Destroy() = 0;
+        #endif
+            virtual const char* Category() const = 0;
             virtual void Exclude(const string& toExclude) = 0;
             virtual void Configure(const string& setting) = 0;
             virtual IWarningEvent* Clone() const = 0;
