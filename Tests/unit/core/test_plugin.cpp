@@ -532,7 +532,7 @@ namespace PluginGap {
         EXPECT_EQ(config.SystemRootPath.Value(), _T("/opt/thunder"));
         EXPECT_EQ(config.StartupOrder.Value(), 50u);
         EXPECT_EQ(config.Throttle.Value(), 10u);
-        EXPECT_EQ(config.StartMode.Value(), PluginHost::IShell::startmode::ACTIVATED);
+        EXPECT_EQ(config.StartMode.Value(), Plugin::Configuration::startmode::ACTIVATED);
     }
 
     TEST(Plugin_Gap, PluginConfig_DefaultValues)
@@ -547,7 +547,7 @@ namespace PluginGap {
         EXPECT_TRUE(config.ClassName.Value().empty());
         EXPECT_FALSE(config.Resumed.Value());
         EXPECT_EQ(config.StartupOrder.Value(), 1000u); // default from source
-        EXPECT_EQ(config.StartMode.Value(), PluginHost::IShell::startmode::ACTIVATED); // default
+        EXPECT_EQ(config.StartMode.Value(), Plugin::Configuration::startmode::ACTIVATED); // default
     }
 
     TEST(Plugin_Gap, PluginConfig_PathHelpers)
@@ -621,13 +621,13 @@ namespace PluginGap {
         Plugin::Config config;
 
         EXPECT_TRUE(config.FromString(_T("{\"startmode\":\"Deactivated\"}")));
-        EXPECT_EQ(config.StartMode.Value(), PluginHost::IShell::startmode::DEACTIVATED);
+        EXPECT_EQ(config.StartMode.Value(), Plugin::Configuration::startmode::DEACTIVATED);
 
         EXPECT_TRUE(config.FromString(_T("{\"startmode\":\"Activated\"}")));
-        EXPECT_EQ(config.StartMode.Value(), PluginHost::IShell::startmode::ACTIVATED);
+        EXPECT_EQ(config.StartMode.Value(), Plugin::Configuration::startmode::ACTIVATED);
 
         EXPECT_TRUE(config.FromString(_T("{\"startmode\":\"Unavailable\"}")));
-        EXPECT_EQ(config.StartMode.Value(), PluginHost::IShell::startmode::UNAVAILABLE);
+        EXPECT_EQ(config.StartMode.Value(), Plugin::Configuration::startmode::UNAVAILABLE);
     }
 
     TEST(Plugin_Gap, PluginConfig_PreconditionArray)

@@ -31,6 +31,9 @@
     <ClCompile Include="VirtualInput.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="json\JsonEnum_ConfigurationEnums.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Channel.h">
@@ -45,6 +48,9 @@
     <ClInclude Include="Configuration.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <CustomBuild Include="ConfigurationEnums.h">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
     <ClInclude Include="JSONRPC.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -79,6 +85,9 @@
     </Filter>
     <Filter Include="Header Files">
       <UniqueIdentifier>{5f973ca3-b03e-4aa0-b017-08f5203dd479}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Generated Files">
+      <UniqueIdentifier>{D9D69C68-2D53-4CD8-AD1B-25C2B7058DA6}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
