@@ -260,8 +260,13 @@ POP_WARNING()
     //------------------------------------------------------------------------
     void EXTERNAL ToHexString(const uint8_t object[], const uint32_t length, string& result, const TCHAR delimiter = '\0');
     void EXTERNAL ToHexString(const std::vector<uint8_t>& value, string& result, const TCHAR delimiter = '\0');
-    uint32_t EXTERNAL FromHexString(const string& hexString, uint8_t* object, const uint32_t maxLength, const TCHAR delimiter = '\0');
+    uint32_t EXTERNAL FromHexString(const string& hexString, uint8_t object[], const uint32_t maxLength, const TCHAR delimiter = '\0');
     uint32_t EXTERNAL FromHexString(const string& hexString, std::vector<uint8_t>& object, const uint32_t maxLength, const TCHAR delimiter = '\0');
+
+    void EXTERNAL ToDecString(const uint8_t object[], const uint32_t length, string& result, const TCHAR delimiter);
+    void EXTERNAL ToDecString(const std::vector<uint8_t>& value, string& result, const TCHAR delimiter);
+    uint32_t EXTERNAL FromDecString(const string& decString, uint8_t object[], const uint32_t maxLength, const TCHAR delimiter);
+    uint32_t EXTERNAL FromDecString(const string& decString, std::vector<uint8_t>& object, const uint32_t maxLength, const TCHAR delimiter);
 
     //------------------------------------------------------------------------
     // Serialize: Base64
