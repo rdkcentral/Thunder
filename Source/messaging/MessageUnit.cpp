@@ -379,8 +379,11 @@ ENUM_CONVERSION_END(Thunder::Core::Messaging::OutputMode)
             }
 
             if (sendToHandler == true) {
+                _adminLock.Lock();
+                const bool bufferAvailable = (_dataBuffer != nullptr);
+                _adminLock.Unlock();
 
-                if (_dataBuffer != nullptr) {
+                if (bufferAvailable == true) {
                     const uint16_t messageSize = _settings.MessageSize();
                     ASSERT(messageSize != 0);
                     uint8_t* serializationBuffer = static_cast<uint8_t*>(ALLOCA(messageSize));
@@ -394,7 +397,15 @@ ENUM_CONVERSION_END(Thunder::Core::Messaging::OutputMode)
                     if (length != 0) {
                         length += message->Serialize(serializationBuffer + length, messageSize - length);
 
-                        if (_dataBuffer->PushData(length, serializationBuffer) != Core::ERROR_NONE) {
+                        uint32_t result = Core::ERROR_UNAVAILABLE;
+
+                        _adminLock.Lock();
+                        if (_dataBuffer != nullptr) {
+                            result = _dataBuffer->PushData(length, serializationBuffer);
+                        }
+                        _adminLock.Unlock();
+
+                        if (result != Core::ERROR_NONE) {
                             TRACE_L1("Unable to push message data!");
                         }
                     }
