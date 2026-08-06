@@ -170,8 +170,6 @@ namespace Crypto {
             }
             break;
         }
-            result = mbedtls_aes_crypt_ofb(&_context, length, &_offset, _iv, input, output);
-            break;
 #endif
         default:
             ASSERT(false);
