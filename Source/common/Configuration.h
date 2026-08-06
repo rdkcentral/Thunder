@@ -19,19 +19,20 @@
 
 #pragma once
 
-#include "Module.h"
 #include "Config.h"
+#include "ConfigurationEnums.h"
+#include "Module.h"
+#include <plugins/IController.h>
 #include <plugins/IPlugin.h>
 #include <plugins/IShell.h>
 #include <plugins/ISubSystem.h>
-#include <plugins/IController.h>
 
 namespace Thunder {
 namespace Plugin {
     /**
      * IMPORTANT: If updating this class to add/remove/modify configuration options, ensure
      * the documentation in docs/plugin/config.md is updated to reflect the changes!
-    */
+     */
     class EXTERNAL Config : public Core::JSON::Container {
     public:
         class Environment : public Core::JSON::Container {
@@ -113,7 +114,6 @@ namespace Plugin {
             };
 
         public:
-
             enum class ModeType {
                 OFF,
                 LOCAL,
@@ -276,18 +276,19 @@ namespace Plugin {
                 return (*this);
             }
 
-            RPC::Object::HostType HostType() const {
+            RPC::Object::HostType HostType() const
+            {
                 RPC::Object::HostType result = RPC::Object::HostType::LOCAL;
-                switch( Mode.Value() ) {
-                    case ModeType::CONTAINER :
-                        result = RPC::Object::HostType::CONTAINER;
-                        break;
-                    case ModeType::DISTRIBUTED:
-                        result = RPC::Object::HostType::DISTRIBUTED;
-                        break;
-                    default:
-                        result = RPC::Object::HostType::LOCAL;
-                        break;
+                switch (Mode.Value()) {
+                case ModeType::CONTAINER:
+                    result = RPC::Object::HostType::CONTAINER;
+                    break;
+                case ModeType::DISTRIBUTED:
+                    result = RPC::Object::HostType::DISTRIBUTED;
+                    break;
+                default:
+                    result = RPC::Object::HostType::LOCAL;
+                    break;
                 }
                 return result;
             }
@@ -303,7 +304,7 @@ namespace Plugin {
                 }
                 return environmentList;
             }
- 
+
         public:
             Core::JSON::String Locator;
             Core::JSON::String User;
@@ -335,7 +336,7 @@ namespace Plugin {
             , SystemRootPath()
             , StartupOrder(1000) // Will we ever have more than 1000 plugins? :) (number cannot be too high or low as you want to be able to explicitely set a startup order number to let plugins with startup order go before or after plugins that don't have a startup order
             , Throttle(~0)
-            , StartMode(PluginHost::IShell::startmode::ACTIVATED)
+            , StartMode(Configuration::startmode::ACTIVATED)
             , Communicator()
             , Root()
         {
@@ -489,25 +490,29 @@ namespace Plugin {
             return (*this);
         }
 
-        string DataPath(const string& basePath) const {
+        string DataPath(const string& basePath) const
+        {
             return (basePath + ClassName.Value() + '/');
         }
-        string PersistentPath(const string& basePath) const {
-            string postfixPath = ((PersistentPathPostfix.IsSet() == true) && (PersistentPathPostfix.Value().empty() == false)) ? PersistentPathPostfix.Value(): Callsign.Value();
+        string PersistentPath(const string& basePath) const
+        {
+            string postfixPath = ((PersistentPathPostfix.IsSet() == true) && (PersistentPathPostfix.Value().empty() == false)) ? PersistentPathPostfix.Value() : Callsign.Value();
             return (basePath + postfixPath + '/');
         }
-        string VolatilePath(const string& basePath) const {
-            string postfixPath = ((VolatilePathPostfix.IsSet() == true) && (VolatilePathPostfix.Value().empty() == false)) ? VolatilePathPostfix.Value(): Callsign.Value();
+        string VolatilePath(const string& basePath) const
+        {
+            string postfixPath = ((VolatilePathPostfix.IsSet() == true) && (VolatilePathPostfix.Value().empty() == false)) ? VolatilePathPostfix.Value() : Callsign.Value();
             return (basePath + postfixPath + '/');
         }
 
-        explicit operator Exchange::Controller::IMetadata::Data::Service() const { 
+        explicit operator Exchange::Controller::IMetadata::Data::Service() const
+        {
             Exchange::Controller::IMetadata::Data::Service result;
 
             result.Callsign = Callsign;
             result.Locator = Locator;
             result.ClassName = ClassName;
-            result.StartMode = StartMode;
+            result.StartMode = static_cast<PluginHost::IShell::startmode>(StartMode.Value());
             result.Resumed = Resumed;
             result.Configuration = Configuration;
 
@@ -533,7 +538,7 @@ namespace Plugin {
                 result.Control = Control;
             }
 
-            return result; 
+            return result;
         }
 
     public:
@@ -543,16 +548,16 @@ namespace Plugin {
         Core::JSON::String Versions;
         Core::JSON::Boolean Resumed;
         Core::JSON::String WebUI;
-        Core::JSON::ArrayType<Core::JSON::EnumType<PluginHost::ISubSystem::subsystem>> Precondition;
-        Core::JSON::ArrayType<Core::JSON::EnumType<PluginHost::ISubSystem::subsystem>> Termination;
-        Core::JSON::ArrayType<Core::JSON::EnumType<PluginHost::ISubSystem::subsystem>> Control;
+        Core::JSON::ArrayType<Core::JSON::EnumType<Configuration::subsystem>> Precondition;
+        Core::JSON::ArrayType<Core::JSON::EnumType<Configuration::subsystem>> Termination;
+        Core::JSON::ArrayType<Core::JSON::EnumType<Configuration::subsystem>> Control;
         Core::JSON::String Configuration;
         Core::JSON::String PersistentPathPostfix;
         Core::JSON::String VolatilePathPostfix;
         Core::JSON::String SystemRootPath;
         Core::JSON::DecUInt32 StartupOrder;
         Core::JSON::DecUInt8 Throttle;
-        Core::JSON::EnumType<PluginHost::IShell::startmode> StartMode;
+        Core::JSON::EnumType<Configuration::startmode> StartMode;
         Core::JSON::String Communicator;
         RootConfig Root;
 

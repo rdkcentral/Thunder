@@ -122,7 +122,7 @@ namespace Tests {
         EXPECT_EQ(config.Resumed.Value(), false);
         EXPECT_EQ(config.StartupOrder.Value(), 1000u);
         EXPECT_EQ(config.Throttle.Value(), static_cast<uint8_t>(~0));
-        EXPECT_EQ(config.StartMode.Value(), PluginHost::IShell::startmode::ACTIVATED);
+        EXPECT_EQ(config.StartMode.Value(), Plugin::Configuration::startmode::ACTIVATED);
     }
 
     TEST(ThunderHost_PluginConfig, ParseAllFields)
@@ -179,7 +179,7 @@ namespace Tests {
         EXPECT_FALSE(config.Locator.IsSet());
         EXPECT_EQ(config.Resumed.Value(), false);
         EXPECT_EQ(config.StartupOrder.Value(), 1000u);
-        EXPECT_EQ(config.StartMode.Value(), PluginHost::IShell::startmode::ACTIVATED);
+        EXPECT_EQ(config.StartMode.Value(), Plugin::Configuration::startmode::ACTIVATED);
     }
 
     TEST(ThunderHost_PluginConfig, ParseStartMode_Deactivated)
@@ -189,7 +189,7 @@ namespace Tests {
 
         Core::OptionalType<Core::JSON::Error> error;
         config.IElement::FromString(json, error);
-        EXPECT_EQ(config.StartMode.Value(), PluginHost::IShell::startmode::DEACTIVATED);
+        EXPECT_EQ(config.StartMode.Value(), Plugin::Configuration::startmode::DEACTIVATED);
     }
 
     TEST(ThunderHost_PluginConfig, ParseStartMode_Unavailable)
@@ -199,7 +199,7 @@ namespace Tests {
 
         Core::OptionalType<Core::JSON::Error> error;
         config.IElement::FromString(json, error);
-        EXPECT_EQ(config.StartMode.Value(), PluginHost::IShell::startmode::UNAVAILABLE);
+        EXPECT_EQ(config.StartMode.Value(), Plugin::Configuration::startmode::UNAVAILABLE);
     }
 
     TEST(ThunderHost_PluginConfig, DataPath)
