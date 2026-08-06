@@ -108,11 +108,14 @@ Certificate::Certificate(const x509_st* certificate)
     }
 }
 
-Certificate::Certificate(const TCHAR fileName[]) {
-    X509* cert = X509_new();
+Certificate::Certificate(const TCHAR fileName[])
+    : _certificate(nullptr) {
     BIO* bio_cert = BIO_new_file(fileName, "rb");
-    PEM_read_bio_X509(bio_cert, &cert, NULL, NULL);
-    _certificate = cert;
+
+    if (bio_cert != nullptr) {
+        _certificate = PEM_read_bio_X509(bio_cert, nullptr, nullptr, nullptr);
+        BIO_free(bio_cert);
+    }
 }
 
 Certificate::Certificate(Certificate&& certificate) noexcept
