@@ -98,7 +98,7 @@ namespace Core {
                 }
 
                 // Determine the new state.
-                TRACE_L1("[WorkerPool] Queue depth: %u / %u (Remove) caller:%s TID:%lu", static_cast<uint32_t>(_queue.size()), _maxSlots, caller, static_cast<unsigned long>(Thread::ThreadId()));
+                TRACE_L1("[WorkerPool] Queue depth: %u / %u (Remove) caller:%s", static_cast<uint32_t>(_queue.size()), _maxSlots, caller);
                 _state.SetState(IsEmpty() ? EMPTY : ENTRIES);
             }
 
@@ -121,7 +121,7 @@ namespace Core {
                 _queue.push_back(a_Entry);
 
                 // Determine the new state.
-                TRACE_L1("[WorkerPool] Queue depth: %u / %u (Post) caller:%s TID:%lu", static_cast<uint32_t>(_queue.size()), _maxSlots, caller, static_cast<unsigned long>(Thread::ThreadId()));
+                TRACE_L1("[WorkerPool] Queue depth: %u / %u (Post) caller:%s", static_cast<uint32_t>(_queue.size()), _maxSlots, caller);
                 _state.SetState(IsFull() ? LIMITED : ENTRIES);
 
                 Result = true;
@@ -152,7 +152,7 @@ namespace Core {
                         _queue.push_back(a_Entry);
 
                         // Determine the new state.
-                        TRACE_L1("[WorkerPool] Queue depth: %u / %u (Insert) caller:%s TID:%lu", static_cast<uint32_t>(_queue.size()), _maxSlots, caller, static_cast<unsigned long>(Thread::ThreadId()));
+                        TRACE_L1("[WorkerPool] Queue depth: %u / %u (Insert) caller:%s", static_cast<uint32_t>(_queue.size()), _maxSlots, caller);
                         _state.SetState(IsFull() ? LIMITED : ENTRIES);
                     } else {
                         // We are moving into a wait, release the lock.
@@ -200,7 +200,7 @@ namespace Core {
                         _queue.erase(index);
 
                         // Determine the new state.
-                        TRACE_L1("[WorkerPool] Queue depth: %u / %u (Extract) caller:%s TID:%lu", static_cast<uint32_t>(_queue.size()), _maxSlots, caller, static_cast<unsigned long>(Thread::ThreadId()));
+                        TRACE_L1("[WorkerPool] Queue depth: %u / %u (Extract) caller:%s", static_cast<uint32_t>(_queue.size()), _maxSlots, caller);
                         _state.SetState(IsEmpty() ? EMPTY : ENTRIES);
                     } else {
                         // We are moving into a wait, release the lock.
@@ -231,7 +231,7 @@ namespace Core {
             _adminLock.Lock();
 
             if (_state == DISABLED) {
-                TRACE_L1("[WorkerPool] Queue state: EMPTY (Enable) caller:%s TID:%lu", caller, static_cast<unsigned long>(Thread::ThreadId()));
+                TRACE_L1("[WorkerPool] Queue state: EMPTY (Enable) caller:%s", caller);
                 _state.SetState(EMPTY);
             }
 
@@ -246,7 +246,7 @@ namespace Core {
 
             if (_state != DISABLED) {
                 // Change the state
-                TRACE_L1("[WorkerPool] Queue state: DISABLED (Disable) caller:%s TID:%lu", caller, static_cast<unsigned long>(Thread::ThreadId()));
+                TRACE_L1("[WorkerPool] Queue state: DISABLED (Disable) caller:%s", caller);
                 _state.SetState(DISABLED);
             }
 
