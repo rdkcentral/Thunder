@@ -470,8 +470,9 @@ namespace RPC {
             proxy = nullptr;
             _adminLock.Unlock();
         } else {
-
-            SYSLOG(Logging::Error, (_T("Proxy and Stubs for interface %U were generated with a different proxystub security setting than the other Proxy and Stubs, it will be ignored (so expect errors due to this)")));
+            SYSLOG(Logging::Error, (_T("Proxy and stubs for interface %u were generated with a different proxy/stub security setting and will be ignored"), interfaceID));
+            delete stub;
+            delete proxy;
         }
     }
 
