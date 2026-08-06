@@ -28,9 +28,8 @@
 #define __QUEUE_H
 
 #include <algorithm>
-#include <queue>
 #include <thread>
-#include "Thread.h"
+#include <queue>
 
 #include "Module.h"
 #include "StateTrigger.h"
