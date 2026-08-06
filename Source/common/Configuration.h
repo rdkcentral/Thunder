@@ -19,20 +19,20 @@
 
 #pragma once
 
+#include "Module.h"
 #include "Config.h"
 #include "ConfigurationEnums.h"
-#include "Module.h"
-#include <plugins/IController.h>
 #include <plugins/IPlugin.h>
 #include <plugins/IShell.h>
 #include <plugins/ISubSystem.h>
+#include <plugins/IController.h>
 
 namespace Thunder {
 namespace Plugin {
     /**
      * IMPORTANT: If updating this class to add/remove/modify configuration options, ensure
      * the documentation in docs/plugin/config.md is updated to reflect the changes!
-     */
+    */
     class EXTERNAL Config : public Core::JSON::Container {
     public:
         class Environment : public Core::JSON::Container {
@@ -276,19 +276,18 @@ namespace Plugin {
                 return (*this);
             }
 
-            RPC::Object::HostType HostType() const
-            {
+            RPC::Object::HostType HostType() const {
                 RPC::Object::HostType result = RPC::Object::HostType::LOCAL;
-                switch (Mode.Value()) {
-                case ModeType::CONTAINER:
-                    result = RPC::Object::HostType::CONTAINER;
-                    break;
-                case ModeType::DISTRIBUTED:
-                    result = RPC::Object::HostType::DISTRIBUTED;
-                    break;
-                default:
-                    result = RPC::Object::HostType::LOCAL;
-                    break;
+                switch ( Mode.Value() ) {
+                    case ModeType::CONTAINER :
+                        result = RPC::Object::HostType::CONTAINER;
+                        break;
+                    case ModeType::DISTRIBUTED:
+                        result = RPC::Object::HostType::DISTRIBUTED;
+                        break;
+                    default:
+                        result = RPC::Object::HostType::LOCAL;
+                        break;
                 }
                 return result;
             }
@@ -490,23 +489,19 @@ namespace Plugin {
             return (*this);
         }
 
-        string DataPath(const string& basePath) const
-        {
+        string DataPath(const string& basePath) const {
             return (basePath + ClassName.Value() + '/');
         }
-        string PersistentPath(const string& basePath) const
-        {
-            string postfixPath = ((PersistentPathPostfix.IsSet() == true) && (PersistentPathPostfix.Value().empty() == false)) ? PersistentPathPostfix.Value() : Callsign.Value();
+        string PersistentPath(const string& basePath) const {
+            string postfixPath = ((PersistentPathPostfix.IsSet() == true) && (PersistentPathPostfix.Value().empty() == false)) ? PersistentPathPostfix.Value(): Callsign.Value();
             return (basePath + postfixPath + '/');
         }
-        string VolatilePath(const string& basePath) const
-        {
-            string postfixPath = ((VolatilePathPostfix.IsSet() == true) && (VolatilePathPostfix.Value().empty() == false)) ? VolatilePathPostfix.Value() : Callsign.Value();
+        string VolatilePath(const string& basePath) const {
+            string postfixPath = ((VolatilePathPostfix.IsSet() == true) && (VolatilePathPostfix.Value().empty() == false)) ? VolatilePathPostfix.Value(): Callsign.Value();
             return (basePath + postfixPath + '/');
         }
 
-        explicit operator Exchange::Controller::IMetadata::Data::Service() const
-        {
+        explicit operator Exchange::Controller::IMetadata::Data::Service() const {
             Exchange::Controller::IMetadata::Data::Service result;
 
             result.Callsign = Callsign;
