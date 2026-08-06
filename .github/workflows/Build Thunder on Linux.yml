@@ -2,7 +2,7 @@ name: Build Thunder on Linux
 
 permissions:
   contents: read
-
+# TEST
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
