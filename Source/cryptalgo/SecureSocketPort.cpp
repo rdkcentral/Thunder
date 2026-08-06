@@ -317,6 +317,8 @@ SecureSocketPort::Handler::Handler(SecureSocketPort& parent,
     const uint32_t socketReceiveBufferSize)
     : SocketPort(socketType, localNode, remoteNode, sendBufferSize, receiveBufferSize, socketSendBufferSize, socketReceiveBufferSize)
     , _parent(parent)
+    , _context(nullptr)
+    , _ssl(nullptr)
     , _callback(nullptr)
     , _handShaking(EXCHANGE) {
     CreateContext(TLS_method());
@@ -332,6 +334,8 @@ SecureSocketPort::Handler::Handler(SecureSocketPort& parent,
     const uint32_t socketReceiveBufferSize)
     : SocketPort(socketType, connector, remoteNode, sendBufferSize, receiveBufferSize, socketSendBufferSize, socketReceiveBufferSize)
     , _parent(parent)
+    , _context(nullptr)
+    , _ssl(nullptr)
     , _callback(nullptr)
     , _handShaking(EXCHANGE) {
     CreateContext(TLS_server_method());
@@ -371,12 +375,12 @@ void SecureSocketPort::Handler::CreateContext(const struct ssl_method_st* method
 }
 
 uint32_t SecureSocketPort::Handler::Initialize() {
-    bool initialized = false;
+    uint32_t result = Core::ERROR_OPENING_FAILED;
 
     ASSERT(_context != nullptr);
     ASSERT(_ssl != nullptr);
 
-    if (SSL_set_fd(_ssl, static_cast<Core::IResource&>(*this).Descriptor()) == 1) {
+    if ((_context != nullptr) && (_ssl != nullptr) && (SSL_set_fd(_ssl, static_cast<Core::IResource&>(*this).Descriptor()) == 1)) {
         SSL_set_tlsext_host_name(_ssl, RemoteNode().HostName().c_str());
         if (IsOpen() == true) {
             SSL_set_accept_state(_ssl);
@@ -385,10 +389,10 @@ uint32_t SecureSocketPort::Handler::Initialize() {
             SSL_set_connect_state(_ssl);
         }
 
-        initialized =  Core::SocketPort::Initialize();
+        result = Core::SocketPort::Initialize();
     }
 
-    return (initialized);
+    return (result);
 }
 
 int32_t SecureSocketPort::Handler::Read(uint8_t buffer[], const uint16_t length) const {
@@ -406,7 +410,7 @@ int32_t SecureSocketPort::Handler::Write(const uint8_t buffer[], const uint16_t 
 
     ASSERT(_handShaking != ERROR);
 
-    uint32_t result = SSL_write(_ssl, buffer, length);
+    int32_t result = SSL_write(_ssl, buffer, length);
 
     if (_handShaking != OPEN) {
         Update();
@@ -420,8 +424,9 @@ uint32_t SecureSocketPort::Handler::Open(const uint32_t waitTime) {
 }
 
 uint32_t SecureSocketPort::Handler::Close(const uint32_t waitTime) {
-    ASSERT(_ssl != nullptr);
-    SSL_shutdown(_ssl);
+    if (_ssl != nullptr) {
+        SSL_shutdown(_ssl);
+    }
 
     return(Core::SocketPort::Close(waitTime));
 }
@@ -444,10 +449,14 @@ uint32_t SecureSocketPort::Handler::Certificate(const Crypto::Certificate& certi
 
 uint32_t SecureSocketPort::Handler::Root(const CertificateStore& certStore) {
     const struct x509_store_st* store = certStore;
+    uint32_t result = Core::ERROR_BAD_REQUEST;
 
-    SSL_CTX_set_cert_store(_context, const_cast<struct x509_store_st*>(store));
+    if ((_context != nullptr) && (store != nullptr) && (X509_STORE_up_ref(const_cast<struct x509_store_st*>(store)) == 1)) {
+        SSL_CTX_set_cert_store(_context, const_cast<struct x509_store_st*>(store));
+        result = Core::ERROR_NONE;
+    }
 
-    return (Core::ERROR_NONE);
+    return (result);
 }
 
 void SecureSocketPort::Handler::ValidateHandShake() {

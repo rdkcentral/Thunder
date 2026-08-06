@@ -329,7 +329,7 @@ namespace Crypto {
         unsigned long used, available;
 
         /*
-        * Split length to lower and higher portion
+            Split length to lower and higher portion
          */
         uint32_t lengthLow = static_cast<uint32_t>(ctx->length & 0xFFFFFFFF);
         uint32_t lengthHigh = static_cast<uint32_t>(ctx->length >> 32);
@@ -526,10 +526,10 @@ namespace Crypto {
         const uint8_t* current = &(message_array[0]);
 
         /*
-         * Split lenght to lower and higher portion
+            Split length to lower and higher portion
          */
         uint32_t lengthLow = static_cast<uint32_t>(_context.length & 0xFFFFFFFF);
-        uint32_t lengthHigh = reinterpret_cast<uint32_t*>(&_context.length)[1];
+        uint32_t lengthHigh = static_cast<uint32_t>(_context.length >> 32);
 
         ASSERT((_computed == false) || (_corrupted == false));
 
@@ -755,10 +755,10 @@ namespace Crypto {
         ::memset(&(_context.block[_context.index]), 0, (56 - _context.index));
 
         /*
-         * Split lenght to lower and higher portion
+            Split length to lower and higher portion
          */
         uint32_t lengthLow = static_cast<uint32_t>(_context.length & 0xFFFFFFFF);
-        uint32_t lengthHigh = reinterpret_cast<uint32_t*>(&_context.length)[1];
+        uint32_t lengthHigh = static_cast<uint32_t>(_context.length >> 32);
 
         /*
          *  Store the message length as the last 8 octets
