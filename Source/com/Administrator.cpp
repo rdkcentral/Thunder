@@ -431,10 +431,10 @@ namespace RPC {
                     }
                 }
             } else {
-                printf("====> Unregistering an interface [0x%x, %d] which has not been registered!!!\n", interfaceId, Core::ProcessInfo().Id());
+                SYSLOG(Logging::Error, (_T("Unregistering interface [0x%x, %d] which has not been registered!"), interfaceId, Core::ProcessInfo().Id()));
             }
         } else {
-            printf("====> Unregistering an interface [0x%x, %d] from a non-existing channel!!!\n", interfaceId, Core::ProcessInfo().Id());
+            SYSLOG(Logging::Error, (_T("Unregistering interface [0x%x, %d] from a non-existing channel!"), interfaceId, Core::ProcessInfo().Id()));
         }
     }
 
