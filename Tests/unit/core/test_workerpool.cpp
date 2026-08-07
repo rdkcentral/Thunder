@@ -1388,7 +1388,7 @@ namespace Core {
                 SleepMs(1);
                 waited++;
             }
-            ASSERT_TRUE(_decoupledJob.IsIdle()) << "Job still running after " << kMaxWaitMs << "ms";
+            EXPECT_TRUE(_decoupledJob.IsIdle()) << "Job still running after " << kMaxWaitMs << "ms";
         }
 
     public:
