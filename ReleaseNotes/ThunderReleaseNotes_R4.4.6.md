@@ -78,18 +78,19 @@ Thunder R4.4.6 does not introduce intentional breaking changes relative to R4.4.
 The ThunderTools changes in R4.4.6 are all backports of JsonGenerator and ProxyStub Generator improvements from ThunderTools R5.x. The changes refine the code generators used to produce JSON-RPC and COM-RPC glue code from Thunder interface definitions.
 
 
-### Feature: std::vector Support
+### Feature: std::vector support
 
 The usage of std::vector< Type > is now supported by the Proxy Stub generators as well as the JSON-RPC generators (where it translates to a json array).
 It is also allowed to be used inside events/notifications (see the Thunder documentation on the new feature [here](https://rdkcentral.github.io/Thunder/plugin/interfaces/interfaces/#overview) to see why you should be careful when using this). 
 
 ### Enhanced fixed array support
 
-Fixed arrays are now also allowed as method parameters and POD members in interfaces. Please note only primitive types are allowed as already was the case with dynamic arrays. Thunder documentation will be updated soon with more information on this.
+Fixed arrays are now also allowed as method parameters and POD members in interfaces. Fixed arrays can supports all types (incl. strings, Core::Time or PODs) with the exception of iterators.
 
 ### Optional
 
-The tooling now allows to specify that a parameter is optional in the IDL header file using Core::OptionalType (this superseded @optional). In COM-RPC the OptionalType can be used to see if a value was set and in JSON-RPC it is then allowed to omit this parameter. Detailed documentation will be  added to the Thunder documentation.
+The tooling now allows to specify that a parameter is optional in the IDL header file using Core::OptionalType (this superseded @optional). In COM-RPC the OptionalType can be used to see if a value was set and in JSON-RPC it is then allowed to omit this parameter.
+@optional still has a purpose: making parameter checks lenient without modifying the C++ interface.
 
 ### OptionalType enhancements
 
@@ -106,7 +107,8 @@ Iterators in the IDL header file can now also be of OptionalType<>.
 
 ### Default
 
-When using optional types as described above it is now also possible to provide a default value to be used in case the parameter value was not specified. Also this will be described in more detail in the Thunder documentation.
+When using optional types using the @optional it is now also possible to provide a default value to be used in case the parameter value was not specified. 
+E.g. for a string it could be @default:"[unset]" if empty string would have a logical meaning, also it is semi-required if a integer/enum/bool parameter is @optional otherwise it'll get {} value.
 
 ### Feature: support restrict for iterators
 
@@ -146,9 +148,9 @@ See [here](https://rdkcentral.github.io/Thunder/plugin/interfaces/tags/#wrapped)
 
 ### Feature: new buffer encoding options
 
-There is a new encoding tag supported with @encode (next to the already existing base64):
+There is a new encoding tag supported with @encode:
 
-@encode:hex will encode/decode the buffer as hex value into/from the JSON-RPC string (so works for both input and out parameters). Buffer can be an array, std::vector or buffer+len parameter with base type uint8_t or char.
+@encode:hex will encode/decode the buffer as hex value into/from the JSON-RPC string (so works for both input and out parameters). Buffer can be an array or buffer+len parameter with base type uint8_t or char. Encode hex support for std::vector will follow in the next release.
 
 All encodings can now also be used in events.
 See for more info [here](https://rdkcentral.github.io/Thunder/plugin/interfaces/tags/#encode)
@@ -158,7 +160,7 @@ See for more info [here](https://rdkcentral.github.io/Thunder/plugin/interfaces/
 When an input string in a method in the IDL is not allowed to be empty (but it is not desirable to set a maximum length, if that is the case the @restrict:x..y tag can be used) it can be flagged with the @restrict:nonempty tag.
 If the string is empty this will already generate an error when validating the input in the generated proxy stub code.
 
-### Feature
+### Feature: JSON container move support
 
 JSON containers can now be moved when using the generated code
 
