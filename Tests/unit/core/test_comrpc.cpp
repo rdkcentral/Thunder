@@ -884,6 +884,7 @@ namespace COMRPC {
         int DeactivatedCount() const { return _deactivated; }
         uint32_t LastActivatedId() const { return _lastActivatedId; }
         uint32_t LastDeactivatedId() const { return _lastDeactivatedId; }
+        uint32_t RefCount() const { return _refCount.load(); }
 
         // IReferenceCounted — stack-allocated, use a simple counter
         uint32_t AddRef() const override { return (++_refCount); }
@@ -927,16 +928,18 @@ namespace COMRPC {
 
         uint32_t result = server.Open(2000);
         if (result != ::Thunder::Core::ERROR_NONE) {
-            GTEST_SKIP() << "Cannot open communicator server";
+            FAIL() << "Communicator::Open() failed: " << result
+                   << " — coverage gap is not exercised";
         }
 
         ConnectionNotificationTracker tracker;
+        EXPECT_EQ(tracker.RefCount(), 1u);  // construction: refcount = 1
 
-        // Register should succeed
-        server.Register(&tracker);
+        server.Register(&tracker);          // Register() calls AddRef() -> 2
+        EXPECT_EQ(tracker.RefCount(), 2u);
 
-        // Unregister should succeed
-        server.Unregister(&tracker);
+        server.Unregister(&tracker);        // Unregister() calls Release() -> 1
+        EXPECT_EQ(tracker.RefCount(), 1u);
 
         server.Close(2000);
         ::unlink(connector.c_str());

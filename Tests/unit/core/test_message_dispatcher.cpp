@@ -418,16 +418,59 @@ namespace Core {
         EXPECT_EQ(readBuf[63], 63);
     }
 
-    // Pop from empty buffer returns appropriate error
+    // Pop from empty buffer returns ERROR_READ_ERROR (MessageDispatcher.h initialises result to
+    // Core::ERROR_READ_ERROR and leaves it there when Read() finds nothing).
     TEST_F(Core_MessageDispatcher, PopFromEmptyBuffer)
     {
         uint8_t readData[4] = {};
         uint16_t readLength = sizeof(readData);
 
-        // Nothing was pushed — pop should indicate no data
         uint32_t result = _dispatcher->PopData(readLength, readData);
-        // Empty pop should return ERROR_READ_ERROR or similar
-        EXPECT_NE(result, ::Thunder::Core::ERROR_NONE);
+        EXPECT_EQ(result, ::Thunder::Core::ERROR_READ_ERROR);
+    }
+
+    // Push enough data to force the write pointer to wrap past the end of the
+    // 9 KB buffer, then verify the wrapped data reads back correctly.
+    TEST_F(Core_MessageDispatcher, WrapAround_WritePointerWraps)
+    {
+        // Fill most of the buffer, drain it (advancing the read pointer near the end),
+        // then push new data that straddles the end-of-buffer boundary.
+        constexpr uint16_t chunkSize = 512;
+        constexpr uint16_t chunksToFill = static_cast<uint16_t>((DATA_SIZE / (chunkSize + sizeof(uint16_t))) - 1);
+
+        uint8_t writeData[chunkSize];
+        for (uint16_t i = 0; i < chunkSize; i++) {
+            writeData[i] = static_cast<uint8_t>(i & 0xFF);
+        }
+
+        for (uint16_t i = 0; i < chunksToFill; i++) {
+            ASSERT_EQ(_dispatcher->PushData(chunkSize, writeData), ::Thunder::Core::ERROR_NONE)
+                << "PushData failed at chunk " << i;
+        }
+
+        uint8_t readBuf[chunkSize] = {};
+        for (uint16_t i = 0; i < chunksToFill; i++) {
+            uint16_t readLen = chunkSize;
+            ASSERT_EQ(_dispatcher->PopData(readLen, readBuf), ::Thunder::Core::ERROR_NONE)
+                << "PopData failed at chunk " << i;
+            EXPECT_EQ(readLen, chunkSize);
+        }
+
+        // Write pointer must now wrap; push and verify each chunk
+        for (uint16_t i = 0; i < chunksToFill; i++) {
+            writeData[0] = static_cast<uint8_t>(i);
+            ASSERT_EQ(_dispatcher->PushData(chunkSize, writeData), ::Thunder::Core::ERROR_NONE)
+                << "Post-wrap PushData failed at chunk " << i;
+        }
+
+        for (uint16_t i = 0; i < chunksToFill; i++) {
+            uint16_t readLen = chunkSize;
+            memset(readBuf, 0, chunkSize);
+            ASSERT_EQ(_dispatcher->PopData(readLen, readBuf), ::Thunder::Core::ERROR_NONE)
+                << "Post-wrap PopData failed at chunk " << i;
+            EXPECT_EQ(readLen, chunkSize);
+            EXPECT_EQ(readBuf[0], static_cast<uint8_t>(i));
+        }
     }
 
 } // Core

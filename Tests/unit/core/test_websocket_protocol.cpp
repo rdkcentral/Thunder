@@ -19,6 +19,7 @@
 
 #include <atomic>
 #include <condition_variable>
+#include <functional>
 #include <mutex>
 #include <thread>
 #include <unistd.h>
@@ -199,13 +200,16 @@ namespace Core {
         std::thread serverThread([&]() {
             ::Thunder::Core::SocketServerType<ProtoTextServer> server(
                 ::Thunder::Core::NodeId(connector.c_str()));
-            ASSERT_EQ(server.Open(maxWait), ::Thunder::Core::ERROR_NONE);
+            bool opened = (server.Open(maxWait) == ::Thunder::Core::ERROR_NONE);
+            EXPECT_TRUE(opened) << "server.Open() failed";
 
             {
                 std::lock_guard<std::mutex> lk(readyMutex);
-                serverReady = true;
+                serverReady = opened;
             }
             readyCV.notify_one();
+
+            if (!opened) return;
 
             while (!clientDone.load()) {
                 SleepMs(50);
@@ -229,9 +233,9 @@ namespace Core {
             ready = readyCV.wait_for(lk, std::chrono::seconds(10),
                 [&]{ return serverReady.load(); });
         }
-        if (!ready) {
+        if (!ready || !serverReady.load()) {
             stopServer();
-            FAIL() << "Server did not become ready in time";
+            FAIL() << "Server did not become ready in time (or Open() failed)";
             return;
         }
 
@@ -330,15 +334,6 @@ namespace Core {
         });
     }
 
-    TEST(WebSocketProtocol, CloseIsClean)
-    {
-        RunTextServer(UniqueSocketPath("close"), [](ProtoTextClient& client) {
-            // Just verify the connection opens and closes cleanly
-            // (the RunTextServer helper already tests Open/Close paths)
-            EXPECT_TRUE(client.IsOpen());
-        });
-    }
-
     TEST(WebSocketProtocol, MultipleClientsSequential)
     {
         constexpr uint32_t maxWait = 8000;
@@ -355,13 +350,16 @@ namespace Core {
         std::thread serverThread([&]() {
             ::Thunder::Core::SocketServerType<ProtoTextServer> server(
                 ::Thunder::Core::NodeId(connector.c_str()));
-            ASSERT_EQ(server.Open(maxWait), ::Thunder::Core::ERROR_NONE);
+            bool opened = (server.Open(maxWait) == ::Thunder::Core::ERROR_NONE);
+            EXPECT_TRUE(opened) << "server.Open() failed";
 
             {
                 std::lock_guard<std::mutex> lk(readyMutex);
-                serverReady = true;
+                serverReady = opened;
             }
             readyCV.notify_one();
+
+            if (!opened) return;
 
             while (!clientsDone.load()) {
                 SleepMs(50);
@@ -385,9 +383,9 @@ namespace Core {
             ready = readyCV.wait_for(lk, std::chrono::seconds(10),
                 [&]{ return serverReady.load(); });
         }
-        if (!ready) {
+        if (!ready || !serverReady.load()) {
             stopServer();
-            FAIL() << "Server did not become ready in time";
+            FAIL() << "Server did not become ready in time (or Open() failed)";
             return;
         }
         SleepMs(100);

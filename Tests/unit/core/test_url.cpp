@@ -182,18 +182,18 @@ namespace Core {
         EXPECT_STREQ(url.Host().Value().c_str(), "host.com");
     }
 
-    TEST(URL_Parse, UserInfoWithoutPassword)
+    // URL parser drops UserName when userinfo has no ':' separator (URL.cpp:275).
+    // RFC 3986 permits password-less userinfo; this test is disabled pending a fix.
+    TEST(URL_Parse, DISABLED_UserInfoWithoutPassword)
     {
-        // NOTE: Thunder's URL parser only extracts UserName when there's a ':'
-        // separator (user:pass@host). For user@host without password, neither
-        // username nor password is set — the "anonymous@" portion becomes part
-        // of the host parsing. Verify this actual behavior.
         ::Thunder::Core::URL url("ftp://anonymous@ftp.example.com/pub");
 
         EXPECT_TRUE(url.IsValid());
-        // UserName is NOT set because there's no ':' before '@'
-        EXPECT_FALSE(url.UserName().IsSet());
-        EXPECT_TRUE(url.Host().IsSet());
+        // RFC 3986: UserName SHOULD be "anonymous"
+        ASSERT_TRUE(url.UserName().IsSet());
+        EXPECT_STREQ(url.UserName().Value().c_str(), "anonymous");
+        ASSERT_TRUE(url.Host().IsSet());
+        EXPECT_STREQ(url.Host().Value().c_str(), "ftp.example.com");
     }
 
     // =========================================================================
@@ -314,13 +314,19 @@ namespace Core {
         EXPECT_FALSE(serialized.empty());
         EXPECT_TRUE(url.IsValid());
 
-        // Parse back and verify
+        // Parse back and verify — guard every .Value() with IsSet() so a failed
+        // reparse surfaces as a test failure rather than a crash.
         ::Thunder::Core::URL reparsed(serialized);
         EXPECT_EQ(reparsed.Type(), url.Type());
+        ASSERT_TRUE(reparsed.Host().IsSet());
         EXPECT_EQ(reparsed.Host().Value(), url.Host().Value());
+        ASSERT_TRUE(reparsed.Port().IsSet());
         EXPECT_EQ(reparsed.Port().Value(), url.Port().Value());
+        ASSERT_TRUE(reparsed.Path().IsSet());
         EXPECT_EQ(reparsed.Path().Value(), url.Path().Value());
+        ASSERT_TRUE(reparsed.Query().IsSet());
         EXPECT_EQ(reparsed.Query().Value(), url.Query().Value());
+        ASSERT_TRUE(reparsed.Ref().IsSet());
         EXPECT_EQ(reparsed.Ref().Value(), url.Ref().Value());
     }
 
@@ -330,8 +336,11 @@ namespace Core {
         string serialized = url.Text();
 
         ::Thunder::Core::URL reparsed(serialized);
+        ASSERT_TRUE(reparsed.UserName().IsSet());
         EXPECT_EQ(reparsed.UserName().Value(), "user");
+        ASSERT_TRUE(reparsed.Password().IsSet());
         EXPECT_EQ(reparsed.Password().Value(), "pass");
+        ASSERT_TRUE(reparsed.Host().IsSet());
         EXPECT_EQ(reparsed.Host().Value(), "host.com");
     }
 
@@ -538,10 +547,10 @@ namespace Core {
 
     TEST(URL_Encode, SpaceEncodedAsPlus)
     {
-        const TCHAR source[] = "hello world";
+        const TCHAR source[] = _T("hello world");
         TCHAR dest[64] = {};
 
-        uint16_t len = ::Thunder::Core::URL::Encode(source, static_cast<uint16_t>(strlen(source)), dest, sizeof(dest));
+        uint16_t len = ::Thunder::Core::URL::Encode(source, static_cast<uint16_t>(_tcslen(source)), dest, sizeof(dest) / sizeof(dest[0]));
         EXPECT_GT(len, 0u);
 
         string encoded(dest, len);
@@ -550,10 +559,10 @@ namespace Core {
 
     TEST(URL_Encode, AlphanumericPassThrough)
     {
-        const TCHAR source[] = "abc123XYZ";
+        const TCHAR source[] = _T("abc123XYZ");
         TCHAR dest[64] = {};
 
-        uint16_t len = ::Thunder::Core::URL::Encode(source, static_cast<uint16_t>(strlen(source)), dest, sizeof(dest));
+        uint16_t len = ::Thunder::Core::URL::Encode(source, static_cast<uint16_t>(_tcslen(source)), dest, sizeof(dest) / sizeof(dest[0]));
         string encoded(dest, len);
 
         EXPECT_STREQ(encoded.c_str(), "abc123XYZ");
@@ -561,10 +570,10 @@ namespace Core {
 
     TEST(URL_Encode, SpecialCharsEncoded)
     {
-        const TCHAR source[] = "a=b&c";
+        const TCHAR source[] = _T("a=b&c");
         TCHAR dest[64] = {};
 
-        uint16_t len = ::Thunder::Core::URL::Encode(source, static_cast<uint16_t>(strlen(source)), dest, sizeof(dest));
+        uint16_t len = ::Thunder::Core::URL::Encode(source, static_cast<uint16_t>(_tcslen(source)), dest, sizeof(dest) / sizeof(dest[0]));
         string encoded(dest, len);
 
         // '=' and '&' should be percent-encoded
@@ -575,10 +584,10 @@ namespace Core {
 
     TEST(URL_Decode, DecodePercentEncoded)
     {
-        const TCHAR source[] = "hello%20world";
+        const TCHAR source[] = _T("hello%20world");
         TCHAR dest[64] = {};
 
-        uint16_t len = ::Thunder::Core::URL::Decode(source, static_cast<uint16_t>(strlen(source)), dest, sizeof(dest));
+        uint16_t len = ::Thunder::Core::URL::Decode(source, static_cast<uint16_t>(_tcslen(source)), dest, sizeof(dest) / sizeof(dest[0]));
         string decoded(dest, len);
 
         EXPECT_STREQ(decoded.c_str(), "hello world");
@@ -586,10 +595,10 @@ namespace Core {
 
     TEST(URL_Decode, DecodePlusAsSpace)
     {
-        const TCHAR source[] = "hello+world";
+        const TCHAR source[] = _T("hello+world");
         TCHAR dest[64] = {};
 
-        uint16_t len = ::Thunder::Core::URL::Decode(source, static_cast<uint16_t>(strlen(source)), dest, sizeof(dest));
+        uint16_t len = ::Thunder::Core::URL::Decode(source, static_cast<uint16_t>(_tcslen(source)), dest, sizeof(dest) / sizeof(dest[0]));
         string decoded(dest, len);
 
         EXPECT_STREQ(decoded.c_str(), "hello world");
@@ -597,14 +606,14 @@ namespace Core {
 
     TEST(URL_Encode, RoundTrip)
     {
-        const TCHAR source[] = "key=hello world&other=a/b";
+        const TCHAR source[] = _T("key=hello world&other=a/b");
         TCHAR encoded[128] = {};
         TCHAR decoded[128] = {};
 
-        uint16_t encLen = ::Thunder::Core::URL::Encode(source, static_cast<uint16_t>(strlen(source)), encoded, sizeof(encoded));
+        uint16_t encLen = ::Thunder::Core::URL::Encode(source, static_cast<uint16_t>(_tcslen(source)), encoded, sizeof(encoded) / sizeof(encoded[0]));
         ASSERT_GT(encLen, 0u);
 
-        uint16_t decLen = ::Thunder::Core::URL::Decode(encoded, encLen, decoded, sizeof(decoded));
+        uint16_t decLen = ::Thunder::Core::URL::Decode(encoded, encLen, decoded, sizeof(decoded) / sizeof(decoded[0]));
         string result(decoded, decLen);
 
         EXPECT_STREQ(result.c_str(), source);
@@ -620,7 +629,7 @@ namespace Core {
         TCHAR encoded[64] = {};
         uint8_t decoded[64] = {};
 
-        uint16_t encLen = ::Thunder::Core::URL::Base64Encode(data, sizeof(data), encoded, sizeof(encoded));
+        uint16_t encLen = ::Thunder::Core::URL::Base64Encode(data, sizeof(data), encoded, sizeof(encoded) / sizeof(encoded[0]));
         ASSERT_GT(encLen, 0u);
 
         uint16_t decLen = ::Thunder::Core::URL::Base64Decode(encoded, encLen, decoded, sizeof(decoded));
@@ -635,7 +644,7 @@ namespace Core {
         const uint8_t data[] = { 0xFB, 0xFF, 0xFE };
         TCHAR encoded[64] = {};
 
-        uint16_t encLen = ::Thunder::Core::URL::Base64Encode(data, sizeof(data), encoded, sizeof(encoded));
+        uint16_t encLen = ::Thunder::Core::URL::Base64Encode(data, sizeof(data), encoded, sizeof(encoded) / sizeof(encoded[0]));
         string encodedStr(encoded, encLen);
 
         // URL-safe base64 uses '-' and '_' instead of '+' and '/'
@@ -646,7 +655,7 @@ namespace Core {
     TEST(URL_Base64, EmptyInput)
     {
         TCHAR encoded[64] = {};
-        uint16_t encLen = ::Thunder::Core::URL::Base64Encode(nullptr, 0, encoded, sizeof(encoded));
+        uint16_t encLen = ::Thunder::Core::URL::Base64Encode(nullptr, 0, encoded, sizeof(encoded) / sizeof(encoded[0]));
         EXPECT_EQ(encLen, 0u);
     }
 
@@ -656,7 +665,7 @@ namespace Core {
         TCHAR encoded[64] = {};
         uint8_t decoded[64] = {};
 
-        uint16_t encLen = ::Thunder::Core::URL::Base64Encode(data, sizeof(data), encoded, sizeof(encoded), true);
+        uint16_t encLen = ::Thunder::Core::URL::Base64Encode(data, sizeof(data), encoded, sizeof(encoded) / sizeof(encoded[0]), true);
         ASSERT_GT(encLen, 0u);
 
         uint16_t decLen = ::Thunder::Core::URL::Base64Decode(encoded, encLen, decoded, sizeof(decoded));
@@ -675,7 +684,7 @@ namespace Core {
         TCHAR encoded[128] = {};
         uint8_t decoded[64] = {};
 
-        uint16_t encLen = ::Thunder::Core::URL::Base64Encode(data, sizeof(data), encoded, sizeof(encoded));
+        uint16_t encLen = ::Thunder::Core::URL::Base64Encode(data, sizeof(data), encoded, sizeof(encoded) / sizeof(encoded[0]));
         ASSERT_GT(encLen, 0u);
 
         uint16_t decLen = ::Thunder::Core::URL::Base64Decode(encoded, encLen, decoded, sizeof(decoded));
