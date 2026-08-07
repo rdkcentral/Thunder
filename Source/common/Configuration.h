@@ -21,6 +21,7 @@
 
 #include "Module.h"
 #include "Config.h"
+#include "ConfigurationEnums.h"
 #include <plugins/IPlugin.h>
 #include <plugins/IShell.h>
 #include <plugins/ISubSystem.h>
@@ -335,7 +336,7 @@ namespace Plugin {
             , SystemRootPath()
             , StartupOrder(1000) // Will we ever have more than 1000 plugins? :) (number cannot be too high or low as you want to be able to explicitely set a startup order number to let plugins with startup order go before or after plugins that don't have a startup order
             , Throttle(~0)
-            , StartMode(PluginHost::IShell::startmode::ACTIVATED)
+            , StartMode(Configuration::startmode::ACTIVATED)
             , Communicator()
             , Root()
         {
@@ -507,7 +508,7 @@ namespace Plugin {
             result.Callsign = Callsign;
             result.Locator = Locator;
             result.ClassName = ClassName;
-            result.StartMode = StartMode;
+            result.StartMode = static_cast<PluginHost::IShell::startmode>(StartMode.Value());
             result.Configuration = Configuration;
 
             if (Communicator.IsSet() == true) {
@@ -542,16 +543,16 @@ namespace Plugin {
         Core::JSON::String Versions;
         Core::JSON::Boolean Resumed;
         Core::JSON::String WebUI;
-        Core::JSON::ArrayType<Core::JSON::EnumType<PluginHost::ISubSystem::subsystem>> Precondition;
-        Core::JSON::ArrayType<Core::JSON::EnumType<PluginHost::ISubSystem::subsystem>> Termination;
-        Core::JSON::ArrayType<Core::JSON::EnumType<PluginHost::ISubSystem::subsystem>> Control;
+        Core::JSON::ArrayType<Core::JSON::EnumType<Configuration::subsystem>> Precondition;
+        Core::JSON::ArrayType<Core::JSON::EnumType<Configuration::subsystem>> Termination;
+        Core::JSON::ArrayType<Core::JSON::EnumType<Configuration::subsystem>> Control;
         Core::JSON::String Configuration;
         Core::JSON::String PersistentPathPostfix;
         Core::JSON::String VolatilePathPostfix;
         Core::JSON::String SystemRootPath;
         Core::JSON::DecUInt32 StartupOrder;
         Core::JSON::DecUInt8 Throttle;
-        Core::JSON::EnumType<PluginHost::IShell::startmode> StartMode;
+        Core::JSON::EnumType<Configuration::startmode> StartMode;
         Core::JSON::String Communicator;
         RootConfig Root;
 

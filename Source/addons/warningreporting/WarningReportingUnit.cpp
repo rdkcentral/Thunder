@@ -57,15 +57,15 @@ namespace WarningReporting {
     void WarningReportingUnit::AddToCategoryList(IWarningReportingUnit::IWarningReportingControl& category)
     {
         Core::SafeSyncType<Core::CriticalSection> guard(_adminLock);
-    
-        _categories[category.Metadata().Category()] = &category;
+
+        _categories[category.Category()] = &category;
     }
 
     void WarningReportingUnit::RemoveFromCategoryList(IWarningReportingUnit::IWarningReportingControl& category)
     {
         Core::SafeSyncType<Core::CriticalSection> guard(_adminLock);
-        
-        _categories.erase(category.Metadata().Category());
+
+        _categories.erase(category.Category());
     }
 
     string WarningReportingUnit::Defaults() const
@@ -141,6 +141,7 @@ namespace WarningReporting {
 
     void WarningReportingUnit::ReportWarningEvent(const char identifier[], const IWarningEvent& information)
     {
+#ifdef __CORE_MESSAGING__
         Thunder::Core::Messaging::Metadata metadata(Thunder::Core::Messaging::Metadata::type::REPORTING, information.Category(), Thunder::Core::Messaging::MODULE_REPORTING);
         Thunder::Core::Messaging::MessageInfo messageInfo(metadata, Thunder::Core::Time::Now().Ticks());
         Thunder::Core::Messaging::IStore::WarningReporting report(messageInfo, identifier);
@@ -150,6 +151,12 @@ namespace WarningReporting {
         Thunder::Core::Messaging::TextMessage data(text);
 
         Thunder::Messaging::MessageUnit::Instance().Push(report, &data, information.Routing());
+    #else
+        string text;
+        information.ToString(text);
+
+        TRACE_L1("[%s][%s] %s", information.Category(), identifier, text.c_str());
+    #endif
     }
 }
 }

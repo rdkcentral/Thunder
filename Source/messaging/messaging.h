@@ -23,19 +23,22 @@
 #error "Please define a MODULE_NAME that describes the binary/library you are building."
 #endif
 
-#include "MessageClient.h"
 #include "Logging.h"
 #include "LoggingCategories.h"
-#include "DirectOutput.h"
 #include "TraceCategories.h"
 #include "TraceControl.h"
-#include "TraceFactory.h"
 #include "TelemetryControl.h"
+
+#ifdef __CORE_MESSAGING__
+#include "MessageClient.h"
+#include "DirectOutput.h"
+#include "TraceFactory.h"
 #include "ConsoleStreamRedirect.h"
 #include "OperationalCategories.h"
 #include "AssertionUnit.h"
+#endif
 
-#ifdef __WINDOWS__
+#if defined(__WINDOWS__) && defined(__CORE_MESSAGING__)
 #pragma comment(lib, "messaging.lib")
 #endif
 

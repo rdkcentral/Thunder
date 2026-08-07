@@ -30,7 +30,7 @@
 #define TRACE_DURATION(CODE, ...)
 #define TRACE_DURATION_GLOBAL(CODE, ...)
 
-#else // _THUNDER_PRODUCTION
+#elif defined(__CORE_MESSAGING__)
 
 #define TRACE_CONTROL(CATEGORY) Thunder::Messaging::LocalLifetimeType<CATEGORY, &Thunder::Core::System::MODULE_NAME, Thunder::Core::Messaging::Metadata::type::TRACING>
 
@@ -90,4 +90,27 @@
         TRACE_GLOBAL(Thunder::Trace::Duration, (start, ##__VA_ARGS__));                 \
     } while(false)
 
-#endif // _THUNDER_PRODUCTION
+#else
+
+#define TRACE_CONTROL(CATEGORY)
+
+#define TRACE_ENABLED(CATEGORY) true
+
+#define TRACE(CATEGORY, PARAMETERS)                                                                                \
+    do {                                                                                                           \
+        CATEGORY __data__ PARAMETERS;                                                                              \
+        TRACE_L1("%s: %s", Thunder::Core::ClassNameOnly(typeid(CATEGORY).name()).Text().c_str(), __data__.Data()); \
+    } while(false)
+
+#define TRACE_GLOBAL(CATEGORY, PARAMETERS) TRACE(CATEGORY, PARAMETERS)
+
+#define TRACE_DURATION(CODE, ...)                                \
+    do {                                                         \
+        Thunder::Core::Time start = Thunder::Core::Time::Now();  \
+        { CODE }                                                 \
+        TRACE(Thunder::Trace::Duration, (start, ##__VA_ARGS__)); \
+    } while(false)
+
+#define TRACE_DURATION_GLOBAL(CODE, ...) TRACE_DURATION(CODE, ##__VA_ARGS__)
+
+#endif // __CORE_MESSAGING__
