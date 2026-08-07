@@ -225,14 +225,16 @@ namespace Core {
     {
         ::Thunder::Core::NodeId original("10.0.0.1", 443, ::Thunder::Core::NodeId::TYPE_IPV4);
         auto origPort = original.PortNumber();
+        auto origAddr = original.HostAddress();
 
         ::Thunder::Core::NodeId moved(std::move(original));
 
         EXPECT_TRUE(moved.IsValid());
         EXPECT_EQ(moved.PortNumber(), origPort);
-        // m_hostName is moved out; m_structInfo is copied (POD union — std::move is a copy).
-        // A moved-from NodeId still reports IsValid() == true with the same address.
-        EXPECT_TRUE(original.HostName().empty());
+        EXPECT_EQ(moved.HostAddress(), origAddr);
+        // HostName() derives from m_structInfo (POD, always copied by std::move),
+        // so the moved-from NodeId retains the same address after a move.
+        EXPECT_FALSE(original.HostAddress().empty());
     }
 
     TEST(Core_NodeId, Equality)
