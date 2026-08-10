@@ -979,10 +979,16 @@ namespace PluginHost {
             sink = &_notification;
             sink->AddRef();
 
+            IShell* service = _service;
+            _service = nullptr;
             _callsign.clear();
             _observers.clear();
 
             _adminLock.Unlock();
+
+            if (service != nullptr) {
+                service->Release();
+            }
 
             return (Core::ERROR_NONE);
         }
