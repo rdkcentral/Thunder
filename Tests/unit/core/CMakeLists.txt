@@ -100,7 +100,6 @@ add_executable(${TEST_RUNNER_NAME}
   test_jwt.cpp
   test_url.cpp
   test_websocket_protocol.cpp
-  test_tls.cpp
   test_assertionunit.cpp
 )
 
@@ -111,10 +110,11 @@ endif()
 target_include_directories(${TEST_RUNNER_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/Source/addons)
 target_include_directories(${TEST_RUNNER_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/Source/Thunder)
 
-find_package(OpenSSL QUIET)
-if(OPENSSL_FOUND)
+if(SECURE_SOCKET)
+    find_package(OpenSSL REQUIRED)
+    target_sources(${TEST_RUNNER_NAME} PRIVATE test_tls.cpp)
     target_include_directories(${TEST_RUNNER_NAME} PRIVATE ${OPENSSL_INCLUDE_DIR})
-    target_link_libraries(${TEST_RUNNER_NAME} OpenSSL::SSL OpenSSL::Crypto)
+    target_link_libraries(${TEST_RUNNER_NAME} PRIVATE OpenSSL::SSL OpenSSL::Crypto)
 endif()
 
 #[[

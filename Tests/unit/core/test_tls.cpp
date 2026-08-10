@@ -26,8 +26,6 @@
 #include <core/core.h>
 #include <cryptalgo/cryptalgo.h>
 
-#if defined(SECURESOCKETS_ENABLED)
-
 #include <atomic>
 #include <condition_variable>
 #include <mutex>
@@ -359,10 +357,14 @@ namespace Core {
         ::Thunder::Core::Time validFrom = cert.ValidFrom();
         ::Thunder::Core::Time validTill = cert.ValidTill();
 
-        // Cert was just generated — validFrom should be now or slightly before
-        // validTill should be ~365 days from now
         EXPECT_TRUE(validFrom.IsValid());
         EXPECT_TRUE(validTill.IsValid());
+
+        // Cert was generated with validDays=365; verify the gap is 364–366 days
+        // (Add() takes milliseconds and returns a new Time value)
+        constexpr int64_t kDayMs = 24LL * 3600 * 1000;
+        EXPECT_TRUE(validFrom.Add(364 * kDayMs) < validTill);
+        EXPECT_TRUE(validTill               < validFrom.Add(366 * kDayMs));
     }
 
     TEST_F(TLSTest, Certificate_ValidHostname)
@@ -389,22 +391,29 @@ namespace Core {
     TEST_F(TLSTest, CertificateStore_AddCert)
     {
         Crypto::Certificate cert(s_certPath.c_str());
-        Crypto::CertificateStore store;
+        // Verify the cert is valid before adding it to the store
+        ASSERT_FALSE(cert.Subject().empty());
 
-        // Should not crash and should accept the cert
+        Crypto::CertificateStore store;
         store.Add(cert);
+        // If we reach this point, Add() accepted the cert without throwing
     }
 
     // =========================================================================
     // TLS Handshake and Data Exchange
     // =========================================================================
 
+    static std::atomic<uint16_t> s_tlsPortCounter{0};
+
     TEST_F(TLSTest, Handshake_SelfSigned)
     {
         constexpr uint32_t maxWait = 10000;
 
-        // Derive a per-process ephemeral port to avoid collisions
-        const uint16_t port = static_cast<uint16_t>(14000 + (::getpid() % 1000));
+        // Collision-free port: base 14000 + pid-lower-bits + per-test counter
+        const uint16_t port = static_cast<uint16_t>(14000
+            + (static_cast<uint16_t>(::getpid()) & 0x1FF)
+            + s_tlsPortCounter.fetch_add(1));
+        const char* addr = "127.0.0.1";
 
         Crypto::Certificate cert(s_certPath.c_str());
         Crypto::Key key(s_keyPath, "");
@@ -420,7 +429,7 @@ namespace Core {
         std::thread serverThread([&]() {
             Crypto::SecureSocketServerType<TLSServerConnection> server(
                 cert, key,
-                ::Thunder::Core::NodeId("0.0.0.0", port,
+                ::Thunder::Core::NodeId(addr, port,
                     ::Thunder::Core::NodeId::TYPE_IPV4));
 
             if (server.Open(maxWait) != ::Thunder::Core::ERROR_NONE) {
@@ -457,19 +466,97 @@ namespace Core {
             bool Validate(const Crypto::Certificate&) const override { return true; }
         } acceptAll;
 
-        TLSClient client(::Thunder::Core::NodeId("127.0.0.1", port,
+        TLSClient client(::Thunder::Core::NodeId(addr, port,
             ::Thunder::Core::NodeId::TYPE_IPV4));
         client.Validate(&acceptAll);
 
         uint32_t result = client.Open(maxWait);
         if (result == ::Thunder::Core::ERROR_NONE) {
-            // Handshake succeeded
             EXPECT_TRUE(client.IsOpen());
             client.Close(maxWait);
         } else {
-            // TLS handshake may fail in some environments (no SNI, etc.)
-            // This is acceptable — the important thing is no crash
+            client.Validate(nullptr);
+            clientDone = true;
+            serverThread.join();
+            FAIL() << "TLS handshake failed with error " << result;
+            return;
         }
+
+        client.Validate(nullptr);
+        clientDone = true;
+        serverThread.join();
+
+        ::Thunder::Core::Singleton::Dispose();
+    }
+
+    // Verify that a rejecting IValidate aborts the TLS handshake.
+    // This is the security-critical path: a cert that fails validation must
+    // not result in an open connection.
+    TEST_F(TLSTest, Handshake_RejectingValidatorAbortsConnection)
+    {
+        constexpr uint32_t maxWait = 10000;
+
+        const uint16_t port = static_cast<uint16_t>(14000
+            + (static_cast<uint16_t>(::getpid()) & 0x1FF)
+            + s_tlsPortCounter.fetch_add(1));
+        const char* addr = "127.0.0.1";
+
+        Crypto::Certificate cert(s_certPath.c_str());
+        Crypto::Key key(s_keyPath, "");
+
+        TLSServerConnection::Reset();
+
+        std::atomic<bool> serverReady{false};
+        std::mutex readyMutex;
+        std::condition_variable readyCV;
+        std::atomic<bool> clientDone{false};
+
+        std::thread serverThread([&]() {
+            Crypto::SecureSocketServerType<TLSServerConnection> server(
+                cert, key,
+                ::Thunder::Core::NodeId(addr, port,
+                    ::Thunder::Core::NodeId::TYPE_IPV4));
+
+            if (server.Open(maxWait) != ::Thunder::Core::ERROR_NONE) {
+                return;
+            }
+            {
+                std::lock_guard<std::mutex> lk(readyMutex);
+                serverReady = true;
+            }
+            readyCV.notify_one();
+
+            while (!clientDone.load()) {
+                SleepMs(50);
+            }
+            SleepMs(500);
+            server.Close(maxWait);
+        });
+
+        {
+            std::unique_lock<std::mutex> lk(readyMutex);
+            if (!readyCV.wait_for(lk, std::chrono::seconds(10),
+                [&]{ return serverReady.load(); })) {
+                clientDone = true;
+                serverThread.join();
+                GTEST_SKIP() << "Server failed to start (port " << port << " may be in use)";
+            }
+        }
+        SleepMs(200);
+
+        // A validator that always rejects the server certificate
+        struct RejectAll : public Crypto::SecureSocketPort::IValidate {
+            bool Validate(const Crypto::Certificate&) const override { return false; }
+        } rejectAll;
+
+        TLSClient client(::Thunder::Core::NodeId(addr, port,
+            ::Thunder::Core::NodeId::TYPE_IPV4));
+        client.Validate(&rejectAll);
+
+        uint32_t result = client.Open(maxWait);
+        // The rejecting validator must abort the handshake
+        EXPECT_NE(result, ::Thunder::Core::ERROR_NONE);
+        EXPECT_FALSE(client.IsOpen());
 
         client.Validate(nullptr);
         clientDone = true;
@@ -481,5 +568,3 @@ namespace Core {
 } // Core
 } // Tests
 } // Thunder
-
-#endif // SECURESOCKETS_ENABLED

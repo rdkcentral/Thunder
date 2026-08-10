@@ -77,12 +77,13 @@ namespace Core {
 
         TestAssertionHandler handler;
 
-        // Register the handler
-        proxy.Handle(&handler);
-        EXPECT_EQ(handler.EventCount(), 0);
+        // RAII guard: deregisters the handler even if an assertion aborts early
+        struct Guard {
+            explicit Guard(TestAssertionHandler* h) { ::Thunder::Assertion::AssertionUnitProxy::Instance().Handle(h); }
+            ~Guard() { ::Thunder::Assertion::AssertionUnitProxy::Instance().Handle(nullptr); }
+        } guard(&handler);
 
-        // Unregister by passing nullptr
-        proxy.Handle(nullptr);
+        EXPECT_EQ(handler.EventCount(), 0);
     }
 
     // Route an assertion event through the proxy
@@ -91,7 +92,10 @@ namespace Core {
         auto& proxy = ::Thunder::Assertion::AssertionUnitProxy::Instance();
 
         TestAssertionHandler handler;
-        proxy.Handle(&handler);
+        struct Guard {
+            explicit Guard(TestAssertionHandler* h) { ::Thunder::Assertion::AssertionUnitProxy::Instance().Handle(h); }
+            ~Guard() { ::Thunder::Assertion::AssertionUnitProxy::Instance().Handle(nullptr); }
+        } guard(&handler);
 
         EXPECT_EQ(handler.EventCount(), 0);
 
@@ -114,8 +118,6 @@ namespace Core {
         proxy.AssertionEvent(metadata, message, ::Thunder::Core::Messaging::OutputMode::DIRECT);
 
         EXPECT_EQ(handler.EventCount(), 2);
-
-        proxy.Handle(nullptr);
     }
 
     // Without handler, AssertionEvent does not crash

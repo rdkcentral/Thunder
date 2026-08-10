@@ -1381,10 +1381,14 @@ namespace Core {
             Stop();
             _decoupledJob.Revoke();
             // Revoke() skips the wait when the job is actively dispatching (proxy is invalid).
-            // Spin until dispatch completes so Job is not destroyed while still running.
-            while (_decoupledJob.IsIdle() == false) {
+            // Spin-wait until dispatch completes so Job is not destroyed while still running.
+            constexpr uint32_t kMaxWaitMs = 5000;
+            uint32_t waited = 0;
+            while (_decoupledJob.IsIdle() == false && waited < kMaxWaitMs) {
                 SleepMs(1);
+                waited++;
             }
+            EXPECT_TRUE(_decoupledJob.IsIdle()) << "Job still running after " << kMaxWaitMs << "ms";
         }
 
     public:

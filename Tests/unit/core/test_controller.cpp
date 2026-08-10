@@ -35,12 +35,11 @@ namespace Tests {
     //   sequence (Gap 5) using the ThunderTestRuntime.
     //
     // Coverage:
-    //   - Controller.status — full response validation
-    //   - Controller.subsystems — subsystem flags
-    //   - Controller.activate/deactivate — lifecycle transitions
-    //   - Controller.configuration — config read
-    //   - Shutdown deinitialize — clean teardown
-    //   - Multiple init/deinit cycles — no resource leaks
+    //   - Controller.status — JSON parse succeeds; individual fields not read
+    //   - Controller.subsystems — non-empty response only; flags not inspected
+    //   - Controller.activate/deactivate — error path only (NonExistentPlugin)
+    //   - Controller.configuration — NOT covered (no test)
+    //   - Shutdown / multiple init-deinit cycles — absence of crash only
     // =========================================================================
 
     // =========================================================================

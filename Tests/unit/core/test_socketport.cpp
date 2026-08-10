@@ -1365,9 +1365,20 @@ TEST(test_socketport, open_tcp_ipv4_refused_connection_returns_error)
 
     TEST(test_socketport, remote_unexpected_close_triggers_statechange)
     {
+        // maxWaitTime and maxRetries bumped from 8s/4 to 16s/10:
+        // server.Close() on a loaded CI runner can consume close to maxWaitTimeMs
+        // while the ResourceMonitor processes socket closure, leaving little margin
+        // for the child's Signal to arrive before the parent's Wait expires.
         constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 16,
                            maxWaitTimeMs = 16000, maxInitTime = 500;
         constexpr uint8_t maxRetries = 10;
+
+        // IPTestAdministrator uses a single shared futex.  Signal(v, n) calls
+        // FUTEX_WAKE then exchange(v); Wait(v) blocks while the value equals v.
+        // Because Signal and Wait are called sequentially in the same process,
+        // a process's own signal cannot satisfy its own wait — FUTEX_WAKE only
+        // wakes sleeping waiters, and the signaling process is not sleeping.
+        // Using the same value (0) for every round is therefore correct and safe.
 
         const string connector = "/tmp/test_sp_remotesc.sock";
 
@@ -1538,6 +1549,8 @@ TEST(test_socketport, open_tcp_ipv4_refused_connection_returns_error)
 
     TEST(test_socketport, is_suspended_after_remote_close)
     {
+        // maxWaitTime bumped from 8s to 16s for the same reason as
+        // remote_unexpected_close_triggers_statechange above.
         constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 16,
                            maxWaitTimeMs = 16000, maxInitTime = 500;
         constexpr uint8_t maxRetries = 10;
