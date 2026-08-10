@@ -32,7 +32,7 @@ if(WORKERPOOL_TEST)
     add_subdirectory(workerpool-test)
 endif()
 
-if(MESSAGEBUFFER_TEST)
+if(MESSAGEBUFFER_TEST AND MESSAGING)
     add_subdirectory(message-buffer)
 endif()
 
@@ -48,7 +48,7 @@ if(STREAMJSON_GARBAGE_TEST)
     add_subdirectory(streamjson-garbage)
 endif()
 
-if(ENABLE_TEST_RUNTIME)
+if(ENABLE_TEST_RUNTIME AND MESSAGING)
     if(WIN32)
         message(FATAL_ERROR "ENABLE_TEST_RUNTIME is supported on POSIX platforms only")
     endif()

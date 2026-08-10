@@ -594,15 +594,15 @@ namespace PluginHost {
                 Condition(const Condition&) = delete;
                 Condition& operator=(const Condition&) = delete;
 
-                Condition(const bool ANDOperation, const Core::JSON::ArrayType<Core::JSON::EnumType<ISubSystem::subsystem>>& input)
+                Condition(const bool ANDOperation, const Core::JSON::ArrayType<Core::JSON::EnumType<Thunder::Plugin::Configuration::subsystem>>& input)
                     : _events(0)
                     , _mask(0)
                     , _state(ANDOperation ? state::STATE_AND : state::STATE_OR)
                 {
-                    Core::JSON::ArrayType<Core::JSON::EnumType<ISubSystem::subsystem>>::ConstIterator index(input.Elements());
+                    Core::JSON::ArrayType<Core::JSON::EnumType<Thunder::Plugin::Configuration::subsystem>>::ConstIterator index(input.Elements());
 
                     while (index.Next() == true) {
-                        AddBit(static_cast<uint32_t>(index.Current()));
+                        AddBit(static_cast<uint32_t>(index.Current().Value()));
                     }
 
                     if (_mask == 0) {
@@ -1217,13 +1217,13 @@ namespace PluginHost {
                     metaData.Module = string(_metadata.Module());
                 }
                 for (const PluginHost::ISubSystem::subsystem& entry : _metadata.Precondition()) {
-                    metaData.Precondition.Add() = entry;
+                    metaData.Precondition.Add() = static_cast<Thunder::Plugin::Configuration::subsystem>(entry);
                 }
                 for (const PluginHost::ISubSystem::subsystem& entry : _metadata.Termination()) {
-                    metaData.Termination.Add() = entry;
+                    metaData.Termination.Add() = static_cast<Thunder::Plugin::Configuration::subsystem>(entry);
                 }
                 for (const PluginHost::ISubSystem::subsystem& entry : _metadata.Control()) {
-                    metaData.Control.Add() = entry;
+                    metaData.Control.Add() = static_cast<Thunder::Plugin::Configuration::subsystem>(entry);
                 }
 
                 _pluginHandling.Unlock();
@@ -1877,7 +1877,7 @@ namespace PluginHost {
                     , Configuration(config, false)
 #endif
                     , SystemRootPath(systemRootPath)
-                    , StartMode(value)
+                    , StartMode(static_cast<Thunder::Plugin::Configuration::startmode>(value))
                     , Resumed(resumed)
                 {
                     Add(_T("configuration"), &Configuration);
@@ -1919,7 +1919,7 @@ namespace PluginHost {
                 Core::JSON::String Configuration;
 #endif
                 Core::JSON::String SystemRootPath;
-                Core::JSON::EnumType<PluginHost::IShell::startmode> StartMode;
+                Core::JSON::EnumType<Thunder::Plugin::Configuration::startmode> StartMode;
                 Core::JSON::Boolean Resumed;
             };
 
@@ -1981,7 +1981,7 @@ namespace PluginHost {
                                     indexService->SystemRootPath(indexCallsigns->second.SystemRootPath.Value());
                                 }
                                 if (indexCallsigns->second.StartMode.IsSet() == true) {
-                                    indexService->StartMode(indexCallsigns->second.StartMode.Value());
+                                    indexService->StartMode(static_cast<PluginHost::IShell::startmode>(indexCallsigns->second.StartMode.Value()));
                                 }
                                 if (indexCallsigns->second.Resumed.IsSet() == true) {
                                     indexService->Resumed(indexCallsigns->second.Resumed.Value());
@@ -2143,7 +2143,7 @@ namespace PluginHost {
 
                         it->second.Configuration = configValue;
                         it->second.SystemRootPath = shell.SystemRootPath();
-                        it->second.StartMode = shell.StartMode();
+                        it->second.StartMode = static_cast<Thunder::Plugin::Configuration::startmode>(shell.StartMode());
                         it->second.Resumed = shell.Resumed();
 
                         it->second.IElement::ToFile(storage);

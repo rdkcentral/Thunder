@@ -34,10 +34,15 @@ target_compile_definitions(${TARGET} PRIVATE WARNINGREPORTING_EXPORTS)
 target_link_libraries(${TARGET}
         PUBLIC
           ${NAMESPACE}Core::${NAMESPACE}Core
-          ${NAMESPACE}Messaging::${NAMESPACE}Messaging
         PRIVATE
           CompileSettingsDebug::CompileSettingsDebug
         )
+
+if(MESSAGING)
+target_link_libraries(${TARGET}
+        PUBLIC
+          ${NAMESPACE}Messaging::${NAMESPACE}Messaging)
+endif()
 
 set_target_properties(${TARGET} PROPERTIES
         CXX_STANDARD ${CXX_STD}
