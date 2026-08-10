@@ -267,6 +267,10 @@ namespace RPC {
                 if (factory != _proxy.end()) {
 
                     result = factory->second->CreateProxy(channel, impl, outbound);
+                    TRACE_L1("[Thunder-DBG] COM-RPC proxy created: ChannelId=0x%llX InterfaceId=0x%X Instance=0x%llX outbound=%s",
+                        static_cast<unsigned long long>(channel->LinkId()), id,
+                        static_cast<unsigned long long>(impl),
+                        outbound ? "true" : "false");
 
                     ASSERT(result != nullptr);
 

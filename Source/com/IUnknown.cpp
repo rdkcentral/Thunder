@@ -104,7 +104,15 @@ namespace ProxyStub {
         _adminLock.Unlock();
 
         if (channel.IsValid() == true) {
+            TRACE_L1("[Thunder-DBG] IPC Invoke BEFORE: ChannelId=0x%llX InterfaceId=0x%X MethodId=%d Instance=0x%llX",
+                static_cast<unsigned long long>(channel->LinkId()),
+                message->Parameters().InterfaceId(), message->Parameters().MethodId(),
+                static_cast<unsigned long long>(message->Parameters().Implementation()));
             result = channel->Invoke(message, waitTime);
+            TRACE_L1("[Thunder-DBG] IPC Invoke AFTER:  ChannelId=0x%llX InterfaceId=0x%X MethodId=%d Instance=0x%llX result=%d",
+                static_cast<unsigned long long>(channel->LinkId()),
+                message->Parameters().InterfaceId(), message->Parameters().MethodId(),
+                static_cast<unsigned long long>(message->Parameters().Implementation()), result);
 
             if (result != Core::ERROR_NONE) {
 
