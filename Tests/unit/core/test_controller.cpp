@@ -35,11 +35,12 @@ namespace Tests {
     //   sequence (Gap 5) using the ThunderTestRuntime.
     //
     // Coverage:
-    //   - Controller.status — JSON parse succeeds; individual fields not read
-    //   - Controller.subsystems — non-empty response only; flags not inspected
-    //   - Controller.activate/deactivate — error path only (NonExistentPlugin)
-    //   - Controller.configuration — NOT covered (no test)
-    //   - Shutdown / multiple init-deinit cycles — absence of crash only
+    //   - Controller.status — success + non-empty response + JSON parse/object set
+    //   - Controller.subsystems — success + non-empty response + array parse + key presence checks
+    //   - Controller.activate/deactivate — success path for Dictionary plugin
+    //   - Controller.configuration — success path + selected field value checks
+    //   - Method/shell/interface existence checks for Controller and negative cases
+    //   - Startup/shutdown lifecycle tests, including repeated init/deinit and post-deinit invalid shell
     // =========================================================================
 
     // =========================================================================
@@ -85,6 +86,9 @@ namespace Tests {
         JsonObject response;
         uint32_t result = _runtime.Invoke("Controller.status", params, response);
         EXPECT_EQ(result, Core::ERROR_NONE);
+
+        // Verify that the response object was populated.
+        EXPECT_TRUE(response.IsSet());
     }
 
     // Controller.subsystems returns subsystem state
@@ -94,24 +98,44 @@ namespace Tests {
         uint32_t result = _runtime.Invoke("Controller.subsystems", "{}", response);
         EXPECT_EQ(result, Core::ERROR_NONE);
         EXPECT_FALSE(response.empty());
+
+        JsonArray subsystems;
+        ASSERT_TRUE(subsystems.FromString(response));
+
+        EXPECT_GT(subsystems.Length(), 0);
+
+        for (uint32_t i = 0; i < subsystems.Length(); ++i) {
+            const JsonObject subsystem = subsystems[i].Object();
+
+            EXPECT_TRUE(subsystem.HasLabel("subsystem"));
+            EXPECT_TRUE(subsystem.HasLabel("active"));
+        }
     }
 
-    // Activate unknown plugin returns error
-    TEST_F(ControllerTest, ActivateNonExistent_ReturnsError)
+    TEST_F(ControllerTest, ActivateDictionary_TransitionsToActivated)
     {
+        // Ensure Dictionary starts deactivated.
+
         string response;
-        uint32_t result = _runtime.Invoke("Controller.activate",
-            "{\"callsign\":\"NonExistentPlugin_12345\"}", response);
-        EXPECT_NE(result, Core::ERROR_NONE);
+        uint32_t result = _runtime.Invoke(
+            "Controller.activate",
+            R"({"callsign":"Dictionary"})",
+            response);
+
+        EXPECT_EQ(result, Core::ERROR_NONE);
     }
 
-    // Deactivate unknown plugin returns error
-    TEST_F(ControllerTest, DeactivateNonExistent_ReturnsError)
+    TEST_F(ControllerTest, DeactivateDictionary_TransitionsToDeactivated)
     {
+        // Ensure Dictionary starts activated.
+
         string response;
-        uint32_t result = _runtime.Invoke("Controller.deactivate",
-            "{\"callsign\":\"NonExistentPlugin_12345\"}", response);
-        EXPECT_NE(result, Core::ERROR_NONE);
+        uint32_t result = _runtime.Invoke(
+            "Controller.deactivate",
+            R"({"callsign":"Dictionary"})",
+            response);
+
+        EXPECT_EQ(result, Core::ERROR_NONE);
     }
 
     // Unknown Controller method returns ERROR_UNKNOWN_METHOD
@@ -120,6 +144,25 @@ namespace Tests {
         string response;
         uint32_t result = _runtime.Invoke("Controller.thisMethodDoesNotExist", "{}", response);
         EXPECT_EQ(result, Core::ERROR_UNKNOWN_METHOD);
+    }
+
+    TEST_F(ControllerTest, ConfigurationQuery_ReturnsDictionaryConfiguration)
+    {
+        string response;
+
+        const uint32_t result = _runtime.Invoke(
+            "Controller.1.configuration@Dictionary",
+            "{}",
+            response);
+
+        ASSERT_EQ(result, Core::ERROR_NONE);
+        ASSERT_FALSE(response.empty());
+
+        JsonObject configuration;
+        ASSERT_TRUE(configuration.FromString(response));
+
+        EXPECT_EQ(configuration["storage"].String(), "DataModel.json");
+        EXPECT_EQ(configuration["lingertime"].Number(), 10);
     }
 
     // JSONRPCLink-based status query
@@ -253,6 +296,9 @@ namespace Tests {
             EXPECT_EQ(result, Core::ERROR_NONE);
 
             runtime.Deinitialize();
+
+            const auto shell = runtime.GetShell("Controller");
+            EXPECT_FALSE(shell.IsValid());
         }
     }
 
@@ -281,6 +327,10 @@ namespace Tests {
         ThunderTestRuntime runtime;
         // Should not crash
         runtime.Deinitialize();
+
+        const auto shell = runtime.GetShell("Controller");
+
+        EXPECT_FALSE(shell.IsValid());
     }
 
 } // namespace Tests

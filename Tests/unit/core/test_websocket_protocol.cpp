@@ -197,26 +197,32 @@ namespace Core {
         std::condition_variable readyCV;
         std::atomic<bool> clientDone{false};
 
+        std::atomic<uint32_t> serverOpenResult{::Thunder::Core::ERROR_GENERAL};
+
         std::thread serverThread([&]() {
             ::Thunder::Core::SocketServerType<ProtoTextServer> server(
                 ::Thunder::Core::NodeId(connector.c_str()));
-            bool opened = (server.Open(maxWait) == ::Thunder::Core::ERROR_NONE);
-            EXPECT_TRUE(opened) << "server.Open() failed";
+
+            const uint32_t result = server.Open(maxWait);
+            serverOpenResult = result;
 
             {
                 std::lock_guard<std::mutex> lk(readyMutex);
-                serverReady = opened;
+                serverReady = (result == ::Thunder::Core::ERROR_NONE);
             }
             readyCV.notify_one();
 
-            if (!opened) return;
+            if (result != ::Thunder::Core::ERROR_NONE) {
+                return;
+            }
 
             while (!clientDone.load()) {
                 SleepMs(50);
             }
+
             SleepMs(200);
             server.Close(maxWait);
-        });
+    });
 
         // Ensure the server thread is always joined before returning
         auto stopServer = [&]() {
@@ -233,9 +239,16 @@ namespace Core {
             ready = readyCV.wait_for(lk, std::chrono::seconds(10),
                 [&]{ return serverReady.load(); });
         }
-        if (!ready || !serverReady.load()) {
+
+        if (!ready) {
             stopServer();
-            FAIL() << "Server did not become ready in time (or Open() failed)";
+            FAIL() << "Server did not become ready in time";
+            return;
+        }
+
+        if (serverOpenResult != ::Thunder::Core::ERROR_NONE) {
+            stopServer();
+            FAIL() << "server.Open() failed: " << serverOpenResult.load();
             return;
         }
 
