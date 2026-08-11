@@ -335,8 +335,9 @@ namespace Core {
             }
 
             std::lock_guard<std::mutex> lock(_responseMutex);
-            // Push unconditionally: text is "" when there is no body (e.g.
-            // 400/405 responses).  Tests that expect a body must pop and check;
+            // Every HTTP response is queued, including responses without a body.
+            // An empty string therefore means "response received with no JSON body",
+            // not "no response received".  Tests that expect a body must pop and check;
             // tests that time-out waiting for WaitForResponse() now receive "".
             _responseQueue.push(text);
             _responseCV.notify_one();
@@ -740,11 +741,11 @@ namespace Core {
     // Gap 6 Extension: HTTP POST edge cases
     // =========================================================================
 
-    // NOTE: EmptyBodyReturnsError and NonPostVerbReturnsMethodNotAllowed exercise
+    // NOTE: MockServer_EmptyBodyReturnsBadRequest and MockServer_NonPostVerbReturnsMethodNotAllowed exercise
     // the verb/body validation in the JSONRPCHTTPServer helper defined in this file,
     // not in Thunder production code.  They verify the HTTP framing layer but cannot
     // catch a regression in Thunder's own request-validation logic.
-    TEST(HTTPJSONRPC, EmptyBodyReturnsError)
+    TEST(HTTPJSONRPC, MockServer_EmptyBodyReturnsBadRequest)
     {
         constexpr uint32_t initHandshakeValue = 0, maxWaitTimeMs = 8000;
         constexpr uint8_t maxRetries = 10;
@@ -796,8 +797,8 @@ namespace Core {
         ::Thunder::Core::Singleton::Dispose();
     }
 
-    // NOTE: see EmptyBodyReturnsError — tests the local mock's verb validation.
-    TEST(HTTPJSONRPC, NonPostVerbReturnsMethodNotAllowed)
+    // NOTE: see MockServer_EmptyBodyReturnsBadRequest and MockServer_NonPostVerbReturnsMethodNotAllowed — tests the local mock's verb validation.
+    TEST(HTTPJSONRPC, MockServer_NonPostVerbReturnsMethodNotAllowed)
     {
         constexpr uint32_t initHandshakeValue = 0, maxWaitTimeMs = 8000;
         constexpr uint8_t maxRetries = 10;
