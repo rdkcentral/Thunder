@@ -34,6 +34,7 @@
 #include <unistd.h>
 #include <openssl/pem.h>
 #include <openssl/x509.h>
+#include <openssl/x509v3.h>
 #include <openssl/evp.h>
 #include <openssl/bn.h>
 
@@ -107,6 +108,22 @@ namespace Core {
 
         // Self-signed: issuer = subject
         X509_set_issuer_name(x509, name);
+
+        // Add SAN so hostname/IP validation is deterministic across OpenSSL
+        // versions and verification paths.
+        X509V3_CTX extCtx;
+        X509V3_set_ctx_nodb(&extCtx);
+        X509V3_set_ctx(&extCtx, x509, x509, nullptr, nullptr, 0);
+        X509_EXTENSION* san = X509V3_EXT_conf_nid(
+            nullptr, &extCtx, NID_subject_alt_name,
+            const_cast<char*>("DNS:localhost,IP:127.0.0.1"));
+        if (san == nullptr) {
+            X509_free(x509);
+            EVP_PKEY_free(pkey);
+            return false;
+        }
+        X509_add_ext(x509, san, -1);
+        X509_EXTENSION_free(san);
 
         // Sign with SHA256
         X509_sign(x509, pkey, EVP_sha256());
@@ -374,6 +391,7 @@ namespace Core {
         Crypto::Certificate cert(s_certPath.c_str());
 
         EXPECT_TRUE(cert.ValidHostname("localhost"));
+        EXPECT_TRUE(cert.ValidHostname("127.0.0.1"));
         EXPECT_FALSE(cert.ValidHostname("other.host"));
     }
 
@@ -438,7 +456,7 @@ namespace Core {
         const uint16_t port = static_cast<uint16_t>(14000
             + (static_cast<uint16_t>(::getpid()) & 0x1FF)
             + s_tlsPortCounter.fetch_add(1));
-        const char* addr = "localhost";
+        const char* addr = "127.0.0.1";
 
         Crypto::Certificate cert(s_certPath.c_str());
         Crypto::Key key(s_keyPath, "");
@@ -535,7 +553,7 @@ namespace Core {
         const uint16_t port = static_cast<uint16_t>(14000
             + (static_cast<uint16_t>(::getpid()) & 0x1FF)
             + s_tlsPortCounter.fetch_add(1));
-        const char* addr = "localhost";
+        const char* addr = "127.0.0.1";
 
         Crypto::Certificate cert(s_certPath.c_str());
         Crypto::Key key(s_keyPath, "");
