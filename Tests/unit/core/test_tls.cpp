@@ -394,10 +394,34 @@ namespace Core {
         // Add generated cert into a writable store.
         EXPECT_NO_THROW(store.Add(cert));
 
-        // Verify the store can be applied to a TLS client context.
-        TLSClient client(::Thunder::Core::NodeId("127.0.0.1", 1,
-            ::Thunder::Core::NodeId::TYPE_IPV4));
-        EXPECT_EQ(client.Root(store), ::Thunder::Core::ERROR_NONE);
+        // Verify the cert is trusted by this store.
+        // We intentionally avoid SecureSocketPort::Root() here because
+        // SSL_CTX_set_cert_store() transfers ownership semantics on the store,
+        // which can cause double-free with stack-owned CertificateStore objects.
+        const x509_store_st* rawStore = store;
+        const x509_st* rawCert = cert;
+
+        ASSERT_NE(rawStore, nullptr);
+        ASSERT_NE(rawCert, nullptr);
+
+        X509_STORE_CTX* ctx = X509_STORE_CTX_new();
+        ASSERT_NE(ctx, nullptr);
+
+        ASSERT_EQ(X509_STORE_CTX_init(ctx,
+                      const_cast<X509_STORE*>(rawStore),
+                      const_cast<X509*>(rawCert),
+                      nullptr),
+            1);
+
+        const int verifyResult = X509_verify_cert(ctx);
+        if (verifyResult != 1) {
+            const int err = X509_STORE_CTX_get_error(ctx);
+            ADD_FAILURE() << "X509_verify_cert failed: "
+                          << X509_verify_cert_error_string(err);
+        }
+        EXPECT_EQ(verifyResult, 1);
+
+        X509_STORE_CTX_free(ctx);
     }
 
     // =========================================================================
