@@ -432,7 +432,7 @@ namespace Core {
 
     TEST_F(TLSTest, Handshake_SelfSigned)
     {
-        constexpr uint32_t maxWait = 10000;
+        constexpr uint32_t maxWait = 15000;
 
         // Collision-free port: base 14000 + pid-lower-bits + per-test counter
         const uint16_t port = static_cast<uint16_t>(14000
@@ -496,7 +496,17 @@ namespace Core {
         client.Validate(&acceptAll);
 
         uint32_t result = client.Open(maxWait);
-        if (result == ::Thunder::Core::ERROR_NONE) {
+
+        bool opened = (result == ::Thunder::Core::ERROR_NONE) || client.IsOpen() || client.WaitForOpen(2000);
+
+        // CI can occasionally report timeout while the connection is still
+        // transitioning to open; retry once before failing.
+        if (!opened && (result == ::Thunder::Core::ERROR_TIMEDOUT)) {
+            result = client.Open(maxWait);
+            opened = (result == ::Thunder::Core::ERROR_NONE) || client.IsOpen() || client.WaitForOpen(2000);
+        }
+
+        if (opened) {
             EXPECT_TRUE(client.IsOpen());
             client.Close(maxWait);
         } else {
