@@ -78,6 +78,9 @@ jobs:
     - name: Run core unit tests
       run: ${{env.path}} ${{env.lib}} Thunder_test_core
 
+    - name: Run controller/runtime unit tests
+      run: ${{env.path}} ${{env.lib}} thunder_test_controller
+
     - name: Run test framework smoke test
       run: ${{env.path}} ${{env.lib}} thunder_test_runtime_smoke
 

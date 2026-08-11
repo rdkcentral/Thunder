@@ -166,9 +166,10 @@ jobs:
         -DHIBERNATESUPPORT=ON \
         -DHIBERNATE_CHECKPOINTSERVER=ON \
         -DLOCALTRACER=ON \
+        -DMESSAGING=ON \
         -DPERFORMANCE_MONITOR=ON \
         -DPRIVILEGEDREQUEST=ON \
-        ${{matrix.architecture == 'tests64' && '-DENABLE_TEST_RUNTIME=ON -DBUILD_TESTS=ON' || '-DPROCESSCONTAINERS=ON -DPROCESSCONTAINERS_RUNC=ON -DWARNING_REPORTING=ON'}} \
+        ${{matrix.architecture == 'tests64' && '-DENABLE_TEST_RUNTIME=ON -DBUILD_TESTS=ON -DSECURE_SOCKET=ON' || '-DPROCESSCONTAINERS=ON -DPROCESSCONTAINERS_RUNC=ON -DWARNING_REPORTING=ON'}} \
         ${{steps.regexthunder.outputs.first_match}}
         cmake --build ${{matrix.build_type}}/build/Thunder --target install
 
