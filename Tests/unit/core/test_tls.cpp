@@ -438,7 +438,7 @@ namespace Core {
         const uint16_t port = static_cast<uint16_t>(14000
             + (static_cast<uint16_t>(::getpid()) & 0x1FF)
             + s_tlsPortCounter.fetch_add(1));
-        const char* addr = "127.0.0.1";
+        const char* addr = "localhost";
 
         Crypto::Certificate cert(s_certPath.c_str());
         Crypto::Key key(s_keyPath, "");
@@ -497,13 +497,12 @@ namespace Core {
 
         uint32_t result = client.Open(maxWait);
 
-        bool opened = (result == ::Thunder::Core::ERROR_NONE) || client.IsOpen() || client.WaitForOpen(2000);
+        bool opened = (result == ::Thunder::Core::ERROR_NONE) || client.IsOpen();
 
-        // CI can occasionally report timeout while the connection is still
-        // transitioning to open; retry once before failing.
-        if (!opened && (result == ::Thunder::Core::ERROR_TIMEDOUT)) {
-            result = client.Open(maxWait);
-            opened = (result == ::Thunder::Core::ERROR_NONE) || client.IsOpen() || client.WaitForOpen(2000);
+        // On slower CI hosts Open() may return while the async TLS state is
+        // still progressing. Treat these as transitional and wait explicitly.
+        if (!opened && ((result == ::Thunder::Core::ERROR_TIMEDOUT) || (result == ::Thunder::Core::ERROR_INPROGRESS))) {
+            opened = client.WaitForOpen(maxWait) || client.IsOpen();
         }
 
         if (opened) {
@@ -513,7 +512,9 @@ namespace Core {
             client.Validate(nullptr);
             clientDone = true;
             serverThread.join();
-            FAIL() << "TLS handshake failed with error " << result;
+                 FAIL() << "TLS handshake failed with error " << result
+                   << " (isOpen=" << client.IsOpen()
+                   << ", serverConnected=" << TLSServerConnection::Connected() << ")";
             return;
         }
 
@@ -534,7 +535,7 @@ namespace Core {
         const uint16_t port = static_cast<uint16_t>(14000
             + (static_cast<uint16_t>(::getpid()) & 0x1FF)
             + s_tlsPortCounter.fetch_add(1));
-        const char* addr = "127.0.0.1";
+        const char* addr = "localhost";
 
         Crypto::Certificate cert(s_certPath.c_str());
         Crypto::Key key(s_keyPath, "");
@@ -589,8 +590,12 @@ namespace Core {
         client.Validate(&rejectAll);
 
         uint32_t result = client.Open(maxWait);
-        // The rejecting validator must abort the handshake
+        // The rejecting validator must abort the handshake. If Open() returns
+        // transitional status, ensure it still never reaches OPEN.
         EXPECT_NE(result, ::Thunder::Core::ERROR_NONE);
+        if ((result == ::Thunder::Core::ERROR_TIMEDOUT) || (result == ::Thunder::Core::ERROR_INPROGRESS)) {
+            EXPECT_FALSE(client.WaitForOpen(2000));
+        }
         EXPECT_FALSE(client.IsOpen());
 
         client.Validate(nullptr);
