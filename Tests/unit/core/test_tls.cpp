@@ -445,9 +445,14 @@ namespace Core {
     // TLS Handshake and Data Exchange
     // =========================================================================
 
+    static std::atomic<uint16_t> s_tlsPortCounter{0};
+
     TEST_F(TLSTest, Handshake_SelfSigned)
     {
         constexpr uint32_t maxWait = 15000;
+        const uint16_t port = static_cast<uint16_t>(20000
+            + (static_cast<uint16_t>(::getpid()) & 0x7FF)
+            + s_tlsPortCounter.fetch_add(1));
         const char* addr = "localhost";
 
         Crypto::Certificate cert(s_certPath.c_str());
@@ -456,7 +461,6 @@ namespace Core {
         TLSServerConnection::Reset();
 
         std::atomic<bool> serverReady{false};
-        std::atomic<uint16_t> serverPort{0};
         std::mutex readyMutex;
         std::condition_variable readyCV;
         std::atomic<bool> clientDone{false};
@@ -465,14 +469,12 @@ namespace Core {
         std::thread serverThread([&]() {
             Crypto::SecureSocketServerType<TLSServerConnection> server(
                 cert, key,
-                ::Thunder::Core::NodeId(addr, 0,
+                ::Thunder::Core::NodeId(addr, port,
                     ::Thunder::Core::NodeId::TYPE_IPV4));
 
             if (server.Open(maxWait) != ::Thunder::Core::ERROR_NONE) {
                 return;
             }
-
-            serverPort = server.LocalNode().PortNumber();
 
             {
                 std::lock_guard<std::mutex> lk(readyMutex);
@@ -494,12 +496,9 @@ namespace Core {
                 [&]{ return serverReady.load(); })) {
                 clientDone = true;
                 serverThread.join();
-                GTEST_SKIP() << "Server failed to start";
+                GTEST_SKIP() << "Server failed to start (port " << port << " may be in use)";
             }
         }
-
-        const uint16_t port = serverPort.load();
-        ASSERT_NE(port, 0);
         SleepMs(200);
 
         // Client — accept any cert for self-signed
@@ -561,6 +560,9 @@ namespace Core {
     TEST_F(TLSTest, Handshake_RejectingValidatorAbortsConnection)
     {
         constexpr uint32_t maxWait = 10000;
+        const uint16_t port = static_cast<uint16_t>(20000
+            + (static_cast<uint16_t>(::getpid()) & 0x7FF)
+            + s_tlsPortCounter.fetch_add(1));
         const char* addr = "localhost";
 
         Crypto::Certificate cert(s_certPath.c_str());
@@ -569,7 +571,6 @@ namespace Core {
         TLSServerConnection::Reset();
 
         std::atomic<bool> serverReady{false};
-        std::atomic<uint16_t> serverPort{0};
         std::mutex readyMutex;
         std::condition_variable readyCV;
         std::atomic<bool> clientDone{false};
@@ -577,13 +578,12 @@ namespace Core {
         std::thread serverThread([&]() {
             Crypto::SecureSocketServerType<TLSServerConnection> server(
                 cert, key,
-                ::Thunder::Core::NodeId(addr, 0,
+                ::Thunder::Core::NodeId(addr, port,
                     ::Thunder::Core::NodeId::TYPE_IPV4));
 
             if (server.Open(maxWait) != ::Thunder::Core::ERROR_NONE) {
                 return;
             }
-            serverPort = server.LocalNode().PortNumber();
             {
                 std::lock_guard<std::mutex> lk(readyMutex);
                 serverReady = true;
@@ -603,12 +603,9 @@ namespace Core {
                 [&]{ return serverReady.load(); })) {
                 clientDone = true;
                 serverThread.join();
-                GTEST_SKIP() << "Server failed to start";
+                GTEST_SKIP() << "Server failed to start (port " << port << " may be in use)";
             }
         }
-
-        const uint16_t port = serverPort.load();
-        ASSERT_NE(port, 0);
         SleepMs(200);
 
         // A validator that always rejects the server certificate
