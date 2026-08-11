@@ -390,13 +390,14 @@ namespace Core {
 
     TEST_F(TLSTest, CertificateStore_AddCert)
     {
-        Crypto::Certificate cert(s_certPath.c_str());
-        // Verify the cert is valid before adding it to the store
-        ASSERT_FALSE(cert.Subject().empty());
+        Crypto::Certificate cert(s_certPath);
+
+        ASSERT_TRUE(cert.IsValid());
 
         Crypto::CertificateStore store;
         store.Add(cert);
-        // If we reach this point, Add() accepted the cert without throwing
+
+        EXPECT_TRUE(cert.IsValid());
     }
 
     // =========================================================================
