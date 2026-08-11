@@ -362,9 +362,11 @@ namespace Core {
 
         // Cert was generated with validDays=365; verify the gap is 364–366 days
         // (Add() takes milliseconds and returns a new Time value)
-        constexpr int64_t kDayMs = 24LL * 3600 * 1000;
-        EXPECT_TRUE(validFrom.Add(364 * kDayMs) < validTill);
-        EXPECT_TRUE(validTill               < validFrom.Add(366 * kDayMs));
+        constexpr uint64_t kDayUs = 24ULL * 60ULL * 60ULL * 1000000ULL;
+        const uint64_t validityPeriod = validTill.Ticks() - validFrom.Ticks();
+
+        EXPECT_GE(validityPeriod, 364ULL * kDayUs);
+        EXPECT_LE(validityPeriod, 366ULL * kDayUs);
     }
 
     TEST_F(TLSTest, Certificate_ValidHostname)
@@ -384,20 +386,18 @@ namespace Core {
         EXPECT_EQ(copy.Issuer(), cert.Issuer());
     }
 
-    // =========================================================================
-    // CertificateStore Tests
-    // =========================================================================
-
     TEST_F(TLSTest, CertificateStore_AddCert)
     {
-        Crypto::Certificate cert(s_certPath);
-
-        ASSERT_TRUE(cert.IsValid());
-
+        Crypto::Certificate cert(s_certPath.c_str());
         Crypto::CertificateStore store;
-        store.Add(cert);
 
-        EXPECT_TRUE(cert.IsValid());
+        // Add generated cert into a writable store.
+        EXPECT_NO_THROW(store.Add(cert));
+
+        // Verify the store can be applied to a TLS client context.
+        TLSClient client(::Thunder::Core::NodeId("127.0.0.1", 1,
+            ::Thunder::Core::NodeId::TYPE_IPV4));
+        EXPECT_EQ(client.Root(store), ::Thunder::Core::ERROR_NONE);
     }
 
     // =========================================================================
