@@ -329,6 +329,8 @@ namespace Core {
         {
             static constexpr uint8_t Thresholds[] = { 1, 5, 10, 15, 20, 25, 50, 60, 70, 80, 90, 100 };
 
+            uint8_t level = 0;
+
             while ((level < (sizeof(Thresholds) / sizeof(Thresholds[0]))) && (fillPercent >= Thresholds[level])) {
                 ++level;
             }
