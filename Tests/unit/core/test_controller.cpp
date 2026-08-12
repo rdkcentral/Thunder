@@ -53,8 +53,22 @@ namespace Tests {
 
         static void SetUpTestSuite()
         {
-            std::vector<ThunderTestRuntime::PluginConfig> plugins;
-            const uint32_t result = _runtime.Initialize(plugins);
+            ThunderTestRuntime::PluginConfig cfg;
+
+            cfg.Callsign = "Dictionary";
+            cfg.ClassName = "Dictionary";
+            cfg.Locator = "libThunderDictionary.so";
+            cfg.Resumed = false;
+
+            const char* workspace = std::getenv("GITHUB_WORKSPACE");
+            ASSERT_NE(workspace, nullptr);
+
+            const std::string pluginPath =
+                std::string(workspace) + "/ThunderNanoServices/usr/lib";
+
+            const uint32_t result =
+                _runtime.Initialize({ cfg }, pluginPath);
+
             ASSERT_EQ(result, Core::ERROR_NONE) << "Failed to initialize Thunder runtime";
         }
 

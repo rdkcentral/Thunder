@@ -67,6 +67,12 @@ jobs:
         name: Thunder-${{matrix.build_type}}${{matrix.shared_libs == 'OFF' && '-static' || ''}}-test-artifact
         path: ${{matrix.build_type}}
 
+    - name: Download ThunderNanoServices artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: ThunderNanoServices-${{matrix.build_type}}-test-artifact
+        path: ${{matrix.build_type}}
+
     - name: Unpack files
       run: |
         tar -xvzf ${{matrix.build_type}}/${{matrix.build_type}}.tar.gz
