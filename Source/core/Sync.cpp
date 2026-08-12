@@ -1006,6 +1006,7 @@ namespace Core {
             // Make sure all threads are in running mode, place our request
             // for sync at the end of the FIFO-queue for syncConditionMutex.
             pthread_mutex_unlock(&m_syncAdminLock);
+            TRACE_L1("Yield in caller:%s", __FUNCTION__);
             std::this_thread::yield();
             pthread_mutex_lock(&m_syncAdminLock);
 

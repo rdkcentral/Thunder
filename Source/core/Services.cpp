@@ -109,6 +109,7 @@ namespace Core {
             // least give that thread a slice to complete the last few 
             // instructions before we close down the librray (if it is 
             // the last reference)
+            TRACE_L1("Yield in caller:%s", __FUNCTION__);
             std::this_thread::yield();
 
             _unreferencedLibraries.pop_front();

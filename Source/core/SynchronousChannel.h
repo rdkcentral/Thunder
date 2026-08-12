@@ -287,6 +287,7 @@ namespace Core {
             _reevaluate.SetEvent();
 
             while (_waitCount.load() != 0) {
+                TRACE_L1("Yield in caller:%s", __FUNCTION__);
                 std::this_thread::yield();
             }
 

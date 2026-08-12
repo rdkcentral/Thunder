@@ -226,6 +226,7 @@ namespace Core {
 
         static void Yield(uint8_t& count, const uint32_t sleepTimeMs = 1) {
             if (count < 50) {
+                TRACE_L1("Yield in caller:%s", __FUNCTION__);
                 std::this_thread::yield();
                 ++count;
             } else {

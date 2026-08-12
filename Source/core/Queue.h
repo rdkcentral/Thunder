@@ -49,6 +49,7 @@ namespace Core {
             : _queue()
             , _state(EMPTY)
             , _maxSlots(a_HighWaterMark)
+            , _lastReportedThreshold(0)
         {
             // A highwatermark of 0 is bullshit.
             ASSERT(_maxSlots != 0);
@@ -98,6 +99,7 @@ namespace Core {
 
                 // Determine the new state.
                 TRACE_L1("[WorkerPool] Queue depth: %u / %u (Remove) caller:%s TID:%lu", static_cast<uint32_t>(_queue.size()), _maxSlots, caller, static_cast<unsigned long>(Thread::ThreadId()));
+                UpdateThresholdReport("Remove", caller);
                 _state.SetState(IsEmpty() ? EMPTY : ENTRIES);
             }
 
@@ -121,6 +123,7 @@ namespace Core {
 
                 // Determine the new state.
                 TRACE_L1("[WorkerPool] Queue depth: %u / %u (Post) caller:%s TID:%lu", static_cast<uint32_t>(_queue.size()), _maxSlots, caller, static_cast<unsigned long>(Thread::ThreadId()));
+                UpdateThresholdReport("Post", caller);
                 _state.SetState(IsFull() ? LIMITED : ENTRIES);
 
                 Result = true;
@@ -152,6 +155,7 @@ namespace Core {
 
                         // Determine the new state.
                         TRACE_L1("[WorkerPool] Queue depth: %u / %u (Insert) caller:%s TID:%lu", static_cast<uint32_t>(_queue.size()), _maxSlots, caller, static_cast<unsigned long>(Thread::ThreadId()));
+                        UpdateThresholdReport("Insert", caller);
                         _state.SetState(IsFull() ? LIMITED : ENTRIES);
                     } else {
                         // We are moving into a wait, release the lock.
@@ -200,6 +204,7 @@ namespace Core {
 
                         // Determine the new state.
                         TRACE_L1("[WorkerPool] Queue depth: %u / %u (Extract) caller:%s TID:%lu", static_cast<uint32_t>(_queue.size()), _maxSlots, caller, static_cast<unsigned long>(Thread::ThreadId()));
+                        UpdateThresholdReport("Extract", caller);
                         _state.SetState(IsEmpty() ? EMPTY : ENTRIES);
                     } else {
                         // We are moving into a wait, release the lock.
@@ -282,6 +287,10 @@ namespace Core {
         {
             return (_queue.size() >= _maxSlots);
         }
+        uint32_t Capacity() const
+        {
+            return _maxSlots;
+        }
         uint32_t Length() const
         {
             return (static_cast<uint32_t>(_queue.size()));
@@ -322,10 +331,49 @@ namespace Core {
         }
 
     private:
+        uint8_t ResolveThresholdLevel(const uint32_t fillPercent) const
+        {
+            static constexpr uint8_t Thresholds[] = { 1, 5, 6, 7, 8, 9, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100 };
+
+            uint8_t level = 0;
+
+            while ((level < (sizeof(Thresholds) / sizeof(Thresholds[0]))) && (fillPercent >= Thresholds[level])) {
+                ++level;
+            }
+
+            return level;
+        }
+        void UpdateThresholdReport(const char* action, const char* caller)
+        {
+            static constexpr uint8_t Thresholds[] = { 1, 5, 6, 7, 8, 9, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100 };
+
+            const uint32_t depth = static_cast<uint32_t>(_queue.size());
+            const uint32_t fillPercent = (_maxSlots > 0) ? (((depth * 100U) / _maxSlots) < 100U ? (depth * 100U) / _maxSlots : 100U) : 0;
+            const uint8_t currentLevel = ResolveThresholdLevel(fillPercent);
+
+            if (currentLevel > _lastReportedThreshold) {
+                for (uint8_t index = _lastReportedThreshold; index < currentLevel; ++index) {
+                    ::fprintf(stderr,
+                        "[WorkerPool] Queue usage reached >= %u%%: %u/%u (%u%%) action:%s caller:%s TID:%lu\n",
+                        static_cast<unsigned>(Thresholds[index]),
+                        static_cast<unsigned>(depth),
+                        static_cast<unsigned>(_maxSlots),
+                        static_cast<unsigned>(fillPercent),
+                        action,
+                        caller,
+                        static_cast<unsigned long>(::pthread_self()));
+                }
+            }
+
+            _lastReportedThreshold = currentLevel;
+        }
+
+    private:
         std::list<CONTEXT> _queue;
         StateTrigger<enumQueueState> _state;
         mutable CriticalSection _adminLock;
         const uint32_t _maxSlots;
+        uint8_t _lastReportedThreshold;
     };
 }
 } // namespace Core

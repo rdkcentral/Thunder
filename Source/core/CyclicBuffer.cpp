@@ -260,6 +260,7 @@ namespace Core {
 
             // Wait till all waiters have seen the trigger..
             while (_administration->_agents.load() > 0) {
+                TRACE_L1("Yield in caller:%s", __FUNCTION__);
                 std::this_thread::yield();
             }
         }

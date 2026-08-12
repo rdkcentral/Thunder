@@ -127,6 +127,7 @@ namespace PluginHost {
             WorkerPoolImplementation(const uint32_t stackSize)
                 : Core::WorkerPool(THREADPOOL_COUNT, stackSize, 64 * THREADPOOL_COUNT, &_dispatch, this)
                 , _dispatch()
+                , _lastReportedThreshold(0)
             {
                 Run();
             }
@@ -136,7 +137,30 @@ namespace PluginHost {
             void Submit(const Core::ProxyType<Core::IDispatch>& job) override
             {
                 Core::WorkerPool::Submit(job);
-                SYSLOG(Logging::Startup, (_T("WorkerPool queue filled: %u / %u"), Core::WorkerPool::Pending(), static_cast<uint32_t>(64 * THREADPOOL_COUNT)));
+
+                static constexpr uint8_t Thresholds[] = { 1, 5, 6, 7, 8, 9, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100 };
+                static constexpr uint8_t ThresholdCount = sizeof(Thresholds) / sizeof(Thresholds[0]);
+
+                const uint32_t pending  = Core::WorkerPool::Pending();
+                const uint32_t capacity = static_cast<uint32_t>(64 * THREADPOOL_COUNT);
+                const uint32_t fillPct  = (capacity > 0) ? ((pending * 100U) / capacity < 100U ? (pending * 100U) / capacity : 100U) : 0;
+
+                uint8_t currentLevel = 0;
+                while ((currentLevel < ThresholdCount) && (fillPct >= Thresholds[currentLevel])) {
+                    ++currentLevel;
+                }
+
+                if (currentLevel > _lastReportedThreshold) {
+                    for (uint8_t i = _lastReportedThreshold; i < currentLevel; ++i) {
+                        SYSLOG(Logging::Startup, (_T("WorkerPool queue reached >= %u%%: %u / %u (%u%% full)"),
+                            static_cast<uint32_t>(Thresholds[i]),
+                            pending,
+                            capacity,
+                            fillPct));
+                    }
+                }
+
+                _lastReportedThreshold = currentLevel;
             }
             void Idle() {
                 // Could be that we can now drop the dynamic library...
@@ -159,6 +183,7 @@ namespace PluginHost {
 
         private:
             Dispatcher _dispatch;
+            uint8_t _lastReportedThreshold;
         };
 
         class FactoriesImplementation : public IFactories {

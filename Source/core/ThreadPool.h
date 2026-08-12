@@ -471,6 +471,7 @@ POP_WARNING()
                         _signal.SetEvent();
 
                         while (_interestCount > 0) {
+                            TRACE_L1("Yield in caller:%s", __FUNCTION__);
                             std::this_thread::yield();
                         }
 
@@ -576,6 +577,9 @@ POP_WARNING()
         }
         uint32_t Pending() const {
             return (_queue.Length());
+        }
+        uint32_t Capacity() const {
+            return (_queue.Capacity());
         }
         void Snapshot(const uint8_t length, Metadata* entries, std::vector<string>& jobs) const
         {

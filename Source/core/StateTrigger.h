@@ -174,6 +174,7 @@ namespace Core {
                 // Wait till the interest count reaches 0 again..
                 while (m_InterestCount) {
                     // Give the slice to some else
+                    TRACE_L1("Yield in caller:%s", __FUNCTION__);
                     std::this_thread::yield();
                 }
 

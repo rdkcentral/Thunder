@@ -401,6 +401,10 @@ POP_WARNING()
         {
             return (_threadPool.Pending());
         }
+        uint32_t Capacity() const
+        {
+            return (_threadPool.Capacity());
+        }
         const Metadata& Snapshot() const
         {
             _metadata.Slot[0].WorkerId = _timer.ThreadId();

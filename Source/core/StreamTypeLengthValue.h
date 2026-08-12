@@ -436,6 +436,7 @@ POP_WARNING()
             _reevaluate.SetEvent();
 
             while (_waitCount != 0) {
+                TRACE_L1("Yield in caller:%s", __FUNCTION__);
                 std::this_thread::yield();
             }
 
