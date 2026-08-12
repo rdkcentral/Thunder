@@ -346,17 +346,16 @@ namespace Core {
             const uint8_t currentLevel = ResolveThresholdLevel(fillPercent);
 
             if (currentLevel > _lastReportedThreshold) {
-                for (uint8_t index = _lastReportedThreshold; index < currentLevel; ++index) {
-                    ::fprintf(stderr,
-                        "[WorkerPool] Queue usage reached >= %u%%: %u/%u (%u%%) action:%s caller:%s TID:%lu\n",
-                        static_cast<unsigned>(Thresholds[index]),
-                        static_cast<unsigned>(depth),
-                        static_cast<unsigned>(_maxSlots),
-                        static_cast<unsigned>(fillPercent),
-                        action,
-                        caller,
-                        static_cast<unsigned long>(::pthread_self()));
-                }
+                const uint8_t index = static_cast<uint8_t>(currentLevel - 1);
+                ::fprintf(stderr,
+                    "[WorkerPool] Queue usage reached >= %u%%: depth=%u capacity=%u fill=%u%% action:%s caller:%s TID:%lu\n",
+                    static_cast<unsigned>(Thresholds[index]),
+                    static_cast<unsigned>(depth),
+                    static_cast<unsigned>(_maxSlots),
+                    static_cast<unsigned>(fillPercent),
+                    action,
+                    caller,
+                    static_cast<unsigned long>(::pthread_self()));
             }
 
             _lastReportedThreshold = currentLevel;
