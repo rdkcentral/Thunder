@@ -279,6 +279,10 @@ namespace Core {
         {
             return (static_cast<uint32_t>(_queue.size()));
         }
+        uint32_t Capacity() const
+        {
+            return (_maxSlots);
+        }
         // void action(const CONTEXT& element)
         template<typename ACTION>
         void Visit(ACTION&& action) const {

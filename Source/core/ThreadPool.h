@@ -558,6 +558,7 @@ POP_WARNING()
             #endif
             , _external(external)
             , _callback(callback)
+            , _lastQueueWarningPercent(0)
         {
             const TCHAR* name = _T("WorkerPool::Thread");
             for (uint8_t index = 0; index < count; index++) {
@@ -618,6 +619,31 @@ POP_WARNING()
                 _queue.Insert(job, waitTime);
             }
 
+            const uint32_t queueLen = _queue.Length();
+            const uint32_t capacity = _queue.Capacity();
+
+            // Print all jobs currently pending in the queue
+            TRACE_L1("Queue submit: pending=%u / capacity=%u", queueLen, capacity);
+            uint32_t idx = 0;
+            _queue.Visit([&idx](const QueueElement& element) {
+                TRACE_L1("  Queue[%u]: %s", idx, element->Identifier().c_str());
+                idx++;
+            });
+
+            // Warn at every 5% fill-level boundary crossed since last warning
+            if (capacity > 0) {
+                const uint32_t currentStep = (queueLen * 100 / capacity) / 5;
+                const uint32_t prevStep    = (_lastQueueWarningPercent / 5);
+                for (uint32_t step = prevStep + 1; step <= currentStep; step++) {
+                    TRACE_L1("WARNING: WorkerPool queue reached %u%% capacity (%u/%u jobs)",
+                        step * 5, queueLen, capacity);
+                }
+                if (currentStep > prevStep) {
+                    _lastQueueWarningPercent = currentStep * 5;
+                } else if (queueLen == 0) {
+                    _lastQueueWarningPercent = 0;
+                }
+            }
         }
         uint32_t Revoke(const ProxyType<IDispatch>& job, const uint32_t waitTime)
         {
@@ -735,6 +761,7 @@ POP_WARNING()
         #endif
         Minion* _external;
         ICallback* _callback;
+        uint32_t _lastQueueWarningPercent;
     };
 
 }
