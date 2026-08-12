@@ -327,9 +327,7 @@ namespace Core {
     private:
         uint8_t ResolveThresholdLevel(const uint32_t fillPercent) const
         {
-            static constexpr uint8_t Thresholds[] = { 1, 5, 6, 7, 8, 9, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100 };
-
-            uint8_t level = 0;
+            static constexpr uint8_t Thresholds[] = { 1, 5, 10, 15, 20, 25, 50, 60, 70, 80, 90, 100 };
 
             while ((level < (sizeof(Thresholds) / sizeof(Thresholds[0]))) && (fillPercent >= Thresholds[level])) {
                 ++level;
@@ -339,7 +337,13 @@ namespace Core {
         }
         void UpdateThresholdReport(const char* action, const char* caller)
         {
-            static constexpr uint8_t Thresholds[] = { 1, 5, 6, 7, 8, 9, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100 };
+            // Only monitor queues that are large enough to be a WorkerPool queue.
+            // Small queues (timers, events, etc.) are not relevant for WorkerPool monitoring.
+            if (_maxSlots < 32) {
+                return;
+            }
+
+            static constexpr uint8_t Thresholds[] = { 1, 5, 10, 15, 20, 25, 50, 60, 70, 80, 90, 100 };
 
             const uint32_t depth = static_cast<uint32_t>(_queue.size());
             const uint32_t fillPercent = (_maxSlots > 0) ? (((depth * 100U) / _maxSlots) < 100U ? (depth * 100U) / _maxSlots : 100U) : 0;
@@ -348,7 +352,7 @@ namespace Core {
             if (currentLevel > _lastReportedThreshold) {
                 const uint8_t index = static_cast<uint8_t>(currentLevel - 1);
                 ::fprintf(stderr,
-                    "[WorkerPool] Queue usage reached >= %u%%: depth=%u capacity=%u fill=%u%% action:%s caller:%s TID:%lu\n",
+                    "[WorkerPool] Queue usage reached >= %u%%: depth=%u capacity=%u fill=%u%% action=%s caller=%s TID=%lu\n",
                     static_cast<unsigned>(Thresholds[index]),
                     static_cast<unsigned>(depth),
                     static_cast<unsigned>(_maxSlots),
