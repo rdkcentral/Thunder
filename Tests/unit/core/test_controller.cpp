@@ -59,7 +59,7 @@ namespace Tests {
             cfg.ClassName = "Dictionary";
             cfg.Locator = "libThunderDictionary.so";
             cfg.Resumed = false;
-            cfg.StartMode = Configuration::startmode::DEACTIVATED;
+            cfg.StartMode = Plugin::Configuration::startmode::DEACTIVATED;
             cfg.Configuration = R"({
                 "storage": "DataModel.json",
                 "lingertime": 10
