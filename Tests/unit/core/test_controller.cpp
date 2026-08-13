@@ -75,6 +75,11 @@ namespace Tests {
                 _runtime.Initialize({ cfg }, pluginPath);
 
             ASSERT_EQ(result, Core::ERROR_NONE) << "Failed to initialize Thunder runtime";
+
+
+            auto shell = _runtime.GetShell("Dictionary");
+                ASSERT_TRUE(shell.IsValid())
+                    << "Dictionary plugin was not registered/loaded";
         }
 
         static void TearDownTestSuite()
