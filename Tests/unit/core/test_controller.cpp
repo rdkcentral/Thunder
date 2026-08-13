@@ -55,15 +55,12 @@ namespace Tests {
         {
             ThunderTestRuntime::PluginConfig cfg;
 
-            cfg.Callsign = "Dictionary";
-            cfg.ClassName = "Dictionary";
-            cfg.Locator = "libThunderDictionary.so";
+            cfg.Callsign = "Commander";
+            cfg.ClassName = "Commander";
+            cfg.Locator = "libThunderCommander.so";
             cfg.Resumed = false;
             cfg.StartMode = Plugin::Configuration::startmode::DEACTIVATED;
-            cfg.Configuration = R"({
-                "storage": "DataModel.json",
-                "lingertime": 10
-            })";
+            cfg.Configuration = R"({})";
 
             const char* workspace = std::getenv("GITHUB_WORKSPACE");
             ASSERT_NE(workspace, nullptr);
@@ -74,12 +71,13 @@ namespace Tests {
             const uint32_t result =
                 _runtime.Initialize({ cfg }, pluginPath);
 
-            ASSERT_EQ(result, Core::ERROR_NONE) << "Failed to initialize Thunder runtime";
+            ASSERT_EQ(result, Core::ERROR_NONE)
+                << "Failed to initialize Thunder runtime";
 
+            auto shell = _runtime.GetShell("Commander");
 
-            auto shell = _runtime.GetShell("Dictionary");
-                ASSERT_TRUE(shell.IsValid())
-                    << "Dictionary plugin was not registered/loaded";
+            ASSERT_TRUE(shell.IsValid())
+                << "Commander plugin was not registered/loaded";
         }
 
         static void TearDownTestSuite()
