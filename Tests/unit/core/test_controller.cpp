@@ -59,6 +59,11 @@ namespace Tests {
             cfg.ClassName = "Dictionary";
             cfg.Locator = "libThunderDictionary.so";
             cfg.Resumed = false;
+            cfg.StartMode = Configuration::startmode::DEACTIVATED;
+            cfg.Configuration = R"({
+                "storage": "DataModel.json",
+                "lingertime": 10
+            })";
 
             const char* workspace = std::getenv("GITHUB_WORKSPACE");
             ASSERT_NE(workspace, nullptr);
