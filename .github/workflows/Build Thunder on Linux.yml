@@ -27,7 +27,9 @@ jobs:
     uses: ./.github/workflows/Linux build template.yml
 
   Test:
-    needs: Thunder
+    needs: 
+     - Thunder
+     - ThunderNanoServices
     runs-on: ubuntu-24.04
 
     strategy:
