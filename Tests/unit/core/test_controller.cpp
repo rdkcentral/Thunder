@@ -37,7 +37,7 @@ namespace Tests {
     // Coverage:
     //   - Controller.status — success + non-empty response + JSON parse/object set
     //   - Controller.subsystems — success + non-empty response + array parse + key presence checks
-    //   - Controller.activate/deactivate — success path for Dictionary plugin
+    //   - Controller.activate/deactivate — success path for Commander plugin
     //   - Controller.configuration — success path + selected field value checks
     //   - Method/shell/interface existence checks for Controller and negative cases
     //   - Startup/shutdown lifecycle tests, including repeated init/deinit and post-deinit invalid shell
@@ -134,27 +134,27 @@ namespace Tests {
         }
     }
 
-    TEST_F(ControllerTest, ActivateDictionary_TransitionsToActivated)
+    TEST_F(ControllerTest, DeactivateCommander_TransitionsToDeactivated)
     {
-        // Ensure Dictionary starts deactivated.
+        // Ensure Commander starts activated.
 
         string response;
         uint32_t result = _runtime.Invoke(
-            "Controller.activate",
-            R"({"callsign":"Dictionary"})",
+            "Controller.deactivate",
+            R"({"callsign":"Commander"})",
             response);
 
         EXPECT_EQ(result, Core::ERROR_NONE);
     }
 
-    TEST_F(ControllerTest, DeactivateDictionary_TransitionsToDeactivated)
+    TEST_F(ControllerTest, ActivateCommander_TransitionsToActivated)
     {
-        // Ensure Dictionary starts activated.
+        // Ensure Commander starts deactivated.
 
         string response;
         uint32_t result = _runtime.Invoke(
-            "Controller.deactivate",
-            R"({"callsign":"Dictionary"})",
+            "Controller.activate",
+            R"({"callsign":"Commander"})",
             response);
 
         EXPECT_EQ(result, Core::ERROR_NONE);
@@ -168,12 +168,12 @@ namespace Tests {
         EXPECT_EQ(result, Core::ERROR_UNKNOWN_METHOD);
     }
 
-    TEST_F(ControllerTest, ConfigurationQuery_ReturnsDictionaryConfiguration)
+    TEST_F(ControllerTest, ConfigurationQuery_ReturnsCommanderConfiguration)
     {
         string response;
 
         const uint32_t result = _runtime.Invoke(
-            "Controller.1.configuration@Dictionary",
+            "Controller.1.configuration@Commander",
             "{}",
             response);
 
