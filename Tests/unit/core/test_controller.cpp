@@ -145,13 +145,13 @@ namespace Tests {
 
         EXPECT_EQ(result, Core::ERROR_NONE);
 
-        string response;
-        uint32_t result = _runtime.Invoke(
+        string response1;
+        uint32_t result1 = _runtime.Invoke(
             "Controller.activate",
             R"({"callsign":"Commander"})",
-            response);
+            response1);
 
-        EXPECT_EQ(result, Core::ERROR_NONE);
+        EXPECT_EQ(result1, Core::ERROR_NONE);
     }
 
     // Unknown Controller method returns ERROR_UNKNOWN_METHOD
