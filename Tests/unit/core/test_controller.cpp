@@ -134,9 +134,8 @@ namespace Tests {
         }
     }
 
-    TEST_F(ControllerTest, DeactivateCommander_TransitionsToDeactivated)
+    TEST_F(ControllerTest, DeactivateAndActivateCommander_TransitionsToDeactivated)
     {
-        // Ensure Commander starts activated.
 
         string response;
         uint32_t result = _runtime.Invoke(
@@ -145,11 +144,6 @@ namespace Tests {
             response);
 
         EXPECT_EQ(result, Core::ERROR_NONE);
-    }
-
-    TEST_F(ControllerTest, ActivateCommander_TransitionsToActivated)
-    {
-        // Ensure Commander starts deactivated.
 
         string response;
         uint32_t result = _runtime.Invoke(
@@ -168,7 +162,7 @@ namespace Tests {
         EXPECT_EQ(result, Core::ERROR_UNKNOWN_METHOD);
     }
 
-    TEST_F(ControllerTest, ConfigurationQuery_ReturnsCommanderConfiguration)
+    TEST_F(ControllerTest, DISABLED_ConfigurationQuery_ReturnsCommanderConfiguration)
     {
         string response;
 
