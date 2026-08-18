@@ -68,7 +68,7 @@ namespace Tests {
                 std::string(workspace) + "/ThunderNanoServices/usr/lib";
 
             const uint32_t result =
-                _runtime.Initialize({ cfg }, pluginPath);
+                _runtime.Initialize({}, pluginPath);
 
             ASSERT_EQ(result, Core::ERROR_NONE)
                 << "Failed to initialize Thunder runtime";
