@@ -1219,6 +1219,7 @@ namespace Plugin {
                     meta.FromString(info);
                     services.push_back(IMetadata::Data::Service(meta));
                 }
+                shell->Release();
             }
             else {
                 result = Core::ERROR_UNKNOWN_KEY;
