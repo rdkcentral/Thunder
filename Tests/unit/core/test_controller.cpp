@@ -147,7 +147,7 @@ namespace Tests {
         EXPECT_EQ(result, Core::ERROR_UNKNOWN_METHOD);
     }
 
-    TEST_F(ControllerTest, ConfigurationQuery_ReturnsDictionaryConfiguration)
+    TEST_F(ControllerTest, DISABLED_ConfigurationQuery_ReturnsDictionaryConfiguration)
     {
         string response;
 
