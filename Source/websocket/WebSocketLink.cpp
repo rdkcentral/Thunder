@@ -99,6 +99,7 @@ namespace Web {
                     uint8_t* destination = &dataFrame[usedSize - 1 + 4 + result];
                     uint32_t bytesToMove = usedSize;
 
+                    /* coverity[Overflowed : FALSE] */
                     while (bytesToMove != 0) {
                         bytesToMove--;
                         *destination-- = (*source ^ maskKey[(bytesToMove & 0x3)]);
