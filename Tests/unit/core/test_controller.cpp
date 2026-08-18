@@ -59,7 +59,6 @@ namespace Tests {
             cfg.ClassName = "Commander";
             cfg.Locator = "libThunderCommander.so";
             cfg.Resumed = false;
-            cfg.StartMode = Plugin::Configuration::startmode::DEACTIVATED;
             cfg.Configuration = R"({})";
 
             const char* workspace = std::getenv("GITHUB_WORKSPACE");
