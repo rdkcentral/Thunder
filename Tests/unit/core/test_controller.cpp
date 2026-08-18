@@ -70,6 +70,9 @@ namespace Tests {
             const uint32_t result =
                 _runtime.Initialize({ cfg }, pluginPath);
 
+            ASSERT_EQ(result, Core::ERROR_NONE)
+                << "Failed to initialize Thunder runtime";
+
             auto shell = _runtime.GetShell("Commander");
 
             ASSERT_TRUE(shell.IsValid())
@@ -78,18 +81,6 @@ namespace Tests {
             std::cout << "Commander state: "
                       << shell->State()
                       << std::endl;
-            
-            std::cout << "Commander error: "
-                      << shell->ErrorMessage()
-                      << std::endl;
-
-            ASSERT_EQ(result, Core::ERROR_NONE)
-                << "Failed to initialize Thunder runtime";
-
-            auto shell = _runtime.GetShell("Commander");
-
-            ASSERT_TRUE(shell.IsValid())
-                << "Commander plugin was not registered/loaded";
         }
 
         static void TearDownTestSuite()
