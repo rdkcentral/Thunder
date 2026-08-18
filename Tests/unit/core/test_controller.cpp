@@ -68,7 +68,20 @@ namespace Tests {
                 std::string(workspace) + "/ThunderNanoServices/usr/lib";
 
             const uint32_t result =
-                _runtime.Initialize({}, pluginPath);
+                _runtime.Initialize({ cfg }, pluginPath);
+
+            auto shell = _runtime.GetShell("Commander");
+
+            ASSERT_TRUE(shell.IsValid())
+                << "Commander plugin was not registered/loaded";
+            
+            std::cout << "Commander state: "
+                      << shell->State()
+                      << std::endl;
+            
+            std::cout << "Commander error: "
+                      << shell->ErrorMessage()
+                      << std::endl;
 
             ASSERT_EQ(result, Core::ERROR_NONE)
                 << "Failed to initialize Thunder runtime";
