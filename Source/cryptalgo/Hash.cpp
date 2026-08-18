@@ -329,7 +329,7 @@ namespace Crypto {
         unsigned long used, available;
 
         /*
-            Split length to lower and higher portion
+         * Split length to lower and higher portion
          */
         uint32_t lengthLow = static_cast<uint32_t>(ctx->length & 0xFFFFFFFF);
         uint32_t lengthHigh = static_cast<uint32_t>(ctx->length >> 32);
@@ -526,7 +526,7 @@ namespace Crypto {
         const uint8_t* current = &(message_array[0]);
 
         /*
-            Split length to lower and higher portion
+         * Split length to lower and higher portion
          */
         uint32_t lengthLow = static_cast<uint32_t>(_context.length & 0xFFFFFFFF);
         uint32_t lengthHigh = static_cast<uint32_t>(_context.length >> 32);
@@ -755,7 +755,7 @@ namespace Crypto {
         ::memset(&(_context.block[_context.index]), 0, (56 - _context.index));
 
         /*
-            Split length to lower and higher portion
+         * Split length to lower and higher portion
          */
         uint32_t lengthLow = static_cast<uint32_t>(_context.length & 0xFFFFFFFF);
         uint32_t lengthHigh = static_cast<uint32_t>(_context.length >> 32);
