@@ -31,7 +31,7 @@ jobs:
         APT_OPTS="-o Acquire::Retries=3 -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20 -o Acquire::ConnectTimeout=10 -o Dpkg::Lock::Timeout=60"
         updated=0
         for attempt in {1..5}; do
-          if timeout 30s sudo apt-get update ${APT_OPTS}; then
+          if timeout 120s sudo apt-get update ${APT_OPTS}; then
             updated=1
             break
           fi
@@ -60,7 +60,7 @@ jobs:
         fi
         installed=0
         for attempt in {1..4}; do
-          if timeout 60s sudo apt-get install -y --no-install-recommends ${APT_OPTS} $PKGS; then
+          if timeout 120s sudo apt-get install -y --no-install-recommends ${APT_OPTS} $PKGS; then
             installed=1
             break
           fi
