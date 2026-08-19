@@ -48,8 +48,8 @@ jobs:
         export DEBIAN_FRONTEND=noninteractive
         APT_OPTS="-o Acquire::Retries=3 -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20 -o Acquire::ConnectTimeout=10 -o Dpkg::Lock::Timeout=60"
         updated=0
-        for attempt in {1..5}; do
-          if timeout 120s sudo apt-get update ${APT_OPTS}; then
+        for attempt in {1..10}; do
+          if timeout 300s sudo apt-get update ${APT_OPTS}; then
             updated=1
             break
           fi
@@ -58,12 +58,12 @@ jobs:
           sleep $((attempt*10))
         done
         if [ "$updated" -ne 1 ]; then
-          echo "apt-get update failed after 5 attempts"
+          echo "apt-get update failed after 10 attempts"
           exit 1
         fi
         installed=0
-        for attempt in {1..4}; do
-          if timeout 120s sudo apt-get install -y --no-install-recommends ${APT_OPTS} libusb-1.0-0 zlib1g libssl3; then
+        for attempt in {1..10}; do
+          if timeout 300s sudo apt-get install -y --no-install-recommends ${APT_OPTS} libusb-1.0-0 zlib1g libssl3; then
             installed=1
             break
           fi
@@ -72,7 +72,7 @@ jobs:
           sleep $((attempt*15))
         done
         if [ "$installed" -ne 1 ]; then
-          echo "apt-get install failed after 4 attempts"
+          echo "apt-get install failed after 10 attempts"
           exit 1
         fi
 
