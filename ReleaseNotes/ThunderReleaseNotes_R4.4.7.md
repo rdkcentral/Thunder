@@ -93,7 +93,7 @@ See [here](https://rdkcentral.github.io/Thunder/plugin/interfaces/tags/#encode) 
 
 ---
 
-#### Feature: (t2) Telemetry Turned on By default (RDK-e MW builds)
+#### Feature: (T2) Telemetry Turned on By default (RDK-E MW builds)
 
 For RDK-E MW builds the Telemetry output service (for T2) is now enabled by default, meaning it will initialize the output engine (calling T2 initialization) and that Telemetry can be used from plugins (see [here](https://rdkcentral.github.io/Thunder/plugin/messaging/#using-the-real-t2-library-or-the-mock) for more info)
 
