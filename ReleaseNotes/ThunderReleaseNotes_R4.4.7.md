@@ -2,13 +2,13 @@
 
 ## Introduction
 
-This document describes the changes introduced in Thunder R4.4.7 (compared to the R4.4.6 release).
+This document describes the changes introduced in Thunder R4.4.7 (compared to the R4.4.6 release) and in ThunderTools.
 
 The changes described here are present on the [R4_4 branch](https://github.com/rdkcentral/Thunder/tree/R4_4) and represent all commits since the [R4.4.6 tag](https://github.com/rdkcentral/Thunder/compare/R4.4.6...R4_4).
 
 ---
 
-## Thunder
+## Thunder and ThunderTools
 
 ### Features
 
@@ -44,8 +44,6 @@ consistent with all other `Container` mutation methods. The two-argument overloa
 the error-reporting overload available on `FromString()` and `FromFile()`.
 
 More information and worked examples can be found in the [JSON documentation](https://rdkcentral.github.io/Thunder/utils/json/).
-
-*Implemented in PR [#2176](https://github.com/rdkcentral/Thunder/pull/2176), ported to R4_4 in PR [#2193](https://github.com/rdkcentral/Thunder/pull/2193).*
 
 ---
 
@@ -85,83 +83,30 @@ ELEMENT* Remove(uint32_t index);
 
 More information and worked examples can be found in the [JSON documentation](https://rdkcentral.github.io/Thunder/utils/json/).
 
-*Implemented in PR [#2186](https://github.com/rdkcentral/Thunder/pull/2186), ported to R4_4 in PR [#2194](https://github.com/rdkcentral/Thunder/pull/2194).*
+---
+
+#### Feature: array encode support
+
+It is now possible to use encode:hex, encode:mac and encode:base64 for buffer, array and std::vector types (encode:base64 already worked for the first two).
+
+See [here](https://rdkcentral.github.io/Thunder/plugin/interfaces/tags/#encode) for more information. 
 
 ---
 
-#### Feature: `std::vector<uint8_t>` and Delimiter Support in Serialization Helpers
+#### Feature: (t2) Telemetry Turned on By default (RDK-e MW builds)
 
-The serialization helpers in `Source/core/Serialization.h` / `Serialization.cpp` are extended to:
-
-1. **`std::vector<uint8_t>` overloads** — `ToHexString`, `FromHexString`, `ToString` (Base64),
-   and `FromString` (Base64) now have overloads that accept or return `std::vector<uint8_t>`,
-   removing the need for callers to manage raw buffer sizes manually.
-
-2. **Delimiter support** — `ToHexString` and `FromHexString` now accept an optional
-   `TCHAR delimiter` parameter (default `'\0'`, meaning no delimiter). When a delimiter is
-   supplied the hex pairs are separated by that character on output and expected when parsing
-   on input (e.g. `delimiter = ':'` produces / consumes `"de:ad:be:ef"`).
-
-3. **Buffer-size type widened to `uint32_t`** — The length/size parameters for the raw-buffer
-   overloads of `ToHexString`, `FromHexString`, `ToString`, and `FromString` are widened from
-   `uint16_t` to `uint32_t`, lifting the 64 KB ceiling on single-call operations. Backward-
-   compatible `uint16_t` and `uint8_t` bridge overloads are retained so existing callers
-   continue to compile without modification.
-
-*Implemented in PR [#2180](https://github.com/rdkcentral/Thunder/pull/2180).*
+For RDK-E MW builds the Telemetry output service (for T2) is now enabled by default, meaning it will initialize the output engine (calling T2 initialization) and that Telemetry can be used from plugins (see [here](https://rdkcentral.github.io/Thunder/plugin/messaging/#using-the-real-t2-library-or-the-mock) for more info)
 
 ---
 
-#### Feature: Telemetry Configuration in the Thunder Daemon Config Template
+### General bug fixes
 
-The Thunder daemon configuration template (`Source/Thunder/Thunder.conf.in`) is extended with two
-new messaging settings that wire up the T2 Telemetry backend for RDK builds:
-
-1. **`messaging.flush`** — a new boolean field in the generated `Thunder.conf` that controls
-   whether the message engine flushes log output synchronously. It is driven by the new
-   `FLUSH_LOGS` CMake build option added to `Source/Thunder/GenericConfig.cmake`.
-
-2. **`messaging.telemetry` section** — a new block in the generated config that configures the
-   telemetry output route for the Thunder message engine:
-   ```json
-   "telemetry": {
-     "abbreviated": true,
-     "output": "handler",
-     "settings": [ { "enabled": false } ]
-   }
-   ```
-   - `abbreviated` enables compact telemetry event encoding.
-   - `output: "handler"` routes telemetry messages to the registered handler backend
-     (i.e. `TelemetryBackendT2` inside `MessagingControl` when built with
-     `PLUGIN_MESSAGECONTROL_TELEMETRY_T2=ON`).
-   - `enabled` defaults to **`false`** in the upstream template. In RDKE MW Yocto builds the
-     recipe overrides this to `true` and sets `PLUGIN_MESSAGECONTROL_TELEMETRY_T2=ON`,
-     which links `libThunderTelemetryBackendT2` into `libThunderMessageControl.so` and
-     forwards Thunder messaging events to the RDK T2 agent via `t2_event_s`,
-     `t2_event_d`, and `t2_event_f`.
-
-Thunder plugins do not call the T2 API directly; they emit through the existing Thunder
-messaging framework, which routes to T2 via the `TelemetryBackendT2` backend that is part
-of the `MessagingControl` plugin in [ThunderExtensions/R4_4](https://github.com/rdkcentral/ThunderExtensions/tree/R4_4/MessagingControl).
-
-*Implemented in PR [#2200](https://github.com/rdkcentral/Thunder/pull/2200).*
-
----
-
-### Changes and Bug Fixes
-
-Thunder R4.4.7 does not introduce dedicated bug-fix-only commits beyond those present in
-R4.4.6. The changes above are purely additive API extensions.
+Some small issues were fixed in Thunder R4.4.7 on the ThunderTools code generator.
 
 ---
 
 ### Breaking Changes
 
-Thunder R4.4.7 does not introduce intentional breaking changes relative to R4.4.6.
-
-- All existing interface signatures remain unchanged.
-- The new `FromObject()` and `Insert()`/`Remove()` APIs are purely additive.
-- The serialization helper extensions are backward-compatible: existing call sites using
-  `uint16_t` lengths continue to compile and behave identically.
+Thunder R4.4.7 does not introduce breaking changes relative to R4.4.6.
 
 ---
