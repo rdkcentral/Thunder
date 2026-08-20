@@ -56,6 +56,7 @@ namespace PluginHost {
             virtual void StateChange(const IStateControl::state state) = 0;
         };
 
+        // New code should use Core::EnumToCString() instead.
         DEPRECATED static const TCHAR* ToString(const state value);
         DEPRECATED static const TCHAR* ToString(const command value);
 

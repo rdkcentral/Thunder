@@ -283,26 +283,26 @@ POP_WARNING()
     // Serialize: enums
     //------------------------------------------------------------------------
     template<typename ENUM, typename = typename std::enable_if<std::is_enum<ENUM>::value>::type>
-    EXTERNAL const TCHAR* ToCString(const ENUM value)
+    const TCHAR* EnumToCString(const ENUM value)
     {
         return (EnumerateType<ENUM>(value).Data());
     }
 
     template<typename ENUM, typename = typename std::enable_if<std::is_enum<ENUM>::value>::type>
-    EXTERNAL string ToString(const ENUM value)
+    string EnumToString(const ENUM value)
     {
-        return (ToString(ToCString<ENUM>(value)));
+        return (ToString(EnumToCString<ENUM>(value)));
     }
 
     template<typename ENUM, typename = typename std::enable_if<std::is_enum<ENUM>::value>::type>
-    EXTERNAL ENUM FromString(const string& value)
+    ENUM EnumFromString(const string& value)
     {
         EnumerateType<ENUM> val(value.c_str());
         return (val.IsSet() == true ? val.Value() : static_cast<ENUM>(~0));
     }
 
     template<typename ENUM, typename = typename std::enable_if<std::is_enum<ENUM>::value>::type>
-    EXTERNAL ENUM FromString(const string& value, bool& success)
+    ENUM EnumFromString(const string& value, bool& success)
     {
         EnumerateType<ENUM> val(value.c_str());
         success = val.IsSet();

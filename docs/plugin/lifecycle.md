@@ -175,7 +175,7 @@ Core::hresult TestPlugin::Request(const PluginHost::IStateControl::command state
     _adminLock.Lock();
 
     TRACE(Trace::Information, (_T("Received state change request from %s to %s"), 
-                               Core::ToCString(_currentState), Core::ToCString(state)));
+                               Core::EnumToCString(_currentState), Core::EnumToCString(state)));
 
     if (_currentState == PluginHost::IStateControl::state::RESUMED &&
         state == PluginHost::IStateControl::command::SUSPEND) {

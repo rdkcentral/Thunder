@@ -50,7 +50,7 @@ namespace PluginHost
         // There is a bug below that converts IStateControl::command to IStateControl::state string
         // (i.e. returns "SUSPENDED" rather than "Suspend" and "RESUMED" rather than "Resume").
         // For backward compatibility reasons this mistake will not be fixed. Both of these ToString()
-        // methods have been marked as deprecated. New code should use Core::ToCString<ENUM>() instead.
+        // methods have been marked as deprecated. New code should use Core::EnumToCString() instead.
         return (Core::EnumerateType<state>(value).Data());
     }
 }
