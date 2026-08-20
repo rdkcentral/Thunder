@@ -27,6 +27,7 @@
 #include "Enumerate.h"
 
 #include <vector>
+#include <type_traits>
 
 namespace Thunder {
 namespace Core {
