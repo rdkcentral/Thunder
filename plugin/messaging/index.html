@@ -4220,12 +4220,12 @@
 <span class="w">    </span><span class="p">,</span><span class="w"> </span><span class="n">MaxExportConnections</span><span class="p">(</span><span class="n">Publishers</span><span class="o">::</span><span class="n">WebSocketOutput</span><span class="o">::</span><span class="n">DefaultMaxConnections</span><span class="p">)</span>
 <span class="w">    </span><span class="p">,</span><span class="w"> </span><span class="n">Remote</span><span class="p">()</span>
 <span class="p">{</span>
-<span class="w">    </span><span class="n">Add</span><span class="p">(</span><span class="n">_T</span><span class="p">(</span><span class="s">&quot;console&quot;</span><span class="p">),</span><span class="w"> </span><span class="o">&amp;</span><span class="n">Console</span><span class="p">);</span><span class="w"> </span><span class="c1">// (1)</span>
-<span class="w">    </span><span class="n">Add</span><span class="p">(</span><span class="n">_T</span><span class="p">(</span><span class="s">&quot;syslog&quot;</span><span class="p">),</span><span class="w"> </span><span class="o">&amp;</span><span class="n">SysLog</span><span class="p">);</span><span class="w"> </span><span class="c1">// (2)</span>
-<span class="w">    </span><span class="n">Add</span><span class="p">(</span><span class="n">_T</span><span class="p">(</span><span class="s">&quot;filepath&quot;</span><span class="p">),</span><span class="w"> </span><span class="o">&amp;</span><span class="n">FileName</span><span class="p">);</span><span class="w"> </span><span class="c1">// (3)</span>
-<span class="w">    </span><span class="n">Add</span><span class="p">(</span><span class="n">_T</span><span class="p">(</span><span class="s">&quot;abbreviated&quot;</span><span class="p">),</span><span class="w"> </span><span class="o">&amp;</span><span class="n">Abbreviated</span><span class="p">);</span><span class="w"> </span><span class="c1">// (4)</span>
-<span class="w">    </span><span class="n">Add</span><span class="p">(</span><span class="n">_T</span><span class="p">(</span><span class="s">&quot;maxexportconnections&quot;</span><span class="p">),</span><span class="w"> </span><span class="o">&amp;</span><span class="n">MaxExportConnections</span><span class="p">);</span><span class="w"> </span><span class="c1">// (5)</span>
-<span class="w">    </span><span class="n">Add</span><span class="p">(</span><span class="n">_T</span><span class="p">(</span><span class="s">&quot;remote&quot;</span><span class="p">),</span><span class="w"> </span><span class="o">&amp;</span><span class="n">Remote</span><span class="p">);</span><span class="w"> </span><span class="c1">// (6)</span>
+<span class="w">    </span><span class="n">Add</span><span class="p">(</span><span class="n">_T</span><span class="p">(</span><span class="s">"console"</span><span class="p">),</span><span class="w"> </span><span class="o">&amp;</span><span class="n">Console</span><span class="p">);</span><span class="w"> </span><span class="c1">// (1)</span>
+<span class="w">    </span><span class="n">Add</span><span class="p">(</span><span class="n">_T</span><span class="p">(</span><span class="s">"syslog"</span><span class="p">),</span><span class="w"> </span><span class="o">&amp;</span><span class="n">SysLog</span><span class="p">);</span><span class="w"> </span><span class="c1">// (2)</span>
+<span class="w">    </span><span class="n">Add</span><span class="p">(</span><span class="n">_T</span><span class="p">(</span><span class="s">"filepath"</span><span class="p">),</span><span class="w"> </span><span class="o">&amp;</span><span class="n">FileName</span><span class="p">);</span><span class="w"> </span><span class="c1">// (3)</span>
+<span class="w">    </span><span class="n">Add</span><span class="p">(</span><span class="n">_T</span><span class="p">(</span><span class="s">"abbreviated"</span><span class="p">),</span><span class="w"> </span><span class="o">&amp;</span><span class="n">Abbreviated</span><span class="p">);</span><span class="w"> </span><span class="c1">// (4)</span>
+<span class="w">    </span><span class="n">Add</span><span class="p">(</span><span class="n">_T</span><span class="p">(</span><span class="s">"maxexportconnections"</span><span class="p">),</span><span class="w"> </span><span class="o">&amp;</span><span class="n">MaxExportConnections</span><span class="p">);</span><span class="w"> </span><span class="c1">// (5)</span>
+<span class="w">    </span><span class="n">Add</span><span class="p">(</span><span class="n">_T</span><span class="p">(</span><span class="s">"remote"</span><span class="p">),</span><span class="w"> </span><span class="o">&amp;</span><span class="n">Remote</span><span class="p">);</span><span class="w"> </span><span class="c1">// (6)</span>
 <span class="p">}</span>
 </code></pre></div>
 <ol>
@@ -4248,12 +4248,12 @@
 <span class="w">    </span><span class="n">ASSERT</span><span class="p">(</span><span class="n">messageInfo</span><span class="p">.</span><span class="n">Type</span><span class="p">()</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">Messaging</span><span class="o">::</span><span class="n">Metadata</span><span class="o">::</span><span class="n">type</span><span class="o">::</span><span class="n">INVALID</span><span class="p">);</span>
 
 <span class="w">    </span><span class="n">string</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">messageInfo</span><span class="p">.</span><span class="n">ToString</span><span class="p">(</span><span class="n">_abbreviate</span><span class="p">).</span><span class="n">c_str</span><span class="p">()</span><span class="w"> </span><span class="o">+</span>
-<span class="w">                    </span><span class="n">Core</span><span class="o">::</span><span class="n">Format</span><span class="p">(</span><span class="s">&quot;%s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">message</span><span class="o">-&gt;</span><span class="n">Data</span><span class="p">().</span><span class="n">c_str</span><span class="p">());</span>
+<span class="w">                    </span><span class="n">Core</span><span class="o">::</span><span class="n">Format</span><span class="p">(</span><span class="s">"%s</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span><span class="w"> </span><span class="n">message</span><span class="o">-&gt;</span><span class="n">Data</span><span class="p">().</span><span class="n">c_str</span><span class="p">());</span>
 
 <span class="cp">#ifndef __WINDOWS__</span>
 <span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">_isSyslog</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nb">true</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="c1">//use longer messages for syslog</span>
-<span class="w">        </span><span class="n">syslog</span><span class="p">(</span><span class="n">LOG_NOTICE</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;%s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">result</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span>
+<span class="w">        </span><span class="n">syslog</span><span class="p">(</span><span class="n">LOG_NOTICE</span><span class="p">,</span><span class="w"> </span><span class="s">"%s</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span><span class="w"> </span><span class="n">result</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">    </span><span class="k">else</span>
 <span class="cp">#endif</span>
@@ -4268,45 +4268,45 @@
 <p>Messages are split into 3 types: logging, tracing and warning reporting. Each type has a list of categories which can be marked as enabled or disabled. There is also a similar list for tracing when it comes to enabling or disabling certain modules (e.g. plugins). By default, all categories are enabled for logging and warning reporting, but in terms of tracing, if a category or a module is not present in the config, it will be disabled.</p>
 <p>Below is an example of the messaging section in the config:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;messaging&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;logging&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="nt">&quot;abbreviated&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w"> </span><span class="c1">// (1)</span>
-<span class="w">            </span><span class="nt">&quot;settings&quot;</span><span class="p">:[</span>
+<span class="w">    </span><span class="nt">"messaging"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">"logging"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">"abbreviated"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w"> </span><span class="c1">// (1)</span>
+<span class="w">            </span><span class="nt">"settings"</span><span class="p">:[</span>
 <span class="w">                </span><span class="p">{</span>
-<span class="w">                    </span><span class="nt">&quot;category&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Notification&quot;</span><span class="p">,</span><span class="w"> </span><span class="c1">// (2)</span>
-<span class="w">                    </span><span class="nt">&quot;enabled&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span>
+<span class="w">                    </span><span class="nt">"category"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Notification"</span><span class="p">,</span><span class="w"> </span><span class="c1">// (2)</span>
+<span class="w">                    </span><span class="nt">"enabled"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span>
 <span class="w">                </span><span class="p">}</span>
 <span class="w">            </span><span class="p">]</span>
 <span class="w">        </span><span class="p">},</span>
-<span class="w">        </span><span class="nt">&quot;tracing&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="nt">&quot;settings&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="nt">"tracing"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">"settings"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">                </span><span class="p">{</span>
-<span class="w">                    </span><span class="nt">&quot;category&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Fatal&quot;</span><span class="p">,</span><span class="w"> </span><span class="c1">// (3)</span>
-<span class="w">                    </span><span class="nt">&quot;enabled&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+<span class="w">                    </span><span class="nt">"category"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Fatal"</span><span class="p">,</span><span class="w"> </span><span class="c1">// (3)</span>
+<span class="w">                    </span><span class="nt">"enabled"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
 <span class="w">                </span><span class="p">},</span>
 <span class="w">                </span><span class="p">{</span>
-<span class="w">                    </span><span class="nt">&quot;module&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Plugin_SamplePlugin&quot;</span><span class="p">,</span><span class="w"> </span><span class="c1">// (4)</span>
-<span class="w">                    </span><span class="nt">&quot;enabled&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+<span class="w">                    </span><span class="nt">"module"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Plugin_SamplePlugin"</span><span class="p">,</span><span class="w"> </span><span class="c1">// (4)</span>
+<span class="w">                    </span><span class="nt">"enabled"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
 <span class="w">                </span><span class="p">}</span>
 <span class="w">            </span><span class="p">]</span>
 <span class="w">        </span><span class="p">},</span>
-<span class="w">        </span><span class="nt">&quot;reporting&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="nt">&quot;abbreviated&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
-<span class="w">            </span><span class="nt">&quot;settings&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="nt">"reporting"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">"abbreviated"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">"settings"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">                </span><span class="p">{</span>
-<span class="w">                    </span><span class="nt">&quot;category&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;TooLongWaitingForLock&quot;</span><span class="p">,</span><span class="w"> </span><span class="c1">// (5)</span>
-<span class="w">                    </span><span class="nt">&quot;enabled&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
-<span class="w">                    </span><span class="nt">&quot;excluded&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">                        </span><span class="nt">&quot;callsigns&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<span class="w">                            </span><span class="s2">&quot;com.example.SamplePlugin&quot;</span><span class="w"> </span><span class="c1">// (6)</span>
+<span class="w">                    </span><span class="nt">"category"</span><span class="p">:</span><span class="w"> </span><span class="s2">"TooLongWaitingForLock"</span><span class="p">,</span><span class="w"> </span><span class="c1">// (5)</span>
+<span class="w">                    </span><span class="nt">"enabled"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">                    </span><span class="nt">"excluded"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                        </span><span class="nt">"callsigns"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">                            </span><span class="s2">"com.example.SamplePlugin"</span><span class="w"> </span><span class="c1">// (6)</span>
 <span class="w">                        </span><span class="p">],</span>
-<span class="w">                        </span><span class="nt">&quot;modules&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<span class="w">                            </span><span class="s2">&quot;Plugin_SamplePlugin&quot;</span><span class="w"> </span><span class="c1">// (7)</span>
+<span class="w">                        </span><span class="nt">"modules"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">                            </span><span class="s2">"Plugin_SamplePlugin"</span><span class="w"> </span><span class="c1">// (7)</span>
 <span class="w">                        </span><span class="p">]</span>
 <span class="w">                    </span><span class="p">},</span>
-<span class="w">                    </span><span class="nt">&quot;config&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">                        </span><span class="nt">&quot;reportbound&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1000</span><span class="p">,</span><span class="w"> </span><span class="c1">// (8)</span>
-<span class="w">                        </span><span class="nt">&quot;warningbound&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2000</span><span class="w"> </span><span class="c1">// (9)</span>
+<span class="w">                    </span><span class="nt">"config"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                        </span><span class="nt">"reportbound"</span><span class="p">:</span><span class="w"> </span><span class="mi">1000</span><span class="p">,</span><span class="w"> </span><span class="c1">// (8)</span>
+<span class="w">                        </span><span class="nt">"warningbound"</span><span class="p">:</span><span class="w"> </span><span class="mi">2000</span><span class="w"> </span><span class="c1">// (9)</span>
 <span class="w">                    </span><span class="p">}</span>
 <span class="w">                </span><span class="p">}</span>
 <span class="w">            </span><span class="p">]</span>
@@ -4347,7 +4347,7 @@
 <p class="admonition-title">Tip</p>
 <p>It is also possible to supply a filepath instead of an object to allow storing messaging configuration in a separate file
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;messaging&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;/path/to/messagingconfig.json&quot;</span>
+<span class="w">    </span><span class="nt">"messaging"</span><span class="p">:</span><span class="w"> </span><span class="s2">"/path/to/messagingconfig.json"</span>
 <span class="p">}</span>
 </code></pre></div></p>
 </div>
@@ -4360,29 +4360,29 @@
 <p>It is also possible to use the <code>MessageControl</code> plugin to edit the configuration values at runtime. At the moment, it is possible to enable/disable any category at runtime, either globally for logging and warning reporting, or individually per plugin for the tracing messages. This can be achieved by either using the ThunderUI or doing a simple JSON-RPC call. In the example below, there is a request to enable traces from the <code>Information</code> category in the <code>BluetoothControl</code> plugin.</p>
 <p><img alt="➡" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@16.0.1/assets/svg/27a1.svg" title=":arrow_right:" /> Request</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;jsonrpc&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2.0&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">42</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;MessageControl.1.enable&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;params&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Tracing&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;category&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Information&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;module&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Plugin_BluetoothControl&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;enabled&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">    </span><span class="nt">"jsonrpc"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2.0"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="mi">42</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"method"</span><span class="p">:</span><span class="w"> </span><span class="s2">"MessageControl.1.enable"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"params"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Tracing"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"category"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Information"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"module"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Plugin_BluetoothControl"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"enabled"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
 <p><img alt="⬅" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@16.0.1/assets/svg/2b05.svg" title=":arrow_left:" /> Response</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;jsonrpc&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2.0&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">42</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;result&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span>
+<span class="w">    </span><span class="nt">"jsonrpc"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2.0"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="mi">42</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"result"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span>
 <span class="p">}</span>
 </code></pre></div>
 <h2 id="tracing">Tracing</h2>
 <p>First, let us briefly discuss the part responsible for the tracing. In theory, tracing is the process of monitoring the flow of a request through an application. It is used to identify performance bottlenecks and understand the interactions between different components of a distributed system. A trace typically consists of a series of events, each of which corresponds to a particular stage in the processing of a request. Tracing provides a much broader and more continuous perspective of the application compared to logging. The goal of tracing is to track the flow and evolution of data within a program so that we can be proactive instead of just reactive and increase overall performance.</p>
-<div class="highlight"><pre><span></span><code><span class="n">TRACE</span><span class="p">(</span><span class="n">Trace</span><span class="o">::</span><span class="n">Information</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">_T</span><span class="p">(</span><span class="s">&quot;Not an A2DP audio sink device!&quot;</span><span class="p">)));</span>
+<div class="highlight"><pre><span></span><code><span class="n">TRACE</span><span class="p">(</span><span class="n">Trace</span><span class="o">::</span><span class="n">Information</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">_T</span><span class="p">(</span><span class="s">"Not an A2DP audio sink device!"</span><span class="p">)));</span>
 
-<span class="n">TRACE_GLOBAL</span><span class="p">(</span><span class="n">Trace</span><span class="o">::</span><span class="n">Error</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="s">&quot;Is this not a descriptor to a DRM Node... =^..^= &quot;</span><span class="p">));</span>
+<span class="n">TRACE_GLOBAL</span><span class="p">(</span><span class="n">Trace</span><span class="o">::</span><span class="n">Error</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="s">"Is this not a descriptor to a DRM Node... =^..^= "</span><span class="p">));</span>
 </code></pre></div>
 <p>In Thunder, there are two main macros that can be used to wrap messages that will be treated as traces. These macros, namely <code>TRACE</code> and <code>TRACE_GLOBAL</code>, can be found in <code>Thunder/Source/messaging/TraceControl.h</code>. Upon examining the code, we can notice that the only distinction between them is that <code>TRACE</code> includes the class name where it is used, whereas the global version refers to the function name instead of a class.</p>
 <div class="admonition warning">
@@ -4415,7 +4415,7 @@
 <p class="admonition-title">Warning</p>
 <p>TRACE_Lx macros should only be used by the framework for low-level debug messages and not by plugins.</p>
 </div>
-<div class="highlight"><pre><span></span><code><span class="n">TRACE_L1</span><span class="p">(</span><span class="s">&quot;Failed to load library: %s, error %s&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">filename</span><span class="p">,</span><span class="w"> </span><span class="n">_error</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span>
+<div class="highlight"><pre><span></span><code><span class="n">TRACE_L1</span><span class="p">(</span><span class="s">"Failed to load library: %s, error %s"</span><span class="p">,</span><span class="w"> </span><span class="n">filename</span><span class="p">,</span><span class="w"> </span><span class="n">_error</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span>
 </code></pre></div>
 <p>On a side note, if you browse the Thunder code, you may come across another macro called <code>TRACE_L1</code>. You might wonder how it differs from the previously mentioned macros. To understand its purpose, it is important to know that tracing is disabled in certain layers of Thunder. This is necessary because <code>Messaging</code> relies on both <code>COM</code> and <code>Core</code>, and we surely want to avoid circular dependencies. As a result, <code>TRACE_L1</code> is restricted to lower layers only. Within the framework, you can utilize it in <code>Core</code> and <code>Messaging</code>, but it should not be used in <code>COM</code>. Moreover, once you reach a certain point, refrain from using <code>TRACE_L1</code> altogether, and instead use the <code>TRACE</code> macro.</p>
 <h3 id="defining-custom-trace-categories">Defining custom trace categories</h3>
@@ -4456,10 +4456,10 @@
 </code></pre></div>
 <h2 id="logging">Logging</h2>
 <p>Logging, on the other hand, is the process of recording events that occur during the execution of an application. These events could be error messages, warnings, or informational messages that provide details about the application’s behavior. Logging is typically used for debugging and troubleshooting purposes. The primary goal of logging is to provide a historical record of events that can be used to analyze and diagnose problems. This means that in theory, we want to save the logs for later use.</p>
-<div class="highlight"><pre><span></span><code><span class="n">SYSLOG</span><span class="p">(</span><span class="n">Logging</span><span class="o">::</span><span class="n">Startup</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">_T</span><span class="p">(</span><span class="s">&quot;Failure in setting Key:Value:[%s]:[%s]</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">),</span><span class="w"> </span><span class="n">index</span><span class="p">.</span><span class="n">Current</span><span class="p">().</span><span class="n">Key</span><span class="p">.</span><span class="n">Value</span><span class="p">().</span><span class="n">c_str</span><span class="p">(),</span><span class="w"> </span><span class="n">index</span><span class="p">.</span><span class="n">Current</span><span class="p">().</span><span class="n">Value</span><span class="p">.</span><span class="n">Value</span><span class="p">().</span><span class="n">c_str</span><span class="p">()));</span>
+<div class="highlight"><pre><span></span><code><span class="n">SYSLOG</span><span class="p">(</span><span class="n">Logging</span><span class="o">::</span><span class="n">Startup</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">_T</span><span class="p">(</span><span class="s">"Failure in setting Key:Value:[%s]:[%s]</span><span class="se">\n</span><span class="s">"</span><span class="p">),</span><span class="w"> </span><span class="n">index</span><span class="p">.</span><span class="n">Current</span><span class="p">().</span><span class="n">Key</span><span class="p">.</span><span class="n">Value</span><span class="p">().</span><span class="n">c_str</span><span class="p">(),</span><span class="w"> </span><span class="n">index</span><span class="p">.</span><span class="n">Current</span><span class="p">().</span><span class="n">Value</span><span class="p">.</span><span class="n">Value</span><span class="p">().</span><span class="n">c_str</span><span class="p">()));</span>
 </code></pre></div>
 <p>This relates to the main difference between the <code>TRACE</code> and <code>SYSLOG</code> macros in Thunder, which is that <code>SYSLOG</code> is present in any build, and <code>TRACE</code> is dropped in production, the same way as, for example, an <code>ASSERT</code> macro. It concludes the main distinction between these two message categories in Thunder: tracing should be used when we want to indicate a vital information during the development, and we should use logging to record any important data that could be useful in the future.</p>
-<div class="highlight"><pre><span></span><code><span class="n">SYSLOG_GLOBAL</span><span class="p">(</span><span class="n">Logging</span><span class="o">::</span><span class="n">Fatal</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">_T</span><span class="p">(</span><span class="s">&quot;Plugin config file [%s] could not be opened.&quot;</span><span class="p">),</span><span class="w"> </span><span class="n">file</span><span class="p">.</span><span class="n">Name</span><span class="p">().</span><span class="n">c_str</span><span class="p">()));</span>
+<div class="highlight"><pre><span></span><code><span class="n">SYSLOG_GLOBAL</span><span class="p">(</span><span class="n">Logging</span><span class="o">::</span><span class="n">Fatal</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">_T</span><span class="p">(</span><span class="s">"Plugin config file [%s] could not be opened."</span><span class="p">),</span><span class="w"> </span><span class="n">file</span><span class="p">.</span><span class="n">Name</span><span class="p">().</span><span class="n">c_str</span><span class="p">()));</span>
 </code></pre></div>
 <p>Similarly as in the case of tracing, there is also a global version of the <code>SYSLOG</code> macro, but this is something that was used prior to when tracing and logging became separate issues.</p>
 <div class="admonition warning">
@@ -4473,7 +4473,7 @@
 </div>
 <div class="highlight"><pre><span></span><code><span class="cp">#define SYSLOG(CATEGORY, PARAMETERS)</span>
 <span class="w">    </span><span class="k">do</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="k">static_assert</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">is_base_of</span><span class="o">&lt;</span><span class="n">Thunder</span><span class="o">::</span><span class="n">Logging</span><span class="o">::</span><span class="n">BaseLoggingType</span><span class="o">&lt;</span><span class="n">CATEGORY</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="n">CATEGORY</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;SYSLOG() only for Logging controls&quot;</span><span class="p">);</span>
+<span class="w">        </span><span class="k">static_assert</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">is_base_of</span><span class="o">&lt;</span><span class="n">Thunder</span><span class="o">::</span><span class="n">Logging</span><span class="o">::</span><span class="n">BaseLoggingType</span><span class="o">&lt;</span><span class="n">CATEGORY</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="n">CATEGORY</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="s">"SYSLOG() only for Logging controls"</span><span class="p">);</span>
 <span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">CATEGORY</span><span class="o">::</span><span class="n">IsEnabled</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nb">true</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">            </span><span class="n">CATEGORY</span><span class="w"> </span><span class="n">__data__</span><span class="w"> </span><span class="n">PARAMETERS</span><span class="p">;</span>
 <span class="w">            </span><span class="n">Thunder</span><span class="o">::</span><span class="n">Core</span><span class="o">::</span><span class="n">Messaging</span><span class="o">::</span><span class="n">MessageInfo</span><span class="w"> </span><span class="nf">__info__</span><span class="p">(</span>
@@ -4505,9 +4505,9 @@
 <span class="w">    </span><span class="n">REPORT_OUTOFBOUNDS_WARNING</span><span class="p">(</span><span class="n">WarningReporting</span><span class="o">::</span><span class="n">SinkStillHasReference</span><span class="p">,</span><span class="w"> </span><span class="n">_referenceCount</span><span class="p">);</span>
 
 <span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">_referenceCount</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="c1">// This is probably due to the fact that the &quot;other&quot; side killed the connection, we need to</span>
+<span class="w">        </span><span class="c1">// This is probably due to the fact that the "other" side killed the connection, we need to</span>
 <span class="w">        </span><span class="c1">// Remove our selves at the COM Administrator map.. no need to signal Releases on behalf of the dropped connection anymore..</span>
-<span class="w">        </span><span class="n">TRACE_L1</span><span class="p">(</span><span class="s">&quot;Oops this is scary, destructing a (%s) sink that still is being refered by something&quot;</span><span class="p">,</span><span class="w"> </span><span class="k">typeid</span><span class="p">(</span><span class="n">ACTUALSINK</span><span class="p">).</span><span class="n">name</span><span class="p">());</span>
+<span class="w">        </span><span class="n">TRACE_L1</span><span class="p">(</span><span class="s">"Oops this is scary, destructing a (%s) sink that still is being refered by something"</span><span class="p">,</span><span class="w"> </span><span class="k">typeid</span><span class="p">(</span><span class="n">ACTUALSINK</span><span class="p">).</span><span class="n">name</span><span class="p">());</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
@@ -4589,8 +4589,8 @@
 
 <span class="w">    </span><span class="kt">void</span><span class="w"> </span><span class="nf">ToString</span><span class="p">(</span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">visitor</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">int64_t</span><span class="w"> </span><span class="n">actualValue</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">int64_t</span><span class="w"> </span><span class="n">maxValue</span><span class="p">)</span><span class="w"> </span><span class="k">const</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">        </span><span class="n">visitor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">_T</span><span class="p">(</span><span class="s">&quot;It took suspiciously long to acquire a critical section&quot;</span><span class="p">));</span>
-<span class="w">        </span><span class="n">visitor</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">Format</span><span class="p">(</span><span class="n">_T</span><span class="p">(</span><span class="s">&quot;, value %&quot;</span><span class="w"> </span><span class="n">PRId64</span><span class="w"> </span><span class="s">&quot; [ms], max allowed %&quot;</span><span class="w"> </span><span class="n">PRId64</span><span class="w"> </span><span class="s">&quot; [ms]&quot;</span><span class="p">),</span><span class="w"> </span><span class="n">actualValue</span><span class="p">,</span><span class="w"> </span><span class="n">maxValue</span><span class="p">);</span>
+<span class="w">        </span><span class="n">visitor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">_T</span><span class="p">(</span><span class="s">"It took suspiciously long to acquire a critical section"</span><span class="p">));</span>
+<span class="w">        </span><span class="n">visitor</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">Format</span><span class="p">(</span><span class="n">_T</span><span class="p">(</span><span class="s">", value %"</span><span class="w"> </span><span class="n">PRId64</span><span class="w"> </span><span class="s">" [ms], max allowed %"</span><span class="w"> </span><span class="n">PRId64</span><span class="w"> </span><span class="s">" [ms]"</span><span class="p">),</span><span class="w"> </span><span class="n">actualValue</span><span class="p">,</span><span class="w"> </span><span class="n">maxValue</span><span class="p">);</span>
 <span class="w">    </span><span class="p">};</span>
 
 <span class="w">    </span><span class="k">static</span><span class="w"> </span><span class="k">constexpr</span><span class="w"> </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">DefaultWarningBound</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="mi">1000</span><span class="w"> </span><span class="p">};</span>
@@ -4623,7 +4623,7 @@ Enable the category (e.g. via MessageControl configuration / JSON-RPC) before ex
 <p>Once a category is registered, events can be emitted anywhere in the plugin code using the <code>TELEMETRY</code> macro:</p>
 <div class="highlight"><pre><span></span><code><span class="n">TELEMETRY</span><span class="p">(</span><span class="n">MyPlugin</span><span class="o">::</span><span class="n">SessionCount</span><span class="p">,</span><span class="w"> </span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">uint32_t</span><span class="o">&gt;</span><span class="p">(</span><span class="n">activeSessions</span><span class="p">));</span><span class="w"> </span><span class="c1">// (1)</span>
 <span class="n">TELEMETRY</span><span class="p">(</span><span class="n">MyPlugin</span><span class="o">::</span><span class="n">CpuLoad</span><span class="p">,</span><span class="w">      </span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="p">(</span><span class="n">cpuPercent</span><span class="p">));</span><span class="w">        </span><span class="c1">// (2)</span>
-<span class="n">TELEMETRY</span><span class="p">(</span><span class="n">MyPlugin</span><span class="o">::</span><span class="n">LastErrorMessage</span><span class="p">,</span><span class="w"> </span><span class="n">string</span><span class="p">(</span><span class="s">&quot;decode_error&quot;</span><span class="p">));</span><span class="w">        </span><span class="c1">// (3)</span>
+<span class="n">TELEMETRY</span><span class="p">(</span><span class="n">MyPlugin</span><span class="o">::</span><span class="n">LastErrorMessage</span><span class="p">,</span><span class="w"> </span><span class="n">string</span><span class="p">(</span><span class="s">"decode_error"</span><span class="p">));</span><span class="w">        </span><span class="c1">// (3)</span>
 </code></pre></div>
 <ol>
 <li>Emits an unsigned 32-bit integer value</li>
@@ -4736,8 +4736,8 @@ Enable the category (e.g. via MessageControl configuration / JSON-RPC) before ex
 <p>Module name is defined by each plugin in its <code>Module.h</code> file, and every plugin has a unique module name.</p>
 </div>
 <p>However, in logging, the module name is simply set as <code>Syslog</code>, and similarly, in warning reporting, the module name is set as <code>Reporting</code>. This provides a standardized module name for all logging and warning reporting messages.</p>
-<div class="highlight"><pre><span></span><code><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">MODULE_LOGGING</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_T</span><span class="p">(</span><span class="s">&quot;SysLog&quot;</span><span class="p">);</span>
-<span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">MODULE_REPORTING</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_T</span><span class="p">(</span><span class="s">&quot;Reporting&quot;</span><span class="p">);</span>
+<div class="highlight"><pre><span></span><code><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">MODULE_LOGGING</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_T</span><span class="p">(</span><span class="s">"SysLog"</span><span class="p">);</span>
+<span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">MODULE_REPORTING</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_T</span><span class="p">(</span><span class="s">"Reporting"</span><span class="p">);</span>
 </code></pre></div>
 <p>Choosing the appropriate category is vital when working with macros. The category can be described as a class that either formats the message string or best represents the nature of the message. While it is possible to create custom categories, which will be explained in the following paragraph, it is generally recommended to utilize the predefined categories available in Thunder to avoid redundancy.</p>
 <h5 id="tracing-default-categories">Tracing default categories</h5>
@@ -4886,11 +4886,11 @@ Enable the category (e.g. via MessageControl configuration / JSON-RPC) before ex
 <span class="w">            </span><span class="n">length</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">message</span><span class="o">-&gt;</span><span class="n">Serialize</span><span class="p">(</span><span class="n">serializationBuffer</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">length</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="n">serializationBuffer</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">length</span><span class="p">);</span>
 
 <span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">_dispatcher</span><span class="o">-&gt;</span><span class="n">PushData</span><span class="p">(</span><span class="n">length</span><span class="p">,</span><span class="w"> </span><span class="n">serializationBuffer</span><span class="p">)</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">ERROR_NONE</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">                </span><span class="n">TRACE_L1</span><span class="p">(</span><span class="s">&quot;Unable to push message data!&quot;</span><span class="p">);</span>
+<span class="w">                </span><span class="n">TRACE_L1</span><span class="p">(</span><span class="s">"Unable to push message data!"</span><span class="p">);</span>
 <span class="w">            </span><span class="p">}</span>
 <span class="w">        </span><span class="p">}</span>
 <span class="w">        </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="n">TRACE_L1</span><span class="p">(</span><span class="s">&quot;Unable to push data, buffer is too small!&quot;</span><span class="p">);</span>
+<span class="w">            </span><span class="n">TRACE_L1</span><span class="p">(</span><span class="s">"Unable to push data, buffer is too small!"</span><span class="p">);</span>
 <span class="w">        </span><span class="p">}</span>
 <span class="w">    </span><span class="p">}</span>
 </code></pre></div>
@@ -5031,7 +5031,7 @@ Enable the category (e.g. via MessageControl configuration / JSON-RPC) before ex
 <span class="w">    </span><span class="n">ASSERT</span><span class="p">(</span><span class="n">metadata</span><span class="p">.</span><span class="n">Type</span><span class="p">()</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">Messaging</span><span class="o">::</span><span class="n">Metadata</span><span class="o">::</span><span class="n">type</span><span class="o">::</span><span class="n">INVALID</span><span class="p">);</span>
 
 <span class="w">    </span><span class="n">string</span><span class="w"> </span><span class="n">output</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">metadata</span><span class="p">.</span><span class="n">ToString</span><span class="p">(</span><span class="n">_abbreviated</span><span class="p">).</span><span class="n">c_str</span><span class="p">()</span><span class="w"> </span><span class="o">+</span>
-<span class="w">                    </span><span class="n">Core</span><span class="o">::</span><span class="n">Format</span><span class="p">(</span><span class="s">&quot;%s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">text</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span>
+<span class="w">                    </span><span class="n">Core</span><span class="o">::</span><span class="n">Format</span><span class="p">(</span><span class="s">"%s</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span><span class="w"> </span><span class="n">text</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span>
 
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="p">(</span><span class="n">output</span><span class="p">);</span>
 <span class="p">}</span>
@@ -5044,14 +5044,14 @@ Enable the category (e.g. via MessageControl configuration / JSON-RPC) before ex
 
 <span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">abbreviate</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">abbreviate</span><span class="o">::</span><span class="n">ABBREVIATED</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="k">const</span><span class="w"> </span><span class="n">string</span><span class="w"> </span><span class="n">time</span><span class="p">(</span><span class="n">now</span><span class="p">.</span><span class="n">ToTimeOnly</span><span class="p">(</span><span class="nb">true</span><span class="p">));</span>
-<span class="w">        </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">Format</span><span class="p">(</span><span class="s">&quot;[%s]:[%s]:[%s]: &quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">Format</span><span class="p">(</span><span class="s">"[%s]:[%s]:[%s]: "</span><span class="p">,</span>
 <span class="w">                </span><span class="n">time</span><span class="p">.</span><span class="n">c_str</span><span class="p">(),</span>
 <span class="w">                </span><span class="n">Module</span><span class="p">().</span><span class="n">c_str</span><span class="p">(),</span>
 <span class="w">                </span><span class="n">Category</span><span class="p">().</span><span class="n">c_str</span><span class="p">());</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">    </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="k">const</span><span class="w"> </span><span class="n">string</span><span class="w"> </span><span class="n">time</span><span class="p">(</span><span class="n">now</span><span class="p">.</span><span class="n">ToRFC1123</span><span class="p">(</span><span class="nb">true</span><span class="p">));</span>
-<span class="w">        </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">Format</span><span class="p">(</span><span class="s">&quot;[%s]:[%s]:[%s:%u]:[%s]:[%s]: &quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">Format</span><span class="p">(</span><span class="s">"[%s]:[%s]:[%s:%u]:[%s]:[%s]: "</span><span class="p">,</span>
 <span class="w">                </span><span class="n">time</span><span class="p">.</span><span class="n">c_str</span><span class="p">(),</span>
 <span class="w">                </span><span class="n">Module</span><span class="p">().</span><span class="n">c_str</span><span class="p">(),</span>
 <span class="w">                </span><span class="n">Core</span><span class="o">::</span><span class="n">FileNameOnly</span><span class="p">(</span><span class="n">FileName</span><span class="p">().</span><span class="n">c_str</span><span class="p">()),</span>
@@ -5094,8 +5094,8 @@ Enable the category (e.g. via MessageControl configuration / JSON-RPC) before ex
 <h4 id="configuration_1">Configuration</h4>
 <p>The backend is configured through the <code>telemetry</code> field in <code>MessageControl.json</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;telemetry&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;component&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;MyComponent&quot;</span><span class="w"> </span><span class="c1">// (1)</span>
+<span class="w">    </span><span class="nt">"telemetry"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">"component"</span><span class="p">:</span><span class="w"> </span><span class="s2">"MyComponent"</span><span class="w"> </span><span class="c1">// (1)</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
@@ -5181,7 +5181,7 @@ Enable the category (e.g. via MessageControl configuration / JSON-RPC) before ex
 <span class="kt">uint32_t</span><span class="w"> </span><span class="nf">TelemetryBackend_Configure</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">configuration</span><span class="p">);</span>
 
 <span class="c1">// Called for every telemetry event. Return 0 on success.</span>
-<span class="c1">// - category: the name of the TELEMETRY category (e.g. &quot;SessionCount&quot;)</span>
+<span class="c1">// - category: the name of the TELEMETRY category (e.g. "SessionCount")</span>
 <span class="c1">// - module:   the module name of the plugin that emitted the event</span>
 <span class="c1">// - timestamp: microseconds since Unix epoch</span>
 <span class="c1">// - type:     the ValueType of the event</span>

@@ -3380,10 +3380,10 @@
 </div>
 <h2 id="trim-string">Trim string</h2>
 <p>Remove characters (e.g. whitespace, quotes) from the start or end of the string in-place.</p>
-<div class="highlight"><pre><span></span><code><span class="n">Core</span><span class="o">::</span><span class="n">TextFragment</span><span class="w"> </span><span class="n">sampleString</span><span class="p">(</span><span class="s">&quot;   Test string&quot;</span><span class="p">);</span>
-<span class="n">sampleString</span><span class="p">.</span><span class="n">TrimBegin</span><span class="p">(</span><span class="s">&quot; &quot;</span><span class="p">);</span><span class="w"> </span><span class="c1">// Here we specify we want to trim whitespace</span>
+<div class="highlight"><pre><span></span><code><span class="n">Core</span><span class="o">::</span><span class="n">TextFragment</span><span class="w"> </span><span class="n">sampleString</span><span class="p">(</span><span class="s">"   Test string"</span><span class="p">);</span>
+<span class="n">sampleString</span><span class="p">.</span><span class="n">TrimBegin</span><span class="p">(</span><span class="s">" "</span><span class="p">);</span><span class="w"> </span><span class="c1">// Here we specify we want to trim whitespace</span>
 
-<span class="n">printf</span><span class="p">(</span><span class="s">&quot;%s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">sampleString</span><span class="p">.</span><span class="n">Text</span><span class="p">().</span><span class="n">c_str</span><span class="p">());</span>
+<span class="n">printf</span><span class="p">(</span><span class="s">"%s</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span><span class="w"> </span><span class="n">sampleString</span><span class="p">.</span><span class="n">Text</span><span class="p">().</span><span class="n">c_str</span><span class="p">());</span>
 
 <span class="cm">/* Output:</span>
 <span class="cm">Test string</span>
@@ -3391,12 +3391,12 @@
 </code></pre></div>
 <h2 id="split-string-by-delimiter">Split string by delimiter</h2>
 <p>Split a given string on a specified delimiter and generate an iterator to loop over the segments.</p>
-<div class="highlight"><pre><span></span><code><span class="n">Core</span><span class="o">::</span><span class="n">TextFragment</span><span class="w"> </span><span class="n">sampleString</span><span class="p">(</span><span class="s">&quot;The;quick;brown;fox&quot;</span><span class="p">);</span>
+<div class="highlight"><pre><span></span><code><span class="n">Core</span><span class="o">::</span><span class="n">TextFragment</span><span class="w"> </span><span class="n">sampleString</span><span class="p">(</span><span class="s">"The;quick;brown;fox"</span><span class="p">);</span>
 
 <span class="c1">// Setting the second argument to true will automatically ignore empty segments</span>
-<span class="n">Core</span><span class="o">::</span><span class="n">TextSegmentIterator</span><span class="w"> </span><span class="n">segments</span><span class="p">(</span><span class="n">sampleString</span><span class="p">,</span><span class="w"> </span><span class="nb">true</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;;&quot;</span><span class="p">);</span>
+<span class="n">Core</span><span class="o">::</span><span class="n">TextSegmentIterator</span><span class="w"> </span><span class="n">segments</span><span class="p">(</span><span class="n">sampleString</span><span class="p">,</span><span class="w"> </span><span class="nb">true</span><span class="p">,</span><span class="w"> </span><span class="s">";"</span><span class="p">);</span>
 <span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="n">segments</span><span class="p">.</span><span class="n">Next</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
-<span class="w">       </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;%s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">segments</span><span class="p">.</span><span class="n">Current</span><span class="p">().</span><span class="n">Text</span><span class="p">().</span><span class="n">c_str</span><span class="p">());</span>
+<span class="w">       </span><span class="n">printf</span><span class="p">(</span><span class="s">"%s</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span><span class="w"> </span><span class="n">segments</span><span class="p">.</span><span class="n">Current</span><span class="p">().</span><span class="n">Text</span><span class="p">().</span><span class="n">c_str</span><span class="p">());</span>
 <span class="p">}</span>
 
 <span class="cm">/* Output:</span>
@@ -3408,8 +3408,8 @@
 </code></pre></div>
 <h2 id="formatting">Formatting</h2>
 <p>The <code>Core::Format</code> API can be used to format strings using printf syntax as a safe alternative to traditional C <code>sprintf</code>-style APIs.</p>
-<div class="highlight"><pre><span></span><code><span class="n">string</span><span class="w"> </span><span class="n">formattedValue</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">Format</span><span class="p">(</span><span class="n">_T</span><span class="p">(</span><span class="s">&quot;Hello %s&quot;</span><span class="p">),</span><span class="w"> </span><span class="s">&quot;World&quot;</span><span class="p">);</span>
-<span class="n">printf</span><span class="p">(</span><span class="s">&quot;%s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">formattedValue</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span>
+<div class="highlight"><pre><span></span><code><span class="n">string</span><span class="w"> </span><span class="n">formattedValue</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">Format</span><span class="p">(</span><span class="n">_T</span><span class="p">(</span><span class="s">"Hello %s"</span><span class="p">),</span><span class="w"> </span><span class="s">"World"</span><span class="p">);</span>
+<span class="n">printf</span><span class="p">(</span><span class="s">"%s</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span><span class="w"> </span><span class="n">formattedValue</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span>
 
 <span class="cm">/* Output:</span>
 <span class="cm">Hello World</span>
@@ -3420,7 +3420,7 @@
 <h3 id="numbers">Numbers</h3>
 <div class="highlight"><pre><span></span><code><span class="kt">uint32_t</span><span class="w"> </span><span class="n">number</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">32</span><span class="p">;</span>
 <span class="n">string</span><span class="w"> </span><span class="n">text</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">ToString</span><span class="p">(</span><span class="n">number</span><span class="p">);</span>
-<span class="n">printf</span><span class="p">(</span><span class="s">&quot;%s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">test</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span>
+<span class="n">printf</span><span class="p">(</span><span class="s">"%s</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span><span class="w"> </span><span class="n">test</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span>
 
 <span class="cm">/* Output:</span>
 <span class="cm">32</span>
@@ -3428,12 +3428,12 @@
 </code></pre></div>
 <h3 id="base64">Base64</h3>
 <p>Convert from string to base64
-<div class="highlight"><pre><span></span><code><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">sample</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;The quick brown fox jumped over the lazy dog&quot;</span><span class="p">;</span>
+<div class="highlight"><pre><span></span><code><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">sample</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"The quick brown fox jumped over the lazy dog"</span><span class="p">;</span>
 
 <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">base64result</span><span class="p">;</span>
 <span class="n">Core</span><span class="o">::</span><span class="n">ToString</span><span class="p">(</span><span class="k">reinterpret_cast</span><span class="o">&lt;</span><span class="k">const</span><span class="w"> </span><span class="kt">uint8_t</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">sample</span><span class="p">.</span><span class="n">c_str</span><span class="p">()),</span><span class="w"> </span><span class="n">sample</span><span class="p">.</span><span class="n">length</span><span class="p">(),</span><span class="w"> </span><span class="nb">true</span><span class="p">,</span><span class="w"> </span><span class="n">base64result</span><span class="p">);</span>
 
-<span class="n">printf</span><span class="p">(</span><span class="s">&quot;%s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">base64result</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span>
+<span class="n">printf</span><span class="p">(</span><span class="s">"%s</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span><span class="w"> </span><span class="n">base64result</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span>
 
 <span class="cm">/* </span>
 <span class="cm">Output:</span>
@@ -3441,7 +3441,7 @@
 <span class="cm">*/</span>
 </code></pre></div></p>
 <p>Convert from base64 to string</p>
-<div class="highlight"><pre><span></span><code><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">base64</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;VGhlIHF1aWNrIGJyb3duIGZveCBqdW1wZWQgb3ZlciB0aGUgbGF6eSBkb2c=&quot;</span><span class="p">;</span>
+<div class="highlight"><pre><span></span><code><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">base64</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"VGhlIHF1aWNrIGJyb3duIGZveCBqdW1wZWQgb3ZlciB0aGUgbGF6eSBkb2c="</span><span class="p">;</span>
 
 <span class="kt">uint8_t</span><span class="w"> </span><span class="n">buffer</span><span class="p">[</span><span class="mi">128</span><span class="p">];</span>
 <span class="kt">uint16_t</span><span class="w"> </span><span class="n">length</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="n">buffer</span><span class="p">);</span>
@@ -3449,7 +3449,7 @@
 <span class="n">Core</span><span class="o">::</span><span class="n">FromString</span><span class="p">(</span><span class="n">base64</span><span class="p">,</span><span class="w"> </span><span class="n">buffer</span><span class="p">,</span><span class="w"> </span><span class="n">length</span><span class="p">);</span>
 
 <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">reinterpret_cast</span><span class="o">&lt;</span><span class="kt">char</span><span class="w"> </span><span class="o">*&gt;</span><span class="p">(</span><span class="n">buffer</span><span class="p">);</span>
-<span class="n">printf</span><span class="p">(</span><span class="s">&quot;%s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">result</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span>
+<span class="n">printf</span><span class="p">(</span><span class="s">"%s</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span><span class="w"> </span><span class="n">result</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span>
 
 <span class="cm">/* </span>
 <span class="cm">Output:</span>
@@ -3462,7 +3462,7 @@
 
 <span class="n">string</span><span class="w"> </span><span class="n">dataString</span><span class="p">;</span>
 <span class="n">Core</span><span class="o">::</span><span class="n">ToHexString</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="n">data</span><span class="p">),</span><span class="w"> </span><span class="n">dataString</span><span class="p">);</span>
-<span class="n">printf</span><span class="p">(</span><span class="s">&quot;%s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">dataString</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span>
+<span class="n">printf</span><span class="p">(</span><span class="s">"%s</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span><span class="w"> </span><span class="n">dataString</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span>
 
 <span class="cm">/* Output:</span>
 <span class="cm">01ab2310</span>

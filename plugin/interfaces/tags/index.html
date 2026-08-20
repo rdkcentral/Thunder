@@ -4694,7 +4694,7 @@ At the moment the default behavior for the code generators is to have all iterat
 <span class="w">        </span><span class="n">S</span><span class="p">,</span><span class="w"> </span><span class="n">M</span><span class="p">,</span><span class="w"> </span><span class="n">L</span>
 <span class="w">    </span><span class="p">};</span>
 
-<span class="w">    </span><span class="n">Core</span><span class="o">::</span><span class="n">OptionalType</span><span class="o">&lt;</span><span class="n">string</span><span class="o">&gt;</span><span class="w"> </span><span class="n">Brand</span><span class="w"> </span><span class="cm">/* @default:&quot;unknown&quot; */</span><span class="p">;</span>
+<span class="w">    </span><span class="n">Core</span><span class="o">::</span><span class="n">OptionalType</span><span class="o">&lt;</span><span class="n">string</span><span class="o">&gt;</span><span class="w"> </span><span class="n">Brand</span><span class="w"> </span><span class="cm">/* @default:"unknown" */</span><span class="p">;</span>
 <span class="w">    </span><span class="n">Core</span><span class="o">::</span><span class="n">OptionalType</span><span class="o">&lt;</span><span class="n">sizetype</span><span class="o">&gt;</span><span class="w"> </span><span class="n">Size</span><span class="w"> </span><span class="cm">/* @default: M */</span><span class="p">;</span>
 <span class="p">};</span>
 
@@ -4893,7 +4893,7 @@ At the moment the default behavior for the code generators is to have all iterat
 <p>This tag is deprecated</p>
 </div>
 <p>When a JSON-RPC method is marked as a property (and therefore can only have a single parameter), allow providing that parameter value directly without enclosing it in a surrounding JSON object. For example:</p>
-<div class="highlight"><pre><span></span><code><span class="err">params</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;foobar&quot;</span>
+<div class="highlight"><pre><span></span><code><span class="err">params</span><span class="p">:</span><span class="w"> </span><span class="s2">"foobar"</span>
 </code></pre></div>
 <p>This should not be used for new interfaces as does not comply strictly with the JSON-RPC specification.</p>
 <hr/>
@@ -4904,7 +4904,7 @@ At the moment the default behavior for the code generators is to have all iterat
 <p>This tag is deprecated</p>
 </div>
 <p>When any JSON-RPC method/property/notification only has a single parameter, allow that parameter value to be directly provided without enclosing it in a surrounding JSON object. For example:</p>
-<div class="highlight"><pre><span></span><code><span class="err">params</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;foobar&quot;</span>
+<div class="highlight"><pre><span></span><code><span class="err">params</span><span class="p">:</span><span class="w"> </span><span class="s2">"foobar"</span>
 </code></pre></div>
 <p>This should not be used for new interfaces as does not comply strictly with the JSON-RPC specification.</p>
 <hr/>
@@ -4912,7 +4912,7 @@ At the moment the default behavior for the code generators is to have all iterat
 <h4 id="compliant">@compliant</h4>
 <p>All JSON-RPC methods, notifications and properties should strictly comply to the JSON-RPC specification - meaning all parameters must be enclosed in a surrounding object with the name of the parameter and value:</p>
 <div class="highlight"><pre><span></span><code><span class="err">params</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span>
-<span class="w">    </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w">  </span><span class="s2">&quot;abcd&quot;</span>
+<span class="w">    </span><span class="nt">"name"</span><span class="p">:</span><span class="w">  </span><span class="s2">"abcd"</span>
 <span class="p">}</span>
 </code></pre></div>
 <p>This is the default behaviour so does not normally need adding to interfaces (unless the generator is being run with non-standard options)</p>
@@ -4975,17 +4975,17 @@ The helper functions are defined in IIteratorType.h. </p>
 <p>This allows the status method to be called as normal to return all plugin configs:</p>
 <p><img alt="➡" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@16.0.1/assets/svg/27a1.svg" title=":arrow_right:" /> Request</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;jsonrpc&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2.0&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Controller.1.status&quot;</span>
+<span class="w">    </span><span class="nt">"jsonrpc"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2.0"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"method"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Controller.1.status"</span>
 <span class="p">}</span>
 </code></pre></div>
 <p>Or for a specific plugin callsign to be provided after an <code>@</code> symbol to retrieve just the status of that plugin</p>
 <p><img alt="➡" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@16.0.1/assets/svg/27a1.svg" title=":arrow_right:" /> Request
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;jsonrpc&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2.0&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Controller.1.status@TestPlugin&quot;</span>
+<span class="w">    </span><span class="nt">"jsonrpc"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2.0"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"method"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Controller.1.status@TestPlugin"</span>
 <span class="p">}</span>
 </code></pre></div></p>
 <hr/>
@@ -5164,9 +5164,9 @@ Incorrect or inconsistent usage will lead to an error raised by the code generat
 </code></pre></div>
 this is the returned JSON-RPC result for the Test function</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;jsonrpc&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2.0&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">42</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;result&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span>
+<span class="w">  </span><span class="nt">"jsonrpc"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2.0"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="mi">42</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"result"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span>
 <span class="p">}</span>
 </code></pre></div>
 <p>if we enable the wrapped tag for this interface:</p>
@@ -5180,10 +5180,10 @@ this is the returned JSON-RPC result for the Test function</p>
 </code></pre></div>
 <p>the returned JSON-RPC result for the Test function has changed to this:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;jsonrpc&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2.0&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">42</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;result&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;test&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span>
+<span class="w">  </span><span class="nt">"jsonrpc"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2.0"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="mi">42</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"result"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"test"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
@@ -5308,7 +5308,7 @@ this is the returned JSON-RPC result for the Test function</p>
 <p><a href="https://github.com/rdkcentral/ThunderInterfaces/blob/5fa166bd17c6b910696c6113c5520141bcdea07b/interfaces/IDolby.h#L65">IDolby.h</a> mentions a brief descrption using this tag.</p>
 <p>JsonGenerator.py will create a file JDolbyOutput.h. In that file the method AtmosMetadata. It adds that description.</p>
 <div class="highlight"><pre><span></span><code><span class="hll"><span class="c1">// Property: dolby_atmosmetadata - Atmos capabilities of Sink (r/o)</span>
-</span><span class="k">module</span><span class="p">.</span><span class="n">Register</span><span class="o">&lt;</span><span class="kt">void</span><span class="p">,</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">JSON</span><span class="o">::</span><span class="n">Boolean</span><span class="o">&gt;</span><span class="p">(</span><span class="n">_T</span><span class="p">(</span><span class="s">&quot;dolby_atmosmetadata&quot;</span><span class="p">),</span>
+</span><span class="k">module</span><span class="p">.</span><span class="n">Register</span><span class="o">&lt;</span><span class="kt">void</span><span class="p">,</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">JSON</span><span class="o">::</span><span class="n">Boolean</span><span class="o">&gt;</span><span class="p">(</span><span class="n">_T</span><span class="p">(</span><span class="s">"dolby_atmosmetadata"</span><span class="p">),</span>
 <span class="w">    </span><span class="p">[</span><span class="n">_destination</span><span class="p">](</span><span class="n">Core</span><span class="o">::</span><span class="n">JSON</span><span class="o">::</span><span class="n">Boolean</span><span class="o">&amp;</span><span class="w"> </span><span class="n">Result</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="kt">uint32_t</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">_errorCode</span><span class="p">;</span>
 

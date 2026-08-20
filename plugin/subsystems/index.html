@@ -3653,7 +3653,7 @@
 <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">InternetInfo</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">PluginHost</span><span class="o">::</span><span class="n">ISubSystem</span><span class="o">::</span><span class="n">IInternet</span><span class="w"> </span><span class="p">{</span>
 <span class="k">public</span><span class="o">:</span>
 <span class="w">    </span><span class="n">InternetInfo</span><span class="p">()</span>
-<span class="w">        </span><span class="o">:</span><span class="w"> </span><span class="n">_ipAddress</span><span class="p">(</span><span class="s">&quot;Unknown&quot;</span><span class="p">)</span>
+<span class="w">        </span><span class="o">:</span><span class="w"> </span><span class="n">_ipAddress</span><span class="p">(</span><span class="s">"Unknown"</span><span class="p">)</span>
 <span class="w">        </span><span class="p">,</span><span class="w"> </span><span class="n">_networkType</span><span class="p">(</span><span class="n">network_type</span><span class="o">::</span><span class="n">UNKNOWN</span><span class="p">)</span>
 <span class="w">    </span><span class="p">{</span>
 <span class="w">    </span><span class="p">}</span>
@@ -3718,7 +3718,7 @@
 <span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">subSystems</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="nb">nullptr</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">subSystems</span><span class="o">-&gt;</span><span class="n">IsActive</span><span class="p">(</span><span class="n">PluginHost</span><span class="o">::</span><span class="n">ISubSystem</span><span class="o">::</span><span class="n">INTERNET</span><span class="p">))</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="k">const</span><span class="w"> </span><span class="n">PluginHost</span><span class="o">::</span><span class="n">ISubSystem</span><span class="o">::</span><span class="n">IInternet</span><span class="o">*</span><span class="w"> </span><span class="n">internet</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">subSystems</span><span class="o">-&gt;</span><span class="n">Get</span><span class="o">&lt;</span><span class="n">PluginHost</span><span class="o">::</span><span class="n">ISubSystem</span><span class="o">::</span><span class="n">IInternet</span><span class="o">&gt;</span><span class="p">();</span>
-<span class="w">        </span><span class="n">TRACE</span><span class="p">(</span><span class="n">Trace</span><span class="o">::</span><span class="n">Information</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">_T</span><span class="p">(</span><span class="s">&quot;Public IP address is: %s&quot;</span><span class="p">),</span><span class="w"> </span><span class="n">internet</span><span class="o">-&gt;</span><span class="n">PublicIPAddress</span><span class="p">().</span><span class="n">c_str</span><span class="p">()));</span>
+<span class="w">        </span><span class="n">TRACE</span><span class="p">(</span><span class="n">Trace</span><span class="o">::</span><span class="n">Information</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">_T</span><span class="p">(</span><span class="s">"Public IP address is: %s"</span><span class="p">),</span><span class="w"> </span><span class="n">internet</span><span class="o">-&gt;</span><span class="n">PublicIPAddress</span><span class="p">().</span><span class="n">c_str</span><span class="p">()));</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
@@ -3726,27 +3726,27 @@
 <p>Controller provides a <code>Subsystems</code> method that can be used to obtain the current subsystem state over JSON or COM-RPC. JSON-RPC example:</p>
 <p><img alt="➡" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@16.0.1/assets/svg/27a1.svg" title=":arrow_right:" /> Request</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;jsonrpc&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2.0&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Controller.1.subsystems&quot;</span>
+<span class="w">    </span><span class="nt">"jsonrpc"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2.0"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"method"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Controller.1.subsystems"</span>
 <span class="p">}</span>
 </code></pre></div>
 <p><img alt="⬅" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@16.0.1/assets/svg/2b05.svg" title=":arrow_left:" /> Response</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;jsonrpc&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2.0&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;result&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="nt">"jsonrpc"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2.0"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"result"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">        </span><span class="p">{</span>
-<span class="w">            </span><span class="nt">&quot;subsystem&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Platform&quot;</span><span class="p">,</span>
-<span class="w">            </span><span class="nt">&quot;active&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+<span class="w">            </span><span class="nt">"subsystem"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Platform"</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">"active"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="p">{</span>
-<span class="w">            </span><span class="nt">&quot;subsystem&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Security&quot;</span><span class="p">,</span>
-<span class="w">            </span><span class="nt">&quot;active&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+<span class="w">            </span><span class="nt">"subsystem"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Security"</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">"active"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="p">{</span>
-<span class="w">            </span><span class="nt">&quot;subsystem&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Network&quot;</span><span class="p">,</span>
-<span class="w">            </span><span class="nt">&quot;active&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+<span class="w">            </span><span class="nt">"subsystem"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Network"</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">"active"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="err">...</span>
 <span class="w">    </span><span class="p">]</span>
@@ -3772,7 +3772,7 @@
 <span class="k">public</span><span class="o">:</span>
 <span class="w">    </span><span class="c1">// Some change </span>
 <span class="w">    </span><span class="kt">void</span><span class="w"> </span><span class="n">Updated</span><span class="p">()</span><span class="w"> </span><span class="k">override</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="n">TRACE</span><span class="p">(</span><span class="n">Trace</span><span class="o">::</span><span class="n">Information</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">_T</span><span class="p">(</span><span class="s">&quot;The state of a subsystem has changed&quot;</span><span class="p">)));</span>
+<span class="w">        </span><span class="n">TRACE</span><span class="p">(</span><span class="n">Trace</span><span class="o">::</span><span class="n">Information</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">_T</span><span class="p">(</span><span class="s">"The state of a subsystem has changed"</span><span class="p">)));</span>
 <span class="w">    </span><span class="p">}</span>
 
 <span class="w">    </span><span class="n">BEGIN_INTERFACE_MAP</span><span class="p">(</span><span class="n">Notification</span><span class="p">)</span>

@@ -3492,7 +3492,7 @@ Currently monitoring: 5 resources
 
 <span class="kt">uint32_t</span><span class="w"> </span><span class="n">index</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
 <span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="n">monitor</span><span class="p">.</span><span class="n">Info</span><span class="p">(</span><span class="n">index</span><span class="p">,</span><span class="w"> </span><span class="n">info</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nb">true</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="n">printf</span><span class="w"> </span><span class="p">(</span><span class="s">&quot;%s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">info</span><span class="p">.</span><span class="n">filename</span><span class="p">);</span>
+<span class="w">    </span><span class="n">printf</span><span class="w"> </span><span class="p">(</span><span class="s">"%s</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span><span class="w"> </span><span class="n">info</span><span class="p">.</span><span class="n">filename</span><span class="p">);</span>
 <span class="w">    </span><span class="n">index</span><span class="o">++</span><span class="p">;</span>
 <span class="p">}</span>
 </code></pre></div>
@@ -3595,7 +3595,7 @@ Currently monitoring: 5 resources
 <span class="w">    </span><span class="cm">/**</span>
 <span class="cm">     * This constructor is called each time a connection is established with the socket</span>
 <span class="cm">     *</span>
-<span class="cm">     * @param[in] connector     The client&#39;s connection ID</span>
+<span class="cm">     * @param[in] connector     The client's connection ID</span>
 <span class="cm">     * @param[in] remoteId      The socket the client is connected to</span>
 <span class="cm">     * @param[in] server        A pointer to the server the client is connected to</span>
 <span class="cm">    */</span>
@@ -3617,7 +3617,7 @@ Currently monitoring: 5 resources
 <span class="cm">    */</span>
 <span class="w">    </span><span class="kt">void</span><span class="w"> </span><span class="nf">Received</span><span class="p">(</span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">text</span><span class="p">)</span><span class="w"> </span><span class="k">override</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">        </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;Received data %s [size %d]</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">text</span><span class="p">.</span><span class="n">c_str</span><span class="p">(),</span><span class="w"> </span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">uint32_t</span><span class="o">&gt;</span><span class="p">(</span><span class="n">text</span><span class="p">.</span><span class="n">size</span><span class="p">()));</span>
+<span class="w">        </span><span class="n">printf</span><span class="p">(</span><span class="s">"Received data %s [size %d]</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span><span class="w"> </span><span class="n">text</span><span class="p">.</span><span class="n">c_str</span><span class="p">(),</span><span class="w"> </span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">uint32_t</span><span class="o">&gt;</span><span class="p">(</span><span class="n">text</span><span class="p">.</span><span class="n">size</span><span class="p">()));</span>
 <span class="w">    </span><span class="p">}</span>
 
 <span class="w">    </span><span class="cm">/**</span>
@@ -3628,7 +3628,7 @@ Currently monitoring: 5 resources
 <span class="cm">    */</span>
 <span class="w">    </span><span class="kt">void</span><span class="w"> </span><span class="nf">Send</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">text</span><span class="p">)</span><span class="w"> </span><span class="k">override</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">        </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;About to send data %s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">text</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span>
+<span class="w">        </span><span class="n">printf</span><span class="p">(</span><span class="s">"About to send data %s</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span><span class="w"> </span><span class="n">text</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span>
 <span class="w">    </span><span class="p">}</span>
 
 <span class="w">    </span><span class="cm">/**</span>
@@ -3637,12 +3637,12 @@ Currently monitoring: 5 resources
 <span class="w">    </span><span class="kt">void</span><span class="w"> </span><span class="nf">StateChange</span><span class="p">()</span><span class="w"> </span><span class="k">override</span>
 <span class="w">    </span><span class="p">{</span>
 <span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">IsOpen</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;State change occurred - connection is open</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+<span class="w">            </span><span class="n">printf</span><span class="p">(</span><span class="s">"State change occurred - connection is open</span><span class="se">\n</span><span class="s">"</span><span class="p">);</span>
 
-<span class="w">            </span><span class="c1">// We have an open connection, send the string &quot;Welcome&quot; back over the socket</span>
-<span class="w">            </span><span class="n">Submit</span><span class="p">(</span><span class="s">&quot;Welcome!&quot;</span><span class="p">);</span>
+<span class="w">            </span><span class="c1">// We have an open connection, send the string "Welcome" back over the socket</span>
+<span class="w">            </span><span class="n">Submit</span><span class="p">(</span><span class="s">"Welcome!"</span><span class="p">);</span>
 <span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;State change occurred - connection is closed</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+<span class="w">            </span><span class="n">printf</span><span class="p">(</span><span class="s">"State change occurred - connection is closed</span><span class="se">\n</span><span class="s">"</span><span class="p">);</span>
 <span class="w">        </span><span class="p">}</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">};</span>
@@ -3652,10 +3652,10 @@ Currently monitoring: 5 resources
 <p class="admonition-title">Hint</p>
 <p>For UNIX domain sockets, The <code>Core::NodeId</code> allows supplying a group and/or permissions in the constructor. For example:</p>
 <div class="highlight"><pre><span></span><code><span class="c1">// Create a socket at /tmp/sampleSocket with permissions set to 0755</span>
-<span class="n">Core</span><span class="o">::</span><span class="n">NodeId</span><span class="p">(</span><span class="s">&quot;/tmp/sampleSocket|0755&quot;</span><span class="p">);</span>
+<span class="n">Core</span><span class="o">::</span><span class="n">NodeId</span><span class="p">(</span><span class="s">"/tmp/sampleSocket|0755"</span><span class="p">);</span>
 
-<span class="c1">// Create a socket with the group set to &quot;administrator&quot; and permissions set to 0655</span>
-<span class="n">Core</span><span class="o">::</span><span class="n">NodeId</span><span class="p">(</span><span class="s">&quot;/tmp/sampleSocket|0655,administrator&quot;</span><span class="p">);</span>
+<span class="c1">// Create a socket with the group set to "administrator" and permissions set to 0655</span>
+<span class="n">Core</span><span class="o">::</span><span class="n">NodeId</span><span class="p">(</span><span class="s">"/tmp/sampleSocket|0655,administrator"</span><span class="p">);</span>
 </code></pre></div>
 </div>
 <p>When <code>Open()</code> is called, it will register our socket with the resource monitor instance to monitor the socket for data. The <code>Open()</code> method takes a timeout time in seconds. If you want to wait forever, then supply <code>Core::infinite</code> as the timeout.</p>
@@ -3673,7 +3673,7 @@ Currently monitoring: 5 resources
 <span class="normal">12</span>
 <span class="normal">13</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">argc</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="k">const</span><span class="o">*</span><span class="w"> </span><span class="n">argv</span><span class="p">[])</span>
 <span class="p">{</span>
-<span class="w">    </span><span class="n">Core</span><span class="o">::</span><span class="n">SocketServerType</span><span class="o">&lt;</span><span class="n">Connection</span><span class="o">&gt;</span><span class="w"> </span><span class="n">server</span><span class="p">(</span><span class="n">Core</span><span class="o">::</span><span class="n">NodeId</span><span class="p">(</span><span class="s">&quot;/tmp/testSocket&quot;</span><span class="p">));</span>
+<span class="w">    </span><span class="n">Core</span><span class="o">::</span><span class="n">SocketServerType</span><span class="o">&lt;</span><span class="n">Connection</span><span class="o">&gt;</span><span class="w"> </span><span class="n">server</span><span class="p">(</span><span class="n">Core</span><span class="o">::</span><span class="n">NodeId</span><span class="p">(</span><span class="s">"/tmp/testSocket"</span><span class="p">));</span>
 
 <span class="w">    </span><span class="n">server</span><span class="p">.</span><span class="n">Open</span><span class="p">(</span><span class="n">Core</span><span class="o">::</span><span class="n">infinite</span><span class="p">);</span>
 <span class="w">    </span><span class="n">SleepS</span><span class="p">(</span><span class="mi">30</span><span class="p">);</span>
@@ -3693,8 +3693,8 @@ Hello<span class="w"> </span>World
 <p>In the server logs, we see the connection being opened, followed by receiving the string "Hello World" sent by netcat. The program then exits, closing and deleting the socket.</p>
 <div class="highlight"><span class="filename">Server Log</span><pre><span></span><code>[Singleton.h:95](SingletonType)&lt;PID:71858&gt;&lt;TID:71858&gt;&lt;1&gt;: Singleton constructing ResourceMonitor
 State change occurred - connection is open
-About to send data &#39;Welcome!&#39;
-Received data &#39;Hello World&#39; [size 11]
+About to send data 'Welcome!'
+Received data 'Hello World' [size 11]
 [SocketPort.cpp:1260](Closed)&lt;PID:71858&gt;&lt;TID:71862&gt;&lt;1&gt;: CLOSED: Remove socket descriptor /tmp/testSocket
 State change occurred - connection is closed
 [Singleton.cpp:51](Dispose)&lt;PID:71858&gt;&lt;TID:71858&gt;&lt;1&gt;: Singleton destructing ResourceMonitor
@@ -3714,7 +3714,7 @@ State change occurred - connection is closed
 <span class="normal">12</span>
 <span class="normal">13</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">argc</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="k">const</span><span class="o">*</span><span class="w"> </span><span class="n">argv</span><span class="p">[])</span>
 <span class="p">{</span>
-<span class="hll"><span class="w">    </span><span class="n">Core</span><span class="o">::</span><span class="n">SocketServerType</span><span class="o">&lt;</span><span class="n">Connection</span><span class="o">&gt;</span><span class="w"> </span><span class="n">server</span><span class="p">(</span><span class="n">Core</span><span class="o">::</span><span class="n">NodeId</span><span class="p">(</span><span class="s">&quot;localhost:8080&quot;</span><span class="p">));</span>
+<span class="hll"><span class="w">    </span><span class="n">Core</span><span class="o">::</span><span class="n">SocketServerType</span><span class="o">&lt;</span><span class="n">Connection</span><span class="o">&gt;</span><span class="w"> </span><span class="n">server</span><span class="p">(</span><span class="n">Core</span><span class="o">::</span><span class="n">NodeId</span><span class="p">(</span><span class="s">"localhost:8080"</span><span class="p">));</span>
 </span>
 <span class="w">    </span><span class="n">server</span><span class="p">.</span><span class="n">Open</span><span class="p">(</span><span class="n">Core</span><span class="o">::</span><span class="n">infinite</span><span class="p">);</span>
 <span class="w">    </span><span class="n">SleepS</span><span class="p">(</span><span class="mi">30</span><span class="p">);</span>
@@ -3819,7 +3819,7 @@ Hello<span class="w"> </span>World
 <span class="cm">     */</span>
 <span class="w">    </span><span class="kt">void</span><span class="w"> </span><span class="nf">Received</span><span class="p">(</span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">text</span><span class="p">)</span><span class="w"> </span><span class="k">override</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">        </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;Received data &#39;%s&#39; [size %d]</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">text</span><span class="p">.</span><span class="n">c_str</span><span class="p">(),</span><span class="w"> </span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">uint32_t</span><span class="o">&gt;</span><span class="p">(</span><span class="n">text</span><span class="p">.</span><span class="n">size</span><span class="p">()));</span>
+<span class="w">        </span><span class="n">printf</span><span class="p">(</span><span class="s">"Received data '%s' [size %d]</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span><span class="w"> </span><span class="n">text</span><span class="p">.</span><span class="n">c_str</span><span class="p">(),</span><span class="w"> </span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">uint32_t</span><span class="o">&gt;</span><span class="p">(</span><span class="n">text</span><span class="p">.</span><span class="n">size</span><span class="p">()));</span>
 <span class="w">    </span><span class="p">}</span>
 
 <span class="w">    </span><span class="cm">/**</span>
@@ -3830,7 +3830,7 @@ Hello<span class="w"> </span>World
 <span class="cm">     */</span>
 <span class="w">    </span><span class="kt">void</span><span class="w"> </span><span class="nf">Send</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">text</span><span class="p">)</span><span class="w"> </span><span class="k">override</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">        </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;About to send data &#39;%s&#39;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">text</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span>
+<span class="w">        </span><span class="n">printf</span><span class="p">(</span><span class="s">"About to send data '%s'</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span><span class="w"> </span><span class="n">text</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span>
 <span class="w">    </span><span class="p">}</span>
 
 <span class="w">    </span><span class="cm">/**</span>
@@ -3839,9 +3839,9 @@ Hello<span class="w"> </span>World
 <span class="w">    </span><span class="kt">void</span><span class="w"> </span><span class="nf">StateChange</span><span class="p">()</span><span class="w"> </span><span class="k">override</span>
 <span class="w">    </span><span class="p">{</span>
 <span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">IsOpen</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;State change occurred - connection is open</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+<span class="w">            </span><span class="n">printf</span><span class="p">(</span><span class="s">"State change occurred - connection is open</span><span class="se">\n</span><span class="s">"</span><span class="p">);</span>
 <span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;State change occurred - connection is closed</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+<span class="w">            </span><span class="n">printf</span><span class="p">(</span><span class="s">"State change occurred - connection is closed</span><span class="se">\n</span><span class="s">"</span><span class="p">);</span>
 <span class="w">        </span><span class="p">}</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">};</span>
@@ -3866,10 +3866,10 @@ Hello<span class="w"> </span>World
 <span class="p">{</span>
 <span class="w">    </span><span class="p">{</span><span class="w">   </span>
 <span class="w">        </span><span class="c1">// Create our connection - will attempt to connect to the socket on construction</span>
-<span class="w">        </span><span class="n">Connection</span><span class="w"> </span><span class="n">socketConnection</span><span class="p">(</span><span class="n">Core</span><span class="o">::</span><span class="n">NodeId</span><span class="p">(</span><span class="s">&quot;/tmp/otherSocket&quot;</span><span class="p">));</span>
+<span class="w">        </span><span class="n">Connection</span><span class="w"> </span><span class="n">socketConnection</span><span class="p">(</span><span class="n">Core</span><span class="o">::</span><span class="n">NodeId</span><span class="p">(</span><span class="s">"/tmp/otherSocket"</span><span class="p">));</span>
 
 <span class="w">        </span><span class="c1">// Send a message over the socket</span>
-<span class="w">        </span><span class="n">socketConnection</span><span class="p">.</span><span class="n">Submit</span><span class="p">(</span><span class="s">&quot;Hello from Thunder!&quot;</span><span class="p">);</span>
+<span class="w">        </span><span class="n">socketConnection</span><span class="p">.</span><span class="n">Submit</span><span class="p">(</span><span class="s">"Hello from Thunder!"</span><span class="p">);</span>
 <span class="w">        </span><span class="n">SleepS</span><span class="p">(</span><span class="mi">30</span><span class="p">);</span>
 <span class="w">    </span><span class="p">}</span>
 
@@ -3886,7 +3886,7 @@ Hello from Thunder!
 <div class="highlight"><span class="filename">client logs</span><pre><span></span><code>[Singleton.h:95](SingletonType)&lt;PID:81313&gt;&lt;TID:81313&gt;&lt;1&gt;: Singleton constructing ResourceMonitor
 Successfully connected to /tmp/otherSocket
 State change occurred - connection is open
-About to send data &#39;Hello from Thunder!&#39;
+About to send data 'Hello from Thunder!'
 State change occurred - connection is closed
 [Singleton.cpp:51](Dispose)&lt;PID:81313&gt;&lt;TID:81313&gt;&lt;1&gt;: Singleton destructing ResourceMonitor
 </code></pre></div>
@@ -3967,16 +3967,16 @@ State change occurred - connection is closed
 
 <span class="w">        </span><span class="c1">// Convert incoming data to a string for this example</span>
 <span class="w">        </span><span class="n">string</span><span class="w"> </span><span class="n">dataString</span><span class="p">(</span><span class="k">reinterpret_cast</span><span class="o">&lt;</span><span class="kt">char</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">dataFrame</span><span class="p">),</span><span class="w"> </span><span class="n">receivedSize</span><span class="p">);</span>
-<span class="w">        </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;%s&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">dataString</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span>
+<span class="w">        </span><span class="n">printf</span><span class="p">(</span><span class="s">"%s"</span><span class="p">,</span><span class="w"> </span><span class="n">dataString</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span>
 <span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">length</span><span class="p">;</span>
 <span class="w">    </span><span class="p">}</span>
 
 <span class="w">    </span><span class="kt">void</span><span class="w"> </span><span class="nf">StateChange</span><span class="p">()</span><span class="w"> </span><span class="k">override</span>
 <span class="w">    </span><span class="p">{</span>
 <span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">IsOpen</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;Socket is open</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+<span class="w">            </span><span class="n">printf</span><span class="p">(</span><span class="s">"Socket is open</span><span class="se">\n</span><span class="s">"</span><span class="p">);</span>
 <span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;Socket is closed</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+<span class="w">            </span><span class="n">printf</span><span class="p">(</span><span class="s">"Socket is closed</span><span class="se">\n</span><span class="s">"</span><span class="p">);</span>
 <span class="w">        </span><span class="p">}</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">};</span>
@@ -3995,7 +3995,7 @@ State change occurred - connection is closed
 <span class="normal">11</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">argc</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="k">const</span><span class="o">*</span><span class="w"> </span><span class="n">argv</span><span class="p">[])</span>
 <span class="p">{</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">        </span><span class="n">SocketReader</span><span class="w"> </span><span class="n">monitor</span><span class="p">(</span><span class="n">Core</span><span class="o">::</span><span class="n">NodeId</span><span class="p">(</span><span class="s">&quot;/tmp/testDgramSocket&quot;</span><span class="p">));</span>
+<span class="w">        </span><span class="n">SocketReader</span><span class="w"> </span><span class="n">monitor</span><span class="p">(</span><span class="n">Core</span><span class="o">::</span><span class="n">NodeId</span><span class="p">(</span><span class="s">"/tmp/testDgramSocket"</span><span class="p">));</span>
 <span class="w">        </span><span class="n">SleepS</span><span class="p">(</span><span class="mi">10</span><span class="p">);</span>
 <span class="w">    </span><span class="p">}</span>
 
@@ -4070,9 +4070,9 @@ State change occurred - connection is closed
 <span class="w">    </span><span class="p">{</span>
 <span class="w">        </span><span class="c1">// Calling open will register the port with resource monitor</span>
 <span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">Open</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">ERROR_NONE</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;Failed to open serial port @ &#39;%s&#39;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">deviceName</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span>
+<span class="w">            </span><span class="n">printf</span><span class="p">(</span><span class="s">"Failed to open serial port @ '%s'</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span><span class="w"> </span><span class="n">deviceName</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span>
 <span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;Opened serial port @ &#39;%s&#39;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">deviceName</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span>
+<span class="w">            </span><span class="n">printf</span><span class="p">(</span><span class="s">"Opened serial port @ '%s'</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span><span class="w"> </span><span class="n">deviceName</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span>
 <span class="w">        </span><span class="p">}</span>
 <span class="w">    </span><span class="p">}</span>
 
@@ -4096,7 +4096,7 @@ State change occurred - connection is closed
 <span class="w">    </span><span class="p">{</span>
 <span class="w">        </span><span class="c1">// Convert incoming data to a string for this example</span>
 <span class="w">        </span><span class="n">string</span><span class="w"> </span><span class="nf">dataString</span><span class="p">(</span><span class="k">reinterpret_cast</span><span class="o">&lt;</span><span class="kt">char</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">dataFrame</span><span class="p">),</span><span class="w"> </span><span class="n">receivedSize</span><span class="p">);</span>
-<span class="w">        </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;%s&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">dataString</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span>
+<span class="w">        </span><span class="n">printf</span><span class="p">(</span><span class="s">"%s"</span><span class="p">,</span><span class="w"> </span><span class="n">dataString</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span>
 <span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
 <span class="w">    </span><span class="p">}</span>
 
@@ -4136,7 +4136,7 @@ State change occurred - connection is closed
 <span class="w">    </span><span class="n">Core</span><span class="o">::</span><span class="n">SerialPort</span><span class="o">::</span><span class="n">DataBits</span><span class="w"> </span><span class="n">dataBits</span><span class="p">(</span><span class="n">Core</span><span class="o">::</span><span class="n">SerialPort</span><span class="o">::</span><span class="n">DataBits</span><span class="o">::</span><span class="n">BITS_8</span><span class="p">);</span>
 <span class="w">    </span><span class="n">Core</span><span class="o">::</span><span class="n">SerialPort</span><span class="o">::</span><span class="n">StopBits</span><span class="w"> </span><span class="n">stopBits</span><span class="p">(</span><span class="n">Core</span><span class="o">::</span><span class="n">SerialPort</span><span class="o">::</span><span class="n">StopBits</span><span class="o">::</span><span class="n">BITS_1</span><span class="p">);</span>
 <span class="w">    </span><span class="n">Core</span><span class="o">::</span><span class="n">SerialPort</span><span class="o">::</span><span class="n">FlowControl</span><span class="w"> </span><span class="n">flowControl</span><span class="p">(</span><span class="n">Core</span><span class="o">::</span><span class="n">SerialPort</span><span class="o">::</span><span class="n">FlowControl</span><span class="o">::</span><span class="n">OFF</span><span class="p">);</span>
-<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="n">string</span><span class="w"> </span><span class="n">port</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;/dev/ttyUSB1&quot;</span><span class="p">;</span>
+<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="n">string</span><span class="w"> </span><span class="n">port</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"/dev/ttyUSB1"</span><span class="p">;</span>
 
 <span class="w">    </span><span class="p">{</span>
 <span class="w">        </span><span class="n">SerialPortMonitor</span><span class="w"> </span><span class="n">serialPort</span><span class="p">(</span><span class="n">port</span><span class="p">,</span><span class="w"> </span><span class="n">baudRate</span><span class="p">,</span><span class="w"> </span><span class="n">parity</span><span class="p">,</span><span class="w"> </span><span class="n">dataBits</span><span class="p">,</span><span class="w"> </span><span class="n">stopBits</span><span class="p">,</span><span class="w"> </span><span class="n">flowControl</span><span class="p">,</span><span class="w"> </span><span class="mi">1024</span><span class="p">);</span>

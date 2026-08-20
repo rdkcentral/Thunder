@@ -4279,16 +4279,16 @@
 </tbody>
 </table>
 <h4 id="json-rpc-invocation-path">JSON-RPC invocation path</h4>
-<div class="highlight"><pre><span></span><code>Invoke(&quot;Callsign.method&quot;, params, response)
+<div class="highlight"><pre><span></span><code>Invoke("Callsign.method", params, response)
     ├── Core::JSONRPC::Message::Callsign()  → callsign
     ├── Core::JSONRPC::Message::Method()    → methodName
     ├── Services().FromIdentifier()         → IShell proxy
     ├── shell-&gt;QueryInterface&lt;IDispatcher&gt;()
-    └── dispatcher-&gt;Invoke(0, 0, &quot;&quot;, method, params, response)
+    └── dispatcher-&gt;Invoke(0, 0, "", method, params, response)
 </code></pre></div>
 <h4 id="com-rpc-interface-access">COM-RPC interface access</h4>
-<div class="highlight"><pre><span></span><code>QueryInterfaceByCallsign&lt;Exchange::IMyInterface&gt;(&quot;Callsign&quot;)
-    ├── GetShell(&quot;Callsign&quot;)               → IShell proxy
+<div class="highlight"><pre><span></span><code>QueryInterfaceByCallsign&lt;Exchange::IMyInterface&gt;("Callsign")
+    ├── GetShell("Callsign")               → IShell proxy
     └── shell-&gt;QueryInterface&lt;T&gt;()         → interface pointer
 </code></pre></div>
 <p>Caller must <code>Release()</code> the returned pointer when done.</p>
@@ -4384,16 +4384,16 @@ cmake<span class="w"> </span>--build<span class="w"> </span>build/Thunder<span c
 <span class="w">    </span><span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">SetUpTestSuite</span><span class="p">()</span>
 <span class="w">    </span><span class="p">{</span>
 <span class="w">        </span><span class="n">TestCore</span><span class="o">::</span><span class="n">ThunderTestRuntime</span><span class="o">::</span><span class="n">PluginConfig</span><span class="w"> </span><span class="n">cfg</span><span class="p">;</span>
-<span class="w">        </span><span class="n">cfg</span><span class="p">.</span><span class="n">Callsign</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;MyPlugin&quot;</span><span class="p">;</span>
-<span class="w">        </span><span class="n">cfg</span><span class="p">.</span><span class="n">Locator</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;libThunderMyPlugin.so&quot;</span><span class="p">;</span>
-<span class="w">        </span><span class="n">cfg</span><span class="p">.</span><span class="n">ClassName</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;MyPlugin&quot;</span><span class="p">;</span>
+<span class="w">        </span><span class="n">cfg</span><span class="p">.</span><span class="n">Callsign</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="s">"MyPlugin"</span><span class="p">;</span>
+<span class="w">        </span><span class="n">cfg</span><span class="p">.</span><span class="n">Locator</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="s">"libThunderMyPlugin.so"</span><span class="p">;</span>
+<span class="w">        </span><span class="n">cfg</span><span class="p">.</span><span class="n">ClassName</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"MyPlugin"</span><span class="p">;</span>
 <span class="w">        </span><span class="n">cfg</span><span class="p">.</span><span class="n">StartMode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">PluginHost</span><span class="o">::</span><span class="n">IShell</span><span class="o">::</span><span class="n">startmode</span><span class="o">::</span><span class="n">ACTIVATED</span><span class="p">;</span>
 
 <span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">TestCore</span><span class="o">::</span><span class="n">ThunderTestRuntime</span><span class="o">::</span><span class="n">PluginConfig</span><span class="o">&gt;</span><span class="w"> </span><span class="n">plugins</span><span class="p">;</span>
 <span class="w">        </span><span class="n">plugins</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="n">cfg</span><span class="p">);</span>
 
 <span class="w">        </span><span class="n">ASSERT_EQ</span><span class="p">(</span><span class="n">Core</span><span class="o">::</span><span class="n">ERROR_NONE</span><span class="p">,</span>
-<span class="w">            </span><span class="n">_runtime</span><span class="p">.</span><span class="n">Initialize</span><span class="p">(</span><span class="n">plugins</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/path/to/plugins&quot;</span><span class="p">));</span>
+<span class="w">            </span><span class="n">_runtime</span><span class="p">.</span><span class="n">Initialize</span><span class="p">(</span><span class="n">plugins</span><span class="p">,</span><span class="w"> </span><span class="s">"/path/to/plugins"</span><span class="p">));</span>
 <span class="w">    </span><span class="p">}</span>
 
 <span class="w">    </span><span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">TearDownTestSuite</span><span class="p">()</span>
@@ -4409,19 +4409,19 @@ cmake<span class="w"> </span>--build<span class="w"> </span>build/Thunder<span c
 <span class="p">{</span>
 <span class="w">    </span><span class="n">string</span><span class="w"> </span><span class="n">response</span><span class="p">;</span>
 <span class="w">    </span><span class="n">EXPECT_EQ</span><span class="p">(</span><span class="n">Core</span><span class="o">::</span><span class="n">ERROR_NONE</span><span class="p">,</span>
-<span class="w">        </span><span class="n">_runtime</span><span class="p">.</span><span class="n">Invoke</span><span class="p">(</span><span class="s">&quot;MyPlugin.echo&quot;</span><span class="p">,</span><span class="w"> </span><span class="sa">R</span><span class="s">&quot;</span><span class="dl">(</span><span class="s">{&quot;input&quot;:&quot;hello&quot;}</span><span class="dl">)</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">response</span><span class="p">));</span>
-<span class="w">    </span><span class="n">EXPECT_NE</span><span class="p">(</span><span class="n">response</span><span class="p">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;hello&quot;</span><span class="p">),</span><span class="w"> </span><span class="n">string</span><span class="o">::</span><span class="n">npos</span><span class="p">);</span>
+<span class="w">        </span><span class="n">_runtime</span><span class="p">.</span><span class="n">Invoke</span><span class="p">(</span><span class="s">"MyPlugin.echo"</span><span class="p">,</span><span class="w"> </span><span class="sa">R</span><span class="s">"</span><span class="dl">(</span><span class="s">{"input":"hello"}</span><span class="dl">)</span><span class="s">"</span><span class="p">,</span><span class="w"> </span><span class="n">response</span><span class="p">));</span>
+<span class="w">    </span><span class="n">EXPECT_NE</span><span class="p">(</span><span class="n">response</span><span class="p">.</span><span class="n">find</span><span class="p">(</span><span class="s">"hello"</span><span class="p">),</span><span class="w"> </span><span class="n">string</span><span class="o">::</span><span class="n">npos</span><span class="p">);</span>
 <span class="p">}</span>
 </code></pre></div>
 <h4 id="4-json-rpc-via-jsonrpclink">4. JSON-RPC via <code>JSONRPCLink</code></h4>
 <div class="highlight"><pre><span></span><code><span class="n">TEST_F</span><span class="p">(</span><span class="n">MyPluginTest</span><span class="p">,</span><span class="w"> </span><span class="n">JsonRpcViaLink</span><span class="p">)</span>
 <span class="p">{</span>
-<span class="w">    </span><span class="k">auto</span><span class="o">*</span><span class="w"> </span><span class="n">link</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_runtime</span><span class="p">.</span><span class="n">CreateJSONRPCLink</span><span class="p">(</span><span class="s">&quot;MyPlugin&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="k">auto</span><span class="o">*</span><span class="w"> </span><span class="n">link</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_runtime</span><span class="p">.</span><span class="n">CreateJSONRPCLink</span><span class="p">(</span><span class="s">"MyPlugin"</span><span class="p">);</span>
 <span class="w">    </span><span class="n">ASSERT_NE</span><span class="p">(</span><span class="n">link</span><span class="p">,</span><span class="w"> </span><span class="nb">nullptr</span><span class="p">);</span>
 
 <span class="w">    </span><span class="n">string</span><span class="w"> </span><span class="n">response</span><span class="p">;</span>
 <span class="w">    </span><span class="n">EXPECT_EQ</span><span class="p">(</span><span class="n">Core</span><span class="o">::</span><span class="n">ERROR_NONE</span><span class="p">,</span>
-<span class="w">        </span><span class="n">link</span><span class="o">-&gt;</span><span class="n">Invoke</span><span class="p">(</span><span class="s">&quot;echo&quot;</span><span class="p">,</span><span class="w"> </span><span class="sa">R</span><span class="s">&quot;</span><span class="dl">(</span><span class="s">{&quot;input&quot;:&quot;hello&quot;}</span><span class="dl">)</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">response</span><span class="p">));</span>
+<span class="w">        </span><span class="n">link</span><span class="o">-&gt;</span><span class="n">Invoke</span><span class="p">(</span><span class="s">"echo"</span><span class="p">,</span><span class="w"> </span><span class="sa">R</span><span class="s">"</span><span class="dl">(</span><span class="s">{"input":"hello"}</span><span class="dl">)</span><span class="s">"</span><span class="p">,</span><span class="w"> </span><span class="n">response</span><span class="p">));</span>
 
 <span class="w">    </span><span class="n">link</span><span class="o">-&gt;</span><span class="n">Release</span><span class="p">();</span>
 <span class="p">}</span>
@@ -4430,7 +4430,7 @@ cmake<span class="w"> </span>--build<span class="w"> </span>build/Thunder<span c
 <p>Events do not require a dedicated "trigger" method. Any plugin operation can fire an event internally as a side-effect. Subscribe before calling the operation, then wait for the callback to arrive.</p>
 <div class="highlight"><pre><span></span><code><span class="n">TEST_F</span><span class="p">(</span><span class="n">MyPluginTest</span><span class="p">,</span><span class="w"> </span><span class="n">JSONRPC_OperationTriggersEvent</span><span class="p">)</span>
 <span class="p">{</span>
-<span class="w">    </span><span class="k">auto</span><span class="o">*</span><span class="w"> </span><span class="n">link</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_runtime</span><span class="p">.</span><span class="n">CreateJSONRPCLink</span><span class="p">(</span><span class="s">&quot;MyPlugin&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="k">auto</span><span class="o">*</span><span class="w"> </span><span class="n">link</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_runtime</span><span class="p">.</span><span class="n">CreateJSONRPCLink</span><span class="p">(</span><span class="s">"MyPlugin"</span><span class="p">);</span>
 <span class="w">    </span><span class="n">ASSERT_NE</span><span class="p">(</span><span class="n">link</span><span class="p">,</span><span class="w"> </span><span class="nb">nullptr</span><span class="p">);</span>
 
 <span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="w"> </span><span class="n">mtx</span><span class="p">;</span>
@@ -4438,7 +4438,7 @@ cmake<span class="w"> </span>--build<span class="w"> </span>build/Thunder<span c
 <span class="w">    </span><span class="n">string</span><span class="w"> </span><span class="n">receivedParams</span><span class="p">;</span>
 <span class="w">    </span><span class="kt">bool</span><span class="w"> </span><span class="n">fired</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span>
 
-<span class="w">    </span><span class="n">link</span><span class="o">-&gt;</span><span class="n">Subscribe</span><span class="p">(</span><span class="s">&quot;onStateChanged&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="o">&amp;</span><span class="p">](</span><span class="k">const</span><span class="w"> </span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="cm">/*designator*/</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="cm">/*index*/</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">params</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">link</span><span class="o">-&gt;</span><span class="n">Subscribe</span><span class="p">(</span><span class="s">"onStateChanged"</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="o">&amp;</span><span class="p">](</span><span class="k">const</span><span class="w"> </span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="cm">/*designator*/</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="cm">/*index*/</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">params</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">lock_guard</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="o">&gt;</span><span class="w"> </span><span class="n">lock</span><span class="p">(</span><span class="n">mtx</span><span class="p">);</span>
 <span class="w">        </span><span class="n">receivedParams</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">params</span><span class="p">;</span>
 <span class="w">        </span><span class="n">fired</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span>
@@ -4446,7 +4446,7 @@ cmake<span class="w"> </span>--build<span class="w"> </span>build/Thunder<span c
 <span class="w">    </span><span class="p">});</span>
 
 <span class="w">    </span><span class="n">string</span><span class="w"> </span><span class="n">response</span><span class="p">;</span>
-<span class="w">    </span><span class="n">link</span><span class="o">-&gt;</span><span class="n">Invoke</span><span class="p">(</span><span class="s">&quot;performAction&quot;</span><span class="p">,</span><span class="w"> </span><span class="sa">R</span><span class="s">&quot;</span><span class="dl">(</span><span class="s">{&quot;param&quot;:&quot;value&quot;}</span><span class="dl">)</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">response</span><span class="p">);</span>
+<span class="w">    </span><span class="n">link</span><span class="o">-&gt;</span><span class="n">Invoke</span><span class="p">(</span><span class="s">"performAction"</span><span class="p">,</span><span class="w"> </span><span class="sa">R</span><span class="s">"</span><span class="dl">(</span><span class="s">{"param":"value"}</span><span class="dl">)</span><span class="s">"</span><span class="p">,</span><span class="w"> </span><span class="n">response</span><span class="p">);</span>
 
 <span class="w">    </span><span class="p">{</span>
 <span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">unique_lock</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="o">&gt;</span><span class="w"> </span><span class="n">lock</span><span class="p">(</span><span class="n">mtx</span><span class="p">);</span>
@@ -4455,7 +4455,7 @@ cmake<span class="w"> </span>--build<span class="w"> </span>build/Thunder<span c
 <span class="w">        </span><span class="n">EXPECT_FALSE</span><span class="p">(</span><span class="n">receivedParams</span><span class="p">.</span><span class="n">empty</span><span class="p">());</span>
 <span class="w">    </span><span class="p">}</span>
 
-<span class="w">    </span><span class="n">link</span><span class="o">-&gt;</span><span class="n">Unsubscribe</span><span class="p">(</span><span class="s">&quot;onStateChanged&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="n">link</span><span class="o">-&gt;</span><span class="n">Unsubscribe</span><span class="p">(</span><span class="s">"onStateChanged"</span><span class="p">);</span>
 <span class="w">    </span><span class="n">link</span><span class="o">-&gt;</span><span class="n">Release</span><span class="p">();</span>
 <span class="p">}</span>
 </code></pre></div>
@@ -4463,11 +4463,11 @@ cmake<span class="w"> </span>--build<span class="w"> </span>build/Thunder<span c
 <div class="highlight"><pre><span></span><code><span class="n">TEST_F</span><span class="p">(</span><span class="n">MyPluginTest</span><span class="p">,</span><span class="w"> </span><span class="n">ComRpc</span><span class="p">)</span>
 <span class="p">{</span>
 <span class="w">    </span><span class="n">Exchange</span><span class="o">::</span><span class="n">IMyInterface</span><span class="o">*</span><span class="w"> </span><span class="n">iface</span><span class="w"> </span><span class="o">=</span>
-<span class="w">        </span><span class="n">_runtime</span><span class="p">.</span><span class="n">QueryInterfaceByCallsign</span><span class="o">&lt;</span><span class="n">Exchange</span><span class="o">::</span><span class="n">IMyInterface</span><span class="o">&gt;</span><span class="p">(</span><span class="s">&quot;MyPlugin&quot;</span><span class="p">);</span>
+<span class="w">        </span><span class="n">_runtime</span><span class="p">.</span><span class="n">QueryInterfaceByCallsign</span><span class="o">&lt;</span><span class="n">Exchange</span><span class="o">::</span><span class="n">IMyInterface</span><span class="o">&gt;</span><span class="p">(</span><span class="s">"MyPlugin"</span><span class="p">);</span>
 <span class="w">    </span><span class="n">ASSERT_NE</span><span class="p">(</span><span class="n">iface</span><span class="p">,</span><span class="w"> </span><span class="nb">nullptr</span><span class="p">);</span>
 
 <span class="w">    </span><span class="n">string</span><span class="w"> </span><span class="n">result</span><span class="p">;</span>
-<span class="w">    </span><span class="n">EXPECT_EQ</span><span class="p">(</span><span class="n">Core</span><span class="o">::</span><span class="n">ERROR_NONE</span><span class="p">,</span><span class="w"> </span><span class="n">iface</span><span class="o">-&gt;</span><span class="n">SomeMethod</span><span class="p">(</span><span class="s">&quot;input&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">result</span><span class="p">));</span>
+<span class="w">    </span><span class="n">EXPECT_EQ</span><span class="p">(</span><span class="n">Core</span><span class="o">::</span><span class="n">ERROR_NONE</span><span class="p">,</span><span class="w"> </span><span class="n">iface</span><span class="o">-&gt;</span><span class="n">SomeMethod</span><span class="p">(</span><span class="s">"input"</span><span class="p">,</span><span class="w"> </span><span class="n">result</span><span class="p">));</span>
 
 <span class="w">    </span><span class="n">iface</span><span class="o">-&gt;</span><span class="n">Release</span><span class="p">();</span>
 <span class="p">}</span>
@@ -4516,16 +4516,16 @@ cmake<span class="w"> </span>--build<span class="w"> </span>build/Thunder<span c
 
 <span class="n">TEST_F</span><span class="p">(</span><span class="n">MyPluginTest</span><span class="p">,</span><span class="w"> </span><span class="n">COMRPC_OperationTriggersNotification</span><span class="p">)</span>
 <span class="p">{</span>
-<span class="w">    </span><span class="k">auto</span><span class="o">*</span><span class="w"> </span><span class="n">iface</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_runtime</span><span class="p">.</span><span class="n">QueryInterfaceByCallsign</span><span class="o">&lt;</span><span class="n">Exchange</span><span class="o">::</span><span class="n">IMyInterface</span><span class="o">&gt;</span><span class="p">(</span><span class="s">&quot;MyPlugin&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="k">auto</span><span class="o">*</span><span class="w"> </span><span class="n">iface</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_runtime</span><span class="p">.</span><span class="n">QueryInterfaceByCallsign</span><span class="o">&lt;</span><span class="n">Exchange</span><span class="o">::</span><span class="n">IMyInterface</span><span class="o">&gt;</span><span class="p">(</span><span class="s">"MyPlugin"</span><span class="p">);</span>
 <span class="w">    </span><span class="n">ASSERT_NE</span><span class="p">(</span><span class="n">iface</span><span class="p">,</span><span class="w"> </span><span class="nb">nullptr</span><span class="p">);</span>
 
 <span class="w">    </span><span class="n">Core</span><span class="o">::</span><span class="n">SinkType</span><span class="o">&lt;</span><span class="n">MySink</span><span class="o">&gt;</span><span class="w"> </span><span class="n">sink</span><span class="p">;</span>
 <span class="w">    </span><span class="n">iface</span><span class="o">-&gt;</span><span class="n">Register</span><span class="p">(</span><span class="o">&amp;</span><span class="n">sink</span><span class="p">);</span>
 
-<span class="w">    </span><span class="n">EXPECT_EQ</span><span class="p">(</span><span class="n">Core</span><span class="o">::</span><span class="n">ERROR_NONE</span><span class="p">,</span><span class="w"> </span><span class="n">iface</span><span class="o">-&gt;</span><span class="n">PerformAction</span><span class="p">(</span><span class="s">&quot;active&quot;</span><span class="p">));</span>
+<span class="w">    </span><span class="n">EXPECT_EQ</span><span class="p">(</span><span class="n">Core</span><span class="o">::</span><span class="n">ERROR_NONE</span><span class="p">,</span><span class="w"> </span><span class="n">iface</span><span class="o">-&gt;</span><span class="n">PerformAction</span><span class="p">(</span><span class="s">"active"</span><span class="p">));</span>
 
 <span class="w">    </span><span class="n">EXPECT_TRUE</span><span class="p">(</span><span class="n">sink</span><span class="p">.</span><span class="n">WaitForEvent</span><span class="p">());</span>
-<span class="w">    </span><span class="n">EXPECT_EQ</span><span class="p">(</span><span class="n">sink</span><span class="p">.</span><span class="n">LastState</span><span class="p">(),</span><span class="w"> </span><span class="s">&quot;active&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="n">EXPECT_EQ</span><span class="p">(</span><span class="n">sink</span><span class="p">.</span><span class="n">LastState</span><span class="p">(),</span><span class="w"> </span><span class="s">"active"</span><span class="p">);</span>
 
 <span class="w">    </span><span class="n">iface</span><span class="o">-&gt;</span><span class="n">Unregister</span><span class="p">(</span><span class="o">&amp;</span><span class="n">sink</span><span class="p">);</span>
 <span class="w">    </span><span class="n">iface</span><span class="o">-&gt;</span><span class="n">Release</span><span class="p">();</span>
@@ -4533,19 +4533,19 @@ cmake<span class="w"> </span>--build<span class="w"> </span>build/Thunder<span c
 
 <span class="n">TEST_F</span><span class="p">(</span><span class="n">MyPluginTest</span><span class="p">,</span><span class="w"> </span><span class="n">COMRPC_MultipleOperationsTriggerMultipleNotifications</span><span class="p">)</span>
 <span class="p">{</span>
-<span class="w">    </span><span class="k">auto</span><span class="o">*</span><span class="w"> </span><span class="n">iface</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_runtime</span><span class="p">.</span><span class="n">QueryInterfaceByCallsign</span><span class="o">&lt;</span><span class="n">Exchange</span><span class="o">::</span><span class="n">IMyInterface</span><span class="o">&gt;</span><span class="p">(</span><span class="s">&quot;MyPlugin&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="k">auto</span><span class="o">*</span><span class="w"> </span><span class="n">iface</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_runtime</span><span class="p">.</span><span class="n">QueryInterfaceByCallsign</span><span class="o">&lt;</span><span class="n">Exchange</span><span class="o">::</span><span class="n">IMyInterface</span><span class="o">&gt;</span><span class="p">(</span><span class="s">"MyPlugin"</span><span class="p">);</span>
 <span class="w">    </span><span class="n">ASSERT_NE</span><span class="p">(</span><span class="n">iface</span><span class="p">,</span><span class="w"> </span><span class="nb">nullptr</span><span class="p">);</span>
 
 <span class="w">    </span><span class="n">Core</span><span class="o">::</span><span class="n">SinkType</span><span class="o">&lt;</span><span class="n">MySink</span><span class="o">&gt;</span><span class="w"> </span><span class="n">sink</span><span class="p">;</span>
 <span class="w">    </span><span class="n">iface</span><span class="o">-&gt;</span><span class="n">Register</span><span class="p">(</span><span class="o">&amp;</span><span class="n">sink</span><span class="p">);</span>
 
-<span class="w">    </span><span class="n">iface</span><span class="o">-&gt;</span><span class="n">PerformAction</span><span class="p">(</span><span class="s">&quot;first&quot;</span><span class="p">);</span>
-<span class="w">    </span><span class="n">iface</span><span class="o">-&gt;</span><span class="n">PerformAction</span><span class="p">(</span><span class="s">&quot;second&quot;</span><span class="p">);</span>
-<span class="w">    </span><span class="n">iface</span><span class="o">-&gt;</span><span class="n">PerformAction</span><span class="p">(</span><span class="s">&quot;third&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="n">iface</span><span class="o">-&gt;</span><span class="n">PerformAction</span><span class="p">(</span><span class="s">"first"</span><span class="p">);</span>
+<span class="w">    </span><span class="n">iface</span><span class="o">-&gt;</span><span class="n">PerformAction</span><span class="p">(</span><span class="s">"second"</span><span class="p">);</span>
+<span class="w">    </span><span class="n">iface</span><span class="o">-&gt;</span><span class="n">PerformAction</span><span class="p">(</span><span class="s">"third"</span><span class="p">);</span>
 
-<span class="w">    </span><span class="n">EXPECT_TRUE</span><span class="p">(</span><span class="n">sink</span><span class="p">.</span><span class="n">WaitForEvent</span><span class="p">(</span><span class="mi">2000</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">))</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Expected 3 notifications&quot;</span><span class="p">;</span>
+<span class="w">    </span><span class="n">EXPECT_TRUE</span><span class="p">(</span><span class="n">sink</span><span class="p">.</span><span class="n">WaitForEvent</span><span class="p">(</span><span class="mi">2000</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">))</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">"Expected 3 notifications"</span><span class="p">;</span>
 <span class="w">    </span><span class="n">EXPECT_EQ</span><span class="p">(</span><span class="n">sink</span><span class="p">.</span><span class="n">Count</span><span class="p">(),</span><span class="w"> </span><span class="mi">3u</span><span class="p">);</span>
-<span class="w">    </span><span class="n">EXPECT_EQ</span><span class="p">(</span><span class="n">sink</span><span class="p">.</span><span class="n">LastState</span><span class="p">(),</span><span class="w"> </span><span class="s">&quot;third&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="n">EXPECT_EQ</span><span class="p">(</span><span class="n">sink</span><span class="p">.</span><span class="n">LastState</span><span class="p">(),</span><span class="w"> </span><span class="s">"third"</span><span class="p">);</span>
 
 <span class="w">    </span><span class="n">iface</span><span class="o">-&gt;</span><span class="n">Unregister</span><span class="p">(</span><span class="o">&amp;</span><span class="n">sink</span><span class="p">);</span>
 <span class="w">    </span><span class="n">iface</span><span class="o">-&gt;</span><span class="n">Release</span><span class="p">();</span>
@@ -4563,7 +4563,7 @@ cmake<span class="w"> </span>--build<span class="w"> </span>build/Thunder<span c
 <span class="w">    </span><span class="no">cmake -G Ninja -S Thunder -B build/Thunder \</span>
 <span class="w">      </span><span class="no">-DCMAKE_BUILD_TYPE=Debug \</span>
 <span class="w">      </span><span class="no">-DCMAKE_INSTALL_PREFIX=install/usr \</span>
-<span class="w">      </span><span class="no">-DCMAKE_MODULE_PATH=&quot;${PWD}/install/usr/include/Thunder/Modules&quot; \</span>
+<span class="w">      </span><span class="no">-DCMAKE_MODULE_PATH="${PWD}/install/usr/include/Thunder/Modules" \</span>
 <span class="w">      </span><span class="no">-DBINDING=127.0.0.1 \</span>
 <span class="w">      </span><span class="no">-DPORT=0 \</span>
 <span class="w">      </span><span class="no">-DENABLE_TEST_RUNTIME=ON</span>
@@ -4575,17 +4575,17 @@ cmake<span class="w"> </span>--build<span class="w"> </span>build/Thunder<span c
 <span class="w">    </span><span class="no">cmake -G Ninja -S MyRepo/tests -B build/tests \</span>
 <span class="w">      </span><span class="no">-DCMAKE_BUILD_TYPE=Debug \</span>
 <span class="w">      </span><span class="no">-DCMAKE_INSTALL_PREFIX=install/usr \</span>
-<span class="w">      </span><span class="no">-DCMAKE_MODULE_PATH=&quot;${PWD}/install/usr/include/Thunder/Modules&quot; \</span>
-<span class="w">      </span><span class="no">-DCMAKE_PREFIX_PATH=&quot;${PWD}/install/usr&quot; \</span>
+<span class="w">      </span><span class="no">-DCMAKE_MODULE_PATH="${PWD}/install/usr/include/Thunder/Modules" \</span>
+<span class="w">      </span><span class="no">-DCMAKE_PREFIX_PATH="${PWD}/install/usr" \</span>
 <span class="w">      </span><span class="no">-DPLUGIN_MYPLUGIN=ON \</span>
-<span class="w">      </span><span class="no">-DTEST_PLUGIN_PATH=&quot;${PWD}/install/usr/lib/thunder/plugins&quot;</span>
+<span class="w">      </span><span class="no">-DTEST_PLUGIN_PATH="${PWD}/install/usr/lib/thunder/plugins"</span>
 <span class="w">    </span><span class="no">cmake --build build/tests --target install</span>
 
 <span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Run tests</span>
 <span class="w">  </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
-<span class="w">    </span><span class="no">LD_LIBRARY_PATH=&quot;install/usr/lib:install/usr/lib/thunder/plugins:$LD_LIBRARY_PATH&quot; \</span>
+<span class="w">    </span><span class="no">LD_LIBRARY_PATH="install/usr/lib:install/usr/lib/thunder/plugins:$LD_LIBRARY_PATH" \</span>
 <span class="w">    </span><span class="no">./build/tests/MyPlugin/test/my_plugin_test \</span>
-<span class="w">      </span><span class="no">--gtest_output=&quot;xml:test-results.xml&quot; \</span>
+<span class="w">      </span><span class="no">--gtest_output="xml:test-results.xml" \</span>
 <span class="w">      </span><span class="no">--gtest_color=yes</span>
 </code></pre></div>
 <hr />

@@ -3450,7 +3450,7 @@
 <h2 id="error-codes">Error Codes</h2>
 <p>Thunder defines a list of common error codes in <code>Source/core/Portability.h</code>. Each error code has unique uint32_t ID associated with it. Error codes can be converted to a human-readable string by calling the <code>ErrorToString(uint32_t code)</code> function:</p>
 <div class="highlight"><pre><span></span><code><span class="kt">uint32_t</span><span class="w"> </span><span class="n">error</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">ERROR_TIMEDOUT</span><span class="p">;</span>
-<span class="n">printf</span><span class="p">(</span><span class="s">&quot;Got error code %d (%s)</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">ErrorToString</span><span class="p">(</span><span class="n">error</span><span class="p">));</span>
+<span class="n">printf</span><span class="p">(</span><span class="s">"Got error code %d (%s)</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">ErrorToString</span><span class="p">(</span><span class="n">error</span><span class="p">));</span>
 
 <span class="cm">/* Output:</span>
 <span class="cm">Got error code 11 (ERROR_TIMEDOUT)</span>
@@ -3464,9 +3464,9 @@
 <span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">success</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">ERROR_NONE</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="c1">// An error occured, was this a result of the COM link or did the plugin return an error?</span>
 <span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">success</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">COM_ERROR</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;Plugin returned error %d (%s)</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">success</span><span class="p">,</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">ErrorToString</span><span class="p">(</span><span class="n">success</span><span class="p">));</span>
+<span class="w">        </span><span class="n">printf</span><span class="p">(</span><span class="s">"Plugin returned error %d (%s)</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span><span class="w"> </span><span class="n">success</span><span class="p">,</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">ErrorToString</span><span class="p">(</span><span class="n">success</span><span class="p">));</span>
 <span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;COM-RPC error %d (%s)</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">success</span><span class="p">,</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">ErrorToString</span><span class="p">(</span><span class="n">success</span><span class="p">));</span>
+<span class="w">        </span><span class="n">printf</span><span class="p">(</span><span class="s">"COM-RPC error %d (%s)</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span><span class="w"> </span><span class="n">success</span><span class="p">,</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">ErrorToString</span><span class="p">(</span><span class="n">success</span><span class="p">));</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
@@ -3521,21 +3521,21 @@
 <p>In the below example, an attempt is made to activate a non-existent plugin. The Controller plugin returns <code>ERROR_UNKNOWN_KEY</code> since to plugin exists with the given callsign.</p>
 <p><img alt="➡" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@16.0.1/assets/svg/27a1.svg" title=":arrow_right:" /> Request</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;jsonrpc&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2.0&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Controller.1.activate&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;params&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;callsign&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;fakePlugin&quot;</span>
+<span class="w">    </span><span class="nt">"jsonrpc"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2.0"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"method"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Controller.1.activate"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"params"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">"callsign"</span><span class="p">:</span><span class="w"> </span><span class="s2">"fakePlugin"</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
 <p><img alt="⬅" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@16.0.1/assets/svg/2b05.svg" title=":arrow_left:" /> Response</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;jsonrpc&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2.0&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;error&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;code&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">22</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;message&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ERROR_UNKNOWN_KEY&quot;</span>
+<span class="w">    </span><span class="nt">"jsonrpc"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2.0"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"error"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">"code"</span><span class="p">:</span><span class="w"> </span><span class="mi">22</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"message"</span><span class="p">:</span><span class="w"> </span><span class="s2">"ERROR_UNKNOWN_KEY"</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
@@ -3787,11 +3787,11 @@
 </span>
 <span class="w">    </span><span class="c1">// Instantiate the ITestPlugin interface (which will spawn the OOP side if running in OOP mode)</span>
 <span class="w">    </span><span class="c1">// Store connection ID in _connectionId</span>
-<span class="w">    </span><span class="n">_testPlugin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_service</span><span class="o">-&gt;</span><span class="n">Root</span><span class="o">&lt;</span><span class="n">Exchange</span><span class="o">::</span><span class="n">ITestPlugin</span><span class="o">&gt;</span><span class="p">(</span><span class="n">_connectionId</span><span class="p">,</span><span class="w"> </span><span class="mi">2000</span><span class="p">,</span><span class="w"> </span><span class="n">_T</span><span class="p">(</span><span class="s">&quot;TestPluginImplementation&quot;</span><span class="p">));</span>
+<span class="w">    </span><span class="n">_testPlugin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_service</span><span class="o">-&gt;</span><span class="n">Root</span><span class="o">&lt;</span><span class="n">Exchange</span><span class="o">::</span><span class="n">ITestPlugin</span><span class="o">&gt;</span><span class="p">(</span><span class="n">_connectionId</span><span class="p">,</span><span class="w"> </span><span class="mi">2000</span><span class="p">,</span><span class="w"> </span><span class="n">_T</span><span class="p">(</span><span class="s">"TestPluginImplementation"</span><span class="p">));</span>
 
 <span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">_testPlugin</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="c1">// Error occurred, return non-empty string</span>
-<span class="w">        </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;Failed to create ITestPlugin&quot;</span><span class="p">;</span>
+<span class="w">        </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"Failed to create ITestPlugin"</span><span class="p">;</span>
 <span class="w">    </span><span class="p">}</span>
 
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">result</span><span class="p">;</span>
@@ -3809,7 +3809,7 @@
 <span class="w">            </span><span class="n">RPC</span><span class="o">::</span><span class="n">IRemoteConnection</span><span class="o">*</span><span class="w"> </span><span class="n">connection</span><span class="p">(</span><span class="n">_service</span><span class="o">-&gt;</span><span class="n">RemoteConnection</span><span class="p">(</span><span class="n">_connectionId</span><span class="p">));</span>
 
 <span class="w">            </span><span class="c1">// This should release the last reference and destruct the object. If not,</span>
-<span class="w">            </span><span class="c1">// there&#39;s something else holding on to it and we have a leak</span>
+<span class="w">            </span><span class="c1">// there's something else holding on to it and we have a leak</span>
 <span class="w">            </span><span class="n">VARIABLE_IS_NOT_USED</span><span class="w"> </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_testPlugin</span><span class="o">-&gt;</span><span class="n">Release</span><span class="p">();</span>
 <span class="w">            </span><span class="n">ASSERT</span><span class="p">(</span><span class="w"> </span><span class="p">(</span><span class="n">result</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">ERROR_CONNECTION_CLOSED</span><span class="p">)</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="p">(</span><span class="n">result</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">ERROR_DESTRUCTION_SUCCEEDED</span><span class="p">)</span><span class="w"> </span><span class="p">);</span>
 <span class="w">            </span><span class="n">_testPlugin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">nullptr</span><span class="p">;</span>
@@ -4089,11 +4089,11 @@
 </span>
 <span class="w">    </span><span class="c1">// Instantiate the ITestPlugin interface (which could spawn the OOP side if running in OOP mode)</span>
 <span class="w">    </span><span class="c1">// Store connection ID in _connectionId</span>
-<span class="w">    </span><span class="n">_testPlugin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_service</span><span class="o">-&gt;</span><span class="n">Root</span><span class="o">&lt;</span><span class="n">Exchange</span><span class="o">::</span><span class="n">ITestPlugin</span><span class="o">&gt;</span><span class="p">(</span><span class="n">_connectionId</span><span class="p">,</span><span class="w"> </span><span class="mi">2000</span><span class="p">,</span><span class="w"> </span><span class="n">_T</span><span class="p">(</span><span class="s">&quot;TestPluginImplementation&quot;</span><span class="p">));</span>
+<span class="w">    </span><span class="n">_testPlugin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_service</span><span class="o">-&gt;</span><span class="n">Root</span><span class="o">&lt;</span><span class="n">Exchange</span><span class="o">::</span><span class="n">ITestPlugin</span><span class="o">&gt;</span><span class="p">(</span><span class="n">_connectionId</span><span class="p">,</span><span class="w"> </span><span class="mi">2000</span><span class="p">,</span><span class="w"> </span><span class="n">_T</span><span class="p">(</span><span class="s">"TestPluginImplementation"</span><span class="p">));</span>
 
 <span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">_testPlugin</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="c1">// Error occurred, return non-empty string</span>
-<span class="w">        </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;Failed to create ITestPlugin&quot;</span><span class="p">;</span>
+<span class="w">        </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"Failed to create ITestPlugin"</span><span class="p">;</span>
 <span class="w">    </span><span class="p">}</span>
 
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">result</span><span class="p">;</span>
@@ -4111,7 +4111,7 @@
 <span class="w">            </span><span class="n">RPC</span><span class="o">::</span><span class="n">IRemoteConnection</span><span class="o">*</span><span class="w"> </span><span class="n">connection</span><span class="p">(</span><span class="n">_service</span><span class="o">-&gt;</span><span class="n">RemoteConnection</span><span class="p">(</span><span class="n">_connectionId</span><span class="p">));</span>
 
 <span class="w">            </span><span class="c1">// This should release the last reference and destruct the object. If not,</span>
-<span class="w">            </span><span class="c1">// there&#39;s something else holding on to it and we have a leak</span>
+<span class="w">            </span><span class="c1">// there's something else holding on to it and we have a leak</span>
 <span class="w">            </span><span class="n">VARIABLE_IS_NOT_USED</span><span class="w"> </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_testPlugin</span><span class="o">-&gt;</span><span class="n">Release</span><span class="p">();</span>
 <span class="w">            </span><span class="n">ASSERT</span><span class="p">(</span><span class="w"> </span><span class="p">(</span><span class="n">result</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">ERROR_CONNECTION_CLOSED</span><span class="p">)</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="p">(</span><span class="n">result</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">ERROR_DESTRUCTION_SUCCEEDED</span><span class="p">)</span><span class="w"> </span><span class="p">);</span>
 
@@ -4215,7 +4215,7 @@
 <span class="k">public</span><span class="o">:</span>
 <span class="w">    </span><span class="n">Core</span><span class="o">::</span><span class="n">hresult</span><span class="w"> </span><span class="n">Test</span><span class="p">(</span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="cm">/* @out */</span><span class="p">)</span><span class="w"> </span><span class="k">override</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">        </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;Hello World&quot;</span><span class="p">;</span>
+<span class="w">        </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"Hello World"</span><span class="p">;</span>
 <span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">ERROR_NONE</span><span class="p">;</span>
 <span class="w">    </span><span class="p">}</span>
 
@@ -4223,7 +4223,7 @@
 </span><span class="hll"><span class="w">    </span><span class="p">{</span>
 </span><span class="hll"><span class="w">        </span><span class="n">_adminLock</span><span class="p">.</span><span class="n">Lock</span><span class="p">();</span>
 </span><span class="hll">
-</span><span class="hll"><span class="w">        </span><span class="c1">// Make sure we can&#39;t register the same notification callback multiple times</span>
+</span><span class="hll"><span class="w">        </span><span class="c1">// Make sure we can't register the same notification callback multiple times</span>
 </span><span class="hll"><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">find</span><span class="p">(</span><span class="n">_notificationCallbacks</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span><span class="w"> </span><span class="n">_notificationCallbacks</span><span class="p">.</span><span class="n">end</span><span class="p">(),</span><span class="w"> </span><span class="n">notification</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">_notificationCallbacks</span><span class="p">.</span><span class="n">end</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
 </span><span class="hll"><span class="w">            </span><span class="n">_notificationCallbacks</span><span class="p">.</span><span class="n">emplace_back</span><span class="p">(</span><span class="n">notification</span><span class="p">);</span>
 </span><span class="hll"><span class="w">            </span><span class="n">notification</span><span class="o">-&gt;</span><span class="n">AddRef</span><span class="p">();</span>

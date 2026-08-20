@@ -3842,19 +3842,19 @@
 <h4 id="checking-if-a-function-exists">Checking if a function exists</h4>
 <p>With the generically available "exists" function a client can query if a specific function is available on a given plugin JSON-RPC interface. Call it like</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;jsonrpc&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2.0&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">42</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;MyPlugin.1.exists&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;params&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;methodname&quot;</span>
+<span class="w">  </span><span class="nt">"jsonrpc"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2.0"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="mi">42</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"method"</span><span class="p">:</span><span class="w"> </span><span class="s2">"MyPlugin.1.exists"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"params"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"method"</span><span class="p">:</span><span class="w"> </span><span class="s2">"methodname"</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
 <p>it will return true or false to indicate whether the method was available or not:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;jsonrpc&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2.0&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">42</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;result&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+<span class="w">  </span><span class="nt">"jsonrpc"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2.0"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="mi">42</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"result"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
 <span class="p">}</span>
 </code></pre></div>
 <h4 id="preventing-memory-leaks">Preventing Memory leaks</h4>
@@ -3875,38 +3875,38 @@ Note: <code>IConnection::INotification</code> can be used to be notified of the 
 <p>When a notification is tagged with the @event keyword it means code will be generated to make it easy to send this notification to registered clients from the C++ code that implements the interface.
 Registering for a JSON-RPC event can be done by the client by calling the "register" function which is generically available for all plugins (if documentation is generated for an interface or plugin using that interface containing events, examples for registration and deregistration and the notification itself will be included in the documentation):</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;jsonrpc&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2.0&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">42</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;MyPlugin.1.register&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;params&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;event&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;eventname&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;myapp&quot;</span>
+<span class="w">  </span><span class="nt">"jsonrpc"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2.0"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="mi">42</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"method"</span><span class="p">:</span><span class="w"> </span><span class="s2">"MyPlugin.1.register"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"params"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"event"</span><span class="p">:</span><span class="w"> </span><span class="s2">"eventname"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"myapp"</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
 <p>if the registration is successful the following return can be expected (and an error response in case the registration failed) :</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;jsonrpc&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2.0&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">42</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;result&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span>
+<span class="w">  </span><span class="nt">"jsonrpc"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2.0"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="mi">42</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"result"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span>
 <span class="p">}</span>
 </code></pre></div>
 <p>Unregistering from an event can be done by the client by calling the "unregister" function, which like the register is generically available for all plugins:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;jsonrpc&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2.0&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">42</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;MyPlugin.1.unregister&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;params&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;event&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;eventname&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;myapp&quot;</span>
+<span class="w">  </span><span class="nt">"jsonrpc"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2.0"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="mi">42</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"method"</span><span class="p">:</span><span class="w"> </span><span class="s2">"MyPlugin.1.unregister"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"params"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"event"</span><span class="p">:</span><span class="w"> </span><span class="s2">"eventname"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"myapp"</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
 <p>if the deregistration is successful the following return can be expected (and an error response in case the deregistration failed) :</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;jsonrpc&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2.0&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">42</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;result&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span>
+<span class="w">  </span><span class="nt">"jsonrpc"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2.0"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="mi">42</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"result"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span>
 <span class="p">}</span>
 </code></pre></div>
 <p>In the generated J&lt; interface &gt;.h file static helper functions will be generated that one can call in the C++ code to send the notifications to all registered clients. 
@@ -3931,7 +3931,7 @@ For example suppose we would have this interface:
 <span class="w">    </span><span class="p">};</span>
 </code></pre></div></p>
 <p>After including the generated helper file one could notify all registered clients on a StateNotification class by calling the following code:</p>
-<div class="highlight"><pre><span></span><code><span class="w">        </span><span class="n">Exchange</span><span class="o">::</span><span class="n">JTest</span><span class="o">::</span><span class="n">Event</span><span class="o">::</span><span class="n">StateChange</span><span class="p">(</span><span class="o">*</span><span class="k">this</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;test&quot;</span><span class="p">,</span><span class="w"> </span><span class="nb">true</span><span class="p">);</span>
+<div class="highlight"><pre><span></span><code><span class="w">        </span><span class="n">Exchange</span><span class="o">::</span><span class="n">JTest</span><span class="o">::</span><span class="n">Event</span><span class="o">::</span><span class="n">StateChange</span><span class="p">(</span><span class="o">*</span><span class="k">this</span><span class="p">,</span><span class="w"> </span><span class="s">"test"</span><span class="p">,</span><span class="w"> </span><span class="nb">true</span><span class="p">);</span>
 </code></pre></div>
 <p>Note depending on the interface more than one helper function is generated (e.g. also one where you can use the generated params class), check the generated J&lt; interface &gt;.h file for all the options.</p>
 <h5 id="indexed-events">indexed events</h5>
@@ -3963,28 +3963,28 @@ That parameter can be flagged with the @index tag to indicate it is used to disc
 (the event can have the @index tag as well, as long as the index parameter name matches).</p>
 <p>A client can subscribe via JSON-RPC to be notified on a specific callsign like this:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;jsonrpc&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2.0&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">42</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;&lt;plugin&gt;.1.register@&lt;callsign&gt;&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;params&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;event&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;stateChange&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;myid&quot;</span>
+<span class="w">  </span><span class="nt">"jsonrpc"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2.0"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="mi">42</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"method"</span><span class="p">:</span><span class="w"> </span><span class="s2">"&lt;plugin&gt;.1.register@&lt;callsign&gt;"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"params"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"event"</span><span class="p">:</span><span class="w"> </span><span class="s2">"stateChange"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"myid"</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
 <p>where &lt; callsign &gt; should have the specific callsign this client wants to be notified about.</p>
 <p>The notification sent will then be like this:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;jsonrpc&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2.0&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;myid.stateChange@&lt;callsign&gt;&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;params&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;test&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span>
+<span class="w">  </span><span class="nt">"jsonrpc"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2.0"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"method"</span><span class="p">:</span><span class="w"> </span><span class="s2">"myid.stateChange@&lt;callsign&gt;"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"params"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"test"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
 <p>As with a non indexed event if the documentation is generated for the JSON-RPC interface examples for registering, deregistering and the notification will be included in the document.</p>
 <p>Again static helpers are created in the J&lt; interface &gt;.h file that allow one to sent the notifications to all registered clients:</p>
-<div class="highlight"><pre><span></span><code><span class="w">        </span><span class="n">Exchange</span><span class="o">::</span><span class="n">JTest</span><span class="o">::</span><span class="n">Event</span><span class="o">::</span><span class="n">StateChange</span><span class="p">(</span><span class="o">*</span><span class="k">this</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;test&quot;</span><span class="p">,</span><span class="w"> </span><span class="nb">true</span><span class="p">);</span>
+<div class="highlight"><pre><span></span><code><span class="w">        </span><span class="n">Exchange</span><span class="o">::</span><span class="n">JTest</span><span class="o">::</span><span class="n">Event</span><span class="o">::</span><span class="n">StateChange</span><span class="p">(</span><span class="o">*</span><span class="k">this</span><span class="p">,</span><span class="w"> </span><span class="s">"test"</span><span class="p">,</span><span class="w"> </span><span class="nb">true</span><span class="p">);</span>
 </code></pre></div>
 <p>This will only sent a notification to the clients who registered for the stateChange event with client "test" by adding @test to the registration designator.</p>
 <p>This generated static helper uses a lambda internally which will send the notification to all clients who registered for the index passed to the helper function. It is also possible to pass a lambda yourself as last parameter to the static helper function when you want different behaviour.</p>
@@ -4010,34 +4010,34 @@ That parameter can be flagged with the @index tag to indicate it is used to disc
 </code></pre></div>
 <p>for the JSON-RPC registration that does not influence much, one uses:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;jsonrpc&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2.0&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">42</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;&lt;plugin&gt;.1.register@&lt;callsign&gt;&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;params&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;event&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;stateChange&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;myid&quot;</span>
+<span class="w">  </span><span class="nt">"jsonrpc"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2.0"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="mi">42</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"method"</span><span class="p">:</span><span class="w"> </span><span class="s2">"&lt;plugin&gt;.1.register@&lt;callsign&gt;"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"params"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"event"</span><span class="p">:</span><span class="w"> </span><span class="s2">"stateChange"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"myid"</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
 <p>to register only to be notified for a specific callsign and:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;jsonrpc&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2.0&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">42</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;&lt;plugin&gt;.1.register&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;params&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;event&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;stateChange&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;myid&quot;</span>
+<span class="w">  </span><span class="nt">"jsonrpc"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2.0"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="mi">42</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"method"</span><span class="p">:</span><span class="w"> </span><span class="s2">"&lt;plugin&gt;.1.register"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"params"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"event"</span><span class="p">:</span><span class="w"> </span><span class="s2">"stateChange"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"myid"</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
 <p>to register for all callsigns no matter what the value of callsign is.</p>
 <p>The notification is now a little different however:</p>
 <p><div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;jsonrpc&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2.0&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;myid.stateChange@abc&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;params&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;callsign&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;...&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;test&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span>
+<span class="w">  </span><span class="nt">"jsonrpc"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2.0"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"method"</span><span class="p">:</span><span class="w"> </span><span class="s2">"myid.stateChange@abc"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"params"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"callsign"</span><span class="p">:</span><span class="w"> </span><span class="s2">"..."</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"test"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
@@ -4297,25 +4297,25 @@ The <a href="https://github.com/rdkcentral/ThunderNanoServices/blob/master/examp
 
 <span class="c"># Interfaces we want to build</span>
 <span class="nb">set</span><span class="p">(</span><span class="s">INTERFACES_HEADERS</span>
-<span class="w">    </span><span class="s2">&quot;${CMAKE_CURRENT_SOURCE_DIR}/ITest.h&quot;</span>
+<span class="w">    </span><span class="s2">"${CMAKE_CURRENT_SOURCE_DIR}/ITest.h"</span>
 <span class="p">)</span>
 
 <span class="c"># Invoke the code generators</span>
 <span class="nb">ProxyStubGenerator</span><span class="p">(</span>
 <span class="w">    </span><span class="s">INPUT</span><span class="w"> </span><span class="o">${</span><span class="nv">INTERFACES_HEADERS</span><span class="o">}</span>
-<span class="w">    </span><span class="s">OUTDIR</span><span class="w"> </span><span class="s2">&quot;${CMAKE_CURRENT_BINARY_DIR}/generated&quot;</span>
+<span class="w">    </span><span class="s">OUTDIR</span><span class="w"> </span><span class="s2">"${CMAKE_CURRENT_BINARY_DIR}/generated"</span>
 <span class="p">)</span>
 
 <span class="nb">JsonGenerator</span><span class="p">(</span>
 <span class="w">    </span><span class="s">CODE</span>
 <span class="w">    </span><span class="s">INPUT</span><span class="w"> </span><span class="o">${</span><span class="nv">INTERFACES_HEADERS</span><span class="o">}</span>
-<span class="w">    </span><span class="s">OUTPUT</span><span class="w"> </span><span class="s2">&quot;${CMAKE_CURRENT_BINARY_DIR}/generated&quot;</span>
+<span class="w">    </span><span class="s">OUTPUT</span><span class="w"> </span><span class="s2">"${CMAKE_CURRENT_BINARY_DIR}/generated"</span>
 <span class="p">)</span>
 
 <span class="c"># Find the generated sources</span>
-<span class="nb">file</span><span class="p">(</span><span class="s">GLOB</span><span class="w"> </span><span class="s">PROXY_STUB_SOURCES</span><span class="w"> </span><span class="s2">&quot;${CMAKE_CURRENT_BINARY_DIR}/generated/ProxyStubs*.cpp&quot;</span><span class="p">)</span>
-<span class="nb">file</span><span class="p">(</span><span class="s">GLOB</span><span class="w"> </span><span class="s">JSON_ENUM_SOURCES</span><span class="w"> </span><span class="s2">&quot;${CMAKE_CURRENT_BINARY_DIR}/generated/JsonEnum*.cpp&quot;</span><span class="p">)</span>
-<span class="nb">file</span><span class="p">(</span><span class="s">GLOB</span><span class="w"> </span><span class="s">JSON_HEADERS</span><span class="w"> </span><span class="s2">&quot;${CMAKE_CURRENT_BINARY_DIR}/generated/J*.h&quot;</span><span class="p">)</span>
+<span class="nb">file</span><span class="p">(</span><span class="s">GLOB</span><span class="w"> </span><span class="s">PROXY_STUB_SOURCES</span><span class="w"> </span><span class="s2">"${CMAKE_CURRENT_BINARY_DIR}/generated/ProxyStubs*.cpp"</span><span class="p">)</span>
+<span class="nb">file</span><span class="p">(</span><span class="s">GLOB</span><span class="w"> </span><span class="s">JSON_ENUM_SOURCES</span><span class="w"> </span><span class="s2">"${CMAKE_CURRENT_BINARY_DIR}/generated/JsonEnum*.cpp"</span><span class="p">)</span>
+<span class="nb">file</span><span class="p">(</span><span class="s">GLOB</span><span class="w"> </span><span class="s">JSON_HEADERS</span><span class="w"> </span><span class="s2">"${CMAKE_CURRENT_BINARY_DIR}/generated/J*.h"</span><span class="p">)</span>
 
 <span class="c"># Build the proxystub lib</span>
 <span class="nb">add_library</span><span class="p">(</span><span class="s">ExampleProxyStubs</span><span class="w"> </span><span class="s">SHARED</span>
@@ -4478,7 +4478,7 @@ The <a href="https://github.com/rdkcentral/ThunderNanoServices/blob/master/examp
 <span class="normal">62</span>
 <span class="normal">63</span>
 <span class="normal">64</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="cp">#pragma once</span>
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;Module.h&quot;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">"Module.h"</span>
 
 <span class="c1">// @stubgen:include &lt;com/IIteratorType.h&gt; // (1)</span>
 
@@ -4566,7 +4566,7 @@ The <a href="https://github.com/rdkcentral/ThunderNanoServices/blob/master/examp
 <span class="normal">11</span>
 <span class="normal">12</span>
 <span class="normal">13</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="cp">#pragma once</span>
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;Module.h&quot;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">"Module.h"</span>
 
 <span class="c1">// @stubgen:include &lt;com/IIteratorType.h&gt;</span>
 
@@ -4697,11 +4697,11 @@ The <a href="https://github.com/rdkcentral/ThunderNanoServices/blob/master/examp
 <span class="normal">108</span>
 <span class="normal">109</span>
 <span class="normal">110</span>
-<span class="normal">111</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="c1">// Generated automatically from &#39;IWiFi.h&#39;. DO NOT EDIT.</span>
+<span class="normal">111</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="c1">// Generated automatically from 'IWiFi.h'. DO NOT EDIT.</span>
 <span class="cp">#pragma once</span>
 
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;Module.h&quot;</span>
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;JsonData_WiFi.h&quot;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">"Module.h"</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">"JsonData_WiFi.h"</span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;interfaces/IWiFi.h&gt;</span>
 
 <span class="k">namespace</span><span class="w"> </span><span class="nn">Thunder</span><span class="w"> </span><span class="p">{</span>
@@ -4724,12 +4724,12 @@ The <a href="https://github.com/rdkcentral/ThunderNanoServices/blob/master/examp
 <span class="w">        </span><span class="p">{</span>
 <span class="w">            </span><span class="n">ASSERT</span><span class="p">(</span><span class="n">_impl_</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="nb">nullptr</span><span class="p">);</span>
 
-<span class="w">            </span><span class="n">_module_</span><span class="p">.</span><span class="n">RegisterVersion</span><span class="p">(</span><span class="n">_T</span><span class="p">(</span><span class="s">&quot;JWiFi&quot;</span><span class="p">),</span><span class="w"> </span><span class="n">Version</span><span class="o">::</span><span class="n">Major</span><span class="p">,</span><span class="w"> </span><span class="n">Version</span><span class="o">::</span><span class="n">Minor</span><span class="p">,</span><span class="w"> </span><span class="n">Version</span><span class="o">::</span><span class="n">Patch</span><span class="p">);</span>
+<span class="w">            </span><span class="n">_module_</span><span class="p">.</span><span class="n">RegisterVersion</span><span class="p">(</span><span class="n">_T</span><span class="p">(</span><span class="s">"JWiFi"</span><span class="p">),</span><span class="w"> </span><span class="n">Version</span><span class="o">::</span><span class="n">Major</span><span class="p">,</span><span class="w"> </span><span class="n">Version</span><span class="o">::</span><span class="n">Minor</span><span class="p">,</span><span class="w"> </span><span class="n">Version</span><span class="o">::</span><span class="n">Patch</span><span class="p">);</span>
 
 <span class="w">            </span><span class="c1">// Register methods and properties...</span>
 
-<span class="w">            </span><span class="c1">// Method: &#39;scan&#39; - Start a WiFi scan</span>
-<span class="w">            </span><span class="n">_module_</span><span class="p">.</span><span class="n">Register</span><span class="o">&lt;</span><span class="kt">void</span><span class="p">,</span><span class="w"> </span><span class="kt">void</span><span class="o">&gt;</span><span class="p">(</span><span class="n">_T</span><span class="p">(</span><span class="s">&quot;scan&quot;</span><span class="p">),</span><span class="w"> </span>
+<span class="w">            </span><span class="c1">// Method: 'scan' - Start a WiFi scan</span>
+<span class="w">            </span><span class="n">_module_</span><span class="p">.</span><span class="n">Register</span><span class="o">&lt;</span><span class="kt">void</span><span class="p">,</span><span class="w"> </span><span class="kt">void</span><span class="o">&gt;</span><span class="p">(</span><span class="n">_T</span><span class="p">(</span><span class="s">"scan"</span><span class="p">),</span><span class="w"> </span>
 <span class="w">                </span><span class="p">[</span><span class="n">_impl_</span><span class="p">]()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="kt">uint32_t</span><span class="w"> </span><span class="p">{</span>
 <span class="w">                    </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">_errorCode</span><span class="p">;</span>
 
@@ -4738,8 +4738,8 @@ The <a href="https://github.com/rdkcentral/ThunderNanoServices/blob/master/examp
 <span class="w">                    </span><span class="k">return</span><span class="w"> </span><span class="p">(</span><span class="n">_errorCode</span><span class="p">);</span>
 <span class="w">                </span><span class="p">});</span>
 
-<span class="w">            </span><span class="c1">// Method: &#39;connect&#39; - Connect to an access point</span>
-<span class="w">            </span><span class="n">_module_</span><span class="p">.</span><span class="n">Register</span><span class="o">&lt;</span><span class="n">JsonData</span><span class="o">::</span><span class="n">WiFi</span><span class="o">::</span><span class="n">ConnectParamsData</span><span class="p">,</span><span class="w"> </span><span class="kt">void</span><span class="o">&gt;</span><span class="p">(</span><span class="n">_T</span><span class="p">(</span><span class="s">&quot;connect&quot;</span><span class="p">),</span><span class="w"> </span>
+<span class="w">            </span><span class="c1">// Method: 'connect' - Connect to an access point</span>
+<span class="w">            </span><span class="n">_module_</span><span class="p">.</span><span class="n">Register</span><span class="o">&lt;</span><span class="n">JsonData</span><span class="o">::</span><span class="n">WiFi</span><span class="o">::</span><span class="n">ConnectParamsData</span><span class="p">,</span><span class="w"> </span><span class="kt">void</span><span class="o">&gt;</span><span class="p">(</span><span class="n">_T</span><span class="p">(</span><span class="s">"connect"</span><span class="p">),</span><span class="w"> </span>
 <span class="w">                </span><span class="p">[</span><span class="n">_impl_</span><span class="p">](</span><span class="k">const</span><span class="w"> </span><span class="n">JsonData</span><span class="o">::</span><span class="n">WiFi</span><span class="o">::</span><span class="n">ConnectParamsData</span><span class="o">&amp;</span><span class="w"> </span><span class="n">params</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="kt">uint32_t</span><span class="w"> </span><span class="p">{</span>
 <span class="w">                    </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">_errorCode</span><span class="p">;</span>
 
@@ -4750,8 +4750,8 @@ The <a href="https://github.com/rdkcentral/ThunderNanoServices/blob/master/examp
 <span class="w">                    </span><span class="k">return</span><span class="w"> </span><span class="p">(</span><span class="n">_errorCode</span><span class="p">);</span>
 <span class="w">                </span><span class="p">});</span>
 
-<span class="w">            </span><span class="c1">// Method: &#39;disconnect&#39; - Disconnect from the currently connected access point</span>
-<span class="w">            </span><span class="n">_module_</span><span class="p">.</span><span class="n">Register</span><span class="o">&lt;</span><span class="kt">void</span><span class="p">,</span><span class="w"> </span><span class="kt">void</span><span class="o">&gt;</span><span class="p">(</span><span class="n">_T</span><span class="p">(</span><span class="s">&quot;disconnect&quot;</span><span class="p">),</span><span class="w"> </span>
+<span class="w">            </span><span class="c1">// Method: 'disconnect' - Disconnect from the currently connected access point</span>
+<span class="w">            </span><span class="n">_module_</span><span class="p">.</span><span class="n">Register</span><span class="o">&lt;</span><span class="kt">void</span><span class="p">,</span><span class="w"> </span><span class="kt">void</span><span class="o">&gt;</span><span class="p">(</span><span class="n">_T</span><span class="p">(</span><span class="s">"disconnect"</span><span class="p">),</span><span class="w"> </span>
 <span class="w">                </span><span class="p">[</span><span class="n">_impl_</span><span class="p">]()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="kt">uint32_t</span><span class="w"> </span><span class="p">{</span>
 <span class="w">                    </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">_errorCode</span><span class="p">;</span>
 
@@ -4765,23 +4765,23 @@ The <a href="https://github.com/rdkcentral/ThunderNanoServices/blob/master/examp
 <span class="w">        </span><span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">Unregister</span><span class="p">(</span><span class="n">JSONRPC</span><span class="o">&amp;</span><span class="w"> </span><span class="n">_module_</span><span class="p">)</span>
 <span class="w">        </span><span class="p">{</span>
 <span class="w">            </span><span class="c1">// Unregister methods and properties...</span>
-<span class="w">            </span><span class="n">_module_</span><span class="p">.</span><span class="n">Unregister</span><span class="p">(</span><span class="n">_T</span><span class="p">(</span><span class="s">&quot;scan&quot;</span><span class="p">));</span>
-<span class="w">            </span><span class="n">_module_</span><span class="p">.</span><span class="n">Unregister</span><span class="p">(</span><span class="n">_T</span><span class="p">(</span><span class="s">&quot;connect&quot;</span><span class="p">));</span>
-<span class="w">            </span><span class="n">_module_</span><span class="p">.</span><span class="n">Unregister</span><span class="p">(</span><span class="n">_T</span><span class="p">(</span><span class="s">&quot;disconnect&quot;</span><span class="p">));</span>
+<span class="w">            </span><span class="n">_module_</span><span class="p">.</span><span class="n">Unregister</span><span class="p">(</span><span class="n">_T</span><span class="p">(</span><span class="s">"scan"</span><span class="p">));</span>
+<span class="w">            </span><span class="n">_module_</span><span class="p">.</span><span class="n">Unregister</span><span class="p">(</span><span class="n">_T</span><span class="p">(</span><span class="s">"connect"</span><span class="p">));</span>
+<span class="w">            </span><span class="n">_module_</span><span class="p">.</span><span class="n">Unregister</span><span class="p">(</span><span class="n">_T</span><span class="p">(</span><span class="s">"disconnect"</span><span class="p">));</span>
 <span class="w">        </span><span class="p">}</span>
 
 <span class="w">        </span><span class="k">namespace</span><span class="w"> </span><span class="nn">Event</span><span class="w"> </span><span class="p">{</span>
 
 <span class="w">            </span><span class="n">PUSH_WARNING</span><span class="p">(</span><span class="n">DISABLE_WARNING_UNUSED_FUNCTIONS</span><span class="p">)</span>
 
-<span class="w">            </span><span class="c1">// Event: &#39;scancomplete&#39; - Signal that a previously requested WiFi AP scan has completed</span>
+<span class="w">            </span><span class="c1">// Event: 'scancomplete' - Signal that a previously requested WiFi AP scan has completed</span>
 <span class="w">            </span><span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">ScanComplete</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">JSONRPC</span><span class="o">&amp;</span><span class="w"> </span><span class="n">_module_</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">JsonData</span><span class="o">::</span><span class="n">WiFi</span><span class="o">::</span><span class="n">ScanCompleteParamsData</span><span class="o">&amp;</span><span class="w"> </span><span class="n">params</span><span class="p">)</span>
 <span class="w">            </span><span class="p">{</span>
-<span class="w">                </span><span class="n">_module_</span><span class="p">.</span><span class="n">Notify</span><span class="p">(</span><span class="n">_T</span><span class="p">(</span><span class="s">&quot;scancomplete&quot;</span><span class="p">),</span><span class="w"> </span><span class="n">params</span><span class="p">);</span>
+<span class="w">                </span><span class="n">_module_</span><span class="p">.</span><span class="n">Notify</span><span class="p">(</span><span class="n">_T</span><span class="p">(</span><span class="s">"scancomplete"</span><span class="p">),</span><span class="w"> </span><span class="n">params</span><span class="p">);</span>
 <span class="w">            </span><span class="p">}</span>
 
-<span class="w">            </span><span class="c1">// Event: &#39;scancomplete&#39; - Signal that a previously requested WiFi AP scan has completed</span>
-<span class="w">            </span><span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">ScanComplete</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">JSONRPC</span><span class="o">&amp;</span><span class="w"> </span><span class="n">_module_</span><span class="p">,</span>
+<span class="w">            </span><span class="c1">// Event: 'scancomplete' - Signal that a previously requested WiFi AP scan has completed</span>
+<span class="w">            </span><span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">ScanComplete</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">JSONRPC</span><span class="o">&amp;</span><span class="w"> </span><span class="n">_module_</span><span class="p">,</span>
 <span class="w">                     </span><span class="k">const</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">JSON</span><span class="o">::</span><span class="n">ArrayType</span><span class="o">&lt;</span><span class="n">JsonData</span><span class="o">::</span><span class="n">WiFi</span><span class="o">::</span><span class="n">ScanCompleteParamsData</span><span class="o">::</span><span class="n">AccessPointData</span><span class="o">&gt;&amp;</span><span class="w"> </span><span class="n">accessPoints</span><span class="p">)</span>
 <span class="w">            </span><span class="p">{</span>
 <span class="w">                </span><span class="n">JsonData</span><span class="o">::</span><span class="n">WiFi</span><span class="o">::</span><span class="n">ScanCompleteParamsData</span><span class="w"> </span><span class="n">_params_</span><span class="p">;</span>
@@ -4790,8 +4790,8 @@ The <a href="https://github.com/rdkcentral/ThunderNanoServices/blob/master/examp
 <span class="w">                </span><span class="n">ScanComplete</span><span class="p">(</span><span class="n">_module_</span><span class="p">,</span><span class="w"> </span><span class="n">_params_</span><span class="p">);</span>
 <span class="w">            </span><span class="p">}</span>
 
-<span class="w">            </span><span class="c1">// Event: &#39;scancomplete&#39; - Signal that a previously requested WiFi AP scan has completed</span>
-<span class="w">            </span><span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">ScanComplete</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">JSONRPC</span><span class="o">&amp;</span><span class="w"> </span><span class="n">_module_</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">list</span><span class="o">&lt;</span><span class="n">Exchange</span><span class="o">::</span><span class="n">IWiFi</span><span class="o">::</span><span class="n">AccessPoint</span><span class="o">&gt;&amp;</span><span class="w"> </span><span class="n">accessPoints</span><span class="p">)</span>
+<span class="w">            </span><span class="c1">// Event: 'scancomplete' - Signal that a previously requested WiFi AP scan has completed</span>
+<span class="w">            </span><span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">ScanComplete</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">JSONRPC</span><span class="o">&amp;</span><span class="w"> </span><span class="n">_module_</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">list</span><span class="o">&lt;</span><span class="n">Exchange</span><span class="o">::</span><span class="n">IWiFi</span><span class="o">::</span><span class="n">AccessPoint</span><span class="o">&gt;&amp;</span><span class="w"> </span><span class="n">accessPoints</span><span class="p">)</span>
 <span class="w">            </span><span class="p">{</span>
 <span class="w">                </span><span class="n">JsonData</span><span class="o">::</span><span class="n">WiFi</span><span class="o">::</span><span class="n">ScanCompleteParamsData</span><span class="w"> </span><span class="n">_params_</span><span class="p">;</span>
 <span class="w">                </span><span class="n">_params_</span><span class="p">.</span><span class="n">AccessPoints</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">accessPoints</span><span class="p">;</span>
@@ -4939,7 +4939,7 @@ The <a href="https://github.com/rdkcentral/ThunderNanoServices/blob/master/examp
 <span class="normal">124</span>
 <span class="normal">125</span>
 <span class="normal">126</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="c1">// C++ classes for WiFi API JSON-RPC API.</span>
-<span class="c1">// Generated automatically from &#39;IWiFi.h&#39;. DO NOT EDIT.</span>
+<span class="c1">// Generated automatically from 'IWiFi.h'. DO NOT EDIT.</span>
 
 <span class="c1">// Note: This code is inherently not thread safe. If required, proper synchronisation must be added.</span>
 
@@ -4962,7 +4962,7 @@ The <a href="https://github.com/rdkcentral/ThunderNanoServices/blob/master/examp
 <span class="w">            </span><span class="n">ConnectParamsData</span><span class="p">()</span>
 <span class="w">                </span><span class="o">:</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">JSON</span><span class="o">::</span><span class="n">Container</span><span class="p">()</span>
 <span class="w">            </span><span class="p">{</span>
-<span class="w">                </span><span class="n">Add</span><span class="p">(</span><span class="n">_T</span><span class="p">(</span><span class="s">&quot;ssid&quot;</span><span class="p">),</span><span class="w"> </span><span class="o">&amp;</span><span class="n">Ssid</span><span class="p">);</span>
+<span class="w">                </span><span class="n">Add</span><span class="p">(</span><span class="n">_T</span><span class="p">(</span><span class="s">"ssid"</span><span class="p">),</span><span class="w"> </span><span class="o">&amp;</span><span class="n">Ssid</span><span class="p">);</span>
 <span class="w">            </span><span class="p">}</span>
 
 <span class="w">            </span><span class="n">ConnectParamsData</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">ConnectParamsData</span><span class="o">&amp;</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">delete</span><span class="p">;</span>
@@ -5033,10 +5033,10 @@ The <a href="https://github.com/rdkcentral/ThunderNanoServices/blob/master/examp
 <span class="w">            </span><span class="k">private</span><span class="o">:</span>
 <span class="w">                </span><span class="kt">void</span><span class="w"> </span><span class="n">_Init</span><span class="p">()</span>
 <span class="w">                </span><span class="p">{</span>
-<span class="w">                    </span><span class="n">Add</span><span class="p">(</span><span class="n">_T</span><span class="p">(</span><span class="s">&quot;ssid&quot;</span><span class="p">),</span><span class="w"> </span><span class="o">&amp;</span><span class="n">Ssid</span><span class="p">);</span>
-<span class="w">                    </span><span class="n">Add</span><span class="p">(</span><span class="n">_T</span><span class="p">(</span><span class="s">&quot;channel&quot;</span><span class="p">),</span><span class="w"> </span><span class="o">&amp;</span><span class="n">Channel</span><span class="p">);</span>
-<span class="w">                    </span><span class="n">Add</span><span class="p">(</span><span class="n">_T</span><span class="p">(</span><span class="s">&quot;frequency&quot;</span><span class="p">),</span><span class="w"> </span><span class="o">&amp;</span><span class="n">Frequency</span><span class="p">);</span>
-<span class="w">                    </span><span class="n">Add</span><span class="p">(</span><span class="n">_T</span><span class="p">(</span><span class="s">&quot;signal&quot;</span><span class="p">),</span><span class="w"> </span><span class="o">&amp;</span><span class="n">Signal</span><span class="p">);</span>
+<span class="w">                    </span><span class="n">Add</span><span class="p">(</span><span class="n">_T</span><span class="p">(</span><span class="s">"ssid"</span><span class="p">),</span><span class="w"> </span><span class="o">&amp;</span><span class="n">Ssid</span><span class="p">);</span>
+<span class="w">                    </span><span class="n">Add</span><span class="p">(</span><span class="n">_T</span><span class="p">(</span><span class="s">"channel"</span><span class="p">),</span><span class="w"> </span><span class="o">&amp;</span><span class="n">Channel</span><span class="p">);</span>
+<span class="w">                    </span><span class="n">Add</span><span class="p">(</span><span class="n">_T</span><span class="p">(</span><span class="s">"frequency"</span><span class="p">),</span><span class="w"> </span><span class="o">&amp;</span><span class="n">Frequency</span><span class="p">);</span>
+<span class="w">                    </span><span class="n">Add</span><span class="p">(</span><span class="n">_T</span><span class="p">(</span><span class="s">"signal"</span><span class="p">),</span><span class="w"> </span><span class="o">&amp;</span><span class="n">Signal</span><span class="p">);</span>
 <span class="w">                </span><span class="p">}</span>
 
 <span class="w">            </span><span class="k">public</span><span class="o">:</span>
@@ -5049,7 +5049,7 @@ The <a href="https://github.com/rdkcentral/ThunderNanoServices/blob/master/examp
 <span class="w">            </span><span class="n">ScanCompleteParamsData</span><span class="p">()</span>
 <span class="w">                </span><span class="o">:</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">JSON</span><span class="o">::</span><span class="n">Container</span><span class="p">()</span>
 <span class="w">            </span><span class="p">{</span>
-<span class="w">                </span><span class="n">Add</span><span class="p">(</span><span class="n">_T</span><span class="p">(</span><span class="s">&quot;accesspoints&quot;</span><span class="p">),</span><span class="w"> </span><span class="o">&amp;</span><span class="n">AccessPoints</span><span class="p">);</span>
+<span class="w">                </span><span class="n">Add</span><span class="p">(</span><span class="n">_T</span><span class="p">(</span><span class="s">"accesspoints"</span><span class="p">),</span><span class="w"> </span><span class="o">&amp;</span><span class="n">AccessPoints</span><span class="p">);</span>
 <span class="w">            </span><span class="p">}</span>
 
 <span class="w">            </span><span class="n">ScanCompleteParamsData</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">ScanCompleteParamsData</span><span class="o">&amp;</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">delete</span><span class="p">;</span>

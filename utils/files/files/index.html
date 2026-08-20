@@ -3679,38 +3679,38 @@
 <p>Below are some examples of using the File API, refer to <code>Source/core/Filesystem.h</code> and <code>Source/core/Filesystem.cpp</code> for all available APIs.</p>
 <h2 id="file-handling">File Handling</h2>
 <h3 id="check-if-file-exists">Check if file exists</h3>
-<div class="highlight"><pre><span></span><code><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">Core</span><span class="o">::</span><span class="n">File</span><span class="p">(</span><span class="s">&quot;/tmp/test.txt&quot;</span><span class="p">).</span><span class="n">Exists</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;File exists</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+<div class="highlight"><pre><span></span><code><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">Core</span><span class="o">::</span><span class="n">File</span><span class="p">(</span><span class="s">"/tmp/test.txt"</span><span class="p">).</span><span class="n">Exists</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">printf</span><span class="p">(</span><span class="s">"File exists</span><span class="se">\n</span><span class="s">"</span><span class="p">);</span>
 <span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;File does not exist</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="n">printf</span><span class="p">(</span><span class="s">"File does not exist</span><span class="se">\n</span><span class="s">"</span><span class="p">);</span>
 <span class="p">}</span>
 </code></pre></div>
 <h3 id="create-new-file">Create new file</h3>
-<div class="highlight"><pre><span></span><code><span class="n">Core</span><span class="o">::</span><span class="n">File</span><span class="w"> </span><span class="n">fileObject</span><span class="p">(</span><span class="s">&quot;/tmp/test.txt&quot;</span><span class="p">);</span>
+<div class="highlight"><pre><span></span><code><span class="n">Core</span><span class="o">::</span><span class="n">File</span><span class="w"> </span><span class="n">fileObject</span><span class="p">(</span><span class="s">"/tmp/test.txt"</span><span class="p">);</span>
 <span class="n">fileObject</span><span class="p">.</span><span class="n">Create</span><span class="p">(</span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">uint32_t</span><span class="o">&gt;</span><span class="p">(</span><span class="mo">0755</span><span class="p">));</span>
 
 <span class="c1">// Either close the file manually, or it will be closed automatically in destructor</span>
 <span class="n">fileObject</span><span class="p">.</span><span class="n">Close</span><span class="p">();</span>
 </code></pre></div>
 <h3 id="delete-file">Delete File</h3>
-<div class="highlight"><pre><span></span><code><span class="n">Core</span><span class="o">::</span><span class="n">File</span><span class="w"> </span><span class="n">fileObject</span><span class="p">(</span><span class="s">&quot;/tmp/test.txt&quot;</span><span class="p">);</span>
+<div class="highlight"><pre><span></span><code><span class="n">Core</span><span class="o">::</span><span class="n">File</span><span class="w"> </span><span class="n">fileObject</span><span class="p">(</span><span class="s">"/tmp/test.txt"</span><span class="p">);</span>
 <span class="n">file</span><span class="p">.</span><span class="n">Destroy</span><span class="p">();</span>
 </code></pre></div>
 <h3 id="move-file">Move File</h3>
-<div class="highlight"><pre><span></span><code><span class="n">Core</span><span class="o">::</span><span class="n">File</span><span class="w"> </span><span class="n">fileObject</span><span class="p">(</span><span class="s">&quot;/tmp/test.txt&quot;</span><span class="p">);</span>
-<span class="n">fileObject</span><span class="p">.</span><span class="n">Move</span><span class="p">(</span><span class="s">&quot;/tmp/newfile.txt&quot;</span><span class="p">);</span>
+<div class="highlight"><pre><span></span><code><span class="n">Core</span><span class="o">::</span><span class="n">File</span><span class="w"> </span><span class="n">fileObject</span><span class="p">(</span><span class="s">"/tmp/test.txt"</span><span class="p">);</span>
+<span class="n">fileObject</span><span class="p">.</span><span class="n">Move</span><span class="p">(</span><span class="s">"/tmp/newfile.txt"</span><span class="p">);</span>
 
 <span class="c1">// The fileObject information is refreshed once moved, so calls to</span>
 <span class="c1">// methods such as `Name()` will contain the updated values from after the move.</span>
-<span class="n">printf</span><span class="p">(</span><span class="s">&quot;New file path is: %s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">fileObject</span><span class="p">.</span><span class="n">Name</span><span class="p">().</span><span class="n">c_str</span><span class="p">());</span>
+<span class="n">printf</span><span class="p">(</span><span class="s">"New file path is: %s</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span><span class="w"> </span><span class="n">fileObject</span><span class="p">.</span><span class="n">Name</span><span class="p">().</span><span class="n">c_str</span><span class="p">());</span>
 </code></pre></div>
 <h3 id="get-file-extension">Get File Extension</h3>
 <p>Will return file extension without the leading dot</p>
 <div class="highlight"><pre><span></span><code><span class="c1">// Option 1</span>
-<span class="n">string</span><span class="w"> </span><span class="n">extension</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">File</span><span class="o">::</span><span class="n">Extension</span><span class="p">(</span><span class="s">&quot;/tmp/test.txt&quot;</span><span class="p">);</span>
+<span class="n">string</span><span class="w"> </span><span class="n">extension</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">File</span><span class="o">::</span><span class="n">Extension</span><span class="p">(</span><span class="s">"/tmp/test.txt"</span><span class="p">);</span>
 
 <span class="c1">// Option 2</span>
-<span class="n">Core</span><span class="o">::</span><span class="n">File</span><span class="w"> </span><span class="n">fileObject</span><span class="p">(</span><span class="s">&quot;/tmp/test.txt&quot;</span><span class="p">);</span>
+<span class="n">Core</span><span class="o">::</span><span class="n">File</span><span class="w"> </span><span class="n">fileObject</span><span class="p">(</span><span class="s">"/tmp/test.txt"</span><span class="p">);</span>
 <span class="n">string</span><span class="w"> </span><span class="n">extension</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fileObject</span><span class="p">.</span><span class="n">Extension</span><span class="p">();</span>
 </code></pre></div>
 <h3 id="read-file-contents-into-memory">Read file contents into memory</h3>
@@ -3718,7 +3718,7 @@
 <p class="admonition-title">Warning</p>
 <p>Consider memory usage when reading large files straight into memory. For large files, consider reading and parsing line-by-line to extract only the necessary data if possible</p>
 </div>
-<div class="highlight"><pre><span></span><code><span class="n">Core</span><span class="o">::</span><span class="n">File</span><span class="w"> </span><span class="n">fileObject</span><span class="p">(</span><span class="s">&quot;/tmp/test.txt&quot;</span><span class="p">);</span>
+<div class="highlight"><pre><span></span><code><span class="n">Core</span><span class="o">::</span><span class="n">File</span><span class="w"> </span><span class="n">fileObject</span><span class="p">(</span><span class="s">"/tmp/test.txt"</span><span class="p">);</span>
 
 <span class="c1">// Open() defaults to read-only</span>
 <span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">fileObject</span><span class="p">.</span><span class="n">Open</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
@@ -3735,7 +3735,7 @@
 <span class="p">}</span>
 </code></pre></div>
 <h3 id="create-a-new-file-and-write-data">Create a new file and write data</h3>
-<div class="highlight"><pre><span></span><code><span class="n">Core</span><span class="o">::</span><span class="n">File</span><span class="w"> </span><span class="n">fileObject</span><span class="p">(</span><span class="s">&quot;/tmp/test.txt&quot;</span><span class="p">);</span>
+<div class="highlight"><pre><span></span><code><span class="n">Core</span><span class="o">::</span><span class="n">File</span><span class="w"> </span><span class="n">fileObject</span><span class="p">(</span><span class="s">"/tmp/test.txt"</span><span class="p">);</span>
 
 <span class="c1">// Delete file if it already exists</span>
 <span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">fileObject</span><span class="p">.</span><span class="n">Exists</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
@@ -3744,19 +3744,19 @@
 
 <span class="n">fileObject</span><span class="p">.</span><span class="n">Create</span><span class="p">();</span>
 
-<span class="n">string</span><span class="w"> </span><span class="n">toWrite</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;Some text to write to a file</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+<span class="n">string</span><span class="w"> </span><span class="n">toWrite</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"Some text to write to a file</span><span class="se">\n</span><span class="s">"</span><span class="p">;</span>
 <span class="n">fileObject</span><span class="p">.</span><span class="n">Write</span><span class="p">(</span><span class="k">reinterpret_cast</span><span class="o">&lt;</span><span class="kt">uint8_t</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">toWrite</span><span class="p">.</span><span class="n">data</span><span class="p">()),</span><span class="w"> </span><span class="n">toWrite</span><span class="p">.</span><span class="n">size</span><span class="p">());</span>
 
 <span class="n">fileObject</span><span class="p">.</span><span class="n">Close</span><span class="p">();</span>
 </code></pre></div>
 <h3 id="append-to-existing-file">Append to existing file</h3>
-<div class="highlight"><pre><span></span><code><span class="n">Core</span><span class="o">::</span><span class="n">File</span><span class="w"> </span><span class="n">fileObject</span><span class="p">(</span><span class="s">&quot;/tmp/test.txt&quot;</span><span class="p">);</span>
+<div class="highlight"><pre><span></span><code><span class="n">Core</span><span class="o">::</span><span class="n">File</span><span class="w"> </span><span class="n">fileObject</span><span class="p">(</span><span class="s">"/tmp/test.txt"</span><span class="p">);</span>
 
 <span class="c1">// Open() defaults to opening read-only, pass false to open as r/w</span>
 <span class="n">fileObject</span><span class="p">.</span><span class="n">Open</span><span class="p">(</span><span class="nb">false</span><span class="p">);</span>
 <span class="n">fileObject</span><span class="p">.</span><span class="n">Position</span><span class="p">(</span><span class="nb">false</span><span class="p">,</span><span class="w"> </span><span class="n">fileObject</span><span class="p">.</span><span class="n">Size</span><span class="p">());</span>
 
-<span class="n">string</span><span class="w"> </span><span class="n">toWrite</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;Text to append to a file</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+<span class="n">string</span><span class="w"> </span><span class="n">toWrite</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"Text to append to a file</span><span class="se">\n</span><span class="s">"</span><span class="p">;</span>
 <span class="n">fileObject</span><span class="p">.</span><span class="n">Write</span><span class="p">(</span><span class="k">reinterpret_cast</span><span class="o">&lt;</span><span class="kt">uint8_t</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">toWrite</span><span class="p">.</span><span class="n">data</span><span class="p">()),</span><span class="w"> </span><span class="n">toWrite</span><span class="p">.</span><span class="n">size</span><span class="p">());</span>
 
 <span class="n">fileObject</span><span class="p">.</span><span class="n">Close</span><span class="p">();</span>
@@ -3764,64 +3764,64 @@
 <h3 id="read-file-line-by-line">Read file line-by-line</h3>
 <p>This is a more efficient way of parsing large files instead of reading them entirely into memory if only certain information in the file is required</p>
 <div class="highlight"><pre><span></span><code><span class="c1">// File will be closed on destruction</span>
-<span class="n">Core</span><span class="o">::</span><span class="n">DataElementFile</span><span class="w"> </span><span class="n">fileObject</span><span class="p">(</span><span class="s">&quot;/tmp/test.txt&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">File</span><span class="o">::</span><span class="n">USER_READ</span><span class="p">);</span>
+<span class="n">Core</span><span class="o">::</span><span class="n">DataElementFile</span><span class="w"> </span><span class="n">fileObject</span><span class="p">(</span><span class="s">"/tmp/test.txt"</span><span class="p">,</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">File</span><span class="o">::</span><span class="n">USER_READ</span><span class="p">);</span>
 <span class="n">Core</span><span class="o">::</span><span class="n">TextReader</span><span class="w"> </span><span class="nf">reader</span><span class="p">(</span><span class="n">fileObject</span><span class="p">);</span>
 
 <span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">reader</span><span class="p">.</span><span class="n">EndOfText</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">Core</span><span class="o">::</span><span class="n">TextFragment</span><span class="w"> </span><span class="nf">line</span><span class="p">(</span><span class="n">reader</span><span class="p">.</span><span class="n">ReadLine</span><span class="p">());</span>
 
 <span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">line</span><span class="p">.</span><span class="n">IsEmpty</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;Read line: %s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">line</span><span class="p">.</span><span class="n">Text</span><span class="p">().</span><span class="n">c_str</span><span class="p">());</span>
+<span class="w">        </span><span class="n">printf</span><span class="p">(</span><span class="s">"Read line: %s</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span><span class="w"> </span><span class="n">line</span><span class="p">.</span><span class="n">Text</span><span class="p">().</span><span class="n">c_str</span><span class="p">());</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
 <h2 id="directory-handling">Directory Handling</h2>
 <h3 id="create-directory">Create Directory</h3>
 <p>Will create directories recursively</p>
-<div class="highlight"><pre><span></span><code><span class="n">Core</span><span class="o">::</span><span class="n">Directory</span><span class="p">(</span><span class="s">&quot;/tmp/subdirectory&quot;</span><span class="p">).</span><span class="n">CreatePath</span><span class="p">();</span>
+<div class="highlight"><pre><span></span><code><span class="n">Core</span><span class="o">::</span><span class="n">Directory</span><span class="p">(</span><span class="s">"/tmp/subdirectory"</span><span class="p">).</span><span class="n">CreatePath</span><span class="p">();</span>
 </code></pre></div>
 <h3 id="delete-contents-of-a-directory">Delete contents of a directory</h3>
 <p>This will remove everything inside the directory recursively, but will not delete the directory itself</p>
-<div class="highlight"><pre><span></span><code><span class="n">Core</span><span class="o">::</span><span class="n">Directory</span><span class="p">(</span><span class="s">&quot;/tmp/subdirectory&quot;</span><span class="p">).</span><span class="n">Destroy</span><span class="p">();</span>
+<div class="highlight"><pre><span></span><code><span class="n">Core</span><span class="o">::</span><span class="n">Directory</span><span class="p">(</span><span class="s">"/tmp/subdirectory"</span><span class="p">).</span><span class="n">Destroy</span><span class="p">();</span>
 </code></pre></div>
 <h3 id="delete-directory">Delete directory</h3>
 <p>This will delete the contents of the directory and the directory itself</p>
-<div class="highlight"><pre><span></span><code>Core::Directory(&quot;/tmp/subdirectory&quot;).Destroy();
-Core::File(&quot;/tmp/subdirectory&quot;).Destroy();
+<div class="highlight"><pre><span></span><code>Core::Directory("/tmp/subdirectory").Destroy();
+Core::File("/tmp/subdirectory").Destroy();
 </code></pre></div>
 <h3 id="iterate-over-a-directory">Iterate over a directory</h3>
 <h4 id="all-files">All Files</h4>
-<div class="highlight"><pre><span></span><code><span class="n">Core</span><span class="o">::</span><span class="n">Directory</span><span class="w"> </span><span class="n">dir</span><span class="p">(</span><span class="s">&quot;/tmp&quot;</span><span class="p">);</span>
+<div class="highlight"><pre><span></span><code><span class="n">Core</span><span class="o">::</span><span class="n">Directory</span><span class="w"> </span><span class="n">dir</span><span class="p">(</span><span class="s">"/tmp"</span><span class="p">);</span>
 
 <span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="n">dir</span><span class="p">.</span><span class="n">Next</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">Core</span><span class="o">::</span><span class="n">File</span><span class="w"> </span><span class="nf">currentEntry</span><span class="p">(</span><span class="n">dir</span><span class="p">.</span><span class="n">Current</span><span class="p">());</span>
 
 <span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">currentEntry</span><span class="p">.</span><span class="n">IsDirectory</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;Found file: %s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">currentEntry</span><span class="p">.</span><span class="n">Name</span><span class="p">().</span><span class="n">c_str</span><span class="p">());</span>
+<span class="w">        </span><span class="n">printf</span><span class="p">(</span><span class="s">"Found file: %s</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span><span class="w"> </span><span class="n">currentEntry</span><span class="p">.</span><span class="n">Name</span><span class="p">().</span><span class="n">c_str</span><span class="p">());</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
 <h4 id="globbing">Globbing</h4>
 <p>Using an glob wildcard pattern, only iterate over .txt files</p>
-<div class="highlight"><pre><span></span><code><span class="n">Core</span><span class="o">::</span><span class="n">Directory</span><span class="w"> </span><span class="n">dir</span><span class="p">(</span><span class="s">&quot;/tmp&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;*.txt&quot;</span><span class="p">);</span>
+<div class="highlight"><pre><span></span><code><span class="n">Core</span><span class="o">::</span><span class="n">Directory</span><span class="w"> </span><span class="n">dir</span><span class="p">(</span><span class="s">"/tmp"</span><span class="p">,</span><span class="w"> </span><span class="s">"*.txt"</span><span class="p">);</span>
 
 <span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="n">dir</span><span class="p">.</span><span class="n">Next</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">Core</span><span class="o">::</span><span class="n">File</span><span class="w"> </span><span class="nf">currentEntry</span><span class="p">(</span><span class="n">dir</span><span class="p">.</span><span class="n">Current</span><span class="p">());</span>
 
 <span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">currentEntry</span><span class="p">.</span><span class="n">IsDirectory</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;Found text file: %s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">currentEntry</span><span class="p">.</span><span class="n">Name</span><span class="p">().</span><span class="n">c_str</span><span class="p">());</span>
+<span class="w">        </span><span class="n">printf</span><span class="p">(</span><span class="s">"Found text file: %s</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span><span class="w"> </span><span class="n">currentEntry</span><span class="p">.</span><span class="n">Name</span><span class="p">().</span><span class="n">c_str</span><span class="p">());</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
 <h2 id="path-handling">Path Handling</h2>
 <h3 id="normalisation">Normalisation</h3>
 <p>For security, use the <code>Normalise()</code> function when accepting user input to prevent path traversal vulnerabilities. Will attempt to return a safe version of the path if possible. If the path attempts to traverse outside of the current directory then the <code>valid</code> argument will be set to false.</p>
-<div class="highlight"><pre><span></span><code><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">vulnerablePath</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;../../../../passwd&quot;</span><span class="p">;</span>
+<div class="highlight"><pre><span></span><code><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">vulnerablePath</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"../../../../passwd"</span><span class="p">;</span>
 <span class="kt">bool</span><span class="w"> </span><span class="n">validPath</span><span class="p">;</span>
 
 <span class="n">Core</span><span class="o">::</span><span class="n">File</span><span class="o">::</span><span class="n">Normalize</span><span class="p">(</span><span class="n">vulnerablePath</span><span class="p">,</span><span class="w"> </span><span class="n">validPath</span><span class="p">);</span>
 
-<span class="n">printf</span><span class="p">(</span><span class="s">&quot;Safe path: %s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">validPath</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="s">&quot;true&quot;</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="s">&quot;false&quot;</span><span class="p">);</span>
+<span class="n">printf</span><span class="p">(</span><span class="s">"Safe path: %s</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span><span class="w"> </span><span class="n">validPath</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="s">"true"</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="s">"false"</span><span class="p">);</span>
 
 <span class="cm">/* Output:</span>
 <span class="cm">Safe path: false</span>

@@ -3525,8 +3525,8 @@
 <p class="admonition-title">Note</p>
 <p>Any options that are children of a parent option are documented as <code>parent.child</code>. E.G <code>parentOption.childOption = true</code> equates to the following JSON</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">   </span><span class="nt">&quot;parentOption&quot;</span><span class="p">:{</span>
-<span class="w">      </span><span class="nt">&quot;childOption&quot;</span><span class="p">:</span><span class="kc">true</span>
+<span class="w">   </span><span class="nt">"parentOption"</span><span class="p">:{</span>
+<span class="w">      </span><span class="nt">"childOption"</span><span class="p">:</span><span class="kc">true</span>
 <span class="w">   </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
@@ -3702,12 +3702,12 @@
 </table>
 <h3 id="sample-configuration">Sample Configuration</h3>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">   </span><span class="nt">&quot;locator&quot;</span><span class="p">:</span><span class="s2">&quot;libThunderSamplePlugin.so&quot;</span><span class="p">,</span>
-<span class="w">   </span><span class="nt">&quot;classname&quot;</span><span class="p">:</span><span class="s2">&quot;SamplePlugin&quot;</span><span class="p">,</span>
-<span class="w">   </span><span class="nt">&quot;startmode&quot;</span><span class="p">:</span><span class="s2">&quot;Activated&quot;</span><span class="p">,</span>
-<span class="w">   </span><span class="nt">&quot;configuration&quot;</span><span class="p">:{</span>
-<span class="w">      </span><span class="nt">&quot;root&quot;</span><span class="p">:{</span>
-<span class="w">         </span><span class="nt">&quot;mode&quot;</span><span class="p">:</span><span class="s2">&quot;Off&quot;</span>
+<span class="w">   </span><span class="nt">"locator"</span><span class="p">:</span><span class="s2">"libThunderSamplePlugin.so"</span><span class="p">,</span>
+<span class="w">   </span><span class="nt">"classname"</span><span class="p">:</span><span class="s2">"SamplePlugin"</span><span class="p">,</span>
+<span class="w">   </span><span class="nt">"startmode"</span><span class="p">:</span><span class="s2">"Activated"</span><span class="p">,</span>
+<span class="w">   </span><span class="nt">"configuration"</span><span class="p">:{</span>
+<span class="w">      </span><span class="nt">"root"</span><span class="p">:{</span>
+<span class="w">         </span><span class="nt">"mode"</span><span class="p">:</span><span class="s2">"Off"</span>
 <span class="w">      </span><span class="p">}</span>
 <span class="w">   </span><span class="p">}</span>
 <span class="p">}</span>
@@ -3718,13 +3718,13 @@
 <h3 id="1-define-config-structure">1. Define config structure</h3>
 <p>For this example, we will create a config file for an example plugin that returns a greeting to the user. In the config file, we would like to choose which greetings could be returned. The goal is to have a config file that looks as follows, where <code>greetings</code> is our custom greetings option</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">   </span><span class="nt">&quot;locator&quot;</span><span class="p">:</span><span class="s2">&quot;libThunderGreeterPlugin.so&quot;</span><span class="p">,</span>
-<span class="w">   </span><span class="nt">&quot;classname&quot;</span><span class="p">:</span><span class="s2">&quot;Greeter&quot;</span><span class="p">,</span>
-<span class="w">   </span><span class="nt">&quot;startmode&quot;</span><span class="p">:</span><span class="s2">&quot;Activated&quot;</span><span class="p">,</span>
-<span class="w">   </span><span class="nt">&quot;configuration&quot;</span><span class="p">:{</span>
-<span class="w">      </span><span class="nt">&quot;greetings&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;Hello&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Good Morning&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Hi&quot;</span><span class="p">]</span>
-<span class="w">      </span><span class="nt">&quot;root&quot;</span><span class="p">:{</span>
-<span class="w">         </span><span class="nt">&quot;mode&quot;</span><span class="p">:</span><span class="s2">&quot;Off&quot;</span>
+<span class="w">   </span><span class="nt">"locator"</span><span class="p">:</span><span class="s2">"libThunderGreeterPlugin.so"</span><span class="p">,</span>
+<span class="w">   </span><span class="nt">"classname"</span><span class="p">:</span><span class="s2">"Greeter"</span><span class="p">,</span>
+<span class="w">   </span><span class="nt">"startmode"</span><span class="p">:</span><span class="s2">"Activated"</span><span class="p">,</span>
+<span class="w">   </span><span class="nt">"configuration"</span><span class="p">:{</span>
+<span class="w">      </span><span class="nt">"greetings"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"Hello"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Good Morning"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Hi"</span><span class="p">]</span>
+<span class="w">      </span><span class="nt">"root"</span><span class="p">:{</span>
+<span class="w">         </span><span class="nt">"mode"</span><span class="p">:</span><span class="s2">"Off"</span>
 <span class="w">      </span><span class="p">}</span>
 <span class="w">   </span><span class="p">}</span>
 <span class="p">}</span>
@@ -3738,7 +3738,7 @@
 <span class="w">        </span><span class="o">:</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">JSON</span><span class="o">::</span><span class="n">Container</span><span class="p">()</span>
 <span class="w">        </span><span class="p">,</span><span class="w"> </span><span class="n">Greetings</span><span class="p">()</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">        </span><span class="n">Add</span><span class="p">(</span><span class="n">_T</span><span class="p">(</span><span class="s">&quot;greetings&quot;</span><span class="p">),</span><span class="w"> </span><span class="o">&amp;</span><span class="n">Greetings</span><span class="p">);</span><span class="w"> </span><span class="c1">// (1)</span>
+<span class="w">        </span><span class="n">Add</span><span class="p">(</span><span class="n">_T</span><span class="p">(</span><span class="s">"greetings"</span><span class="p">),</span><span class="w"> </span><span class="o">&amp;</span><span class="n">Greetings</span><span class="p">);</span><span class="w"> </span><span class="c1">// (1)</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">    </span><span class="o">~</span><span class="n">GreeterPluginConfiguration</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">default</span><span class="p">;</span>
 
@@ -3763,15 +3763,15 @@
 <p>Anything surrounded by <code>@</code> symbols will be replaced with a value from CMake - see <a href="https://cmake.org/cmake/help/latest/command/configure_file.html">here</a> for more detail. This allows setting default values in the CMake file, which can then be customised at build time.</p>
 <p>To edit config options, simply create variables with the corresponding name. Nested config options can be built by constructing <code>Json</code> objects. The <code>locator</code> and <code>classname</code> values will be automatically assumed at build time, although can be overridden with custom values if required.</p>
 <p>For example, the below will create default values for our Greeter plugin</p>
-<div class="highlight"><pre><span></span><code><span class="n">startmode</span> <span class="o">=</span> <span class="s2">&quot;Activated&quot;</span>
+<div class="highlight"><pre><span></span><code><span class="n">startmode</span> <span class="o">=</span> <span class="s2">"Activated"</span>
 
 <span class="n">configuration</span> <span class="o">=</span> <span class="n">JSON</span><span class="p">()</span>
-<span class="n">greetings</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Hello&quot;</span><span class="p">,</span> <span class="s2">&quot;Good Morning&quot;</span><span class="p">,</span> <span class="s2">&quot;Hi&quot;</span><span class="p">]</span>
-<span class="n">configuration</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s2">&quot;Greetings&quot;</span><span class="p">,</span> <span class="n">greetings</span><span class="p">)</span>
+<span class="n">greetings</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"Hello"</span><span class="p">,</span> <span class="s2">"Good Morning"</span><span class="p">,</span> <span class="s2">"Hi"</span><span class="p">]</span>
+<span class="n">configuration</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s2">"Greetings"</span><span class="p">,</span> <span class="n">greetings</span><span class="p">)</span>
 
 <span class="n">root</span> <span class="o">=</span> <span class="n">JSON</span><span class="p">()</span>
-<span class="n">root</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s2">&quot;mode&quot;</span><span class="p">,</span> <span class="s2">&quot;Off&quot;</span><span class="p">)</span>
-<span class="n">configuration</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s2">&quot;root&quot;</span><span class="p">,</span> <span class="n">root</span><span class="p">)</span>
+<span class="n">root</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s2">"mode"</span><span class="p">,</span> <span class="s2">"Off"</span><span class="p">)</span>
+<span class="n">configuration</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s2">"root"</span><span class="p">,</span> <span class="n">root</span><span class="p">)</span>
 </code></pre></div>
 <h4 id="legacy-config-generator">Legacy Config Generator</h4>
 <div class="admonition info">
@@ -3781,15 +3781,15 @@
 </div>
 <p>The legacy config generator uses <a href="https://github.com/toeb/cmakepp/blob/master/cmake/quickmap/README.md">CMakepp QuickMap</a> syntax to build the config JSON file. To use the legacy syntax, create a file called <code>&lt;PluginName&gt;.conf</code> in your plugin source code.</p>
 <p>Example for our Greeter plugin:</p>
-<div class="highlight"><pre><span></span><code><span class="nb">set</span><span class="w"> </span><span class="p">(</span><span class="s">startmode</span><span class="w"> </span><span class="s2">&quot;Activated&quot;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><span class="nb">set</span><span class="w"> </span><span class="p">(</span><span class="s">startmode</span><span class="w"> </span><span class="s2">"Activated"</span><span class="p">)</span>
 
 <span class="nb">map</span><span class="p">()</span>
-<span class="w">    </span><span class="nb">kv</span><span class="p">(</span><span class="s">mode</span><span class="w"> </span><span class="s2">&quot;Off&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="nb">kv</span><span class="p">(</span><span class="s">mode</span><span class="w"> </span><span class="s2">"Off"</span><span class="p">)</span>
 <span class="nb">end</span><span class="p">()</span>
 <span class="nb">ans</span><span class="p">(</span><span class="s">rootobject</span><span class="p">)</span>
 
 <span class="nb">map</span><span class="p">()</span>
-<span class="w">    </span><span class="nb">kv</span><span class="p">(</span><span class="s2">&quot;Greetings&quot;</span><span class="s">,</span><span class="w"> </span><span class="s2">&quot;Hello&quot;</span><span class="w"> </span><span class="s2">&quot;Good Morning&quot;</span><span class="w"> </span><span class="s2">&quot;Hi&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="nb">kv</span><span class="p">(</span><span class="s2">"Greetings"</span><span class="s">,</span><span class="w"> </span><span class="s2">"Hello"</span><span class="w"> </span><span class="s2">"Good Morning"</span><span class="w"> </span><span class="s2">"Hi"</span><span class="p">)</span>
 <span class="nb">end</span><span class="p">()</span>
 <span class="nb">ans</span><span class="p">(</span><span class="s">configuration</span><span class="p">)</span>
 
@@ -3818,23 +3818,23 @@
 <p>Make a JSON-RPC call to <code>Controller.configuration@&lt;PluginName&gt;</code> with no parameters</p>
 <p><img alt="➡" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@16.0.1/assets/svg/27a1.svg" title=":arrow_right:" /> Request</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;jsonrpc&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2.0&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Controller.1.configuration@SamplePlugin&quot;</span>
+<span class="w">    </span><span class="nt">"jsonrpc"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2.0"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"method"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Controller.1.configuration@SamplePlugin"</span>
 <span class="p">}</span>
 </code></pre></div>
 <p><img alt="⬅" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@16.0.1/assets/svg/2b05.svg" title=":arrow_left:" /> Response:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;jsonrpc&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2.0&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;result&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;Greetings&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<span class="w">            </span><span class="s2">&quot;Hello&quot;</span><span class="p">,</span>
-<span class="w">            </span><span class="s2">&quot;Good Morning&quot;</span><span class="p">,</span>
-<span class="w">            </span><span class="s2">&quot;Hi&quot;</span>
+<span class="w">    </span><span class="nt">"jsonrpc"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2.0"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"result"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">"Greetings"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">            </span><span class="s2">"Hello"</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">"Good Morning"</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">"Hi"</span>
 <span class="w">        </span><span class="p">],</span>
-<span class="w">        </span><span class="nt">&quot;root&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="nt">&quot;mode&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;On&quot;</span>
+<span class="w">        </span><span class="nt">"root"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">"mode"</span><span class="p">:</span><span class="w"> </span><span class="s2">"On"</span>
 <span class="w">        </span><span class="p">}</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">}</span>
@@ -3848,32 +3848,32 @@
 <p>Make a request to <code>Controller.configuration@&lt;PluginName&gt;</code> with the parameters containing the entire config object that should be set. It is not possible to modify some options, including callsign and locator</p>
 <p><img alt="➡" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@16.0.1/assets/svg/27a1.svg" title=":arrow_right:" /> Request</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;jsonrpc&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2.0&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Controller.1.configuration@SamplePlugin&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;params&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;Greetings&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<span class="w">            </span><span class="s2">&quot;Goodbye&quot;</span><span class="p">,</span>
-<span class="w">            </span><span class="s2">&quot;Bye&quot;</span>
+<span class="w">    </span><span class="nt">"jsonrpc"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2.0"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"method"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Controller.1.configuration@SamplePlugin"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"params"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">"Greetings"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">            </span><span class="s2">"Goodbye"</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">"Bye"</span>
 <span class="w">        </span><span class="p">],</span>
-<span class="w">        </span><span class="nt">&quot;root&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="nt">&quot;mode&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;On&quot;</span>
+<span class="w">        </span><span class="nt">"root"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">"mode"</span><span class="p">:</span><span class="w"> </span><span class="s2">"On"</span>
 <span class="w">        </span><span class="p">}</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
 <p><img alt="⬅" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@16.0.1/assets/svg/2b05.svg" title=":arrow_left:" /> Response</p>
 <div class="highlight"><pre><span></span><code>{
-    &quot;jsonrpc&quot;: &quot;2.0&quot;,
-    &quot;id&quot;: 1,
-    &quot;result&quot;: null
+    "jsonrpc": "2.0",
+    "id": 1,
+    "result": null
 }
 </code></pre></div>
 <h2 id="path-substitution">Path Substitution</h2>
 <p>If your custom plugin configuration contains values for filesystem paths, instead of hardcoding specific paths it is possible to use path variable substitution. This allows you to retrieve and use the values for paths set in the main Thunder config file in your configuration automatically.</p>
 <p>For example, if the custom plugin config contained the following</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;customDirectory&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;%persistentpath%/myDirectory&quot;</span>
+<span class="w">    </span><span class="nt">"customDirectory"</span><span class="p">:</span><span class="w"> </span><span class="s2">"%persistentpath%/myDirectory"</span>
 <span class="p">}</span>
 </code></pre></div>
 <p>Then in the plugin code, calling <code>_service-&gt;Substitute(...)</code> would replace the <code>%persistentpath%</code> variable with the <code>persistentpath</code> value from the main config file.</p>

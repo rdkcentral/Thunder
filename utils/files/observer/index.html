@@ -3248,14 +3248,14 @@
 <span class="w">        </span><span class="c1">// Check the path is valid</span>
 <span class="w">        </span><span class="n">Core</span><span class="o">::</span><span class="n">File</span><span class="w"> </span><span class="nf">file</span><span class="p">(</span><span class="n">_filePath</span><span class="p">);</span>
 <span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">file</span><span class="p">.</span><span class="n">Exists</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;Error: Path %s does not exist - cannot add monitor</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">_filePath</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span>
+<span class="w">            </span><span class="n">printf</span><span class="p">(</span><span class="s">"Error: Path %s does not exist - cannot add monitor</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span><span class="w"> </span><span class="n">_filePath</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span>
 <span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
 <span class="w">            </span><span class="c1">// Register the file path with the filesystem observer</span>
 <span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">Core</span><span class="o">::</span><span class="n">FileSystemMonitor</span><span class="o">::</span><span class="n">Instance</span><span class="p">().</span><span class="n">Register</span><span class="p">(</span><span class="k">this</span><span class="p">,</span><span class="w"> </span><span class="n">_filePath</span><span class="p">))</span><span class="w"> </span><span class="p">{</span>
 <span class="w">                </span><span class="n">_registered</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span>
-<span class="w">                </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;Successfully installed file monitor for %s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">_filePath</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span>
+<span class="w">                </span><span class="n">printf</span><span class="p">(</span><span class="s">"Successfully installed file monitor for %s</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span><span class="w"> </span><span class="n">_filePath</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span>
 <span class="w">            </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
-<span class="w">                </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;Failed to install filesystem monitor</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+<span class="w">                </span><span class="n">printf</span><span class="p">(</span><span class="s">"Failed to install filesystem monitor</span><span class="se">\n</span><span class="s">"</span><span class="p">);</span>
 <span class="w">            </span><span class="p">}</span>
 <span class="w">        </span><span class="p">}</span>
 <span class="w">    </span><span class="p">}</span>
@@ -3274,7 +3274,7 @@
 
 <span class="w">    </span><span class="kt">void</span><span class="w"> </span><span class="nf">Updated</span><span class="p">()</span><span class="w"> </span><span class="k">override</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">        </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;This file %s has changed!</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">_filePath</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span>
+<span class="w">        </span><span class="n">printf</span><span class="p">(</span><span class="s">"This file %s has changed!</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span><span class="w"> </span><span class="n">_filePath</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span>
 <span class="w">    </span><span class="p">}</span>
 
 <span class="k">private</span><span class="o">:</span>
@@ -3288,17 +3288,17 @@
 <p>If watching a directory, be aware the file observer is not recursive, so will only monitor the top-level for changes. Add seperate observers for child directories if required</p>
 </div>
 <div class="highlight"><pre><span></span><code><span class="c1">// Monitor a specific file (note this is based on inodes so cannot withstand the file being deleted &amp; recreated)</span>
-<span class="n">FileChangeMonitor</span><span class="w"> </span><span class="n">fileMonitor</span><span class="p">(</span><span class="s">&quot;/tmp/test.txt&quot;</span><span class="p">);</span>
+<span class="n">FileChangeMonitor</span><span class="w"> </span><span class="n">fileMonitor</span><span class="p">(</span><span class="s">"/tmp/test.txt"</span><span class="p">);</span>
 
 <span class="c1">// Monitor an entire directory</span>
-<span class="n">FileChangeMonitor</span><span class="w"> </span><span class="n">fileMonitor</span><span class="p">(</span><span class="s">&quot;/tmp&quot;</span><span class="p">);</span>
+<span class="n">FileChangeMonitor</span><span class="w"> </span><span class="n">fileMonitor</span><span class="p">(</span><span class="s">"/tmp"</span><span class="p">);</span>
 </code></pre></div>
 <p>Below is a <code>main()</code> method that installs the file monitor and sleeps for 20 seconds. </p>
 <p>Whilst the app is running, modifying the <code>/tmp/test.txt</code> file will cause our callback to fire and the message to be printed to the console</p>
 <div class="highlight"><pre><span></span><code><span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">argc</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="k">const</span><span class="o">*</span><span class="w"> </span><span class="n">argv</span><span class="p">[])</span>
 <span class="p">{</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">        </span><span class="n">FileChangeMonitor</span><span class="w"> </span><span class="n">fileMonitor</span><span class="p">(</span><span class="s">&quot;/tmp/test.txt&quot;</span><span class="p">);</span>
+<span class="w">        </span><span class="n">FileChangeMonitor</span><span class="w"> </span><span class="n">fileMonitor</span><span class="p">(</span><span class="s">"/tmp/test.txt"</span><span class="p">);</span>
 <span class="w">        </span><span class="n">SleepS</span><span class="p">(</span><span class="mi">20</span><span class="p">);</span>
 <span class="w">    </span><span class="p">}</span>
 

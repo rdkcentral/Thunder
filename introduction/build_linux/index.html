@@ -3498,7 +3498,7 @@
 <div class="highlight"><pre><span></span><code>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/rdkcentral/ThunderTools.git
 </code></pre></div>
 Next, we need to run the following commands to build and then install the code generators inside ThunderTools:
-<div class="highlight"><pre><span></span><code>cmake<span class="w"> </span>-G<span class="w"> </span>Ninja<span class="w"> </span>-S<span class="w"> </span>ThunderTools<span class="w"> </span>-B<span class="w"> </span>build/ThunderTools<span class="w"> </span>-DCMAKE_INSTALL_PREFIX<span class="o">=</span><span class="s2">&quot;install&quot;</span>
+<div class="highlight"><pre><span></span><code>cmake<span class="w"> </span>-G<span class="w"> </span>Ninja<span class="w"> </span>-S<span class="w"> </span>ThunderTools<span class="w"> </span>-B<span class="w"> </span>build/ThunderTools<span class="w"> </span>-DCMAKE_INSTALL_PREFIX<span class="o">=</span><span class="s2">"install"</span>
 
 cmake<span class="w"> </span>--build<span class="w"> </span>build/ThunderTools<span class="w"> </span>--target<span class="w"> </span>install
 </code></pre></div></p>
@@ -3508,11 +3508,11 @@ cmake<span class="w"> </span>--build<span class="w"> </span>build/ThunderTools<s
 </code></pre></div>
 <p>Run the following commands to build and then install Thunder. The available <code>-DCMAKE_BUILD_TYPE</code> options are: <code>[Debug, Release, MinSizeRel]</code>.</p>
 <div class="highlight"><pre><span></span><code>cmake<span class="w"> </span>-G<span class="w"> </span>Ninja<span class="w"> </span>-S<span class="w"> </span>Thunder<span class="w"> </span>-B<span class="w"> </span>build/Thunder<span class="w"> </span><span class="se">\</span>
--DBINDING<span class="o">=</span><span class="s2">&quot;127.0.0.1&quot;</span><span class="w"> </span><span class="se">\</span>
--DCMAKE_BUILD_TYPE<span class="o">=</span><span class="s2">&quot;Debug&quot;</span><span class="w"> </span><span class="se">\</span>
--DCMAKE_INSTALL_PREFIX<span class="o">=</span><span class="s2">&quot;install&quot;</span><span class="w"> </span><span class="se">\</span>
--DPORT<span class="o">=</span><span class="s2">&quot;55555&quot;</span><span class="w"> </span><span class="se">\</span>
--DTOOLS_SYSROOT<span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">PWD</span><span class="si">}</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+-DBINDING<span class="o">=</span><span class="s2">"127.0.0.1"</span><span class="w"> </span><span class="se">\</span>
+-DCMAKE_BUILD_TYPE<span class="o">=</span><span class="s2">"Debug"</span><span class="w"> </span><span class="se">\</span>
+-DCMAKE_INSTALL_PREFIX<span class="o">=</span><span class="s2">"install"</span><span class="w"> </span><span class="se">\</span>
+-DPORT<span class="o">=</span><span class="s2">"55555"</span><span class="w"> </span><span class="se">\</span>
+-DTOOLS_SYSROOT<span class="o">=</span><span class="s2">"</span><span class="si">${</span><span class="nv">PWD</span><span class="si">}</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
 -DINITV_SCRIPT<span class="o">=</span>OFF<span class="w"> </span>
 
 cmake<span class="w"> </span>--build<span class="w"> </span>build/Thunder<span class="w"> </span>--target<span class="w"> </span>install
@@ -3527,7 +3527,7 @@ cmake<span class="w"> </span>--build<span class="w"> </span>build/Thunder<span c
 </code></pre></div>
 <p>Run the following commands to build and then install ThunderInterfaces:</p>
 <div class="highlight"><pre><span></span><code>cmake<span class="w"> </span>-G<span class="w"> </span>Ninja<span class="w"> </span>-S<span class="w"> </span>ThunderInterfaces<span class="w"> </span>-B<span class="w"> </span>build/ThunderInterfaces<span class="w"> </span><span class="se">\</span>
--DCMAKE_INSTALL_PREFIX<span class="o">=</span><span class="s2">&quot;install&quot;</span>
+-DCMAKE_INSTALL_PREFIX<span class="o">=</span><span class="s2">"install"</span>
 
 cmake<span class="w"> </span>--build<span class="w"> </span>build/ThunderInterfaces<span class="w"> </span>--target<span class="w"> </span>install
 </code></pre></div>
@@ -3540,7 +3540,7 @@ cmake<span class="w"> </span>--build<span class="w"> </span>build/ThunderInterfa
 <p>Run the following commands to build and then install ThunderNanoServices. </p>
 <p>In the command below, there is a complete list of plugins that do not require any outside software/hardware dependencies. However, you should customise this to include the plugins you require for your platform.</p>
 <div class="highlight"><pre><span></span><code>cmake<span class="w"> </span>-G<span class="w"> </span>Ninja<span class="w"> </span>-S<span class="w"> </span>ThunderNanoServices<span class="w"> </span>-B<span class="w"> </span>build/ThunderNanoServices<span class="w"> </span><span class="se">\</span>
--DCMAKE_INSTALL_PREFIX<span class="o">=</span><span class="s2">&quot;install&quot;</span><span class="w"> </span><span class="se">\</span>
+-DCMAKE_INSTALL_PREFIX<span class="o">=</span><span class="s2">"install"</span><span class="w"> </span><span class="se">\</span>
 -DPLUGIN_COMMANDER<span class="o">=</span>ON<span class="w"> </span><span class="se">\</span>
 -DPLUGIN_DIALSERVER<span class="o">=</span>ON<span class="w"> </span><span class="se">\</span>
 -DPLUGIN_DICTIONARY<span class="o">=</span>ON<span class="w"> </span><span class="se">\</span>
@@ -3562,7 +3562,7 @@ cmake<span class="w"> </span>--build<span class="w"> </span>build/ThunderNanoSer
 <p>Run the following commands to build and then install ThunderNanoServicesRDK.</p>
 <p>In the command below, there is a complete list of plugins that do not require any outside software/hardware dependencies. However, you should customise this to include the plugins you require for your platform.</p>
 <div class="highlight"><pre><span></span><code>cmake<span class="w"> </span>-G<span class="w"> </span>Ninja<span class="w"> </span>-S<span class="w"> </span>ThunderNanoServicesRDK<span class="w"> </span>-B<span class="w"> </span>build/ThunderNanoServicesRDK<span class="w"> </span><span class="se">\</span>
--DCMAKE_INSTALL_PREFIX<span class="o">=</span><span class="s2">&quot;install&quot;</span><span class="w"> </span><span class="se">\</span>
+-DCMAKE_INSTALL_PREFIX<span class="o">=</span><span class="s2">"install"</span><span class="w"> </span><span class="se">\</span>
 -DPLUGIN_DEVICEINFO<span class="o">=</span>ON<span class="w"> </span><span class="se">\</span>
 -DPLUGIN_MESSAGECONTROL<span class="o">=</span>ON<span class="w"> </span><span class="se">\</span>
 -DPLUGIN_MESSENGER<span class="o">=</span>ON<span class="w"> </span><span class="se">\</span>
@@ -3580,7 +3580,7 @@ cmake<span class="w"> </span>--build<span class="w"> </span>build/ThunderNanoSer
 <p>Run the following commands to build and then install ThunderClientLibraries:</p>
 <p>In the command below, there is a complete list of client libraries that do not require any outside dependencies; therefore, each of them can be successfully built in this simple  fashion.</p>
 <div class="highlight"><pre><span></span><code>cmake<span class="w"> </span>-G<span class="w"> </span>Ninja<span class="w"> </span>-S<span class="w"> </span>ThunderClientLibraries<span class="w"> </span>-B<span class="w"> </span>build/ThunderClientLibraries<span class="w"> </span><span class="se">\</span>
--DCMAKE_INSTALL_PREFIX<span class="o">=</span><span class="s2">&quot;install&quot;</span><span class="w"> </span><span class="se">\</span>
+-DCMAKE_INSTALL_PREFIX<span class="o">=</span><span class="s2">"install"</span><span class="w"> </span><span class="se">\</span>
 -DBLUETOOTHAUDIOSINK<span class="o">=</span>ON<span class="w"> </span><span class="se">\</span>
 -DDEVICEINFO<span class="o">=</span>ON<span class="w"> </span><span class="se">\</span>
 -DDISPLAYINFO<span class="o">=</span>ON<span class="w"> </span><span class="se">\</span>
@@ -3600,7 +3600,7 @@ cmake<span class="w"> </span>--build<span class="w"> </span>build/ThunderClientL
 </code></pre></div>
 <p>Run the following commands to build and then install ThunderUI:</p>
 <div class="highlight"><pre><span></span><code>cmake<span class="w"> </span>-G<span class="w"> </span>Ninja<span class="w"> </span>-S<span class="w"> </span>ThunderUI<span class="w"> </span>-B<span class="w"> </span>build/ThunderUI<span class="w"> </span><span class="se">\</span>
--DCMAKE_INSTALL_PREFIX<span class="o">=</span><span class="s2">&quot;install&quot;</span>
+-DCMAKE_INSTALL_PREFIX<span class="o">=</span><span class="s2">"install"</span>
 
 cmake<span class="w"> </span>--build<span class="w"> </span>build/ThunderUI<span class="w"> </span>--target<span class="w"> </span>install
 </code></pre></div>
