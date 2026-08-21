@@ -31,6 +31,33 @@ jobs:
         pip install --upgrade pip
         pip install jsonref
 
+# ----- Checkout & DependsOn regex -----
+# --------- Thunder ----------
+    - name: Checkout Thunder - default
+      if: ${{ !contains(github.event.pull_request.body, '[DependsOn=Thunder:') }}
+      uses: actions/checkout@v5
+      with:
+        path: Thunder
+        repository: rdkcentral/Thunder
+
+    - name: Regex Thunder
+      if: contains(github.event.pull_request.body, '[DependsOn=Thunder:')
+      id: thunder
+      uses: AsasInnab/regex-action@v1
+      with:
+        regex_pattern: '(?<=\[DependsOn=Thunder:).*(?=\])'
+        regex_flags: 'gim'
+        search_string: ${{github.event.pull_request.body}}
+
+    - name: Checkout Thunder - ${{steps.thunder.outputs.first_match}}
+      if: contains(github.event.pull_request.body, '[DependsOn=Thunder:')
+      uses: actions/checkout@v5
+      with:
+        path: Thunder
+        repository: rdkcentral/Thunder
+        ref: ${{steps.thunder.outputs.first_match}}
+
+# ------- ThunderTools -------
     - name: Checkout ThunderTools - default
       if: ${{ !contains(github.event.pull_request.body, '[DependsOn=ThunderTools:') }}
       uses: actions/checkout@v5
