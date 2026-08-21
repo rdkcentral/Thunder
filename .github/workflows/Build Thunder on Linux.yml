@@ -42,57 +42,7 @@ jobs:
     name: Test - ${{matrix.shared_libs == 'OFF' && 'Static ' || ''}}${{matrix.build_type}}
     steps:
     - name: Install system dependencies
-      shell: bash
-      run: |
-        set -euo pipefail
-        export DEBIAN_FRONTEND=noninteractive
-        APT_OPTS="-o Acquire::Retries=3 -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20 -o Acquire::ConnectTimeout=10 -o Dpkg::Lock::Timeout=60"
-        MIRRORS=("archive.ubuntu.com/ubuntu" "mirror.ubuntu.com/ubuntu")
-        mirror_index=-1
-        switch_ubuntu_mirror() {
-          local mirror="${MIRRORS[$mirror_index]}"
-          echo "Switching Ubuntu mirror to http://${mirror}"
-          for source_file in /etc/apt/sources.list /etc/apt/sources.list.d/ubuntu.sources; do
-            if [ -f "$source_file" ]; then
-              sudo sed -i -E "s#^(URIs:[[:space:]]+|deb[[:space:]]+)[^[:space:]]+#\1http://${mirror}#" "$source_file"
-            fi
-          done
-        }
-        updated=0
-        for attempt in {1..6}; do
-          if [ "$attempt" -gt 2 ] && [ $(( (attempt - 1) % 2 )) -eq 0 ]; then
-            mirror_index=$((mirror_index + 1))
-            switch_ubuntu_mirror
-          fi
-          if timeout 300s sudo apt-get update ${APT_OPTS}; then
-            updated=1
-            break
-          fi
-          echo "apt-get update failed (attempt $attempt), retrying..."
-          sudo apt-get clean
-          sleep $((attempt*10))
-        done
-        if [ "$updated" -ne 1 ]; then
-          echo "apt-get update failed after trying 3 Ubuntu mirrors"
-          exit 1
-        fi
-        installed=0
-        for attempt in {1..6}; do
-          if [ "$attempt" -gt 2 ] && [ $(( (attempt - 1) % 2 )) -eq 0 ]; then
-            mirror_index=$((mirror_index + 1))
-            switch_ubuntu_mirror
-          fi
-          if timeout 300s sudo apt-get install -y --no-install-recommends ${APT_OPTS} libusb-1.0-0 zlib1g libssl3; then
-            installed=1
-            break
-          fi
-          echo "apt-get install failed (attempt $attempt), cleaning up & retrying..."
-          sleep $((attempt*15))
-        done
-        if [ "$installed" -ne 1 ]; then
-          echo "apt-get install failed after trying 3 Ubuntu mirrors"
-          exit 1
-        fi
+      uses: rdkcentral/ThunderTools/.github/actions/apt-dependencies@development/actions-stuck-updating
 
     - name: Download Thunder artifact
       uses: actions/download-artifact@v4
