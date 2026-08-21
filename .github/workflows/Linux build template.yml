@@ -20,7 +20,7 @@ jobs:
     steps:
 # --------- Installing packages ---------
     - name: Install system dependencies
-      uses: rdkcentral/ThunderTools/.github/actions/apt-dependencies@development/actions-stuck-updating
+      uses: rdkcentral/ThunderTools/.github/actions/apt-dependencies@master
       with:
         architecture: ${{ matrix.architecture }}
 
