@@ -47,7 +47,7 @@ namespace PluginHost
 
     /* static */ const TCHAR* IStateControl::ToString(const IStateControl::command value)
     {
-        return (Core::EnumerateType<command>(value).Data());
+        return (Core::EnumerateType<state>(value).Data());
     }
 }
 

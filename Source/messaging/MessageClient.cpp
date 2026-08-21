@@ -190,10 +190,8 @@ namespace Messaging {
             while (((status = client.second.PopData(size, _readBuffer.get())) == Core::ERROR_NONE) || (status == Core::ERROR_GENERAL)) {
                 ASSERT(size != 0);
 
-                if (status == Core::ERROR_GENERAL) {
-                    TRACE_L1("Discarding message requiring %u bytes: read buffer is limited to %u bytes", size, _readBufferSize);
+                if (size > _readBufferSize) {
                     size = _readBufferSize;
-                    continue;
                 }
 
                 const Core::Messaging::Metadata::type type = static_cast<Core::Messaging::Metadata::type>(_readBuffer[0]);

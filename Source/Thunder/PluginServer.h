@@ -3951,6 +3951,7 @@ namespace PluginHost {
                 Core::ProxyType<IShell> service;
 
                 if (FromIdentifier(callsign, service) == Core::ERROR_NONE) {
+                    ASSERT(service.IsValid());
                     result = service->QueryInterface(id);
                 }
 

@@ -138,6 +138,8 @@ Certificate::~Certificate()
 }
 
 string Certificate::Issuer() const {
+    ASSERT(_certificate != nullptr);
+
     char buffer[1024];
     buffer[0] = '\0';
     X509_NAME_oneline(X509_get_issuer_name(_certificate), buffer, sizeof(buffer));
@@ -146,6 +148,8 @@ string Certificate::Issuer() const {
 }
 
 string Certificate::Subject() const {
+    ASSERT(_certificate != nullptr);
+
     char buffer[1024];
     buffer[0] = '\0';
     X509_NAME_oneline(X509_get_subject_name(_certificate), buffer, sizeof(buffer));
@@ -154,14 +158,20 @@ string Certificate::Subject() const {
 }
 
 Core::Time Certificate::ValidFrom() const {
+    ASSERT(_certificate != nullptr);
+
     return(ASN1_ToTime(X509_get0_notBefore(_certificate)));
 }
 
 Core::Time Certificate::ValidTill() const {
+    ASSERT(_certificate != nullptr);
+
     return(ASN1_ToTime(X509_get0_notAfter(_certificate)));
 }
 
 bool Certificate::ValidHostname(const string& expectedHostname) const {
+    ASSERT(_certificate != nullptr);
+
     return (X509_check_host(const_cast<struct x509_st*>(_certificate), expectedHostname.data(), expectedHostname.size(), 0, nullptr) == 1);
 }
 

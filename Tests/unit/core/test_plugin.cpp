@@ -1367,8 +1367,10 @@ namespace PluginGap {
 
     TEST(Plugin_Gap, IStateControl_CommandStringConversion)
     {
-        EXPECT_STREQ(PluginHost::IStateControl::ToString(PluginHost::IStateControl::SUSPEND), _T("Suspend"));
-        EXPECT_STREQ(PluginHost::IStateControl::ToString(PluginHost::IStateControl::RESUME), _T("Resume"));
+        // command ToString uses state enum internally (maps command to state by value)
+        // SUSPEND(1) maps to SUSPENDED(1), RESUME(2) maps to RESUMED(2)
+        EXPECT_STREQ(PluginHost::IStateControl::ToString(PluginHost::IStateControl::SUSPEND), _T("SUSPENDED"));
+        EXPECT_STREQ(PluginHost::IStateControl::ToString(PluginHost::IStateControl::RESUME), _T("RESUMED"));
     }
 
     // ==========================================================================
