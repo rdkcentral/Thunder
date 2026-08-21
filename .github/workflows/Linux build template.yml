@@ -24,6 +24,13 @@ jobs:
       with:
         architecture: ${{ matrix.architecture }}
 
+    - name: Set up Python environment
+      run: |
+        python3 -m venv venv
+        source venv/bin/activate
+        pip install --upgrade pip
+        pip install jsonref
+
     - name: Checkout ThunderTools - default
       if: ${{ !contains(github.event.pull_request.body, '[DependsOn=ThunderTools:') }}
       uses: actions/checkout@v5
