@@ -114,7 +114,6 @@ namespace Plugin {
             };
 
         public:
-
             enum class ModeType {
                 OFF,
                 LOCAL,
@@ -185,7 +184,7 @@ namespace Plugin {
                     if (error.IsSet() == true) {
                         SYSLOG(Logging::ParsingError, (_T("Parsing failed with %s"), ErrorDisplayMessage(error.Value()).c_str()));
                     }
-                    *this = settings;
+                    *this = std::move(settings);
 
                     if (Locator.Value().empty() == true) {
                         Locator = info->Locator();
@@ -279,7 +278,7 @@ namespace Plugin {
 
             RPC::Object::HostType HostType() const {
                 RPC::Object::HostType result = RPC::Object::HostType::LOCAL;
-                switch( Mode.Value() ) {
+                switch ( Mode.Value() ) {
                     case ModeType::CONTAINER :
                         result = RPC::Object::HostType::CONTAINER;
                         break;
@@ -304,7 +303,7 @@ namespace Plugin {
                 }
                 return environmentList;
             }
- 
+
         public:
             Core::JSON::String Locator;
             Core::JSON::String User;
@@ -502,13 +501,14 @@ namespace Plugin {
             return (basePath + postfixPath + '/');
         }
 
-        explicit operator Exchange::Controller::IMetadata::Data::Service() const { 
+        explicit operator Exchange::Controller::IMetadata::Data::Service() const {
             Exchange::Controller::IMetadata::Data::Service result;
 
             result.Callsign = Callsign;
             result.Locator = Locator;
             result.ClassName = ClassName;
             result.StartMode = static_cast<PluginHost::IShell::startmode>(StartMode.Value());
+            result.Resumed = Resumed;
             result.Configuration = Configuration;
 
             if (Communicator.IsSet() == true) {
@@ -533,7 +533,7 @@ namespace Plugin {
                 result.Control = Control;
             }
 
-            return result; 
+            return result;
         }
 
     public:

@@ -515,7 +515,7 @@ namespace PluginHost {
             string messagingCategories = _config->MessagingCategories();
 
             if (Core::File::IsPathAbsolute(messagingCategories)) {
-                messagingSettings = messagingCategories;
+                messagingSettings = std::move(messagingCategories);
             }
             else {
                 messagingSettings = Core::Directory::Normalize(Core::File::PathName(pathName)) + messagingCategories;
@@ -762,7 +762,7 @@ int main(int argc, char** argv)
         SYSLOG(Logging::Startup, (_T("Process Id:    %d"), Core::ProcessInfo().Id()));
         SYSLOG(Logging::Startup, (_T("Tree ref:      " _T(EXPAND_AND_QUOTE(TREE_REFERENCE)))));
         SYSLOG(Logging::Startup, (_T("Build ref:     " _T(EXPAND_AND_QUOTE(BUILD_REFERENCE)))));
-        SYSLOG(Logging::Startup, (_T("Version:       %d:%d:%d"), Versioning::Major, Versioning::Minor, Versioning::Minor));
+        SYSLOG(Logging::Startup, (_T("Version:       %d:%d:%d"), Versioning::Major, Versioning::Minor, Versioning::Patch));
 #ifdef __CORE_MESSAGING__
         if (_config->MessagingCategoriesFile() == false) {
             SYSLOG(Logging::Startup, (_T("Messages [INT]:  %s"), options.configFile));

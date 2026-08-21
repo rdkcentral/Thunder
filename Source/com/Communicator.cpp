@@ -185,6 +185,7 @@ namespace RPC {
                 if (index->second->operator==(parent) == true) {
                     // Forcefully kill this ID.
                     index->second->Destruct();
+                    index->second->Release();
                     index = _destructors.erase(index);
                 }
                 else {
@@ -309,7 +310,7 @@ namespace RPC {
                     Core::Library library(index.Current().c_str());
 
                     if (library.IsLoaded() == true) {
-                        processProxyStubs.push_back(library);
+                        processProxyStubs.push_back(std::move(library));
                     }
                 }
             }

@@ -673,7 +673,7 @@ namespace Plugin {
                     }
                 }
             } else if (index.Current() == _T("Discovery")) {
-                if (_probe != nullptr) {
+                if (_probe == nullptr) {
                     result->ErrorCode = Web::STATUS_BAD_REQUEST;
                     result->Message = _T("Probe functionality not enabled!");
                 }
@@ -1219,6 +1219,7 @@ namespace Plugin {
                     meta.FromString(info);
                     services.push_back(IMetadata::Data::Service(meta));
                 }
+                shell->Release();
             }
             else {
                 result = Core::ERROR_UNKNOWN_KEY;

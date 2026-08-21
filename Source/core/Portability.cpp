@@ -232,7 +232,7 @@ void DumpCallStack(const Thunder::Core::thread_id threadId VARIABLE_IS_NOT_USED,
             }
         }
 
-        stackList.push_back(entry);
+        stackList.push_back(std::move(entry));
     }
 
 #else
@@ -448,8 +448,8 @@ namespace Core {
     TextFragment ClassNameOnly(const char name[]) {
 
         TextFragment result(Demangled(name));
-        uint16_t index = 0;
-        uint16_t lastIndex = static_cast<uint16_t>(~0);
+        uint32_t index = 0;
+        uint32_t lastIndex = static_cast<uint32_t>(~0);
 
         while ((index < result.Length()) && (result[index] != '<')) {
             if (result[index] == ':') {
