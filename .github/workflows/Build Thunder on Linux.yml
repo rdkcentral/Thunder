@@ -42,7 +42,7 @@ jobs:
     name: Test - ${{matrix.shared_libs == 'OFF' && 'Static ' || ''}}${{matrix.build_type}}
     steps:
     - name: Install system dependencies
-      uses: rdkcentral/ThunderTools/.github/actions/apt-dependencies@development/actions-stuck-updating
+      uses: rdkcentral/ThunderTools/.github/actions/apt-dependencies@master
 
     - name: Download Thunder artifact
       uses: actions/download-artifact@v4
