@@ -7,6 +7,29 @@ When the plugin is activated, Thunder will automatically spawn a ThunderPlugin i
 !!! tip
 	For larger, more complex out-of-process plugins, it is often useful to split a plugin into two separate libraries - see [here](../split-implementation) for more details.
 
+## Whole plugin OOP
+
+It is also possible to run the full plugin out of process. This allows a plugin to be hosted by `ThunderPlugin` even if it was not split or specifically designed for the traditional OOP plugin model. In this mode, `PluginHost::IPlugin` itself is hosted by `ThunderPlugin`.
+
+This is mainly useful as a development and debugging option. For example, it can be used to isolate leaks, crashes, or shutdown behavior in plugins that were originally designed to run in process.
+
+To enable this mode, add a top-level `root` section to the plugin configuration:
+
+```json
+{
+  "locator": "libThunderSamplePlugin.so",
+  "classname": "SamplePlugin",
+  "startmode": "Activated",
+  "root": {
+    "mode": "Local"
+  },
+  "configuration": {
+  }
+}
+```
+
+Other root modes may also work, but `Local` is the mode covered by this documentation.
+
 **Advantages**
 
 * Reliability - if a plugin crashes, it will only bring down the ThunderPlugin instance and therefore not affect any other plugin. It can then be restarted as necessary
