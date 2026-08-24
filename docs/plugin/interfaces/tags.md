@@ -570,15 +570,17 @@ Use this tag, to indicate a method on the COM-RPC interface should lead to an as
 
 For more details, click [here](../interfaces/#asynchronous-functions)
 
-</hr>
+<hr/>
 
 #### @encode
 
 This tag encodes or decodes (if an input parameter) data into/from an alternate format.
 
 * `@encode:base64` encodes/decodes arrays (or std::vector or ptr+len buffers) as base64 JSON-RPC string, on the condition that the array base is type `uint8_t` or `char`.
-* `@encode:hex` encodes/decodes arrays (or std::vector or ptr+len buffers) as a Hex JSON-RPC string, on the condition that the array base is type `uint8_t` or `char`.
-
+* `@encode:hex` encodes/decodes arrays (or std::vector or ptr+len buffers) as a hex JSON-RPC string, on the condition that the array base is type `uint8_t` or `char`.
+* `@encode:mac` encodes/decodes arrays (or std::vector or ptr+len buffers) as a colon-delimited hex JSON-RPC string, on the condition that the array base is type `uint8_t` or `char`.
+* `@encode:ip` encodes/decodes arrays (or std::vector or ptr+len buffers) as a JSON-RPC string with dot-delimited decimal numbers, on the condition that the array base is type `uint8_t` or `char`.
+ 
 @encode:autolookup is another form of encode: it indicates this interface is used as an object in another interface. See for more info [here](../interfaces/#object-lookup)
 
 An alternative to "autolookup" is custom lookup where one can keep track of how an object-id is connected to an object in a custom manor (in autolookup this is automatic and arranged for you under the hood).
