@@ -570,8 +570,7 @@ Use this tag, to indicate a method on the COM-RPC interface should lead to an as
 
 For more details, click [here](../interfaces/#asynchronous-functions)
 
-</hr>
-<hr>
+<hr/>
 
 #### @encode
 
