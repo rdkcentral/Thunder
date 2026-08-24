@@ -578,7 +578,7 @@ This tag encodes or decodes (if an input parameter) data into/from an alternate 
 
 * `@encode:base64` encodes/decodes arrays (or std::vector or ptr+len buffers) as base64 JSON-RPC string, on the condition that the array base is type `uint8_t` or `char`.
 * `@encode:hex` encodes/decodes arrays (or std::vector or ptr+len buffers) as a hex JSON-RPC string, on the condition that the array base is type `uint8_t` or `char`.
-* `@encode:mac` encodes/decodes arrays (or std::vector or ptr+len buffers) as a colon-demlimited hex JSON-RPC string, on the condition that the array base is type `uint8_t` or `char`.
+* `@encode:mac` encodes/decodes arrays (or std::vector or ptr+len buffers) as a colon-delimited hex JSON-RPC string, on the condition that the array base is type `uint8_t` or `char`.
 * `@encode:ip` encodes/decodes arrays (or std::vector or ptr+len buffers) as a JSON-RPC string with dot-delimited decimal numbers, on the condition that the array base is type `uint8_t` or `char`.
  
 @encode:autolookup is another form of encode: it indicates this interface is used as an object in another interface. See for more info [here](../interfaces/#object-lookup)
