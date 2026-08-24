@@ -19,44 +19,10 @@ jobs:
     name: Build type - ${{matrix.shared_libs == 'OFF' && 'Static ' || ''}}${{matrix.build_type}}${{matrix.architecture == 'tests64' && ' tests' || matrix.architecture == '32' && ' x86' || ''}}
     steps:
 # --------- Installing packages ---------
-    - name: Prepare apt (add i386 if needed)
-      if: ${{ matrix.architecture == '32' }}
-      run: |
-        sudo dpkg --add-architecture i386
-
-    - name: Update apt indices (with retries)
-      shell: bash
-      run: |
-        set -euo pipefail
-        for attempt in {1..5}; do
-          if sudo apt-get update -o Acquire::Retries=5 -o Acquire::http::Timeout=30; then
-            break
-          fi
-          echo "apt-get update failed (attempt $attempt), retrying..."
-          sleep $((attempt*10))
-        done
-
     - name: Install system dependencies
-      shell: bash
-      run: |
-        set -euo pipefail
-        export DEBIAN_FRONTEND=noninteractive
-        PKGS="python3-venv python3-pip build-essential cmake ninja-build libusb-1.0-0-dev"
-        if [ "${{ matrix.architecture }}" = "32" ]; then
-          PKGS="$PKGS zlib1g-dev:i386 libssl-dev:i386 libsbc-dev:i386 gcc-13-multilib g++-13-multilib"
-        elif [ "${{ matrix.architecture }}" = "tests64" ]; then
-          PKGS="$PKGS zlib1g-dev libssl-dev libsbc-dev libgtest-dev"
-        else
-          PKGS="$PKGS zlib1g-dev libssl-dev libsbc-dev"
-        fi
-        for attempt in {1..4}; do
-          if sudo apt-get install -y --no-install-recommends $PKGS; then
-            break
-          fi
-          echo "apt-get install failed (attempt $attempt), cleaning up & retrying..."
-          sudo apt-get clean
-          sleep $((attempt*15))
-        done
+      uses: rdkcentral/ThunderTools/.github/actions/apt-dependencies@master
+      with:
+        architecture: ${{ matrix.architecture }}
 
     - name: Set up Python environment
       run: |
