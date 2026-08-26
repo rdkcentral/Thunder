@@ -45,7 +45,7 @@ namespace Core {
                 //remove spaces and tokenize by SEPARATOR
                 string result = buffer;
                 if (REMOVE_WHITESPACES) {
-                    result.erase(std::remove_if(result.begin(), result.end(), [](const unsigned char character) { return std::isspace(character); }), result.end());
+                    result.erase(std::remove_if(result.begin(), result.end(), [](const unsigned char character) { return ::isspace(character); }), result.end());
                 }
                 std::istringstream iss(result);
 

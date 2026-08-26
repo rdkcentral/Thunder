@@ -199,7 +199,7 @@ namespace Core {
             public:
                 inline bool IsValid() const
                 {
-                    return ((_index == 0xFFFE) || (_index < _length));
+                    return (((_index == 0xFFFE) && (_length > 0)) || (_index < _length));
                 }
                 inline void Reset()
                 {
