@@ -85,6 +85,12 @@ if boolean('@MESSAGING@'):
   messaging.add("stdout", '@MESSAGING_STDOUT@')
   messaging.add("stderr", '@MESSAGING_STDERR@')
   messaging.add("datasize", '@MESSAGING_DATASIZE@')
+  if boolean('@DIRECT_OUTPUT@'):
+    messaging.add("output", "direct")
+  direct = JSON()
+  direct.add("abbreviated", '@DIRECT_OUTPUT_ABBREVIATION@')
+  direct.add("time", '@DIRECT_OUTPUT_TIME@')
+  messaging.add("direct", direct)
 
   __notification = {
        "category" : "AnyCategory",
@@ -115,7 +121,6 @@ if boolean('@MESSAGING@'):
   __logging_settings.append(__notification)
   
   __logging = JSON()
-  __logging.add("abbreviated", True)
   __logging.add("settings", __logging_settings)
   
   messaging.add("logging", __logging)
@@ -145,7 +150,6 @@ if boolean('@MESSAGING@'):
   __reporting_settings.append(__warningReporting)
 
   __reporting = JSON()
-  __reporting.add("abbreviated", True)
   __reporting.add("settings", __reporting_settings)
 
   messaging.add("reporting", __reporting)
