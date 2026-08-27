@@ -490,7 +490,7 @@ namespace Core {
                     result = Core::Format("%s[%s]:[%s]:[%s]:[%u]:[%s]:[%s:%u]: ", Callstack().c_str(), timestamp.c_str(), Module().c_str(), Category().c_str(), ProcessId(), ProcessName().c_str(), Core::FileNameOnly(FileName().c_str()), LineNumber());
                 }
                 else {
-                    result = Core::Format("%s[%s]:[%s]:[%u]:[%s:%u]: ", Callstack().c_str(), Module().c_str(), Category().c_str(), ProcessId(), ProcessName().c_str(), LineNumber());
+                    result = Core::Format("%s[%s]:[%s]:[%u]:[%s]:[%s:%u]: ", Callstack().c_str(), Module().c_str(), Category().c_str(), ProcessId(), ProcessName().c_str(), Core::FileNameOnly(FileName().c_str()), LineNumber());
                 }
             }
 

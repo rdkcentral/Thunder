@@ -72,7 +72,7 @@ void DirectOutput::Output(const Core::Messaging::MessageInfo& messageInfo, const
     ASSERT(message != nullptr);
     ASSERT(messageInfo.Type() != Core::Messaging::Metadata::type::INVALID);
 
-    string result = messageInfo.ToString(_abbreviate, _time).c_str() +
+    string result = messageInfo.ToString(_abbreviate, _time) +
                     Core::Format("%s\n", message->Data().c_str());
 
 #ifndef __WINDOWS__
@@ -958,7 +958,7 @@ string Text::Convert(const Core::Messaging::MessageInfo& metadata, const string&
 {
     ASSERT(metadata.Type() != Core::Messaging::Metadata::type::INVALID);
 
-    string output = metadata.ToString(_abbreviated, _time).c_str() +
+    string output = metadata.ToString(_abbreviated, _time) +
                     Core::Format("%s\n", text.c_str());
 
     return (output);
