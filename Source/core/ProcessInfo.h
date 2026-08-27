@@ -23,6 +23,10 @@
 #include "IIterator.h"
 #include "Portability.h"
 
+#ifndef __WINDOWS__
+#include <sched.h>
+#endif
+
 namespace WPEFramework {
 namespace Core {
 
@@ -232,17 +236,19 @@ namespace Core {
 #ifdef __WINDOWS__
             return (OTHER);
 #else
-            errno = 0;
-            int result = getpriority(PRIO_PROCESS, _pid);
+            int result = sched_getscheduler(_pid);
 
-            return (errno != 0 ? OTHER : static_cast<scheduler>(result));
+            return (result == -1 ? OTHER : static_cast<scheduler>(result));
 #endif
         }
-        inline void Policy(const scheduler priority)
+        inline void Policy(const scheduler policy)
         {
 #ifndef __WINDOWS__
-            if (setpriority(PRIO_PROCESS, _pid, priority) == -1) {
-                TRACE_L1("Failed to set priority. Error: %d", errno);
+            struct sched_param parameters = {};
+            parameters.sched_priority = ((policy == FIFO) || (policy == ROUNDROBIN)) ? 1 : 0;
+
+            if (sched_setscheduler(_pid, policy, &parameters) == -1) {
+                TRACE_L1("Failed to set scheduling policy. Error: %d", errno);
             }
 #endif
         }
