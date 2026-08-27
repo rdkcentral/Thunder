@@ -69,21 +69,18 @@ It is important to note that when the `MessageControl` plugin is not actively ru
 ```c++
 void DirectOutput::Output(const Core::Messaging::MessageInfo& messageInfo, const Core::Messaging::IEvent* message) const
 {
-    ASSERT(message != nullptr);
+    INTERNAL_ASSERT(message != nullptr);
     ASSERT(messageInfo.Type() != Core::Messaging::Metadata::type::INVALID);
-
-    string result = messageInfo.ToString(_abbreviate, _time) +
-                    Core::Format("%s\n", message->Data().c_str());
 
 #ifndef __WINDOWS__
     if (_isSyslog == true) {
         //use longer messages for syslog
-        syslog(LOG_NOTICE, "%s\n", result.c_str());
+        syslog(LOG_NOTICE, "%s%s\n", messageInfo.ToString(_abbreviate, _time).c_str(), message->Data().c_str());
     }
     else
 #endif
     {
-        std::cout << result << std::endl;
+        std::cout << messageInfo.ToString(_abbreviate, _time).c_str() << message->Data() << std::endl;
     }
 }
 ```
