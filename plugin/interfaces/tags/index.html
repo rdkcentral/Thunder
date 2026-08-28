@@ -4371,6 +4371,8 @@
 
 <p>When designing a COM-RPC interface, it is possible to add specific comments (known as annotations or tags) that will drive the code generation. </p>
 <p>All tags follow the same format of <code>@</code> followed by the tag name. They can be inserted into the interface using either inline <code>//</code> comments or <code>/* */</code> block comments. Tags can influence the generation of the COM-RPC ProxyStubs and the generated JSON-RPC interfaces. They can also be used to configure the documentation generation</p>
+<hr/>
+
 <h2 id="summary">Summary</h2>
 <h3 id="general-purpose-tags">General purpose tags</h3>
 <table>
@@ -4521,6 +4523,8 @@
 <h5 id="example_4">Example</h5>
 <div class="highlight"><pre><span></span><code>// @define EXTERNAL
 </code></pre></div>
+<hr/>
+
 <h3 id="parameter-related-tags">Parameter Related Tags</h3>
 <table>
 <thead>
@@ -4600,6 +4604,8 @@
 </tr>
 </tbody>
 </table>
+<hr/>
+
 <h4 id="in">@in</h4>
 <p>This tag will mark a parameter in a function as an input parameter. By default, all parameters in a function are treated as input paramter. </p>
 <p>All input paramters are expected to be const. If not, warning will be thrown during JSON-RPC code generation.</p>
@@ -4652,12 +4658,12 @@ At the moment the default behavior for the code generators is to have all iterat
 <h4 id="length">@length</h4>
 <p>This tag should be associated with an array. It specifies the expression to evaluate length of an array parameter (can be other parameter name, or constant, or math expression)</p>
 <p>Use round parenthesis for expressions, e.g.  <code>@length:bufferSize</code> <code>@length:(width * height * 4)</code></p>
-<p>Note @length:return can be used in case the length of the array is the return value of the method instead of an in/in-out parameter.</p>
+<p>Note <code>@length:return</code> can be used in case the length of the array is the return value of the method instead of an in/in-out parameter.</p>
 <h5 id="example_10">Example</h5>
 <p><strong>From another parameter</strong></p>
 <div class="highlight"><pre><span></span><code>/* @length:param1 */
 </code></pre></div>
-<p><strong>From a constant.</strong></p>
+<p><strong>From a constant</strong></p>
 <div class="highlight"><pre><span></span><code>/* @length:32 */
 </code></pre></div>
 <p><strong>From an expression</strong></p>
@@ -4672,10 +4678,12 @@ At the moment the default behavior for the code generators is to have all iterat
 <p>function <a href="https://github.com/rdkcentral/ThunderInterfaces/blob/master/interfaces/IOCDM.h#L171">SelectKeyId</a> @length tag is marked as another parameter.</p>
 </li>
 </ul>
+<p><strong>Returned</strong></p>
+<div class="highlight"><pre><span></span><code>/* @length:return */
+</code></pre></div>
+<p>See <a href="https://github.com/rdkcentral/ThunderInterfaces/blob/16d1459ae85940fa71d6836301dc2b4288e9f3b4/interfaces/ICryptography.h#L57">here</a> for an example.</p>
 <hr/>
 
-<p><strong>returned</strong></p>
-<p>See <a href="https://github.com/rdkcentral/ThunderInterfaces/blob/16d1459ae85940fa71d6836301dc2b4288e9f3b4/interfaces/ICryptography.h#L57">here</a> for an example.</p>
 <h4 id="maxlength">@maxlength</h4>
 <p>Used with the <code>@out</code> or <code>@inout</code> tag. It specifies a maximum buffer length value (a constant, a parameter name or a math expression). If not specified, <code>@length</code> is considered as maximum length</p>
 <p>When used with <code>@inout</code> it will use different buffer for output depending upon this tag. If not specified it will reuse the same input buffer for output as well.</p>
@@ -4700,9 +4708,7 @@ At the moment the default behavior for the code generators is to have all iterat
 
 <span class="k">virtual</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">hresult</span><span class="w"> </span><span class="nf">Shirt</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">OptionalType</span><span class="o">&lt;</span><span class="n">Store</span><span class="o">&gt;&amp;</span><span class="w"> </span><span class="n">London</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
 </code></pre></div>
-<hr/>
-
-<p>In <a href="https://github.com/rdkcentral/Thunder/blob/master/Source/plugins/IController.h#L78">IController.h</a> it specifies, the default value assigned incase the parameter is not set.</p>
+<p>In <a href="https://github.com/rdkcentral/Thunder/blob/master/Source/plugins/IController.h#L78">IController.h</a> it specifies the default value assigned incase the parameter is not set.</p>
 <hr/>
 
 <h3 id="json-rpc-related-tags">JSON-RPC Related Tags</h3>
@@ -4796,7 +4802,7 @@ At the moment the default behavior for the code generators is to have all iterat
 <td style="text-align: center;"></td>
 <td style="text-align: center;">No</td>
 <td style="text-align: center;">Yes</td>
-<td style="text-align: center;">Method paramter</td>
+<td style="text-align: center;">Method parameter</td>
 </tr>
 <tr>
 <td><a href="#opaque">@opaque</a></td>
@@ -4860,10 +4866,12 @@ At the moment the default behavior for the code generators is to have all iterat
 <td style="text-align: center;"></td>
 <td style="text-align: center;">No</td>
 <td style="text-align: center;">Yes</td>
-<td style="text-align: center;">Class and Method parameter</td>
+<td style="text-align: center;">Class, Method</td>
 </tr>
 </tbody>
 </table>
+<hr/>
+
 <h4 id="json">@json</h4>
 <p>This tag helps to generate JSON-RPC files for the given Class/Struct/enum.</p>
 <p>It will creates 3 files automatically:</p>
@@ -5005,8 +5013,6 @@ The helper functions are defined in IIteratorType.h. </p>
 <span class="c1">// @alt:deprecated &lt;alternative_deprecated_name&gt;</span>
 <span class="c1">// @alt:obsolete &lt;alternative_obsolete_name&gt;</span>
 </code></pre></div></p>
-<hr/>
-
 <p><a href="https://github.com/rdkcentral/Thunder/blob/R4.3/Source/plugins/IController.h#L38">IController.h</a> uses @alt for the <code>Reboot()</code> method to generate an alternatively named method called <code>Harakiri</code> (for legacy reasons)</p>
 <hr/>
 
@@ -5030,8 +5036,6 @@ The helper functions are defined in IIteratorType.h. </p>
 * "--case-convention &lt; CONVENTION &gt;" selects the default convention to be used on interface level, if not passed the generator will use "standard". Possible values: standard, keep and legacy. 
 * "--ignore-source-case-convention" will make the generator ignore the @text set at interface level</p>
 <h5 id="example_22">Example</h5>
-<hr>
-
 <p><a href="https://github.com/rdkcentral/ThunderInterfaces/blob/5fa166bd17c6b910696c6113c5520141bcdea07b/interfaces/IBrowser.h#L61">IBrowser.h</a> uses this tag for enum. The generated code for this header will map the text for these enums as allowed and not as Allowed, blocked and not as Blocked. </p>
 <p>Without these tags the string equivalent of the enums will be first letter caps followed by all small. This tag has changed it to all small.</p>
 </hr>
@@ -5151,7 +5155,7 @@ Example:
 <p>This tag can be placed at class or method level, where at class level is by far preferable as it prevents inconsistencies in JSON-RPC function handling.
 Wrapped will for a single output parameter also add the parameter name to the result, making it always a JSON object.
 Note can also be used for array, std::vector, iterator etc. single output parameter. As for a POD it does not immediately make sense to have it wrapped, it becomes a JSON object inside an object, wrapped will be ignored for POD when the wrapped is put on class level. If put on method level however the POD is wrapped as that than is the clear expectation of the interface designer.
-Wrapped cannot be used for properties as that does not make sense.
+Similar principle works for properties: wrapped at interface level does not enable wrapping for property getters and needs to be put on method level explicitly.
 Incorrect or inconsistent usage will lead to an error raised by the code generators. Of course the documentation generators do take the wrapped tag into account.</p>
 <p>Remark: of course it is preferable to keep the JSON-RPC interface as whole consistent so for that reason be hesitant when using this tag (it was added as there are interface where workarounds are used to achieve the wrapped effect).</p>
 <h4 id="example_25">Example</h4>
@@ -5190,6 +5194,8 @@ this is the returned JSON-RPC result for the Test function</p>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
+<hr/>
+
 <h3 id="json-rpc-documentation-related-tags">JSON-RPC Documentation Related Tags</h3>
 <table>
 <thead>
@@ -5277,6 +5283,8 @@ this is the returned JSON-RPC result for the Test function</p>
 </tr>
 </tbody>
 </table>
+<hr/>
+
 <h4 id="sourcelocation">@sourcelocation</h4>
 <p>By default, the documentation generator will add links to the implemented interface definitions. </p>
 <p>The link used by default is <code>https://github.com/rdkcentral/ThunderInterfaces/blob/{revision}/jsonrpc/{interfacefile}</code> (as set in <code>ThunderInterfaces/jsonrpc/common.json</code>)</p>
@@ -5291,8 +5299,7 @@ this is the returned JSON-RPC result for the Test function</p>
 <h5 id="example_27">Example</h5>
 <p>When a method is marked with this tag, in the generated .md documentation, it will be marked with the below Message </p>
 <blockquote>
-<p>This API is <strong>deprecated</strong> and may be removed in the future. It is no longer recommended for use in new implementations.
-</p>
+<p>This API is <strong>deprecated</strong> and may be removed in the future. It is no longer recommended for use in new implementations.</p>
 </blockquote>
 <hr/>
 
