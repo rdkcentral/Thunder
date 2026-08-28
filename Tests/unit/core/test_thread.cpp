@@ -21,6 +21,7 @@
 
 #include <gtest/gtest.h>
 #include <core/core.h>
+#include <climits>
 #include <condition_variable>
 #include <mutex>
 
@@ -121,6 +122,38 @@ namespace Tests {
         object.Stop();
         EXPECT_EQ(object.State(), Core::Thread::STOPPING);
         object.Wait(Core::Thread::BLOCKED | Core::Thread::STOPPED | Core::Thread::STOPPING, Core::infinite);
+    }
+
+    TEST(Core_Thread, PriorityMinMax)
+    {
+        ::ThreadId parentTid = Core::Thread::ThreadId();
+        volatile bool threadDone = false;
+        std::mutex mutex;
+        std::condition_variable cv;
+        ThreadClass object(threadDone, mutex, cv, parentTid);
+
+        EXPECT_LE(object.PriorityMin(), object.PriorityMax());
+    }
+
+    TEST(Core_Thread, Priority)
+    {
+        ::ThreadId parentTid = Core::Thread::ThreadId();
+        volatile bool threadDone = false;
+        std::mutex mutex;
+        std::condition_variable cv;
+        ThreadClass object(threadDone, mutex, cv, parentTid);
+
+#ifdef __POSIX__
+        EXPECT_TRUE(object.Priority(object.PriorityMin()));
+        if (object.PriorityMin() > INT_MIN) {
+            EXPECT_FALSE(object.Priority(object.PriorityMin() - 1));
+        }
+        if (object.PriorityMax() < INT_MAX) {
+            EXPECT_FALSE(object.Priority(object.PriorityMax() + 1));
+        }
+#else
+        EXPECT_FALSE(object.Priority(object.PriorityMin()));
+#endif
     }
 } // Tests
 } // WPEFramework
