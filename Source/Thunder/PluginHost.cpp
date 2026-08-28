@@ -667,7 +667,15 @@ int main(int argc, char** argv)
         _config = new Config(configFile, _background, error);
 
         if (error.IsSet() == true) {
-            SYSLOG(Logging::ParsingError, (_T("Parsing failed with %s"), ErrorDisplayMessage(error.Value()).c_str()));
+#ifndef __WINDOWS__
+            if (_background == true) {
+                syslog(LOG_ERR, "Parsing failed with %s", ErrorDisplayMessage(error.Value()).c_str());
+            } else
+#endif
+            {
+                fprintf(stderr, "Parsing failed with %s\n", ErrorDisplayMessage(error.Value()).c_str());
+                fflush(stderr);
+            }
             delete _config;
             _config = nullptr;
         }
