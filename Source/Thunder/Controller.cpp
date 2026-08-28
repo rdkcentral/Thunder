@@ -361,6 +361,69 @@ namespace Plugin {
         return result;
     }
 
+    Core::hresult Controller::Attribute(const Core::OptionalType<string>& attribute, string& value) const
+    {
+        Core::hresult result = Core::ERROR_UNKNOWN_KEY;
+
+        ASSERT(_pluginServer != nullptr);
+
+        const PluginHost::Config& configuration(_pluginServer->Configuration());
+
+        if (attribute.IsSet() == false) {
+            Core::JSON::Container attributes;
+            Core::JSON::String prefix(configuration.Prefix());
+            Core::JSON::DecUInt16 idleTime(configuration.IdleTime());
+
+            attributes.Add(_T("prefix"), &prefix);
+            attributes.Add(_T("idletime"), &idleTime);
+            attributes.ToString(value);
+
+            result = Core::ERROR_NONE;
+        }
+        else if (attribute.Value() == _T("prefix")) {
+            Core::JSON::String prefix(configuration.Prefix());
+            prefix.ToString(value);
+
+            result = Core::ERROR_NONE;
+        }
+        else if (attribute.Value() == _T("idletime")) {
+            Core::JSON::DecUInt16 idleTime(configuration.IdleTime());
+            idleTime.ToString(value);
+
+            result = Core::ERROR_NONE;
+        }
+
+        return result;
+    }
+
+    Core::hresult Controller::Attribute(const string& attribute, const string& value)
+    {
+        Core::hresult result = Core::ERROR_UNKNOWN_KEY;
+
+        ASSERT(_pluginServer != nullptr);
+
+        if (attribute == _T("prefix")) {
+            Core::JSON::String prefix;
+
+            result = Core::ERROR_BAD_REQUEST;
+            if (prefix.FromString(value) == true) {
+                _pluginServer->Configuration().SetPrefix(prefix.Value());
+                result = Core::ERROR_REQUEST_SUBMITTED;
+            }
+        }
+        else if (attribute == _T("idletime")) {
+            Core::JSON::DecUInt16 idleTime;
+
+            result = Core::ERROR_BAD_REQUEST;
+            if (idleTime.FromString(value) == true) {
+                _pluginServer->Configuration().SetIdleTime(idleTime.Value());
+                result = Core::ERROR_REQUEST_SUBMITTED;
+            }
+        }
+
+        return result;
+    }
+
     Core::hresult Controller::Clone(const string& basecallsign, const string& newcallsign)
     {
         Core::hresult result = Core::ERROR_PRIVILIGED_REQUEST;

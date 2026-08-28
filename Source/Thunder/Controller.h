@@ -325,6 +325,8 @@ namespace Plugin {
         Core::hresult Restore(const Core::OptionalType<string>& callsign) override;
         Core::hresult Configuration(const Core::OptionalType<string>& callsign, string& configuration) const override;
         Core::hresult Configuration(const string& callsign, const string& configuration) override;
+        Core::hresult Attribute(const Core::OptionalType<string>& attribute, string& value) const override;
+        Core::hresult Attribute(const string& attribute, const string& value) override;
 
         // ILifeTime overrides
         Core::hresult Register(Exchange::Controller::ILifeTime::INotification* notification, const Core::OptionalType<string>& callsign = {}) override;
