@@ -70,10 +70,7 @@ namespace Crypto {
             }
 
             // We have a suitable key, move it to the inner and outer pads
-            // coverity[OVERRUN] - False positive (#754): keyLength is always <= sizeof(_innerKeyPad) (64);
-            //                     when keyLength == 64 the memset count is 0, so no bytes are written.
             ::memset(&_innerKeyPad[keyLength], 0x36, sizeof(_innerKeyPad) - keyLength);
-            // coverity[OVERRUN] - False positive (#770): same reasoning as above for _outerKeyPad.
             ::memset(&_outerKeyPad[keyLength], 0x5C, sizeof(_outerKeyPad) - keyLength);
 
             /* XOR key with inner keypad and outer key pad values */
@@ -129,7 +126,7 @@ namespace Crypto {
                 length++;
             }
 
-            _algorithm.Input(&message_array, length);
+            _algorithm.Input(message_array, length);
 
             return (*this);
         }

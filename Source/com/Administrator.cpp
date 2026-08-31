@@ -250,9 +250,9 @@ namespace RPC {
                 _adminLock.Unlock();
 
                 if (result == true) {
-                    TRACE_L3("Validated instance 0x%08" PRId64 " by administration", impl);
+                    TRACE_L3("Validated instance 0x%08" PRIxPTR " by administration", impl);
                 } else {
-                    TRACE_L1("Failed to validate instance 0x%08" PRId64 " of interface 0x%08x", impl, id);
+                    TRACE_L1("Failed to validate instance 0x%08" PRIxPTR " of interface 0x%08x", impl, id);
                 }
             }
         }
@@ -431,10 +431,10 @@ namespace RPC {
                     }
                 }
             } else {
-                printf("====> Unregistering an interface [0x%x, %d] which has not been registered!!!\n", interfaceId, Core::ProcessInfo().Id());
+                SYSLOG(Logging::Error, (_T("Unregistering interface [0x%x, %d] which has not been registered!"), interfaceId, Core::ProcessInfo().Id()));
             }
         } else {
-            printf("====> Unregistering an interface [0x%x, %d] from a non-existing channel!!!\n", interfaceId, Core::ProcessInfo().Id());
+            SYSLOG(Logging::Error, (_T("Unregistering interface [0x%x, %d] from a non-existing channel!"), interfaceId, Core::ProcessInfo().Id()));
         }
     }
 
@@ -470,8 +470,9 @@ namespace RPC {
             proxy = nullptr;
             _adminLock.Unlock();
         } else {
-
-            SYSLOG(Logging::Error, (_T("Proxy and Stubs for interface %U were generated with a different proxystub security setting than the other Proxy and Stubs, it will be ignored (so expect errors due to this)")));
+            SYSLOG(Logging::Error, (_T("Proxy and stubs for interface %u were generated with a different proxy/stub security setting and will be ignored"), interfaceID));
+            delete stub;
+            delete proxy;
         }
     }
 
