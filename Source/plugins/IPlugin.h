@@ -325,8 +325,6 @@ namespace PluginHost {
 } // namespace Thunder
 
 
-// coverity[PW.INCLUDE_RECURSION] - Mutual include with IShell.h is intentional and safe;
-// both files are guarded by include guards (__IPLUGIN_H__ / __ISHELL_H__).
 #include "IShell.h" // needed for the proxy/stub generation
 
 #endif
