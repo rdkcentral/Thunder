@@ -1718,7 +1718,7 @@ namespace Core {
                 _adminLock.Lock();
                 string newName(reinterpret_cast<const char*>(RTA_DATA(rtatp)), (RTA_PAYLOAD(rtatp) - 1));
                 if (newName != _name) {
-                    _name = newName;
+                    _name = std::move(newName);
                 }
                 _adminLock.Unlock();
                 break;

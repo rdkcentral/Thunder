@@ -296,7 +296,10 @@ namespace PluginHost {
         inline void GetMetadata(Metadata::Service& metaData) const
         {
             metaData = _config.Configuration();
+
+            _notifierLock.Lock();
             metaData.Observers = static_cast<uint32_t>(_notifiers.size());
+            _notifierLock.Unlock();
 
             // When we do this, we need to make sure that the Service does not change state, otherwise it might
             // be that the the plugin is deinitializing and the IStateControl becomes invalid during our run.
@@ -384,8 +387,7 @@ namespace PluginHost {
 
     private:
         mutable Core::CriticalSection _adminLock;
-
-        Core::CriticalSection _notifierLock;
+        mutable Core::CriticalSection _notifierLock;
 
         #if THUNDER_RUNTIME_STATISTICS
         uint32_t _processedRequests;
