@@ -49,7 +49,11 @@ add_library(${TARGET_PROXYSTUBS} SHARED
 
 # ProxyStubs should always be a shared object, so define BUILD_SHARED_LIBS
 # to get the proper Module.cpp version  
-target_compile_definitions(${TARGET_PROXYSTUBS} PRIVATE BUILD_SHARED_LIBS)
+target_compile_definitions(${TARGET_PROXYSTUBS}
+        PRIVATE
+          BUILD_SHARED_LIBS
+          JSONRPC_OPEN_TIMEOUT=${JSONRPC_OPEN_TIMEOUT}
+        )
 
 set(PUBLIC_HEADERS
         IPlugin.h

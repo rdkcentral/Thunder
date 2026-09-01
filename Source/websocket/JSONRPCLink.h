@@ -22,6 +22,10 @@
 #include "Module.h"
 #include "WebSocketLink.h"
 
+#ifndef JSONRPC_OPEN_TIMEOUT
+#define JSONRPC_OPEN_TIMEOUT 2000
+#endif
+
 namespace Thunder {
 
     namespace JSONRPC {
