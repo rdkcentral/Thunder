@@ -458,7 +458,7 @@ namespace Core {
             index++;
         }
 
-        return (lastIndex < (index - 1) ? TextFragment(result, lastIndex + 1, result.Length() - (lastIndex + 1)) : result);
+        return ((index != 0) and (lastIndex < (index - 1)) ? TextFragment(result, lastIndex + 1, result.Length() - (lastIndex + 1)) : result);
     }
 
 
