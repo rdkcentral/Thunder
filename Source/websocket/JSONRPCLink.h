@@ -289,11 +289,11 @@ namespace Thunder {
                     }
                     _adminLock.Unlock();
                 }
-                bool Open(const uint32_t waitTime)
+                uint32_t Open(const uint32_t waitTime)
                 {
-                    bool result = true;
+                    uint32_t result = Core::ERROR_NONE;
                     if (_channel.IsClosed() == true) {
-                        result = (_channel.Open(waitTime) == Core::ERROR_NONE);
+                        result = _channel.Open(waitTime);
                     }
                     return (result);
                 }
