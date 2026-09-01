@@ -1271,7 +1271,7 @@ namespace PluginHost {
             if (_accessor.IsValid() == false) {
 
                 // Let's go for the default and make the best of it :-)
-                struct sockaddr_in value;
+                struct sockaddr_in value {};
 
                 value.sin_addr.s_addr = 0;
                 value.sin_family = AF_INET;
