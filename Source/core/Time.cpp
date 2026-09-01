@@ -112,10 +112,15 @@ namespace Core {
     static uint32_t WeekFromString(const string& buffer, const uint8_t delimeter, const bool fromName, uint8_t& wday) {
         uint32_t index = 0;
         SkipLeadingSpaces(buffer.c_str(), static_cast<uint8_t>(buffer.size()), index);
-        string weekDayName = buffer.substr(index, buffer.find_first_of(delimeter, index));
+        const size_t delimiterPosition = buffer.find_first_of(delimeter, index);
+        const size_t weekDayNameLength = (delimiterPosition == string::npos ? buffer.length() - index : delimiterPosition - index);
+        string weekDayName = buffer.substr(index, weekDayNameLength);
         if (weekDayName.size() > 0) {
             wday = (fromName ? WeekFromName(weekDayName.c_str()) : (weekDayName.size() == 3) ? WeekFromAbbrevation(weekDayName.c_str()) : static_cast<uint8_t>(~0));
-            index += static_cast<uint32_t>(weekDayName.length()) + 1;
+            index += static_cast<uint32_t>(weekDayName.length());
+            if (delimiterPosition != string::npos) {
+                index++;
+            }
         }
         return index;
     }

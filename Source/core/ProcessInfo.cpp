@@ -93,9 +93,6 @@ namespace Core {
 
                 snprintf(procpath, sizeof(procpath), "/proc/%u/comm", pid);
 
-                // FALSE_POSITIVE: pid is uint32_t formatted with %u, path traversal is impossible
-                // codeql[cpp/path-injection]
-                // coverity[path_manipulation_sink]
                 if ((fd = open(procpath, O_RDONLY)) != -1) {
                     ssize_t size;
                     if ((size = read(fd, buffer, maxLength - 1)) > 0) {
@@ -305,15 +302,19 @@ namespace Core {
     {
 #ifdef __WINDOWS__
         HANDLE hSnapShot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
-        PROCESSENTRY32 processInfo;
-        processInfo.dwSize = sizeof(PROCESSENTRY32);
-        int index = 0;
 
-        while (Process32Next(hSnapShot, &processInfo) != FALSE) {
-            if (static_cast<uint32_t>(processInfo.th32ParentProcessID) == parentPID) {
-                // Add this entry to the list
-                _pids.push_back(static_cast<uint32_t>(processInfo.th32ProcessID));
+        if (hSnapShot != INVALID_HANDLE_VALUE) {
+            PROCESSENTRY32 processInfo;
+            processInfo.dwSize = sizeof(PROCESSENTRY32);
+
+            while (Process32Next(hSnapShot, &processInfo) != FALSE) {
+                if (static_cast<uint32_t>(processInfo.th32ParentProcessID) == parentPID) {
+                    // Add this entry to the list
+                    _pids.push_back(static_cast<uint32_t>(processInfo.th32ProcessID));
+                }
             }
+
+            ::CloseHandle(hSnapShot);
         }
 #else
 #ifndef __APPLE__
