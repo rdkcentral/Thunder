@@ -476,7 +476,7 @@ namespace Core {
 
         std::vector<::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>> jobs;
         // Create Jobs with more than Queue size. i.e, queueSize + additionalJobs
-        for (uint8_t i = 0; i < queueSize + additionalJobs; ++i) {
+        for (uint16_t i = 0; i < static_cast<uint16_t>(queueSize + additionalJobs); ++i) {
             jobs.push_back(::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>(::Thunder::Core::ProxyType<TestJob<WorkerPoolTester>>::Create(workerPool, TestJob<WorkerPoolTester>::INITIATED, 100)));
         }
 
@@ -495,7 +495,7 @@ namespace Core {
             usleep(10000);
         }
 
-        for (uint8_t i = queueSize; i < jobs.size(); ++i) {
+        for (size_t i = queueSize; i < jobs.size(); ++i) {
             EXPECT_EQ(static_cast<TestJob<WorkerPoolTester>&>(*jobs[i]).GetStatus(), TestJob<WorkerPoolTester>::INITIATED);
             workerPool.SubmitUsingExternalWorker(jobs[i]);
         }
@@ -550,7 +550,7 @@ namespace Core {
 
         std::vector<::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>> jobs;
         // Create Jobs with more than Queue size. i.e, queueSize + additionalJobs
-        for (uint8_t i = 0; i < queueSize + additionalJobs; ++i) {
+        for (uint16_t i = 0; i < static_cast<uint16_t>(queueSize + additionalJobs); ++i) {
             jobs.push_back(::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>(::Thunder::Core::ProxyType<TestJob<WorkerPoolTester>>::Create(workerPool, TestJob<WorkerPoolTester>::INITIATED, 100)));
         }
 
@@ -560,7 +560,7 @@ namespace Core {
             EXPECT_EQ(static_cast<TestJob<WorkerPoolTester>&>(*jobs[i]).GetStatus(), TestJob<WorkerPoolTester>::INITIATED);
             workerPool.SubmitUsingSelfWorker(jobs[i]);
         }
-        for (uint8_t i = queueSize; i < jobs.size(); ++i) {
+        for (size_t i = queueSize; i < jobs.size(); ++i) {
             EXPECT_EQ(static_cast<TestJob<WorkerPoolTester>&>(*jobs[i]).GetStatus(), TestJob<WorkerPoolTester>::INITIATED);
             workerPool.SubmitUsingExternalWorker(jobs[i]);
         }
@@ -572,7 +572,7 @@ namespace Core {
             workerPool.Pool().Revoke(jobs[cancelJobsId[index]], 0);
         }
 
-        for (uint8_t index = 0; index < jobs.size(); index++) {
+        for (size_t index = 0; index < jobs.size(); index++) {
             bool isCanceledJob = false;
             for (uint8_t cancelIndex = 0; cancelIndex < cancelJobsCount; cancelIndex++)
             {
@@ -589,7 +589,7 @@ namespace Core {
             }
         }
 
-        for (uint8_t index = 0; index < jobs.size(); index++) {
+        for (size_t index = 0; index < jobs.size(); index++) {
             bool isCanceledJob = false;
             for (uint8_t cancelIndex = 0; cancelIndex < cancelJobsCount; cancelIndex++)
             {
@@ -639,7 +639,7 @@ namespace Core {
 
         std::vector<::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>> jobs;
         // Create Jobs with more than Queue size. i.e, queueSize + additionalJobs
-        for (uint8_t i = 0; i < queueSize + additionalJobs; ++i) {
+        for (uint16_t i = 0; i < static_cast<uint16_t>(queueSize + additionalJobs); ++i) {
             jobs.push_back(::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>(::Thunder::Core::ProxyType<TestJob<WorkerPoolTester>>::Create(workerPool, TestJob<WorkerPoolTester>::INITIATED, 500, false, true)));
         }
 
@@ -647,7 +647,7 @@ namespace Core {
             EXPECT_EQ(static_cast<TestJob<WorkerPoolTester>&>(*jobs[i]).GetStatus(), TestJob<WorkerPoolTester>::INITIATED);
             workerPool.ScheduleJobs(jobs[i], scheduledTimes[i]);
         }
-        for (uint8_t i = queueSize; i < jobs.size(); ++i) {
+        for (size_t i = queueSize; i < jobs.size(); ++i) {
             EXPECT_EQ(static_cast<TestJob<WorkerPoolTester>&>(*jobs[i]).GetStatus(), TestJob<WorkerPoolTester>::INITIATED);
             workerPool.ScheduleJobs(jobs[i], scheduledTimes[i]);
         }
@@ -656,7 +656,7 @@ namespace Core {
             workerPool.Pool().Revoke(jobs[cancelJobsId[index]], 0);
         }
 
-        for (uint8_t index = 0; index < jobs.size(); index++) {
+        for (size_t index = 0; index < jobs.size(); index++) {
             bool isCanceledJob = false;
             for (uint8_t cancelIndex = 0; cancelIndex < cancelJobsCount; cancelIndex++)
             {
@@ -672,7 +672,7 @@ namespace Core {
             }
         }
 
-        for (uint8_t index = 0; index < jobs.size(); index++) {
+        for (size_t index = 0; index < jobs.size(); index++) {
             bool isCanceledJob = false;
             for (uint8_t cancelIndex = 0; cancelIndex < cancelJobsCount; cancelIndex++)
             {
@@ -792,7 +792,7 @@ namespace Core {
 
         std::vector<::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>> jobs;
         // Create Jobs with more than Queue size. i.e, queueSize + additionalJobs
-        for (uint8_t i = 0; i < queueSize + additionalJobs; ++i) {
+        for (uint16_t i = 0; i < static_cast<uint16_t>(queueSize + additionalJobs); ++i) {
             jobs.push_back(::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>(::Thunder::Core::ProxyType<TestJob<WorkerPoolTester>>::Create(workerPool, TestJob<WorkerPoolTester>::INITIATED, 500, false, true)));
         }
 
@@ -800,19 +800,19 @@ namespace Core {
             EXPECT_EQ(static_cast<TestJob<WorkerPoolTester>&>(*jobs[i]).GetStatus(), TestJob<WorkerPoolTester>::INITIATED);
             workerPool.ScheduleJobs(jobs[i], scheduledTimes[i]);
         }
-        for (uint8_t i = queueSize; i < jobs.size(); ++i) {
+        for (size_t i = queueSize; i < jobs.size(); ++i) {
             EXPECT_EQ(static_cast<TestJob<WorkerPoolTester>&>(*jobs[i]).GetStatus(), TestJob<WorkerPoolTester>::INITIATED);
             workerPool.ScheduleJobs(jobs[i], scheduledTimes[i]);
         }
 
-        for (uint8_t i = 0; i < jobs.size(); ++i) {
+        for (size_t i = 0; i < jobs.size(); ++i) {
             workerPool.RescheduleJobs(jobs[i], rescheduledTimes[i]);
         }
         for (uint8_t index = 0; index < cancelJobsCount; index++) {
             workerPool.Pool().Revoke(jobs[cancelJobsId[index]], 0);
         }
 
-        for (uint8_t index = 0; index < jobs.size(); index++) {
+        for (size_t index = 0; index < jobs.size(); index++) {
             bool isCanceledJob = false;
             for (uint8_t cancelIndex = 0; cancelIndex < cancelJobsCount; cancelIndex++)
             {
@@ -828,7 +828,7 @@ namespace Core {
             }
         }
 
-        for (uint8_t index = 0; index < jobs.size(); index++) {
+        for (size_t index = 0; index < jobs.size(); index++) {
             bool isCanceledJob = false;
             for (uint8_t cancelIndex = 0; cancelIndex < cancelJobsCount; cancelIndex++)
             {
@@ -976,7 +976,7 @@ namespace Core {
 
         std::vector<::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>> jobs;
         // Create Jobs with more than Queue size. i.e, queueSize + additionalJobs
-        for (uint8_t i = 0; i < queueSize + additionalJobs; ++i) {
+        for (uint16_t i = 0; i < static_cast<uint16_t>(queueSize + additionalJobs); ++i) {
             jobs.push_back(::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>(::Thunder::Core::ProxyType<TestJob<WorkerPoolTester>>::Create(workerPool, TestJob<WorkerPoolTester>::INITIATED, 100)));
         }
 
@@ -986,7 +986,7 @@ namespace Core {
             EXPECT_EQ(static_cast<TestJob<WorkerPoolTester>&>(*jobs[i]).GetStatus(), TestJob<WorkerPoolTester>::INITIATED);
             workerPool.SubmitUsingSelfWorker(jobs[i]);
         }
-        for (uint8_t i = queueSize; i < jobs.size(); ++i) {
+        for (size_t i = queueSize; i < jobs.size(); ++i) {
             EXPECT_EQ(static_cast<TestJob<WorkerPoolTester>&>(*jobs[i]).GetStatus(), TestJob<WorkerPoolTester>::INITIATED);
             workerPool.SubmitUsingExternalWorker(jobs[i]);
         }
@@ -1040,7 +1040,7 @@ namespace Core {
 
         std::vector<::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>> jobs;
         // Create Jobs with more than Queue size. i.e, queueSize + additionalJobs
-        for (uint8_t i = 0; i < queueSize + additionalJobs; ++i) {
+        for (uint16_t i = 0; i < static_cast<uint16_t>(queueSize + additionalJobs); ++i) {
             jobs.push_back(::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>(::Thunder::Core::ProxyType<TestJob<WorkerPoolTester>>::Create(workerPool, TestJob<WorkerPoolTester>::INITIATED, 100, false, false, true)));
         }
 
@@ -1048,7 +1048,7 @@ namespace Core {
             EXPECT_EQ(static_cast<TestJob<WorkerPoolTester>&>(*jobs[i]).GetStatus(), TestJob<WorkerPoolTester>::INITIATED);
             workerPool.SubmitUsingSelfWorker(jobs[i]);
         }
-        for (uint8_t i = queueSize; i < jobs.size(); ++i) {
+        for (size_t i = queueSize; i < jobs.size(); ++i) {
             EXPECT_EQ(static_cast<TestJob<WorkerPoolTester>&>(*jobs[i]).GetStatus(), TestJob<WorkerPoolTester>::INITIATED);
             workerPool.SubmitUsingExternalWorker(jobs[i]);
         }
@@ -1253,21 +1253,21 @@ namespace Core {
         {
             std::vector<::Thunder::Core::ProxyType<WorkerJobTester>> jobs;
             // Create Jobs with more than Queue size. i.e, queueSize + additionalJobs
-            for (uint8_t i = 0; i < queueSize + additionalJobs; ++i) {
+            for (uint16_t i = 0; i < static_cast<uint16_t>(queueSize + additionalJobs); ++i) {
                 jobs.push_back(::Thunder::Core::ProxyType<WorkerJobTester>(::Thunder::Core::ProxyType<WorkerJobTester>::Create(0)));
             }
-            for (uint8_t i = 0; i < jobs.size(); ++i) {
+            for (size_t i = 0; i < jobs.size(); ++i) {
                 EXPECT_EQ(jobs[i]->IsIdle(), true);
             }
 
-            for (uint8_t i = 0; i < jobs.size(); ++i) {
+            for (size_t i = 0; i < jobs.size(); ++i) {
                 jobs[i]->Schedule(::Thunder::Core::Time::Now().Add(scheduledTimes[i]));
             }
 
-            for (uint8_t i = 0; i < jobs.size(); ++i) {
+            for (size_t i = 0; i < jobs.size(); ++i) {
                 EXPECT_EQ(jobs[i]->Reschedule(::Thunder::Core::Time::Now().Add(rescheduledTimes[i])), true);
             }
-            for (uint8_t i = 0; i < jobs.size(); ++i) {
+            for (size_t i = 0; i < jobs.size(); ++i) {
                 EXPECT_EQ(jobs[i]->IsIdle(), false);
             }
 
@@ -1276,7 +1276,7 @@ namespace Core {
                 EXPECT_EQ(jobs[cancelJobsId[i]]->IsIdle(), true);
             }
 
-            for (uint8_t index = 0; index < jobs.size(); index++) {
+            for (size_t index = 0; index < jobs.size(); index++) {
                 bool isCanceledJob = false;
                 for (uint8_t cancelIndex = 0; cancelIndex < cancelJobsCount; cancelIndex++)
                 {

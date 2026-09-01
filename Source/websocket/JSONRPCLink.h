@@ -881,11 +881,11 @@ namespace Thunder {
                         index++;
                     }
                 }
-                _scheduledTime = (result != static_cast<uint64_t>(~0) ? result : 0);
-
+                const uint64_t scheduledTime = (result != static_cast<uint64_t>(~0) ? result : 0);
+                _scheduledTime = scheduledTime;
                 _adminLock.Unlock();
 
-                return (_scheduledTime);
+                return (scheduledTime);
             }
             template <typename PARAMETERS, typename RESPONSE>
             uint32_t InternalInvoke(const uint32_t waitTime, const string& method, const PARAMETERS& parameters, RESPONSE& inbound)

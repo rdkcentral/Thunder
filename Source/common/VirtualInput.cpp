@@ -593,7 +593,7 @@ POP_WARNING()
     {
         memset(&_uidev, 0, sizeof(_uidev));
 
-        strncpy(_uidev.name, inputName.c_str(), UINPUT_MAX_NAME_SIZE);
+        ::snprintf(_uidev.name, sizeof(_uidev.name), "%s", inputName.c_str());
         _uidev.id.bustype = BUS_USB;
         _uidev.id.vendor = 0x1234;
         _uidev.id.product = 0xfedc;
@@ -790,8 +790,7 @@ POP_WARNING()
         _service.Visit(
             [ &container ](const VirtualInputChannelServer::Client& element)
             {
-                string result = element.Extension().Name();
-                container.push_back(result);
+                container.push_back(element.Extension().Name());
             }
         );
 
