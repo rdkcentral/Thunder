@@ -107,10 +107,12 @@ namespace Controller {
         virtual Core::hresult Configuration(const string& callsign /* @index */, const string& configuration /* @opaque */) = 0;
 
         // @property
-        // @brief Framework attribute
-        // @details Call Persist("PluginHost") to retain changes after restart
-        // @param attribute Attribute to access (for getter unset means retrieve all)
+        // @brief Framework attributes
+        // @details Changes are not persisted automatically. Call Persist("PluginHost") to retain them.
+        // @param attribute Attribute name (omit to retrieve all)
+        // @retval ERROR_NONE Attribute was retrieved or is unchanged
         // @retval ERROR_UNKNOWN_KEY Attribute does not exist
+        // @retval ERROR_BAD_REQUEST Attribute value is invalid
         // @retval ERROR_UNSUPPORTED Attribute cannot be changed in current framework configuration
         // @retval ERROR_REQUEST_SUBMITTED Attribute will take effect after framework restart
         virtual Core::hresult Attribute(const Core::OptionalType<string>& attribute /* @index */, string& value /* @out @opaque */) const = 0;

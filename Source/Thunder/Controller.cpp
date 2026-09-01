@@ -370,24 +370,22 @@ namespace Plugin {
         const PluginHost::Config& configuration(_pluginServer->Configuration());
 
         if (attribute.IsSet() == false) {
-            Core::JSON::Container attributes;
-            Core::JSON::String prefix(configuration.Prefix());
-            Core::JSON::DecUInt16 idleTime(configuration.IdleTime());
-
-            attributes.Add(_T("prefix"), &prefix);
-            attributes.Add(_T("idletime"), &idleTime);
+            Core::JSON::VariantContainer attributes;
+            attributes.Set(_T("prefix"), Core::JSON::Variant(configuration.Prefix()));
+            attributes.Set(_T("idletime"), Core::JSON::Variant(static_cast<uint32_t>(configuration.IdleTime())));
             attributes.ToString(value);
 
             result = Core::ERROR_NONE;
         }
         else if (attribute.Value() == _T("prefix")) {
-            Core::JSON::String prefix(configuration.Prefix());
+            Core::JSON::String prefix;
+            prefix = configuration.Prefix();
             prefix.ToString(value);
 
             result = Core::ERROR_NONE;
         }
         else if (attribute.Value() == _T("idletime")) {
-            Core::JSON::DecUInt16 idleTime(configuration.IdleTime());
+            Core::JSON::DecUInt16 idleTime(configuration.IdleTime(), true);
             idleTime.ToString(value);
 
             result = Core::ERROR_NONE;
@@ -402,13 +400,20 @@ namespace Plugin {
 
         ASSERT(_pluginServer != nullptr);
 
+        PluginHost::Config& configuration(_pluginServer->Configuration());
+
         if (attribute == _T("prefix")) {
             Core::JSON::String prefix;
 
             result = Core::ERROR_BAD_REQUEST;
             if (prefix.FromString(value) == true) {
-                _pluginServer->Configuration().SetPrefix(prefix.Value());
-                result = Core::ERROR_REQUEST_SUBMITTED;
+                if (prefix.Value() == configuration.Prefix()) {
+                    result = Core::ERROR_NONE;
+                }
+                else {
+                    configuration.SetPrefix(prefix.Value());
+                    result = Core::ERROR_REQUEST_SUBMITTED;
+                }
             }
         }
         else if (attribute == _T("idletime")) {
@@ -416,8 +421,13 @@ namespace Plugin {
 
             result = Core::ERROR_BAD_REQUEST;
             if (idleTime.FromString(value) == true) {
-                _pluginServer->Configuration().SetIdleTime(idleTime.Value());
-                result = Core::ERROR_REQUEST_SUBMITTED;
+                if (idleTime.Value() == configuration.IdleTime()) {
+                    result = Core::ERROR_NONE;
+                }
+                else {
+                    configuration.SetIdleTime(idleTime.Value());
+                    result = Core::ERROR_REQUEST_SUBMITTED;
+                }
             }
         }
 

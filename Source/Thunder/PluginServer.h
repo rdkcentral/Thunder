@@ -1940,8 +1940,6 @@ namespace PluginHost {
                 , _serverconfig(serverconfig)
                 , _persistentFolder(persistentFolder)
                 , _callsigns()
-                , _defaultPrefix(serverconfig.Prefix())
-                , _defaultIdleTime(serverconfig.IdleTime())
             {
                 Add(_T("Services"), &Services);
                 Add(_T("prefix"), &Prefix);
@@ -2242,27 +2240,38 @@ namespace PluginHost {
             uint32_t SavePluginHostConfig()
             {
                 uint32_t result = Core::ERROR_NONE;
-                const string& currentPrefix = _serverconfig.Prefix();
-                const uint16_t currentIdleTime = _serverconfig.IdleTime();
-
-                const bool differs = ((currentPrefix != _defaultPrefix) || (currentIdleTime != _defaultIdleTime));
+                const Config::Attributes current(_serverconfig.CurrentAttributes());
+                const Config::Attributes& configured(_serverconfig.ConfiguredAttributes());
+                const bool differsFromConfiguration = ((current.Prefix != configured.Prefix) || (current.IdleTime != configured.IdleTime));
                 Core::File storage(CreateOverridePath(PluginHostCallsign()));
-                if (differs == true) {
+
+                if (differsFromConfiguration == true) {
                     if (storage.Create() == true) {
-                        Prefix   = currentPrefix;
-                        IdleTime = currentIdleTime;
-                        IElement::ToFile(storage);
+                        Prefix = current.Prefix;
+                        IdleTime = current.IdleTime;
+
+                        if (IElement::ToFile(storage) == false) {
+                            result = storage.ErrorCode();
+                            if (result == Core::ERROR_NONE) {
+                                result = Core::ERROR_WRITE_ERROR;
+                            }
+                        }
                         storage.Close();
+
+                        if (result != Core::ERROR_NONE) {
+                            storage.Destroy();
+                        }
                     }
                     else {
                         result = storage.ErrorCode();
                     }
                 }
-                else if (storage.Exists() == true) {
-                    if (storage.Destroy() == false) {
+                else {
+                    if ((storage.Exists() == true) && (storage.Destroy() == false)) {
                         result = storage.ErrorCode();
                     }
                 }
+
                 return result;
             }
 
@@ -2293,8 +2302,6 @@ namespace PluginHost {
             PluginHost::Config& _serverconfig;
             const string _persistentFolder;
             Callsigns _callsigns;
-            const string _defaultPrefix;
-            const uint16_t _defaultIdleTime;
         };
 
         class ServiceMap {
