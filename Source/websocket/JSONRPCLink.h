@@ -262,7 +262,7 @@ namespace Thunder {
                 }
                 uint32_t Initialize()
                 {
-                    return (Open(1000));
+                    return (Open(JSONRPC_OPEN_TIMEOUT));
                 }
                 void Deinitialize()
                 {
