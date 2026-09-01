@@ -108,7 +108,7 @@ namespace Core {
                 // enables you to get around those "Address already in use" error messages when you
                 // try to restart your server after a crash.
                 int optval = 1;
-                socklen_t optionLength = sizeof(int);
+                const socklen_t optionLength = static_cast<socklen_t>(sizeof(optval));
 
                 ::setsockopt(_receiveSocket, SOL_SOCKET, SO_REUSEADDR, (const char*)&optval, optionLength);
             }

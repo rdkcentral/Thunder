@@ -515,7 +515,7 @@ namespace PluginHost {
             string messagingCategories = _config->MessagingCategories();
 
             if (Core::File::IsPathAbsolute(messagingCategories)) {
-                messagingSettings = messagingCategories;
+                messagingSettings = std::move(messagingCategories);
             }
             else {
                 messagingSettings = Core::Directory::Normalize(Core::File::PathName(pathName)) + messagingCategories;

@@ -525,7 +525,7 @@ namespace Core {
                     // reboot process did not exit sanely
                     result = Core::ERROR_UNAVAILABLE;
                 }
-                if (WEXITSTATUS(status) != 0) {
+                else if (WEXITSTATUS(status) != 0) {
                     // reboot process exited with error;
                     // most likely the user lacks the required privileges
                     result = Core::ERROR_PRIVILIGED_REQUEST;

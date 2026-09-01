@@ -2296,7 +2296,7 @@ namespace PluginHost {
                     , _position(0) {
                 }
                 Iterator(Shells&& services)
-                    : _container(services)
+                    : _container(std::move(services))
                     , _index()
                     , _position(0) {
                 }
@@ -3429,10 +3429,7 @@ namespace PluginHost {
 
                 Core::ProxyType<IShell> service;
 
-                FromIdentifier(callsign, service);
-
-                if (service.IsValid() == true) {
-
+                if (FromIdentifier(callsign, service) == Core::ERROR_NONE) {
                     result = service->QueryInterface(id);
                 }
 
@@ -3679,7 +3676,7 @@ namespace PluginHost {
 
                 workingList.reserve(_services.size());
 
-                for (auto entry : _services) {
+                for (const auto& entry : _services) {
 
                     std::vector<Core::ProxyType<Service>>::iterator index = workingList.begin();
 
@@ -3708,7 +3705,7 @@ namespace PluginHost {
                         locals.insert(index, std::pair<string,string>(callsign, metadata));
                     });
 
-                    for (auto entry : locals) {
+                    for (const auto& entry : locals) {
                         metaData.Add().FromString(entry.second);
                     }
                 }

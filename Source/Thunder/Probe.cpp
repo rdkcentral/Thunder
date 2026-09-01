@@ -160,7 +160,7 @@ namespace Plugin {
                 newEntry._destination = sourceNode;
                 newEntry._requestTime = Core::NumberType<uint64_t>(body.c_str(), static_cast<uint32_t>(body.length())).Value();
                 newEntry._incomingTime = incomingTime;
-                _destinations.push_back(newEntry);
+                _destinations.push_back(std::move(newEntry));
                 TRACE(Discovery, (_T("Valid discovery request. Responding to"), sourceNode));
                 // remember the NodeId where this comes from.
                 if (_destinations.size() == 1) {
