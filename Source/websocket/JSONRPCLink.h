@@ -22,6 +22,10 @@
 #include "Module.h"
 #include "WebSocketLink.h"
 
+#ifndef JSONRPC_OPEN_TIMEOUT
+#define JSONRPC_OPEN_TIMEOUT 2000
+#endif
+
 namespace Thunder {
 
     namespace JSONRPC {
@@ -262,7 +266,7 @@ namespace Thunder {
                 }
                 uint32_t Initialize()
                 {
-                    return (Open(1000));
+                    return (Open(JSONRPC_OPEN_TIMEOUT));
                 }
                 void Deinitialize()
                 {
@@ -285,11 +289,11 @@ namespace Thunder {
                     }
                     _adminLock.Unlock();
                 }
-                bool Open(const uint32_t waitTime)
+                uint32_t Open(const uint32_t waitTime)
                 {
-                    bool result = true;
+                    uint32_t result = Core::ERROR_NONE;
                     if (_channel.IsClosed() == true) {
-                        result = (_channel.Open(waitTime) == Core::ERROR_NONE);
+                        result = _channel.Open(waitTime);
                     }
                     return (result);
                 }
