@@ -68,7 +68,7 @@ namespace Core {
     
     TEST(Core_ProcessInfo, Priority)
     {
-    Core::ProcessInfo processInfo(getpid());
+    ::Thunder::Core::ProcessInfo processInfo(getpid());
     const int8_t priority = processInfo.Priority();
 
     processInfo.Priority(priority);

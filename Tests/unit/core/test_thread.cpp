@@ -131,7 +131,7 @@ namespace Core {
     
     TEST(Core_Thread, PriorityMinMax)
     {
-        ::ThreadId parentTid = Core::Thread::ThreadId();
+        ::Thunder::Core::thread_id parentTid = ::Thunder::Core::Thread::ThreadId();
         volatile bool threadDone = false;
         std::mutex mutex;
         std::condition_variable cv;
@@ -142,7 +142,7 @@ namespace Core {
 
     TEST(Core_Thread, Priority)
     {
-        ::ThreadId parentTid = Core::Thread::ThreadId();
+        ::Thunder::Core::thread_id parentTid = ::Thunder::Core::Thread::ThreadId();
         volatile bool threadDone = false;
         std::mutex mutex;
         std::condition_variable cv;

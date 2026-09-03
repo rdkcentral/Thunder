@@ -23,7 +23,7 @@
 #include "IIterator.h"
 #include "Portability.h"
 
-ifndef __WINDOWS__
+#ifndef __WINDOWS__
 #include <sched.h>
 #endif
 
