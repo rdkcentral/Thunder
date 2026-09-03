@@ -378,7 +378,7 @@ namespace Core {
                     }
                 }
 
-                idxM++;
+                idxM = (idxM == string::npos ? 0 : idxM + 1);
 
                 const size_t idxP = designator.rfind(_T("::"), idxI);
 

@@ -310,7 +310,7 @@ namespace RPC {
                     Core::Library library(index.Current().c_str());
 
                     if (library.IsLoaded() == true) {
-                        processProxyStubs.push_back(library);
+                        processProxyStubs.push_back(std::move(library));
                     }
                 }
             }

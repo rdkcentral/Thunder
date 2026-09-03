@@ -746,7 +746,7 @@ namespace Plugin {
                     }
                 }
             } else if (index.Current() == _T("Discovery")) {
-                if (_probe != nullptr) {
+                if (_probe == nullptr) {
                     result->ErrorCode = Web::STATUS_BAD_REQUEST;
                     result->Message = _T("Probe functionality not enabled!");
                 }
