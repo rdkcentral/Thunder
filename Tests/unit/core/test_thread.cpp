@@ -27,6 +27,7 @@
 #endif
 
 #include <core/core.h>
+#include <climits>
 
 namespace Thunder {
 namespace Tests {
@@ -126,6 +127,38 @@ namespace Core {
         object.Stop();
         EXPECT_EQ(object.State(), ::Thunder::Core::Thread::STOPPING);
         object.Wait(::Thunder::Core::Thread::BLOCKED | ::Thunder::Core::Thread::STOPPED | ::Thunder::Core::Thread::STOPPING, ::Thunder::Core::infinite);
+    }
+    
+    TEST(Core_Thread, PriorityMinMax)
+    {
+        ::ThreadId parentTid = Core::Thread::ThreadId();
+        volatile bool threadDone = false;
+        std::mutex mutex;
+        std::condition_variable cv;
+        ThreadClass object(threadDone, mutex, cv, parentTid);
+
+        EXPECT_LE(object.PriorityMin(), object.PriorityMax());
+    }
+
+    TEST(Core_Thread, Priority)
+    {
+        ::ThreadId parentTid = Core::Thread::ThreadId();
+        volatile bool threadDone = false;
+        std::mutex mutex;
+        std::condition_variable cv;
+        ThreadClass object(threadDone, mutex, cv, parentTid);
+
+#ifdef __POSIX__
+        EXPECT_TRUE(object.Priority(object.PriorityMin()));
+        if (object.PriorityMin() > INT_MIN) {
+            EXPECT_FALSE(object.Priority(object.PriorityMin() - 1));
+        }
+        if (object.PriorityMax() < INT_MAX) {
+            EXPECT_FALSE(object.Priority(object.PriorityMax() + 1));
+        }
+#else
+        EXPECT_FALSE(object.Priority(object.PriorityMin()));
+#endif
     }
 
 } // Core

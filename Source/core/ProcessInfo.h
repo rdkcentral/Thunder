@@ -23,6 +23,10 @@
 #include "IIterator.h"
 #include "Portability.h"
 
+ifndef __WINDOWS__
+#include <sched.h>
+#endif
+
 namespace Thunder {
 namespace Core {
 
@@ -235,17 +239,20 @@ namespace Core {
 #ifdef __WINDOWS__
             return (0);
 #else
-            errno = 0;
-            int result = getpriority(PRIO_PROCESS, _pid);
+            int result = sched_getscheduler(_pid);
+            
+            return (result == -1 ? OTHER : static_cast<scheduler>(result));
 
-            return (errno != 0 ? 0 : static_cast<int8_t>(result));
 #endif
         }
-        inline void Priority(const int8_t priority)
+        inline void Priority(const int8_t policy)
         {
 #ifndef __WINDOWS__
-            if (setpriority(PRIO_PROCESS, _pid, priority) == -1) {
-                TRACE_L1("Failed to set priority. Error: %d", errno);
+            struct sched_param parameters = {};
+            parameters.sched_priority = ((policy == FIFO) || (policy == ROUNDROBIN)) ? 1 : 0;
+
+            if (sched_setscheduler(_pid, policy, &parameters) == -1) {
+                TRACE_L1("Failed to set scheduling policy. Error: %d", errno);
             }
 #endif
         }

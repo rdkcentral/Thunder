@@ -65,6 +65,16 @@ namespace Core {
             pids.pop_front();
         }
     }
+    
+    TEST(Core_ProcessInfo, Priority)
+    {
+    Core::ProcessInfo processInfo(getpid());
+    const int8_t priority = processInfo.Priority();
+
+    processInfo.Priority(priority);
+
+    EXPECT_EQ(processInfo.Priority(), priority);
+    }
 
 } // Core
 } // Tests
