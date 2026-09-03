@@ -371,8 +371,8 @@ namespace Plugin {
 
         if (attribute.IsSet() == false) {
             Core::JSON::VariantContainer attributes;
-            attributes.Set(_T("prefix"), Core::JSON::Variant(configuration.Prefix()));
-            attributes.Set(_T("idletime"), Core::JSON::Variant(static_cast<uint32_t>(configuration.IdleTime())));
+            attributes.Set(Core::EnumToString(IConfiguration::PREFIX).c_str(), Core::JSON::Variant(configuration.Prefix()));
+            attributes.Set(Core::EnumToString(IConfiguration::IDLETIME).c_str(), Core::JSON::Variant(static_cast<uint32_t>(configuration.IdleTime())));
             attributes.ToString(value);
 
             result = Core::ERROR_NONE;
