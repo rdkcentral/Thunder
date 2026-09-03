@@ -86,6 +86,11 @@ namespace Controller {
     struct EXTERNAL IConfiguration : virtual public Core::IUnknown {
         enum { ID = RPC::ID_CONTROLLER_CONFIGURATION };
 
+        enum attribute : uint8_t {
+            PREFIX /* @text:prefix */,
+            IDLETIME /* @text:idletime */
+        };
+
         // @alt storeconfig
         // @brief Stores configuration to the persistent memory
         // @details If callsign is not provided, configuration for all plugins is persisted.
@@ -115,8 +120,8 @@ namespace Controller {
         // @retval ERROR_BAD_REQUEST Attribute value is invalid
         // @retval ERROR_UNSUPPORTED Attribute cannot be changed in current framework configuration
         // @retval ERROR_REQUEST_SUBMITTED Attribute will take effect after framework restart
-        virtual Core::hresult Attribute(const Core::OptionalType<string>& attribute /* @index */, string& value /* @out @opaque */) const = 0;
-        virtual Core::hresult Attribute(const string& attribute /* @index */, const string& value /* @opaque */) = 0;
+        virtual Core::hresult Attribute(const Core::OptionalType<attribute>& attribute /* @index */, string& value /* @out @opaque */) const = 0;
+        virtual Core::hresult Attribute(const attribute attribute /* @index */, const string& value /* @opaque */) = 0;
     };
 
     // @json 1.0.0 @text:legacy_lowercase

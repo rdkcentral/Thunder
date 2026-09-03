@@ -361,7 +361,7 @@ namespace Plugin {
         return result;
     }
 
-    Core::hresult Controller::Attribute(const Core::OptionalType<string>& attribute, string& value) const
+    Core::hresult Controller::Attribute(const Core::OptionalType<IConfiguration::attribute>& attribute, string& value) const
     {
         Core::hresult result = Core::ERROR_UNKNOWN_KEY;
 
@@ -377,14 +377,14 @@ namespace Plugin {
 
             result = Core::ERROR_NONE;
         }
-        else if (attribute.Value() == _T("prefix")) {
+        else if (attribute.Value() == IConfiguration::PREFIX) {
             Core::JSON::String prefix;
             prefix = configuration.Prefix();
             prefix.ToString(value);
 
             result = Core::ERROR_NONE;
         }
-        else if (attribute.Value() == _T("idletime")) {
+        else if (attribute.Value() == IConfiguration::IDLETIME) {
             Core::JSON::DecUInt16 idleTime(configuration.IdleTime(), true);
             idleTime.ToString(value);
 
@@ -394,7 +394,7 @@ namespace Plugin {
         return result;
     }
 
-    Core::hresult Controller::Attribute(const string& attribute, const string& value)
+    Core::hresult Controller::Attribute(const IConfiguration::attribute attribute, const string& value)
     {
         Core::hresult result = Core::ERROR_UNKNOWN_KEY;
 
@@ -402,7 +402,7 @@ namespace Plugin {
 
         PluginHost::Config& configuration(_pluginServer->Configuration());
 
-        if (attribute == _T("prefix")) {
+        if (attribute == IConfiguration::PREFIX) {
             Core::JSON::String prefix;
 
             result = Core::ERROR_BAD_REQUEST;
@@ -416,7 +416,7 @@ namespace Plugin {
                 }
             }
         }
-        else if (attribute == _T("idletime")) {
+        else if (attribute == IConfiguration::IDLETIME) {
             Core::JSON::DecUInt16 idleTime;
 
             result = Core::ERROR_BAD_REQUEST;
