@@ -34,14 +34,12 @@
 #define MAX_EXTERNAL_WAITS 2000 /* Wait for 2 Seconds */
 
 #ifndef HIBERNATE_WAKEUP_TIMEOUT
-#define HIBERNATE_WAKEUP_TIMEOUT 10000
+#define HIBERNATE_WAKEUP_TIMEOUT 10000 /* ms */
 #endif
-
-enum { HibernateWakeupTimeout = HIBERNATE_WAKEUP_TIMEOUT };
 
 
 namespace Thunder {
-
+s
 namespace Core {
     template<typename CONTENT, typename FORWARDER> 
     class ThrottleQueueType {
@@ -1458,7 +1456,7 @@ namespace PluginHost {
             }
 
         private:
-            uint32_t Wakeup(const uint32_t timeout = HibernateWakeupTimeout);
+            uint32_t Wakeup(const uint32_t timeout = HIBERNATE_WAKEUP_TIMEOUT);
 
             #ifdef HIBERNATE_SUPPORT_ENABLED
             uint32_t HibernateChildren(const pid_t parentPID, const uint32_t timeout);
