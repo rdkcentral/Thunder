@@ -1441,9 +1441,7 @@ namespace PluginHost {
             }
 
             void LoadMetadataFromConfig() {
-                SYSLOG(Logging::Startup, (_T("Inside LoadMetadataFromConfig")));
                 _metadata = Configuration();
-                SYSLOG(Logging::Startup, (_T("Service callsign: %s Metadata loaded from configuration: %s"), Callsign().c_str(), _metadata.ToString().c_str()));
             }
             void LoadMetadata() {
                 const string locator(PluginHost::Service::Configuration().Locator.Value());
