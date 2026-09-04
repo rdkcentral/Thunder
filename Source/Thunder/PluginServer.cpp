@@ -449,6 +449,7 @@ namespace PluginHost {
                 }
 
                 TRACE(Activity, (_T("Activation plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
+                printf("Activation plugin [%s]:[%s]\n", className.c_str(), callSign.c_str());
 
                 _administrator.Initialize(callSign, this);
 
@@ -988,6 +989,23 @@ namespace PluginHost {
         // Load the metadata for the subsystem information..
         if (Configuration().MetadataDiscovery() == false) {
             SYSLOG(Logging::Startup, (_T("Automatic metadata discovery and plugin versioning is DISABLED!!!")));
+            for (auto service : _services)
+            {
+                service.second->LoadMetadataFromConfig();
+                for (const PluginHost::ISubSystem::subsystem& entry : service.second->SubSystemControl()) {
+                    Core::EnumerateType<PluginHost::ISubSystem::subsystem> name(entry);
+                    if (std::find(externallyControlled.begin(), externallyControlled.end(), entry) != externallyControlled.end()) {
+                        SYSLOG(Logging::Startup, (Core::Format(_T("Subsystem [%s] controlled by multiple plugins. Second: [%s]. Configuration error!!!"), name.Data(), service.second->Callsign().c_str())));
+                    }
+                    else if (entry >= PluginHost::ISubSystem::END_LIST) {
+                        SYSLOG(Logging::Startup, (Core::Format(_T("Subsystem [%s] can not be used as a control value in [%s]!!!"), name.Data(), service.second->Callsign().c_str())));
+                    }
+                    else {
+                        SYSLOG(Logging::Startup, (Core::Format(_T("Subsytem [%s] controlled by plugin [%s]"), name.Data(), service.second->Callsign().c_str())));
+                        externallyControlled.emplace_back(entry);
+                    }
+                }
+            }
         }
         else {
             for (auto service : _services)
@@ -1249,7 +1267,8 @@ namespace PluginHost {
         Close(Core::infinite);
     }
 
-    void Server::InsertLoadPluginConfig(Core::JSON::ArrayType<Plugin::Config>::Iterator index, Plugin::Config& metaDataConfig, const bool thunderextension, const bool background)
+    void Server::InsertLoadPluginConfig(Core::JSON::ArrayType<Plugin::Config>::Iterator index, Plugin::Config& metaDataConfig, 
+                                        const bool thunderextension, const bool background)
     {
         while (index.Next() == true) {
             Plugin::Config& entry(index.Current());
