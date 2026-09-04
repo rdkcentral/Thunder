@@ -38,6 +38,12 @@ namespace PluginHost {
      * the documentation in docs/introduction/config.md is updated to reflect the changes!
     */
     class EXTERNAL Config {
+    public:
+        struct Attributes {
+            string Prefix;
+            uint16_t IdleTime = 180;
+        };
+
     private:
         class Substituter {
         private:
@@ -689,7 +695,8 @@ namespace PluginHost {
         PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
         Config(Core::File& file, const bool background, Core::OptionalType<Core::JSON::Error>& error)
             : _background(background)
-            , _prefix()
+            , _attributes()
+            , _pendingAttributes()
             , _webPrefix()
             , _JSONRPCPrefix()
             , _volatilePath()
@@ -725,7 +732,6 @@ namespace PluginHost {
             , _portNumber(0)
             , _IPV6()
             , _legacyInitialize(false)
-            , _idleTime(180)
             , _softKillCheckWaitTime(3)
             , _hardKillCheckWaitTime(10)
             , _outOfProcessWaitTime(3000)
@@ -760,8 +766,8 @@ namespace PluginHost {
             config.IElement::FromFile(file, error);
 
             if (error.IsSet() == false) {
-                _prefix = config.Prefix.Value();
-                _webPrefix = '/' + _prefix;
+                _attributes.Prefix = config.Prefix.Value();
+                _webPrefix = '/' + _attributes.Prefix;
                 _JSONRPCPrefix = '/' + config.JSONRPC.Value();
 #ifdef PROCESSCONTAINERS_ENABLED
                 _processContainersConfig = config.ProcessContainers.Value();
@@ -832,7 +838,7 @@ namespace PluginHost {
                 _hashKey = config.Signature.Value();
                 _communicator = Core::NodeId(config.Communicator.Value().c_str());
                 _redirect = config.Redirect.Value();
-                _idleTime = config.IdleTime.Value();
+                _attributes.IdleTime = config.IdleTime.Value();
                 _softKillCheckWaitTime = config.SoftKillCheckWaitTime.Value();
                 _hardKillCheckWaitTime = config.HardKillCheckWaitTime.Value();
                 _outOfProcessWaitTime = config.OutOfProcessWaitTime.Value() * 1000; // Move to milliseconds
@@ -913,6 +919,8 @@ namespace PluginHost {
                     _linkerPluginPaths.push_back(itr.Current().Value());
                 }
             }
+
+            _pendingAttributes = _attributes;
         }
         POP_WARNING()
         ~Config()
@@ -927,12 +935,17 @@ namespace PluginHost {
         inline const string& Prefix() const
         {
             Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
-            return (_prefix);
+            return (_attributes.Prefix);
         }
         inline void SetPrefix(const string& newValue) {
             Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
-            _prefix = newValue;
-            _webPrefix = '/' + _prefix;
+            _attributes.Prefix = newValue;
+            _pendingAttributes.Prefix = newValue;
+            _webPrefix = '/' + _attributes.Prefix;
+        }
+        inline void SetPendingPrefix(const string& newValue) {
+            Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
+            _pendingAttributes.Prefix = newValue;
         }
         inline const string& Model() const
         {
@@ -1090,11 +1103,24 @@ namespace PluginHost {
         }
         inline uint16_t IdleTime() const {
             Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
-            return (_idleTime);
+            return (_attributes.IdleTime);
         }
         inline void SetIdleTime(const uint16_t newValue)  {
             Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
-            _idleTime = newValue;
+            _attributes.IdleTime = newValue;
+            _pendingAttributes.IdleTime = newValue;
+        }
+        inline void SetPendingIdleTime(const uint16_t newValue)  {
+            Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
+            _pendingAttributes.IdleTime = newValue;
+        }
+        inline Attributes PendingAttributes() const {
+            Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
+            return (_pendingAttributes);
+        }
+        inline Attributes ActiveAttributes() const {
+            Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
+            return (_attributes);
         }
         inline uint8_t SoftKillCheckWaitTime() const {
             return _softKillCheckWaitTime;
@@ -1341,7 +1367,8 @@ namespace PluginHost {
 
     private:
         const bool _background;
-        string _prefix; // store prefix to make it overridable
+        Attributes _attributes;
+        Attributes _pendingAttributes;
         string _webPrefix;
         string _JSONRPCPrefix;
         string _volatilePath;
@@ -1377,7 +1404,6 @@ namespace PluginHost {
         uint16_t _portNumber;
         bool _IPV6;
         bool _legacyInitialize;
-        uint16_t _idleTime;
         uint8_t _softKillCheckWaitTime;
         uint8_t _hardKillCheckWaitTime;
         uint16_t _outOfProcessWaitTime;

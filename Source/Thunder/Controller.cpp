@@ -361,6 +361,82 @@ namespace Plugin {
         return result;
     }
 
+    Core::hresult Controller::Attribute(const Core::OptionalType<IConfiguration::attribute>& attribute, string& value) const
+    {
+        Core::hresult result = Core::ERROR_UNKNOWN_KEY;
+
+        ASSERT(_pluginServer != nullptr);
+
+        const PluginHost::Config& configuration(_pluginServer->Configuration());
+        const PluginHost::Config::Attributes attributes(configuration.ActiveAttributes());
+
+        if (attribute.IsSet() == false) {
+            Core::JSON::VariantContainer response;
+            response.Set(Core::EnumToCString(IConfiguration::PREFIX), Core::JSON::Variant(attributes.Prefix));
+            response.Set(Core::EnumToCString(IConfiguration::IDLETIME), Core::JSON::Variant(static_cast<uint32_t>(attributes.IdleTime)));
+            response.ToString(value);
+
+            result = Core::ERROR_NONE;
+        }
+        else if (attribute.Value() == IConfiguration::PREFIX) {
+            Core::JSON::String prefix;
+            prefix = attributes.Prefix;
+            prefix.ToString(value);
+
+            result = Core::ERROR_NONE;
+        }
+        else if (attribute.Value() == IConfiguration::IDLETIME) {
+            Core::JSON::DecUInt16 idleTime(attributes.IdleTime, true);
+            idleTime.ToString(value);
+
+            result = Core::ERROR_NONE;
+        }
+
+        return result;
+    }
+
+    Core::hresult Controller::Attribute(const IConfiguration::attribute attribute, const string& value)
+    {
+        Core::hresult result = Core::ERROR_UNKNOWN_KEY;
+
+        ASSERT(_pluginServer != nullptr);
+
+        PluginHost::Config& configuration(_pluginServer->Configuration());
+        const PluginHost::Config::Attributes active(configuration.ActiveAttributes());
+        const PluginHost::Config::Attributes pending(configuration.PendingAttributes());
+
+        if (attribute == IConfiguration::PREFIX) {
+            Core::JSON::String prefix;
+
+            result = Core::ERROR_BAD_REQUEST;
+            if (prefix.FromString(value) == true) {
+                if (prefix.Value() == pending.Prefix) {
+                    result = Core::ERROR_NONE;
+                }
+                else {
+                    configuration.SetPendingPrefix(prefix.Value());
+                    result = (prefix.Value() == active.Prefix ? Core::ERROR_NONE : Core::ERROR_REQUEST_SUBMITTED);
+                }
+            }
+        }
+        else if (attribute == IConfiguration::IDLETIME) {
+            Core::JSON::DecUInt16 idleTime;
+
+            result = Core::ERROR_BAD_REQUEST;
+            if (idleTime.FromString(value) == true) {
+                if (idleTime.Value() == pending.IdleTime) {
+                    result = Core::ERROR_NONE;
+                }
+                else {
+                    configuration.SetPendingIdleTime(idleTime.Value());
+                    result = (idleTime.Value() == active.IdleTime ? Core::ERROR_NONE : Core::ERROR_REQUEST_SUBMITTED);
+                }
+            }
+        }
+
+        return result;
+    }
+
     Core::hresult Controller::Clone(const string& basecallsign, const string& newcallsign)
     {
         Core::hresult result = Core::ERROR_PRIVILIGED_REQUEST;
