@@ -2240,15 +2240,15 @@ namespace PluginHost {
             uint32_t SavePluginHostConfig()
             {
                 uint32_t result = Core::ERROR_NONE;
-                const Config::Attributes current(_serverconfig.CurrentAttributes());
-                const Config::Attributes& configured(_serverconfig.ConfiguredAttributes());
-                const bool differsFromConfiguration = ((current.Prefix != configured.Prefix) || (current.IdleTime != configured.IdleTime));
+                const Config::Attributes active(_serverconfig.ActiveAttributes());
+                const Config::Attributes pending(_serverconfig.PendingAttributes());
+                const bool pendingChanges = ((pending.Prefix != active.Prefix) || (pending.IdleTime != active.IdleTime));
                 Core::File storage(CreateOverridePath(PluginHostCallsign()));
 
-                if (differsFromConfiguration == true) {
+                if (pendingChanges == true) {
                     if (storage.Create() == true) {
-                        Prefix = current.Prefix;
-                        IdleTime = current.IdleTime;
+                        Prefix = pending.Prefix;
+                        IdleTime = pending.IdleTime;
 
                         if (IElement::ToFile(storage) == false) {
                             result = storage.ErrorCode();
@@ -2266,12 +2266,6 @@ namespace PluginHost {
                         result = storage.ErrorCode();
                     }
                 }
-                else {
-                    if ((storage.Exists() == true) && (storage.Destroy() == false)) {
-                        result = storage.ErrorCode();
-                    }
-                }
-
                 return result;
             }
 

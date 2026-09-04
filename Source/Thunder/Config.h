@@ -696,7 +696,7 @@ namespace PluginHost {
         Config(Core::File& file, const bool background, Core::OptionalType<Core::JSON::Error>& error)
             : _background(background)
             , _attributes()
-            , _configuredAttributes()
+            , _pendingAttributes()
             , _webPrefix()
             , _JSONRPCPrefix()
             , _volatilePath()
@@ -920,7 +920,7 @@ namespace PluginHost {
                 }
             }
 
-            _configuredAttributes = _attributes;
+            _pendingAttributes = _attributes;
         }
         POP_WARNING()
         ~Config()
@@ -940,7 +940,12 @@ namespace PluginHost {
         inline void SetPrefix(const string& newValue) {
             Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
             _attributes.Prefix = newValue;
+            _pendingAttributes.Prefix = newValue;
             _webPrefix = '/' + _attributes.Prefix;
+        }
+        inline void SetPendingPrefix(const string& newValue) {
+            Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
+            _pendingAttributes.Prefix = newValue;
         }
         inline const string& Model() const
         {
@@ -1103,13 +1108,19 @@ namespace PluginHost {
         inline void SetIdleTime(const uint16_t newValue)  {
             Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
             _attributes.IdleTime = newValue;
+            _pendingAttributes.IdleTime = newValue;
         }
-        inline Attributes CurrentAttributes() const {
+        inline void SetPendingIdleTime(const uint16_t newValue)  {
+            Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
+            _pendingAttributes.IdleTime = newValue;
+        }
+        inline Attributes PendingAttributes() const {
+            Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
+            return (_pendingAttributes);
+        }
+        inline Attributes ActiveAttributes() const {
             Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
             return (_attributes);
-        }
-        inline const Attributes& ConfiguredAttributes() const {
-            return (_configuredAttributes);
         }
         inline uint8_t SoftKillCheckWaitTime() const {
             return _softKillCheckWaitTime;
@@ -1357,7 +1368,7 @@ namespace PluginHost {
     private:
         const bool _background;
         Attributes _attributes;
-        Attributes _configuredAttributes;
+        Attributes _pendingAttributes;
         string _webPrefix;
         string _JSONRPCPrefix;
         string _volatilePath;

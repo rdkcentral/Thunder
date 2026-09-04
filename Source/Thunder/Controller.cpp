@@ -368,24 +368,25 @@ namespace Plugin {
         ASSERT(_pluginServer != nullptr);
 
         const PluginHost::Config& configuration(_pluginServer->Configuration());
+        const PluginHost::Config::Attributes attributes(configuration.ActiveAttributes());
 
         if (attribute.IsSet() == false) {
-            Core::JSON::VariantContainer attributes;
-            attributes.Set(Core::EnumToCString(IConfiguration::PREFIX), Core::JSON::Variant(configuration.Prefix()));
-            attributes.Set(Core::EnumToCString(IConfiguration::IDLETIME), Core::JSON::Variant(static_cast<uint32_t>(configuration.IdleTime())));
-            attributes.ToString(value);
+            Core::JSON::VariantContainer response;
+            response.Set(Core::EnumToCString(IConfiguration::PREFIX), Core::JSON::Variant(attributes.Prefix));
+            response.Set(Core::EnumToCString(IConfiguration::IDLETIME), Core::JSON::Variant(static_cast<uint32_t>(attributes.IdleTime)));
+            response.ToString(value);
 
             result = Core::ERROR_NONE;
         }
         else if (attribute.Value() == IConfiguration::PREFIX) {
             Core::JSON::String prefix;
-            prefix = configuration.Prefix();
+            prefix = attributes.Prefix;
             prefix.ToString(value);
 
             result = Core::ERROR_NONE;
         }
         else if (attribute.Value() == IConfiguration::IDLETIME) {
-            Core::JSON::DecUInt16 idleTime(configuration.IdleTime(), true);
+            Core::JSON::DecUInt16 idleTime(attributes.IdleTime, true);
             idleTime.ToString(value);
 
             result = Core::ERROR_NONE;
@@ -401,18 +402,20 @@ namespace Plugin {
         ASSERT(_pluginServer != nullptr);
 
         PluginHost::Config& configuration(_pluginServer->Configuration());
+        const PluginHost::Config::Attributes active(configuration.ActiveAttributes());
+        const PluginHost::Config::Attributes pending(configuration.PendingAttributes());
 
         if (attribute == IConfiguration::PREFIX) {
             Core::JSON::String prefix;
 
             result = Core::ERROR_BAD_REQUEST;
             if (prefix.FromString(value) == true) {
-                if (prefix.Value() == configuration.Prefix()) {
+                if (prefix.Value() == pending.Prefix) {
                     result = Core::ERROR_NONE;
                 }
                 else {
-                    configuration.SetPrefix(prefix.Value());
-                    result = Core::ERROR_REQUEST_SUBMITTED;
+                    configuration.SetPendingPrefix(prefix.Value());
+                    result = (prefix.Value() == active.Prefix ? Core::ERROR_NONE : Core::ERROR_REQUEST_SUBMITTED);
                 }
             }
         }
@@ -421,12 +424,12 @@ namespace Plugin {
 
             result = Core::ERROR_BAD_REQUEST;
             if (idleTime.FromString(value) == true) {
-                if (idleTime.Value() == configuration.IdleTime()) {
+                if (idleTime.Value() == pending.IdleTime) {
                     result = Core::ERROR_NONE;
                 }
                 else {
-                    configuration.SetIdleTime(idleTime.Value());
-                    result = Core::ERROR_REQUEST_SUBMITTED;
+                    configuration.SetPendingIdleTime(idleTime.Value());
+                    result = (idleTime.Value() == active.IdleTime ? Core::ERROR_NONE : Core::ERROR_REQUEST_SUBMITTED);
                 }
             }
         }
