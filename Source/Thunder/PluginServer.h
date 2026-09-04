@@ -39,7 +39,7 @@
 
 
 namespace Thunder {
-s
+
 namespace Core {
     template<typename CONTENT, typename FORWARDER> 
     class ThrottleQueueType {
