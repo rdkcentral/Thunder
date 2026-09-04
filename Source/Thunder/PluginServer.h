@@ -2001,7 +2001,7 @@ namespace PluginHost {
 
                 const bool saveAll = (callsign.IsSet() == false);
                 const bool isPluginHost = (callsign.IsSet() == true) && (callsign.Value() == PluginHostCallsign());
-                if ((saveAll == true) || (isPluginHost == true)) {
+                if (isPluginHost == true) {
                     const uint32_t rc = SavePluginHostConfig();
                     if ((result == Core::ERROR_NONE) && (rc != Core::ERROR_NONE)) {
                         result = rc;
@@ -2048,7 +2048,7 @@ namespace PluginHost {
                 const bool destroyAll = (callsign.IsSet() == false);
                 const bool isPluginHost = (callsign.IsSet() == true) && (callsign.Value() == PluginHostCallsign());
 
-                if ((destroyAll == true) || (isPluginHost == true)) {
+                if (isPluginHost == true) {
                     const uint32_t rc = DestroyOverride(PluginHostCallsign());
                     if ((result == Core::ERROR_NONE) && (rc != Core::ERROR_NONE)) {
                         result = rc;
