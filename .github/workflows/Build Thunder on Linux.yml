@@ -27,7 +27,9 @@ jobs:
     uses: ./.github/workflows/Linux build template.yml
 
   Test:
-    needs: Thunder
+    needs: 
+     - Thunder
+     - ThunderNanoServices
     runs-on: ubuntu-24.04
 
     strategy:
@@ -50,6 +52,12 @@ jobs:
         name: Thunder-${{matrix.build_type}}${{matrix.shared_libs == 'OFF' && '-static' || ''}}-test-artifact
         path: ${{matrix.build_type}}
 
+    - name: Download ThunderNanoServices artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: ThunderNanoServices-${{matrix.build_type}}-test-artifact
+        path: ${{matrix.build_type}}
+
     - name: Unpack files
       run: |
         tar -xvzf ${{matrix.build_type}}/${{matrix.build_type}}.tar.gz
@@ -63,6 +71,9 @@ jobs:
 
     - name: Run test framework smoke test
       run: ${{env.path}} ${{env.lib}} thunder_test_runtime_smoke
+
+    - name: Run controller/runtime unit tests
+      run: ${{env.path}} ${{env.lib}} thunder_test_controller
 
   ThunderInterfaces:
     needs: Thunder

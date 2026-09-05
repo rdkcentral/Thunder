@@ -97,7 +97,10 @@ add_executable(${TEST_RUNNER_NAME}
    test_extensions.cpp
    test_thunderhost_thunderplugin.cpp
    test_cryptalgo.cpp
-   test_jwt.cpp
+  test_jwt.cpp
+  test_url.cpp
+  test_websocket_protocol.cpp
+  test_assertionunit.cpp
 )
 
 if(MESSAGING)
@@ -106,6 +109,13 @@ endif()
 
 target_include_directories(${TEST_RUNNER_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/Source/addons)
 target_include_directories(${TEST_RUNNER_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/Source/Thunder)
+
+if(SECURE_SOCKET)
+    find_package(OpenSSL REQUIRED)
+    target_sources(${TEST_RUNNER_NAME} PRIVATE test_tls.cpp)
+    target_include_directories(${TEST_RUNNER_NAME} PRIVATE ${OPENSSL_INCLUDE_DIR})
+    target_link_libraries(${TEST_RUNNER_NAME} PRIVATE OpenSSL::SSL OpenSSL::Crypto)
+endif()
 
 #[[
 target_sources(${TEST_RUNNER_NAME} PRIVATE test_message_unit.cpp)
@@ -211,3 +221,38 @@ install(
 
 
 add_test(NAME ${TEST_RUNNER_NAME} COMMAND ${TEST_RUNNER_NAME})
+
+# --------------------------------------------------------------------------
+# Controller & Startup/Shutdown tests (requires ThunderTestRuntime)
+# --------------------------------------------------------------------------
+if(ENABLE_TEST_RUNTIME)
+    set(CONTROLLER_TEST_NAME "thunder_test_controller")
+
+    add_executable(${CONTROLLER_TEST_NAME}
+        test_controller.cpp
+        ../Module.cpp
+    )
+
+    target_compile_definitions(${CONTROLLER_TEST_NAME}
+        PRIVATE
+            MODULE_NAME=ControllerTest
+    )
+
+    if(BUILD_REFERENCE)
+        target_compile_definitions(${CONTROLLER_TEST_NAME}
+            PRIVATE BUILD_REFERENCE=${BUILD_REFERENCE})
+    endif()
+
+    target_link_libraries(${CONTROLLER_TEST_NAME}
+        PRIVATE
+            thunder_test_support
+            ${GTEST_LIBRARY}
+            ${CMAKE_THREAD_LIBS_INIT}
+    )
+
+    install(
+        TARGETS ${CONTROLLER_TEST_NAME}
+        DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT ${NAMESPACE}_Test)
+
+    add_test(NAME ${CONTROLLER_TEST_NAME} COMMAND ${CONTROLLER_TEST_NAME})
+endif()
