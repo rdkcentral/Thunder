@@ -239,36 +239,14 @@ namespace Core {
         {
 #ifdef __WINDOWS__
             return (0);
-#else
-            int result = sched_getscheduler(_pid);
-            
-            return (result == -1 ? UNKNOWN : static_cast<scheduler>(result));
-
-#endif
-        }
-        inline void Priority(const int8_t policy)
-        {
-#ifndef __WINDOWS__
-            struct sched_param parameters = {};
-            parameters.sched_priority = ((policy == FIFO) || (policy == ROUNDROBIN)) ? 1 : 0;
-
-            if (sched_setscheduler(_pid, policy, &parameters) == -1) {
-                TRACE_L1("Failed to set scheduling policy. Error: %d", errno);
-            }
-#endif
-        }
-        inline scheduler Policy() const
-        {
-#ifdef __WINDOWS__
-            return (OTHER);
-#else
+        #else
             errno = 0;
             int result = getpriority(PRIO_PROCESS, _pid);
 
-            return (errno != 0 ? OTHER : static_cast<scheduler>(result));
+            return (errno != 0 ? 0 : static_cast<int8_t>(result));
 #endif
         }
-        inline void Policy(const scheduler priority)
+        inline void Priority(const int8_t priority)
         {
 #ifndef __WINDOWS__
             if (setpriority(PRIO_PROCESS, _pid, priority) == -1) {
@@ -276,6 +254,27 @@ namespace Core {
             }
 #endif
         }
+            inline scheduler Policy() const
+            {
+        #if defined(__WINDOWS__) || defined(__APPLE__)
+                return (OTHER);
+        #else
+                int result = sched_getscheduler(_pid);
+
+                return (result == -1 ? UNKNOWN : static_cast<scheduler>(result));
+        #endif
+            }
+            inline void Policy(const scheduler policy)
+            {
+        #if !defined(__WINDOWS__) && !defined(__APPLE__)
+                struct sched_param parameters = {};
+                parameters.sched_priority = ((policy == FIFO) || (policy == ROUNDROBIN)) ? 1 : 0;
+
+                if (sched_setscheduler(_pid, policy, &parameters) == -1) {
+                TRACE_L1("Failed to set scheduling policy. Error: %d", errno);
+            }
+        #endif
+            }
         inline int8_t OOMAdjust() const
         {
 #ifdef __WINDOWS__
