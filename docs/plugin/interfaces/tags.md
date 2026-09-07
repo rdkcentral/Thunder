@@ -2,6 +2,8 @@ When designing a COM-RPC interface, it is possible to add specific comments (kno
 
 All tags follow the same format of `@` followed by the tag name. They can be inserted into the interface using either inline `//` comments or `/* */` block comments. Tags can influence the generation of the COM-RPC ProxyStubs and the generated JSON-RPC interfaces. They can also be used to configure the documentation generation
 
+<hr/>
+
 ## Summary
 
 ### General purpose tags
@@ -95,6 +97,8 @@ Ddefines a literal as a known identifier (equivalent of `#define` in C++ code)
 // @define EXTERNAL
 ```
 
+<hr/>
+
 ### Parameter Related Tags
 
 | Tag|Short Description|Deprecated|StubGen|JsonGen|Scope|
@@ -107,6 +111,8 @@ Ddefines a literal as a known identifier (equivalent of `#define` in C++ code)
 |[@length](#length)|Specifies the expression to evaluate length of an array parameter (can be other parameter name, or constant, or math expression)|  | No | Yes | Method Parameter|
 |[@maxlength](#maxlength)|Specifies a maximum buffer length value |  | No | Yes |Method parameter|
 |[@default](#default)|Provides a default value for an unset optional type |  | Yes | Yes |Method parameter|
+
+<hr/>
 
 #### @in
 This tag will mark a parameter in a function as an input parameter. By default, all parameters in a function are treated as input paramter. 
@@ -180,7 +186,7 @@ This tag should be associated with an array. It specifies the expression to eval
 Use round parenthesis for expressions, e.g.  `@length:bufferSize` `@length:(width * height * 4)`
 
 
-Note @length:return can be used in case the length of the array is the return value of the method instead of an in/in-out parameter.
+Note `@length:return` can be used in case the length of the array is the return value of the method instead of an in/in-out parameter.
 
 
 ##### Example
@@ -190,7 +196,7 @@ Note @length:return can be used in case the length of the array is the return va
 /* @length:param1 */
 ```
 
-**From a constant.**
+**From a constant**
 
 ```
 /* @length:32 */
@@ -208,11 +214,15 @@ In `IOCDM.h`:
 
 * function [SelectKeyId](https://github.com/rdkcentral/ThunderInterfaces/blob/master/interfaces/IOCDM.h#L171) @length tag is marked as another parameter.
 
-<hr/>
+**Returned**
 
-**returned**
+```
+/* @length:return */
+```
 
 See [here](https://github.com/rdkcentral/ThunderInterfaces/blob/16d1459ae85940fa71d6836301dc2b4288e9f3b4/interfaces/ICryptography.h#L57) for an example.
+
+<hr/>
 
 #### @maxlength
 Used with the `@out` or `@inout` tag. It specifies a maximum buffer length value (a constant, a parameter name or a math expression). If not specified, `@length` is considered as maximum length
@@ -247,9 +257,8 @@ struct Store {
 
 virtual Core::hresult Shirt(const Core::OptionalType<Store>& London) = 0;
 ```
-<hr/>
 
-In [IController.h](https://github.com/rdkcentral/Thunder/blob/master/Source/plugins/IController.h#L78) it specifies, the default value assigned incase the parameter is not set.
+In [IController.h](https://github.com/rdkcentral/Thunder/blob/master/Source/plugins/IController.h#L78) it specifies the default value assigned incase the parameter is not set.
 
 <hr/>
 
@@ -266,7 +275,7 @@ In [IController.h](https://github.com/rdkcentral/Thunder/blob/master/Source/plug
 |[@property](#property)|Marks a method as a property ||No|Yes| Method|
 |[@iterator](#iterator)|Marks a class as an iterator | | Yes| Yes|Class|
 |[@bitmask](#bitmask)| Indicates that enumerator lists should be packed into into a bit mask | Yes| No | Yes |Method parameter|
-|[@index](#index)|Marks an index parameter to a property or notification | | No| Yes|Method paramter|
+|[@index](#index)|Marks an index parameter to a property or notification | | No| Yes|Method parameter|
 |[@opaque](#opaque)| Indicates that a string parameter is an opaque JSON object | | No | Yes |Method parameter|
 |[@alt](#alt)| Provides an alternative name a method can by called by | | No | Yes |Method|
 |[@text](#text)| Renames identifier Method, Parameter, PoD Member, Enum, Interface | | No | Yes |Enum, Method parameter, Method name, PoD member, Interface |
@@ -274,7 +283,9 @@ In [IController.h](https://github.com/rdkcentral/Thunder/blob/master/Source/plug
 |[@statuslistener](#statuslistener)| Notifies when a JSON-RPC client registers/unregisters from an notification | | No | Yes | Method |
 |[@async](#async)| Indicates a method is asynchronous for the JSON-RPC interface | | No | Yes | Method |
 |[@encode](#encode)|Encodes data into a different format |  | Yes | Yes |Method parameter|
-|[@wrapped](#wrapped)|Encodes a single out parameter in a wrapped format |  | No | Yes |Class and Method parameter|
+|[@wrapped](#wrapped)|Encodes a single out parameter in a wrapped format |  | No | Yes |Class, Method|
+
+<hr/>
 
 #### @json
 This tag helps to generate JSON-RPC files for the given Class/Struct/enum.
@@ -346,7 +357,6 @@ params: {
 This is the default behaviour so does not normally need adding to interfaces (unless the generator is being run with non-standard options)
 
 <hr/>
-
 
 #### @event
 This tag is used in JSON-RPC file generation. This tag is used to mark a struct/class that will be called back as an notification by the framework.
@@ -460,7 +470,6 @@ Methods, properties and notifications can be marked by using:
 // @alt:deprecated <alternative_deprecated_name>
 // @alt:obsolete <alternative_obsolete_name>
 ```
-<hr/>
 
 [IController.h](https://github.com/rdkcentral/Thunder/blob/R4.3/Source/plugins/IController.h#L38) uses @alt for the `Reboot()` method to generate an alternatively named method called `Harakiri` (for legacy reasons)
 
@@ -486,7 +495,6 @@ The following commandline options for the JSON-RPC generator are available to al
 * "--ignore-source-case-convention" will make the generator ignore the @text set at interface level
 
 ##### Example
-<hr>
 
 [IBrowser.h](https://github.com/rdkcentral/ThunderInterfaces/blob/5fa166bd17c6b910696c6113c5520141bcdea07b/interfaces/IBrowser.h#L61) uses this tag for enum. The generated code for this header will map the text for these enums as allowed and not as Allowed, blocked and not as Blocked. 
 
@@ -646,7 +654,7 @@ Example list:
 This tag can be placed at class or method level, where at class level is by far preferable as it prevents inconsistencies in JSON-RPC function handling.
 Wrapped will for a single output parameter also add the parameter name to the result, making it always a JSON object.
 Note can also be used for array, std::vector, iterator etc. single output parameter. As for a POD it does not immediately make sense to have it wrapped, it becomes a JSON object inside an object, wrapped will be ignored for POD when the wrapped is put on class level. If put on method level however the POD is wrapped as that than is the clear expectation of the interface designer.
-Wrapped cannot be used for properties as that does not make sense.
+Similar principle works for properties: wrapped at interface level does not enable wrapping for property getters and needs to be put on method level explicitly.
 Incorrect or inconsistent usage will lead to an error raised by the code generators. Of course the documentation generators do take the wrapped tag into account.
 
 Remark: of course it is preferable to keep the JSON-RPC interface as whole consistent so for that reason be hesitant when using this tag (it was added as there are interface where workarounds are used to achieve the wrapped effect).
@@ -700,6 +708,8 @@ the returned JSON-RPC result for the Test function has changed to this:
 }
 ```
 
+<hr/>
+
 ### JSON-RPC Documentation Related Tags
 
 | Tag|Short Description|Deprecated|StubGen|JsonGen|Scope|
@@ -713,6 +723,8 @@ the returned JSON-RPC result for the Test function has changed to this:
 |[@retval](#retval)|Specifies possible return error codes for method/property (can be many) | | No|Yes|Method|
 |[@pre](#precondition)|Allows you to specify the preconditions for a method (documentation only) |  | No | Yes |Method |
 |[@post](#postcondition)|Allows you to specify the postconditions for a method (documentation only) |  | No | Yes |Method |
+
+<hr/>
 
 #### @sourcelocation
 By default, the documentation generator will add links to the implemented interface definitions. 
@@ -735,7 +747,7 @@ This tag is used to mark a Method, Property as deprecated in the generated docum
 When a method is marked with this tag, in the generated .md documentation, it will be marked with the below Message 
 
 >This API is **deprecated** and may be removed in the future. It is no longer recommended for use in new implementations.
->
+
 <hr/>
 
 #### @obsolete
@@ -743,6 +755,7 @@ This tag is used to mark a Method, Property as obolete in the generated document
 
 ##### Example
 When a method is marked with this tag, in the generated .md documentation, it will be marked with the below Message 
+
 > This API is **obsolete**. It is no longer recommended for use in new implementations
 
 <hr/>

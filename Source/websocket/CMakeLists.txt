@@ -17,6 +17,9 @@
 
 set(TARGET ${NAMESPACE}WebSocket)
 
+set(JSONRPC_OPEN_TIMEOUT 2000 CACHE STRING
+        "Maximum time (ms) to wait for a JSONRPC WebSocket connection to open")
+
 add_library(${TARGET}
         Module.cpp
         URL.cpp
@@ -51,7 +54,12 @@ target_link_libraries(${TARGET}
           ${NAMESPACE}Cryptalgo::${NAMESPACE}Cryptalgo
         )
 
-target_compile_definitions(${TARGET} PRIVATE WEBSOCKET_EXPORTS)
+target_compile_definitions(${TARGET}
+        PRIVATE
+          WEBSOCKET_EXPORTS
+        PUBLIC
+          JSONRPC_OPEN_TIMEOUT=${JSONRPC_OPEN_TIMEOUT}
+        )
 
 set_target_properties(${TARGET} PROPERTIES
         CXX_STANDARD ${CXX_STD}
