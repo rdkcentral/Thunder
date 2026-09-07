@@ -1297,7 +1297,9 @@ namespace PluginHost {
         Core::File persistentPath(_config.PersistentPath() + PluginOverrideDirectory);
 
         if (persistentPath.IsDirectory() == false) {
-            Core::Directory(persistentPath.Name().c_str()).Create();
+            if (Core::Directory(persistentPath.Name().c_str()).CreatePath() == false) {
+                SYSLOG(Logging::Startup, (_T("Failed to create persistent directory [%s]"), persistentPath.Name().c_str()));
+            }
         }
 
         // Lets assign a workerpool, we created it...
