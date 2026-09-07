@@ -1266,8 +1266,7 @@ namespace Core {
 
         static IPNetworks& Instance()
         {
-            static IPNetworks& _instance = SingletonType<IPNetworks>::Instance();
-            return (_instance);
+            return (SingletonType<IPNetworks>::Instance());
         }
 
     public:
