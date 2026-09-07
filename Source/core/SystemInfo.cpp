@@ -262,8 +262,6 @@ namespace Core {
             uint64_t CurrentIdleTime = CpuFields[3]; // 3 is index of idle ticks time
             uint64_t CurrentTickCount = 0L;
 
-            // coverity[OVERRUN] - Intentional: fscanf fills at most 4 fields (matching the 4 format specifiers),
-            // so numFields <= 4 and i < numFields always clamps the loop within CpuFields[0..3].
             for (int i = 0; i < numFields && i < 10; ++i) {
                 CurrentTickCount += CpuFields[i];
             }
@@ -527,7 +525,7 @@ namespace Core {
                     // reboot process did not exit sanely
                     result = Core::ERROR_UNAVAILABLE;
                 }
-                if (WEXITSTATUS(status) != 0) {
+                else if (WEXITSTATUS(status) != 0) {
                     // reboot process exited with error;
                     // most likely the user lacks the required privileges
                     result = Core::ERROR_PRIVILIGED_REQUEST;

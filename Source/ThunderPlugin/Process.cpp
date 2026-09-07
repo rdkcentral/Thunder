@@ -536,7 +536,7 @@ public:
                 Core::Library library(index.Current().c_str());
 
                 if (library.IsLoaded() == true) {
-                    _proxyStubs.push_back(library);
+                    _proxyStubs.push_back(std::move(library));
                 }
             }
         }

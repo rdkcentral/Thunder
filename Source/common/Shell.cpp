@@ -132,6 +132,7 @@ namespace PluginHost
                         rootConfig.Environment());
 
                     result = handler->Instantiate(definition, waitTime, pid);
+                    handler->Release();
                 } else {
                     SYSLOG(Logging::Error, (_T("Root object [%s] for plugin [%s] could not be instantiated out-of-process, ICOMLink is unavailable"), className.c_str(), Callsign().c_str()));
                 }
