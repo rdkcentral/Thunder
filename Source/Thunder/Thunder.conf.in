@@ -24,8 +24,9 @@ if boolean('@DISABLEPLUGINAUTOACTIVATION@'):
 __authorizedextensions = '@AUTHORIZEDEXTENSIONS@'
 authorizedextensions = __authorizedextensions.split(';')
 
-hibernate = JSON()
-hibernate.add("locator", '@LOCATOR@')
+if boolean('@HIBERNATESUPPORT@'):
+  hibernate = JSON()
+  hibernate.add("locator", '@LOCATOR@')
 
 process = JSON()
 process.add("priority", '@PRIORITY@')

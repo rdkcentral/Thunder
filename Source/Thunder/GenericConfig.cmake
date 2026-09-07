@@ -54,9 +54,10 @@ set(ETHERNETCARD_NAME "eth0" CACHE STRING "Ethernet Card name which has to be as
 set(GROUP "" CACHE STRING "Define which system group will be used")
 set(UMASK "" CACHE STRING "Set the permission mask for the creation of new files. e.g. 0760")
 set(COMMUNICATOR "" CACHE STRING "Define the ComRPC socket e.g. 127.0.0.1:62000 or /tmp/communicator|750")
-set(LOCATOR "/tmp/memcrcom" CACHE STRING "Default Memecr Socket path")
+set(LOCATOR "/tmp/hibernator" CACHE STRING "Default hibernation service locator (e.g. /tmp/hibernator or 127.0.0.1:62000)")
 set(DISABLEPLUGINAUTOACTIVATION false CACHE STRING "Disable plugin auto activation (override plugin startmode)")
 set(AUTHORIZEDEXTENSIONS "*" CACHE STRING "List all authorized Thunder extensions, use * to allow all extensions, also determines order of Thunder extension activation/deactivation")
+
 
 # Controller Plugin Settings.
 set(PLUGIN_CONTROLLER_UI_ENABLED "true" CACHE STRING "Enable the Controller's UI")
@@ -115,11 +116,13 @@ if (AUTHORIZEDEXTENSIONS_LENGTH GREATER 0)
     map_append(${CONFIG} authorizedextensions ___array___ ${AUTHORIZEDEXTENSIONS})
 endif()
 
-map()
-kv(locator ${LOCATOR})
-end()
-ans(HIBERNATE_CONFIG)
-map_append(${CONFIG} hibernate ${HIBERNATE_CONFIG})
+if(HIBERNATESUPPORT)
+    map()
+        kv(locator ${LOCATOR})
+    end()
+    ans(HIBERNATE_CONFIG)
+    map_append(${CONFIG} hibernate ${HIBERNATE_CONFIG})
+endif()
 
 map()
     kv(priority ${PRIORITY})
