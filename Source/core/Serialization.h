@@ -24,8 +24,10 @@
 #include "Number.h"
 #include "Portability.h"
 #include "TextFragment.h"
+#include "Enumerate.h"
 
 #include <vector>
+#include <type_traits>
 
 namespace Thunder {
 namespace Core {
@@ -277,6 +279,36 @@ POP_WARNING()
     uint16_t EXTERNAL FromString(const string& newValue, uint8_t object[], uint16_t& length, const TCHAR* ignoreList = nullptr);
     uint32_t EXTERNAL FromString(const string& newValue, uint8_t object[], uint32_t& length, const TCHAR* ignoreList = nullptr);
     uint32_t EXTERNAL FromString(const string& value, std::vector<uint8_t>& object, uint32_t& length, const TCHAR* ignoreList = nullptr);
+
+    //------------------------------------------------------------------------
+    // Serialize: enums
+    //------------------------------------------------------------------------
+    template<typename ENUM, typename = typename std::enable_if<std::is_enum<ENUM>::value>::type>
+    const TCHAR* EnumToCString(const ENUM value)
+    {
+        return (EnumerateType<ENUM>(value).Data());
+    }
+
+    template<typename ENUM, typename = typename std::enable_if<std::is_enum<ENUM>::value>::type>
+    string EnumToString(const ENUM value)
+    {
+        return (ToString(EnumToCString<ENUM>(value)));
+    }
+
+    template<typename ENUM, typename = typename std::enable_if<std::is_enum<ENUM>::value>::type>
+    ENUM EnumFromString(const string& value)
+    {
+        EnumerateType<ENUM> val(value.c_str());
+        return (val.IsSet() == true ? val.Value() : static_cast<ENUM>(~0));
+    }
+
+    template<typename ENUM, typename = typename std::enable_if<std::is_enum<ENUM>::value>::type>
+    ENUM EnumFromString(const string& value, bool& success)
+    {
+        EnumerateType<ENUM> val(value.c_str());
+        success = val.IsSet();
+        return (success == true ? val.Value() : static_cast<ENUM>(~0));
+    }
 
     //------------------------------------------------------------------------
     // Codepoint: Operations to extract and convert code points.

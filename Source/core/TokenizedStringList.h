@@ -43,12 +43,11 @@ namespace Core {
 
             if (!buffer.empty()) {
                 //remove spaces and tokenize by SEPARATOR
+                string result = buffer;
                 if (REMOVE_WHITESPACES) {
-                    string result = buffer;
-                    result.erase(std::remove_if(result.begin(), result.end(), ::isspace), result.end());
-                    std::istringstream iss(result);
+                    result.erase(std::remove_if(result.begin(), result.end(), [](const unsigned char character) { return ::isspace(character); }), result.end());
                 }
-                std::istringstream iss(buffer);
+                std::istringstream iss(result);
 
                 string substring;
                 while (iss.good()) {

@@ -199,7 +199,7 @@ namespace Core {
             public:
                 inline bool IsValid() const
                 {
-                    return ((_index == 0xFFFE) && (_index < _length));
+                    return (((_index == 0xFFFE) && (_length > 0)) || (_index < _length));
                 }
                 inline void Reset()
                 {
@@ -265,7 +265,7 @@ namespace Core {
             {
                 _buffer[0] = 0;
                 uint16_t firstSet = ~0;
-                uint16_t index = 0;
+                string::size_type index = 0;
                 uint32_t value = 0;
                 uint16_t digits = 0;
                 uint8_t base = 10;

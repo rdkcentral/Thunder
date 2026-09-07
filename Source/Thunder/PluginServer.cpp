@@ -94,7 +94,7 @@ namespace PluginHost {
         DefaultSecurity(const DefaultSecurity&) = delete;
         DefaultSecurity& operator=(const DefaultSecurity&) = delete;
 
-        DefaultSecurity(const string& prefix, const string jsonrpcPath, const string& controllerName)
+        DefaultSecurity(const string& prefix, const string& jsonrpcPath, const string& controllerName)
             : _hasSecurity(true)
             , _controllerPath(prefix + '/' + controllerName)
             , _jsonrpcPath(jsonrpcPath)
@@ -237,9 +237,6 @@ namespace PluginHost {
 
     void Server::ServiceMap::Destroy()
     {
-        // coverity[ATOMICITY] - Lock is intentionally dropped around Deactivate() which can
-        // block. The iterator is refreshed (begin()) after re-acquiring the lock each iteration.
-        // This is correct lock-straddling, not a race.
         _adminLock.Lock();
 
         // First, move them all to deactivated except Controller
@@ -824,9 +821,6 @@ namespace PluginHost {
                     local->Release();
                     result = Core::ERROR_NONE;
 #endif
-                    // coverity[DEADCODE] - On the non-HIBERNATE_ENABLED path result is always
-                    // ERROR_NONE here, making the else-if appear unreachable to Coverity.
-                    // Both branches are reachable when HIBERNATE_ENABLED is defined.
                     if (result == Core::ERROR_NONE) {
                         if (State() == IShell::state::HIBERNATED) {
                             _administrator.Hibernated(Callsign(), this);
@@ -996,7 +990,7 @@ namespace PluginHost {
             SYSLOG(Logging::Startup, (_T("Automatic metadata discovery and plugin versioning is DISABLED!!!")));
         }
         else {
-            for (auto service : _services)
+            for (const auto& service : _services)
             {
                 service.second->LoadMetadata();
                 for (const PluginHost::ISubSystem::subsystem& entry : service.second->SubSystemControl()) {
@@ -1018,9 +1012,6 @@ namespace PluginHost {
 
     void Server::ServiceMap::Close()
     {
-        // coverity[ATOMICITY] - Lock is intentionally dropped around Deactivate() which can
-        // block. The iterator is refreshed after re-acquiring the lock each iteration.
-        // This is correct lock-straddling, not a race.
         _adminLock.Lock();
 
         Core::ProxyType<Service> controller(_server.Controller());

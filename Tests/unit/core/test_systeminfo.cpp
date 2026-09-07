@@ -152,7 +152,7 @@ namespace Core {
         }
 
         float nonIdle = 0, VARIABLE_IS_NOT_USED idle = 0;
-        for (uint8_t index = 0; index < usageData.size(); ++index) {
+        for (size_t index = 0; index < usageData.size(); ++index) {
             if ((index == 3) || (index == 4)) {
                 idle += usageData[index];
             } else {
