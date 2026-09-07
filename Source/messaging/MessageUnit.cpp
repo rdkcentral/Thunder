@@ -244,7 +244,7 @@ ENUM_CONVERSION_END(Thunder::Core::Messaging::OutputMode)
                     ASSERT(_dataBuffer != nullptr);
                 }
 
-                _direct.Mode(_settings.IsBackground(), _settings.IsAbbreviated());
+                _direct.Mode(_settings.IsBackground(), _settings.IsAbbreviated(), _settings.IsTimeEnabled());
 
                 Core::Messaging::IStore::Set(this);
 
@@ -305,7 +305,7 @@ ENUM_CONVERSION_END(Thunder::Core::Messaging::OutputMode)
                         ASSERT(_dataBuffer != nullptr);
                     }
 
-                    _direct.Mode(_settings.IsBackground(), _settings.IsAbbreviated());
+                    _direct.Mode(_settings.IsBackground(), _settings.IsAbbreviated(), _settings.IsTimeEnabled());
 
                     Core::Messaging::IStore::Set(this);
 
