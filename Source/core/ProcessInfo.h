@@ -54,7 +54,8 @@ namespace Core {
             FIFO = SCHED_FIFO,
             ROUNDROBIN = SCHED_RR,
             OTHER = SCHED_OTHER,
-            IDLE = SCHED_IDLE
+            IDLE = SCHED_IDLE,
+            UNKNOWN = -1
         };
 #endif
 
@@ -241,7 +242,7 @@ namespace Core {
 #else
             int result = sched_getscheduler(_pid);
             
-            return (result == -1 ? OTHER : static_cast<scheduler>(result));
+            return (result == -1 ? UNKNOWN : static_cast<scheduler>(result));
 
 #endif
         }
