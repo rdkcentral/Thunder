@@ -144,7 +144,7 @@ namespace Core {
                 _administration = reinterpret_cast<struct control*>(&(_buffer.Buffer()[actual_offset]));
             }
 
-            if (initiator == true) {
+            if ((initiator == true) && (_administration != nullptr)) {
 
 #ifndef __WINDOWS__
                 pthread_condattr_t cond_attr;

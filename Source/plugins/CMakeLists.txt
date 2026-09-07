@@ -51,6 +51,10 @@ add_library(${TARGET_PROXYSTUBS} SHARED
 # to get the proper Module.cpp version  
 target_compile_definitions(${TARGET_PROXYSTUBS} PRIVATE BUILD_SHARED_LIBS)
 
+if(DEFINED JSONRPC_OPEN_TIMEOUT AND NOT "${JSONRPC_OPEN_TIMEOUT}" STREQUAL "")
+    target_compile_definitions(${TARGET_PROXYSTUBS} PRIVATE JSONRPC_OPEN_TIMEOUT=${JSONRPC_OPEN_TIMEOUT})
+endif()
+
 set(PUBLIC_HEADERS
         IPlugin.h
         IShell.h

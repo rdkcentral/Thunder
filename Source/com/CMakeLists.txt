@@ -17,6 +17,9 @@
 
 set(TARGET ${NAMESPACE}COM)
 
+set(COMRPC_TIMEOUT 3000 CACHE STRING
+        "COMRPC communication timeout in milliseconds")
+
 ProxyStubGenerator(NAMESPACE "Thunder::RPC" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/ICOM.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
 
 add_library(${TARGET}
@@ -76,7 +79,12 @@ target_include_directories(${TARGET}
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
         )
 
-target_compile_definitions(${TARGET} PRIVATE COM_EXPORTS)
+target_compile_definitions(${TARGET}
+        PRIVATE
+          COM_EXPORTS
+        PUBLIC
+          COMRPC_TIMEOUT=${COMRPC_TIMEOUT}
+        )
 
 if(PROCESSCONTAINERS)
     target_link_libraries(${TARGET}

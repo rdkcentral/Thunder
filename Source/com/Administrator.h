@@ -33,10 +33,14 @@ namespace ProxyStub {
 
 namespace RPC {
 
+#ifndef COMRPC_TIMEOUT
+#define COMRPC_TIMEOUT 3000
+#endif
+
 #ifdef __DEBUG__
     enum { CommunicationTimeOut = Core::infinite }; // Time in ms. Forever
 #else
-    enum { CommunicationTimeOut = 3000 }; // Time in ms. 3 Seconds
+    enum { CommunicationTimeOut = COMRPC_TIMEOUT }; // Time in ms.
 #endif
     enum { CommunicationBufferSize = 8120 }; // 8K :-)
 
