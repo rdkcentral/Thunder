@@ -1927,13 +1927,17 @@ namespace PluginHost {
 
         private:
             static const TCHAR* PluginHostCallsign() {return _T("PluginHost");}
+            static string CurrentVersion() {
+                return (Core::Format(_T("%d.%d.%d"), Versioning::Major, Versioning::Minor, Versioning::Patch));
+            }
 
         public:
             Override(const Override&) = delete;
             Override& operator=(const Override&) = delete;
 
             Override(PluginHost::Config& serverconfig, ServiceMap& services, const string& persistentFolder)
-                : Services()
+                : Version()
+                , Services()
                 , Prefix(serverconfig.Prefix())
                 , IdleTime(serverconfig.IdleTime())
                 , _services(services)
@@ -1941,6 +1945,7 @@ namespace PluginHost {
                 , _persistentFolder(persistentFolder)
                 , _callsigns()
             {
+                Add(_T("$version"), &Version);
                 Add(_T("Services"), &Services);
                 Add(_T("prefix"), &Prefix);
                 Add(_T("idletime"), &IdleTime);
@@ -2087,6 +2092,7 @@ namespace PluginHost {
                 return result;
             }
 
+            Core::JSON::String Version;
             Core::JSON::Container Services;
             Core::JSON::String Prefix;
             Core::JSON::DecUInt16 IdleTime;
@@ -2219,16 +2225,25 @@ namespace PluginHost {
                 Core::File storage(CreateOverridePath(PluginHostCallsign()));
                 if (storage.Exists() == true) {
                     if (storage.Open(true) == true) {
-                        IElement::FromFile(storage);
-                        
-                        if (Prefix.IsSet() == true) {
-                            _serverconfig.SetPrefix(Prefix.Value());
+                        const bool valid = ((IElement::FromFile(storage) == true) &&
+                            (Version.IsSet() == true) && (Version.Value() == CurrentVersion()));
+
+                        if (valid == true) {
+                            if (Prefix.IsSet() == true) {
+                                _serverconfig.SetPrefix(Prefix.Value());
+                            }
+                            if (IdleTime.IsSet() == true) {
+                                _serverconfig.SetIdleTime(IdleTime.Value());
+                            }
                         }
-                        if (IdleTime.IsSet() == true) {
-                            _serverconfig.SetIdleTime(IdleTime.Value());
-                        }
-                        
                         storage.Close();
+
+                        if (valid == false) {
+                            Clear();
+                            if (storage.Destroy() == false) {
+                                result = storage.ErrorCode();
+                            }
+                        }
                     }
                     else {
                         result = storage.ErrorCode();
@@ -2247,6 +2262,7 @@ namespace PluginHost {
 
                 if (pendingChanges == true) {
                     if (storage.Create() == true) {
+                        Version = CurrentVersion();
                         Prefix = pending.Prefix;
                         IdleTime = pending.IdleTime;
 
