@@ -348,7 +348,7 @@ namespace Core {
                     result = Core::Format("[%s]:[%s]:[%s:%u]:[%s]:[%s]: ", timestamp.c_str(), Module().c_str(), Core::FileNameOnly(FileName().c_str()), LineNumber(), ClassName().c_str(), Category().c_str());
                 }
                 else {
-                    result = Core::Format("[%s:%u]:[%s]:[%s]: ", Core::FileNameOnly(FileName().c_str()), LineNumber(), ClassName().c_str(), Category().c_str());
+                    result = Core::Format("[%s]:[%s:%u]:[%s]:[%s]: ", Module().c_str(), Core::FileNameOnly(FileName().c_str()), LineNumber(), ClassName().c_str(), Category().c_str());
                 }
             }
 

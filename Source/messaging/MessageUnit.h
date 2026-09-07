@@ -412,7 +412,6 @@ namespace Thunder {
                             , Settings()
                             , Output(Core::Messaging::OutputMode::HANDLER) {
                             Add(_T("settings"), &Settings);
-                            Add(_T("abbreviated"), &LegacyAbbreviated);
                             Add(_T("output"), &Output);
                         }
                         ~Section() = default;
@@ -420,9 +419,6 @@ namespace Thunder {
                     public:
                         Core::JSON::ArrayType<Entry> Settings;
                         Core::JSON::EnumType<MessageUnit::OutputMode> Output;
-
-                    private:
-                        Core::JSON::Boolean LegacyAbbreviated;
                     };
 
                 public:
@@ -436,7 +432,6 @@ namespace Thunder {
                         , Output(Core::Messaging::OutputMode::HANDLER)
                         , Port(0)
                         , Path(_T("MessageDispatcher"))
-                        , LegacyFlush(false)
                         , Out(true)
                         , Error(true)
                         , DataSize(MessageUnit::DefaultDataBufferSize)
@@ -453,7 +448,6 @@ namespace Thunder {
                         Add(_T("output"), &Output);
                         Add(_T("path"), &Path);
                         Add(_T("port"), &Port);
-                        Add(_T("flush"), &LegacyFlush);
                         Add(_T("stdout"), &Out);
                         Add(_T("stderr"), &Error);
                         Add(_T("datasize"), &DataSize);
@@ -475,11 +469,6 @@ namespace Thunder {
                     Core::JSON::EnumType<MessageUnit::OutputMode> Output;
                     Core::JSON::DecUInt16 Port;
                     Core::JSON::String Path;
-
-                private:
-                    Core::JSON::Boolean LegacyFlush;
-
-                public:
                     Core::JSON::Boolean Out;
                     Core::JSON::Boolean Error;
                     Core::JSON::DecUInt16 DataSize;
