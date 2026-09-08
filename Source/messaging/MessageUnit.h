@@ -21,6 +21,7 @@
 
 #include "Module.h"
 #include "MessageDispatcher.h"
+#include "MessagingDefaults.h"
 #include "TraceFactory.h"
 #include "DirectOutput.h"
 
@@ -566,6 +567,12 @@ namespace Thunder {
                 void Configure(const string& basePath, const string& identifier, const Config& jsonParsed, const bool background, const flush flushMode)
                 {
                     _settings.clear();
+
+#define THUNDER_APPLY_MESSAGING_TYPE_DEFAULT(MESSAGE_TYPE, ENABLED) \
+                    _settings.emplace_back(Core::Messaging::Metadata(Core::Messaging::Metadata::type::MESSAGE_TYPE, _T(""), _T("")), ENABLED);
+                    THUNDER_MESSAGING_TYPE_DEFAULTS(THUNDER_APPLY_MESSAGING_TYPE_DEFAULT)
+#undef THUNDER_APPLY_MESSAGING_TYPE_DEFAULT
+
                     string messagingFolder;
                     Core::ParsePathInfo(jsonParsed.Path.Value(), messagingFolder, _permission);
 

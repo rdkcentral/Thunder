@@ -93,6 +93,14 @@ The main config file (` /etc/Thunder/config.json`) can be used to enable/disable
 
 Messages are split into 3 types: logging, tracing and warning reporting. Each type has a list of categories which can be marked as enabled or disabled. There is also a similar list for tracing when it comes to enabling or disabling certain modules (e.g. plugins). By default, all categories are enabled for logging and warning reporting, but in terms of tracing, if a category or a module is not present in the config, it will be disabled.
 
+Build-time defaults can also be supplied with the `MESSAGING_TYPE_DEFAULTS` CMake cache variable. The value is a semicolon-separated list of message type assignments:
+
+```sh
+cmake -DMESSAGING_TYPE_DEFAULTS='TRACING=ON;LOGGING=OFF;TELEMETRY=ON' ..
+```
+
+Supported types are `TRACING`, `LOGGING`, `REPORTING`, `OPERATIONAL_STREAM`, `ASSERT`, and `TELEMETRY`. These entries are applied as type-wide wildcard settings, equivalent to a configuration entry with no module or category. Types omitted from the list retain their existing defaults. Explicit runtime configuration is applied afterward and takes precedence over these build-time defaults. This setting changes enablement defaults only; it does not remove message types, alter their serialized identifiers, or remove their public APIs.
+
 Below is an example of the messaging section in the config:
 
 ```json
