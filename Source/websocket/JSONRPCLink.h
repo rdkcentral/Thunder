@@ -136,7 +136,7 @@ namespace Thunder {
 
                 public:
                     ChannelImpl(CommunicationChannel* parent, const Core::NodeId& remoteNode, const string& callsign, const string& query)
-                        : BaseClass(5, FactoryImpl::Instance(), callsign, _T("JSON"), query, "", false, false, false, remoteNode.AnyInterface(), remoteNode, 256, 256)
+                        : BaseClass(5, FactoryImpl::Instance(), callsign, _T("JSON"), query, "", false, false, false, remoteNode.AnyInterface(), remoteNode, 256, static_cast<uint16_t>(~0), 256, static_cast<uint32_t>(~0))
                         , _parent(*parent)
                     {
                     }
