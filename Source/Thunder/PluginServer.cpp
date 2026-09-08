@@ -379,7 +379,7 @@ namespace PluginHost {
             Unlock();
             result = Core::ERROR_ILLEGAL_STATE;
         } else if (currentState == IShell::state::HIBERNATED) {
-            result = Wakeup(3000);
+            result = Wakeup();
             Unlock();
         } else if ((currentState == IShell::state::DEACTIVATED) || (currentState == IShell::state::PRECONDITION)) {
 
@@ -593,7 +593,7 @@ namespace PluginHost {
 
             if(currentState == IShell::state::HIBERNATED)
             {
-                uint32_t wakeupResult = Wakeup(3000);
+                uint32_t wakeupResult = Wakeup();
                 if(wakeupResult != Core::ERROR_NONE)
                 {
                     //Force Activated state
