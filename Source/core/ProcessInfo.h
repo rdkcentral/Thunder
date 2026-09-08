@@ -266,7 +266,9 @@ namespace Core {
             }
             inline void Policy(const scheduler policy)
             {
-        #if !defined(__WINDOWS__) && !defined(__APPLE__)
+        #if defined(__WINDOWS__) || defined(__APPLE__)
+                (void)policy;
+        #else
                 struct sched_param parameters = {};
                 parameters.sched_priority = ((policy == FIFO) || (policy == ROUNDROBIN)) ? 1 : 0;
 
