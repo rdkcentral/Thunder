@@ -200,7 +200,7 @@ namespace Core {
         public:
             uint16_t Serialize(uint8_t buffer[], const uint16_t bufferSize) const override;
             uint16_t Deserialize(const uint8_t buffer[], const uint16_t bufferSize) override;
-            virtual string ToString(const abbreviate abbreviate) const;
+            virtual string ToString(const abbreviate abbreviate, const bool time = true) const;
 
         private:
             uint64_t _timeStamp;
@@ -275,7 +275,7 @@ namespace Core {
             public:
                 uint16_t Serialize(uint8_t buffer[], const uint16_t bufferSize) const override;
                 uint16_t Deserialize(const uint8_t buffer[], const uint16_t bufferSize) override;
-                string ToString(const abbreviate abbreviate) const override;
+                string ToString(const abbreviate abbreviate, const bool time = true) const override;
 
             private:
                 string _fileName;
@@ -312,7 +312,7 @@ namespace Core {
             public:
                 uint16_t Serialize(uint8_t buffer[], const uint16_t bufferSize) const override;
                 uint16_t Deserialize(const uint8_t buffer[], const uint16_t bufferSize) override;
-                string ToString(const abbreviate abbreviate) const override;
+                string ToString(const abbreviate abbreviate, const bool time = true) const override;
 
             private:
                 string _callsign;
@@ -394,7 +394,7 @@ namespace Core {
             public:
                 uint16_t Serialize(uint8_t buffer[], const uint16_t bufferSize) const override;
                 uint16_t Deserialize(const uint8_t buffer[], const uint16_t bufferSize) override;
-                string ToString(const abbreviate abbreviate) const override;
+                string ToString(const abbreviate abbreviate, const bool time = true) const override;
 
             private:
                 pid_t _processId;

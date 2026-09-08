@@ -503,7 +503,7 @@ namespace Plugin {
         }
 
         explicit operator Exchange::Controller::IMetadata::Data::Service() const { 
-            Exchange::Controller::IMetadata::Data::Service result;
+            Exchange::Controller::IMetadata::Data::Service result {};
 
             result.Callsign = Callsign;
             result.Locator = Locator;
