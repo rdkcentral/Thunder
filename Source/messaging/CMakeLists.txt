@@ -20,34 +20,6 @@ set(TARGET ${NAMESPACE}Messaging)
 set(MESSAGING_TYPE_DEFAULTS "" CACHE STRING
         "Semicolon-separated message type defaults (TYPE=ON or TYPE=OFF).")
 
-set(_messaging_type_defaults_macro "")
-
-foreach(_entry IN LISTS MESSAGING_TYPE_DEFAULTS)
-        if(NOT _entry MATCHES "^([A-Z_]+)=(ON|OFF)$")
-                message(FATAL_ERROR "Invalid MESSAGING_TYPE_DEFAULTS entry '${_entry}'. Expected TYPE=ON or TYPE=OFF.")
-        endif()
-
-        string(REGEX REPLACE "=.*$" "" _type "${_entry}")
-        string(REGEX REPLACE "^[A-Z_]+=" "" _enabled "${_entry}")
-        if(_enabled STREQUAL "ON")
-                set(_enabled_value true)
-        else()
-                set(_enabled_value false)
-        endif()
-
-        if(_messaging_type_defaults_macro STREQUAL "")
-                set(_messaging_type_defaults_macro "    X(${_type}, ${_enabled_value})")
-        else()
-                string(APPEND _messaging_type_defaults_macro " \\\n    X(${_type}, ${_enabled_value})")
-        endif()
-endforeach()
-
-file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/generated/messaging")
-configure_file(
-        "${CMAKE_CURRENT_SOURCE_DIR}/MessagingDefaults.h.in"
-        "${CMAKE_CURRENT_BINARY_DIR}/generated/messaging/MessagingDefaults.h"
-        @ONLY)
-
 add_library(${TARGET} 
         Module.cpp
         MessageClient.cpp
@@ -74,7 +46,6 @@ set(PUBLIC_HEADERS
         DirectOutput.h
         Module.h
         TraceFactory.h
-        ${CMAKE_CURRENT_BINARY_DIR}/generated/messaging/MessagingDefaults.h
         ConsoleStreamRedirect.h
         OperationalCategories.h
         AssertionUnit.h)
@@ -103,7 +74,6 @@ endif()
 
 target_include_directories( ${TARGET}
         PUBLIC
-          $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/generated/messaging>
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../>
           $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}>

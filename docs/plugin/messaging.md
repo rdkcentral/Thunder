@@ -99,7 +99,7 @@ Build-time defaults can also be supplied with the `MESSAGING_TYPE_DEFAULTS` CMak
 cmake -DMESSAGING_TYPE_DEFAULTS='TRACING=ON;LOGGING=OFF;TELEMETRY=ON' ..
 ```
 
-Supported types are `TRACING`, `LOGGING`, `REPORTING`, `OPERATIONAL_STREAM`, `ASSERT`, and `TELEMETRY`. These entries are applied as type-wide wildcard settings, equivalent to a configuration entry with no module or category. Types omitted from the list retain their existing defaults. Explicit runtime configuration is applied afterward and takes precedence over these build-time defaults. This setting changes enablement defaults only; it does not remove message types, alter their serialized identifiers, or remove their public APIs.
+Supported types are `TRACING`, `LOGGING`, `REPORTING`, `ASSERT`, and `TELEMETRY`. These entries are applied as type-wide wildcard settings, equivalent to a configuration entry with no module or category. Types omitted from the list retain their existing defaults. Explicit runtime configuration is applied afterward and takes precedence over these build-time defaults. This setting changes enablement defaults only; it does not remove message types, alter their serialized identifiers, or remove their public APIs.
 
 Below is an example of the messaging section in the config:
 

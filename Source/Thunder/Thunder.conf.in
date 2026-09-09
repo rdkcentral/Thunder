@@ -126,8 +126,6 @@ if boolean('@MESSAGING@'):
   __logging = JSON()
   __logging.add("settings", __logging_settings)
   
-  messaging.add("logging", __logging)
-  
   __tracing_settings = []
 
   __enable_tracing_modules = "@ENABLE_TRACING_MODULES@".strip()
@@ -146,8 +144,6 @@ if boolean('@MESSAGING@'):
   
   __tracing = JSON()
   __tracing.add("settings", __tracing_settings)
-  
-  messaging.add("tracing", __tracing)
 
   __reporting_settings = []
   __reporting_settings.append(__warningReporting)
@@ -155,12 +151,44 @@ if boolean('@MESSAGING@'):
   __reporting = JSON()
   __reporting.add("settings", __reporting_settings)
 
-  messaging.add("reporting", __reporting)
-
   __assertion_settings = []
   __assertion_settings.append(__assertion)
 
   __assertion = JSON()
   __assertion.add("settings", __assertion_settings)
 
+  __telemetry_settings = []
+
+  __telemetry = JSON()
+  __telemetry.add("settings", __telemetry_settings)
+
+  __messaging_type_defaults = "@MESSAGING_TYPE_DEFAULTS@".split(';')
+  __messaging_sections = {
+    "logging" : __logging_settings,
+    "tracing" : __tracing_settings,
+    "reporting" : __reporting_settings,
+    "assertion" : __assertion_settings,
+    "telemetry" : __telemetry_settings
+    }
+
+  for __default in __messaging_type_defaults:
+    if __default:
+      __type, __enabled = __default.split('=', 1)
+      __setting = {
+        "enabled" : __enabled == "ON"
+        }
+      __section_name = __type.lower()
+      if __section_name in __messaging_sections:
+        __messaging_sections[__section_name].append(__setting)
+      else:
+        __section = JSON()
+        __section_settings = []
+        __section_settings.append(__setting)
+        __section.add("settings", __section_settings)
+        messaging.add(__section_name, __section)
+
+  messaging.add("logging", __logging)
+  messaging.add("tracing", __tracing)
+  messaging.add("reporting", __reporting)
   messaging.add("assertion", __assertion)
+  messaging.add("telemetry", __telemetry)
