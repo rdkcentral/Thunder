@@ -103,9 +103,9 @@ endif()
 
 target_include_directories( ${TARGET}
         PUBLIC
+          $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/generated/messaging>
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../>
-          $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/generated/messaging>
           $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}>
         )
 

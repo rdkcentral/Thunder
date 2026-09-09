@@ -29,6 +29,7 @@
     <ClInclude Include="LoggingCategories.h" />
     <ClInclude Include="MessageClient.h" />
     <ClInclude Include="MessageUnit.h" />
+    <ClInclude Include="MessagingDefaults.h" />
     <ClInclude Include="Module.h" />
     <ClInclude Include="ConsoleStreamRedirect.h" />
     <ClInclude Include="OperationalCategories.h" />
