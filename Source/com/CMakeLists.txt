@@ -17,8 +17,7 @@
 
 set(TARGET ${NAMESPACE}COM)
 
-set(COMRPC_TIMEOUT 3000 CACHE STRING
-        "COMRPC communication timeout in milliseconds")
+set(COMRPC_TIMEOUT 3000 CACHE STRING "COMRPC communication timeout in milliseconds")
 
 ProxyStubGenerator(NAMESPACE "Thunder::RPC" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/ICOM.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
 

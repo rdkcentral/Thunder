@@ -21,6 +21,7 @@ get_filename_component(TARGET ${CMAKE_CURRENT_SOURCE_DIR} NAME)
 
 set(THREADPOOL_COUNT "4" CACHE STRING "The number of threads in the thread pool")
 set(ENABLE_TRACING_MODULES ""  CACHE STRING "A space separated list of specific tracing modules to be enabled at start.")
+set(HIBERNATE_WAKEUP_TIMEOUT 10000 CACHE STRING "Maximum time allowed for wakeup from hibernation in milliseconds")
 
 macro(thunder_postmortem_sink_value VAR_IN VAR_OUT)
     string(TOUPPER "${${VAR_IN}}" _s)
@@ -125,7 +126,8 @@ if(HIBERNATESUPPORT)
     target_link_libraries(${TARGET} PRIVATE
         ${NAMESPACE}Hibernate::${NAMESPACE}Hibernate)
     target_compile_definitions(${TARGET} PUBLIC
-         HIBERNATE_SUPPORT_ENABLED=1)
+         HIBERNATE_SUPPORT_ENABLED=1
+         HIBERNATE_WAKEUP_TIMEOUT=${HIBERNATE_WAKEUP_TIMEOUT})
 endif()
 
 set_target_properties(${TARGET} PROPERTIES
