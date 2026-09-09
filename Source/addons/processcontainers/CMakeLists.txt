@@ -83,12 +83,6 @@ if(MESSAGING)
     target_link_libraries(${TARGET}
         PRIVATE
             ${NAMESPACE}Messaging::${NAMESPACE}Messaging)
-
-    foreach(CONTAINER ${CONTAINERS})
-        target_link_libraries(${CONTAINER}
-            PRIVATE
-                ${NAMESPACE}Messaging::${NAMESPACE}Messaging)
-    endforeach()
 endif()
 
 set_target_properties(${TARGET} PROPERTIES
