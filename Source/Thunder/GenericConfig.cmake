@@ -334,6 +334,7 @@ if(MESSAGING)
     map_append(${MESSAGING_ASSERTION_SETTINGS} settings ___array___)
     map_append(${MESSAGING_ASSERTION_SETTINGS} settings ${PLUGIN_ANY_CATEGORY_ASSERTION})
     map_append(${MESSAGING_SETTINGS} telemetry ${MESSAGING_TELEMETRY_SETTINGS})
+    map_append(${MESSAGING_TELEMETRY_SETTINGS} settings ___array___)
     map_append(${MESSAGING_SETTINGS} direct ${MESSAGING_DIRECT_SETTINGS})
 
     foreach(_entry IN LISTS MESSAGING_TYPE_DEFAULTS)
