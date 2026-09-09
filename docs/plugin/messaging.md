@@ -91,7 +91,7 @@ void DirectOutput::Output(const Core::Messaging::MessageInfo& messageInfo, const
 
 The main config file (` /etc/Thunder/config.json`) can be used to enable/disable the default messaging categories used for logging, tracing and warning reporting.
 
-Messages are split into 3 types: logging, tracing and warning reporting. Each type has a list of categories which can be marked as enabled or disabled. There is also a similar list for tracing when it comes to enabling or disabling certain modules (e.g. plugins). By default, all categories are enabled for logging and warning reporting, but in terms of tracing, if a category or a module is not present in the config, it will be disabled.
+Messages are split into several types. Each type has a list of categories which can be marked as enabled or disabled. There is also a similar list for tracing when it comes to enabling or disabling certain modules (e.g. plugins). By default, all categories are enabled for logging and warning reporting, but in terms of tracing, if a category or a module is not present in the config, it will be disabled.
 
 Build-time defaults can also be supplied with the `MESSAGING_TYPE_DEFAULTS` CMake cache variable. The value is a semicolon-separated list of message type assignments:
 
