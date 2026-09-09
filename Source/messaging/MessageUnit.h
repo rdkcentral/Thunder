@@ -566,7 +566,6 @@ namespace Thunder {
                 void Configure(const string& basePath, const string& identifier, const Config& jsonParsed, const bool background, const flush flushMode)
                 {
                     _settings.clear();
-
                     string messagingFolder;
                     Core::ParsePathInfo(jsonParsed.Path.Value(), messagingFolder, _permission);
 
