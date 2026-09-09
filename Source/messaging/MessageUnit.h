@@ -21,7 +21,11 @@
 
 #include "Module.h"
 #include "MessageDispatcher.h"
+#if defined(__has_include) && __has_include(<MessagingDefaults.h>)
+#include <MessagingDefaults.h>
+#else
 #include "MessagingDefaults.h"
+#endif
 #include "TraceFactory.h"
 #include "DirectOutput.h"
 
