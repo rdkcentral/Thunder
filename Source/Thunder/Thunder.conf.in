@@ -100,16 +100,6 @@ if boolean('@MESSAGING@'):
        "enabled" : False
       }
   
-  __fatal = {
-       "category" : "AnyCategory",
-       "enabled" : True
-      }
-
-  __tracing = {
-       "module" : "Plugin_AnyModule",
-       "enabled" : True
-      }
-  
   __warningReporting = {
        "category" : "AnyCategory",
        "enabled" : False
@@ -130,7 +120,7 @@ if boolean('@MESSAGING@'):
 
   __enable_tracing_modules = "@ENABLE_TRACING_MODULES@".strip()
   __modules =__enable_tracing_modules.split(' ') if __enable_tracing_modules else []
-  
+
   if len(__modules) > 0:
     for module in __modules:
       __module = {
@@ -138,7 +128,27 @@ if boolean('@MESSAGING@'):
         "enabled" : True
         }
       __tracing_settings.append(__module)
-  else:
+
+  __enable_tracing_categories = "@ENABLE_TRACING_CATEGORIES@".strip()
+  __categories = __enable_tracing_categories.split(' ') if __enable_tracing_categories else []
+
+  if len(__categories) > 0:
+    for category in __categories:
+      __category = {
+        "category" : category,
+        "enabled" : True
+        }
+      __tracing_settings.append(__category)
+
+  if len(__tracing_settings) == 0:
+    __tracing = {
+      "module" : "Plugin_AnyModule",
+      "enabled" : True
+      }
+    __fatal = {
+      "category" : "AnyCategory",
+      "enabled" : True
+      }
     __tracing_settings.append(__tracing)
     __tracing_settings.append(__fatal)
   

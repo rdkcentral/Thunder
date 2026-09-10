@@ -101,6 +101,15 @@ cmake -DMESSAGING_TYPE_DEFAULTS='TRACING=ON;LOGGING=OFF;TELEMETRY=ON' ..
 
 Supported types are `TRACING`, `LOGGING`, `REPORTING`, `ASSERTION`, and `TELEMETRY`. These entries are applied as type-wide wildcard settings, equivalent to a configuration entry with no module or category. Types omitted from the list retain their existing defaults. Explicit runtime configuration is applied afterward and takes precedence over these build-time defaults. This setting changes enablement defaults only; it does not remove message types, alter their serialized identifiers, or remove their public APIs.
 
+Specific tracing modules and categories can be enabled at startup with the `ENABLE_TRACING_MODULES` and `ENABLE_TRACING_CATEGORIES` CMake cache variables. Both accept space-separated names, for example:
+
+```sh
+cmake -DENABLE_TRACING_MODULES='Plugin_BluetoothControl Plugin_WebServer' \
+    -DENABLE_TRACING_CATEGORIES='Information Warning' ..
+```
+
+The resulting module and category entries are added to the tracing settings with `enabled` set to `true`.
+
 Below is an example of the messaging section in the config:
 
 ```json
