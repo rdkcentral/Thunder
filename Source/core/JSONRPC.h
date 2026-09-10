@@ -24,6 +24,7 @@
 #include "TypeTraits.h"
 
 #include <cctype>
+#include <cstdio>
 #include <functional>
 #include <limits>
 #include <vector>
@@ -778,6 +779,9 @@ namespace Core {
                 if (index != _handlers.end()) {
                     result = index->second.Invoke(context, method, parameters, response);
                 }
+                // Debug probe: prints the exact code/response Handler::Invoke hands back to its caller.
+                fprintf(stderr, "[JSONRPC::Handler::Invoke] method=%s result=%u response=%s\n",
+                    method.c_str(), result, response.c_str());
                 return (result);
             }
 
