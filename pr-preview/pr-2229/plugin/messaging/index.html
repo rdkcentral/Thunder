@@ -4270,6 +4270,11 @@
 <div class="highlight"><pre><span></span><code>cmake<span class="w"> </span>-DMESSAGING_TYPE_DEFAULTS<span class="o">=</span><span class="s1">'TRACING=ON;LOGGING=OFF;TELEMETRY=ON'</span><span class="w"> </span>..
 </code></pre></div>
 <p>Supported types are <code>TRACING</code>, <code>LOGGING</code>, <code>REPORTING</code>, <code>ASSERTION</code>, and <code>TELEMETRY</code>. These entries are applied as type-wide wildcard settings, equivalent to a configuration entry with no module or category. Types omitted from the list retain their existing defaults. Explicit runtime configuration is applied afterward and takes precedence over these build-time defaults. This setting changes enablement defaults only; it does not remove message types, alter their serialized identifiers, or remove their public APIs.</p>
+<p>Specific tracing modules and categories can be enabled at startup with the <code>ENABLE_TRACING_MODULES</code> and <code>ENABLE_TRACING_CATEGORIES</code> CMake cache variables. Both accept space-separated names, for example:</p>
+<div class="highlight"><pre><span></span><code>cmake<span class="w"> </span>-DENABLE_TRACING_MODULES<span class="o">=</span><span class="s1">'Plugin_BluetoothControl Plugin_WebServer'</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-DENABLE_TRACING_CATEGORIES<span class="o">=</span><span class="s1">'Information Warning'</span><span class="w"> </span>..
+</code></pre></div>
+<p>The resulting module and category entries are added to the tracing settings with <code>enabled</code> set to <code>true</code>.</p>
 <p>Below is an example of the messaging section in the config:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">    </span><span class="nt">"messaging"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
