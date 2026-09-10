@@ -172,20 +172,23 @@ if boolean('@MESSAGING@'):
     }
 
   for __default in __messaging_type_defaults:
+    __default = __default.strip()
     if __default:
-      __type, __enabled = __default.split('=', 1)
-      __setting = {
-        "enabled" : __enabled == "ON"
-        }
-      __section_name = __type.lower()
-      if __section_name in __messaging_sections:
-        __messaging_sections[__section_name].append(__setting)
-      else:
-        __section = JSON()
-        __section_settings = []
-        __section_settings.append(__setting)
-        __section.add("settings", __section_settings)
-        messaging.add(__section_name, __section)
+      __parts = __default.split('=', 1)
+      if len(__parts) == 2:
+        __type = __parts[0].strip().lower()
+        __enabled = __parts[1].strip().upper()
+        __setting = {
+          "enabled" : __enabled == "ON"
+          }
+        if __type in __messaging_sections:
+          __messaging_sections[__type].append(__setting)
+        else:
+          __section = JSON()
+          __section_settings = []
+          __section_settings.append(__setting)
+          __section.add("settings", __section_settings)
+          messaging.add(__type, __section)
 
   messaging.add("logging", __logging)
   messaging.add("tracing", __tracing)
