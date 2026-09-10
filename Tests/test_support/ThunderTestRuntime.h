@@ -86,8 +86,8 @@ namespace TestCore {
         uint32_t Initialize(const std::vector<PluginConfig>& plugins,
                         const string& systemPath,
                         const string& proxyStubPath,
-                        const uint16_t port = 0,
-                        const uint8_t channelThrottle = 0);
+                        const uint16_t port,
+                        const uint8_t channelThrottle);
 
         Core::ProxyType<JSONRPCLink> CreateJSONRPCLink(const string& callsign);
         uint32_t Invoke(const string& method, const string& params, string& response);
