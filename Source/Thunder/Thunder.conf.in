@@ -182,7 +182,7 @@ if boolean('@MESSAGING@'):
           "enabled" : __enabled == "ON"
           }
         if __type in __messaging_sections:
-          __messaging_sections[__type].append(__setting)
+          __messaging_sections[__type].insert(0, __setting)
         else:
           __section = JSON()
           __section_settings = []
