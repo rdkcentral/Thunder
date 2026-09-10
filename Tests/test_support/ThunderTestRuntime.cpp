@@ -226,18 +226,25 @@ namespace TestCore {
         return false;
     }
 
-    string ThunderTestRuntime::BuildConfigJSON(const std::vector<PluginConfig>& plugins,
+    string ThunderTestRuntime::BuildConfigJSON(
+        const std::vector<PluginConfig>& plugins,
         const string& systemPath,
-        const string& proxyStubPath) const
+        const string& proxyStubPath,
+        const uint16_t port,
+        const uint8_t channelThrottle) const
     {
         const string communicatorPath = _tempDir + "communicator|0777";
 
         JsonObject config;
         JsonArray pluginList;
 
-        config["port"] = 0;
+        config["port"] = port;
         config["binding"] = "127.0.0.1";
         config["idletime"] = 180;
+
+        if (channelThrottle != 0) {
+            config["channel_throttle"] = channelThrottle;
+        }
         config["persistentpath"] = _tempDir + "persistent/";
         config["volatilepath"] = _tempDir + "volatile/";
         config["datapath"] = _tempDir + "data/";
@@ -268,9 +275,12 @@ namespace TestCore {
         return json;
     }
 
-    uint32_t ThunderTestRuntime::Initialize(const std::vector<PluginConfig>& plugins,
+    uint32_t ThunderTestRuntime::Initialize(
+        const std::vector<PluginConfig>& plugins,
         const string& systemPath,
-        const string& proxyStubPath)
+        const string& proxyStubPath,
+        const uint16_t port,
+        const uint8_t channelThrottle)
     {
         if (_server != nullptr) {
             return Core::ERROR_ALREADY_CONNECTED;
@@ -294,7 +304,13 @@ namespace TestCore {
             ? Core::Directory::Normalize(DEFAULT_PROXYSTUB_PATH)
             : Core::Directory::Normalize(proxyStubPath);
 
-        const string configJSON = BuildConfigJSON(plugins, sysPath, _proxyStubPath);
+        const string configJSON =
+            BuildConfigJSON(
+                plugins,
+                sysPath,
+                _proxyStubPath,
+                port,
+                channelThrottle);
         if (configJSON.empty()) {
             CleanupDirectories();
             _tempDir.clear();
@@ -342,6 +358,18 @@ namespace TestCore {
         _initialized = true;
 
         return Core::ERROR_NONE;
+    }
+
+    uint32_t ThunderTestRuntime::Initialize(const std::vector<PluginConfig>& plugins,
+        const string& systemPath,
+        const string& proxyStubPath)
+    {
+        return Initialize(
+        plugins,
+        systemPath,
+        proxyStubPath,
+        0,
+        0);
     }
 
     Core::ProxyType<ThunderTestRuntime::JSONRPCLink> ThunderTestRuntime::CreateJSONRPCLink(const string& callsign)

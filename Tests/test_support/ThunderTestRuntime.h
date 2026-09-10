@@ -83,6 +83,11 @@ namespace TestCore {
         uint32_t Initialize(const std::vector<PluginConfig>& plugins,
             const string& systemPath = "",
             const string& proxyStubPath = "");
+        uint32_t Initialize(const std::vector<PluginConfig>& plugins,
+                        const string& systemPath,
+                        const string& proxyStubPath,
+                        const uint16_t port = 0,
+                        const uint8_t channelThrottle = 0);
 
         Core::ProxyType<JSONRPCLink> CreateJSONRPCLink(const string& callsign);
         uint32_t Invoke(const string& method, const string& params, string& response);
@@ -108,9 +113,12 @@ namespace TestCore {
         void Deinitialize();
 
     private:
-        string BuildConfigJSON(const std::vector<PluginConfig>& plugins,
+        string BuildConfigJSON(
+            const std::vector<PluginConfig>& plugins,
             const string& systemPath,
-            const string& proxyStubPath) const;
+            const string& proxyStubPath,
+            const uint16_t port,
+            const uint8_t channelThrottle) const;
         bool CreateDirectories() const;
         void CleanupDirectories() const;
 
