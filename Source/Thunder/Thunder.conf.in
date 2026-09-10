@@ -119,7 +119,7 @@ if boolean('@MESSAGING@'):
   __tracing_settings = []
 
   __enable_tracing_modules = "@ENABLE_TRACING_MODULES@".strip()
-  __modules =__enable_tracing_modules.split(' ') if __enable_tracing_modules else []
+  __modules = __enable_tracing_modules.split() if __enable_tracing_modules else []
   
   if len(__modules) > 0:
     for module in __modules:
@@ -130,7 +130,7 @@ if boolean('@MESSAGING@'):
       __tracing_settings.append(__module)
 
   __enable_tracing_categories = "@ENABLE_TRACING_CATEGORIES@".strip()
-  __categories = __enable_tracing_categories.split(' ') if __enable_tracing_categories else []
+  __categories = __enable_tracing_categories.split() if __enable_tracing_categories else []
 
   if len(__categories) > 0:
     for category in __categories:
