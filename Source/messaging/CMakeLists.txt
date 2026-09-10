@@ -17,8 +17,6 @@
 
 set(TARGET ${NAMESPACE}Messaging)
 
-set(MESSAGING_TYPE_DEFAULTS "" CACHE STRING "Semicolon-separated message type defaults (TYPE=ON or TYPE=OFF).")
-
 add_library(${TARGET} 
         Module.cpp
         MessageClient.cpp
