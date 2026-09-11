@@ -91,7 +91,24 @@ void DirectOutput::Output(const Core::Messaging::MessageInfo& messageInfo, const
 
 The main config file (` /etc/Thunder/config.json`) can be used to enable/disable the default messaging categories used for logging, tracing and warning reporting.
 
-Messages are split into 3 types: logging, tracing and warning reporting. Each type has a list of categories which can be marked as enabled or disabled. There is also a similar list for tracing when it comes to enabling or disabling certain modules (e.g. plugins). By default, all categories are enabled for logging and warning reporting, but in terms of tracing, if a category or a module is not present in the config, it will be disabled.
+Messages are split into several types. Each type has a list of categories which can be marked as enabled or disabled. There is also a similar list for tracing when it comes to enabling or disabling certain modules (e.g. plugins). By default, all categories are enabled for logging and warning reporting, but in terms of tracing, if a category or a module is not present in the config, it will be disabled.
+
+Build-time defaults can also be supplied with the `MESSAGING_TYPE_DEFAULTS` CMake cache variable. The value is a semicolon-separated list of message type assignments:
+
+```sh
+cmake -DMESSAGING_TYPE_DEFAULTS='TRACING=ON;LOGGING=OFF;TELEMETRY=ON' ..
+```
+
+Supported types are `TRACING`, `LOGGING`, `REPORTING`, `ASSERTION`, and `TELEMETRY`. These entries are applied as type-wide wildcard settings, equivalent to a configuration entry with no module or category. Types omitted from the list retain their existing defaults. Explicit runtime configuration is applied afterward and takes precedence over these build-time defaults. This setting changes enablement defaults only; it does not remove message types, alter their serialized identifiers, or remove their public APIs.
+
+Specific tracing modules and categories can be enabled at startup with the `ENABLE_TRACING_MODULES` and `ENABLE_TRACING_CATEGORIES` CMake cache variables. Both accept space-separated names, for example:
+
+```sh
+cmake -DENABLE_TRACING_MODULES='Plugin_BluetoothControl Plugin_WebServer' \
+    -DENABLE_TRACING_CATEGORIES='Information Warning' ..
+```
+
+The resulting module and category entries are added to the tracing settings with `enabled` set to `true`.
 
 Below is an example of the messaging section in the config:
 
