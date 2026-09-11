@@ -96,17 +96,17 @@ if boolean('@MESSAGING@'):
   messaging.add("direct", direct)
 
   __notification = {
-       "category" : "AnyCategory",
+       "category" : "ExampleCategory",
        "enabled" : False
       }
   
   __warningReporting = {
-       "category" : "AnyCategory",
+       "category" : "ExampleCategory",
        "enabled" : False
       }
 
   __assertion = {
-       "category" : "AnyCategory",
+       "category" : "ExampleCategory",
        "enabled" : False
       }
 
@@ -142,11 +142,11 @@ if boolean('@MESSAGING@'):
 
   if len(__tracing_settings) == 0:
     __tracing = {
-      "module" : "Plugin_AnyModule",
+      "module" : "Plugin_ExampleModule",
       "enabled" : True
       }
     __fatal = {
-      "category" : "AnyCategory",
+      "category" : "ExampleCategory",
       "enabled" : True
       }
     __tracing_settings.append(__tracing)
