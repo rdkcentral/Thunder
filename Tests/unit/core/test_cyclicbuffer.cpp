@@ -250,14 +250,15 @@ namespace Core {
             // Overwrite Buffer with Create
             uint8_t cyclicBufferSize = 100;
             std::string bufferName {"cyclicbuffer02"};
-            ::Thunder::Core::CyclicBuffer buffer1(bufferName.c_str(), mode, cyclicBufferSize, false);
+            {
+                ::Thunder::Core::CyclicBuffer buffer1(bufferName.c_str(), mode, cyclicBufferSize, false);
 
-            EXPECT_STREQ(buffer1.Name().c_str(), bufferName.c_str());
-            EXPECT_EQ(buffer1.Size(), cyclicBufferSize);
-            EXPECT_EQ(buffer1.IsValid(), true);
-            EXPECT_EQ(buffer1.Open(), true);
+                EXPECT_STREQ(buffer1.Name().c_str(), bufferName.c_str());
+                EXPECT_EQ(buffer1.Size(), cyclicBufferSize);
+                EXPECT_EQ(buffer1.IsValid(), true);
+                EXPECT_EQ(buffer1.Open(), true);
+            }
 
-            buffer1.~CyclicBuffer();
             EXPECT_EQ(IsFileExist(bufferName.c_str()), true);
 
             // Create cyclic buffer with same name to check overwritting or not
