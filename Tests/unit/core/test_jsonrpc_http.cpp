@@ -326,16 +326,21 @@ namespace Core {
         {
             _httpStatusCode = response->ErrorCode;
 
+            string text;
             if (response->HasBody()) {
                 ::Thunder::Core::ProxyType<JSONRPCBody> body = response->Body<JSONRPCBody>();
                 if (body.IsValid()) {
-                    string text;
                     body->ToString(text);
-                    std::lock_guard<std::mutex> lock(_responseMutex);
-                    _responseQueue.push(text);
-                    _responseCV.notify_one();
                 }
             }
+
+            std::lock_guard<std::mutex> lock(_responseMutex);
+            // Every HTTP response is queued, including responses without a body.
+            // An empty string therefore means "response received with no JSON body",
+            // not "no response received".  Tests that expect a body must pop and check;
+            // tests that time-out waiting for WaitForResponse() now receive "".
+            _responseQueue.push(text);
+            _responseCV.notify_one();
         }
 
         virtual void Send(const ::Thunder::Core::ProxyType<Web::Request>& request VARIABLE_IS_NOT_USED)
@@ -421,10 +426,10 @@ namespace Core {
     // Also validates HTTP status code is 200 (OK).
     TEST(HTTPJSONRPC, BasicMethodInvocation)
     {
-        constexpr uint32_t initHandshakeValue = 0, maxWaitTimeMs = 8000, maxInitTime = 4000;
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTimeMs = 8000;
         constexpr uint8_t maxRetries = 10;
 
-        const std::string connector{ "0.0.0.0" };
+        const std::string connector{ "127.0.0.1" };
         const uint16_t port = 12350;
 
         IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
@@ -432,17 +437,15 @@ namespace Core {
                 ::Thunder::Core::NodeId(connector.c_str(), port));
 
             ASSERT_EQ(server.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
 
-            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
             ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
 
             ASSERT_EQ(server.Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
         };
 
         IPTestAdministrator::Callback callback_parent = [&](IPTestAdministrator& testAdmin) {
-            SleepMs(maxInitTime);
-
-            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
 
             JSONRPCHTTPClient client(::Thunder::Core::NodeId(connector.c_str(), port));
 
@@ -485,10 +488,10 @@ namespace Core {
     // HTTP POST -> JSONRPCBody -> Handler -> JSONRPCBody round-trip.
     TEST(HTTPJSONRPC, EchoMethod)
     {
-        constexpr uint32_t initHandshakeValue = 0, maxWaitTimeMs = 8000, maxInitTime = 4000;
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTimeMs = 8000;
         constexpr uint8_t maxRetries = 10;
 
-        const std::string connector{ "0.0.0.0" };
+        const std::string connector{ "127.0.0.1" };
         const uint16_t port = 12351;
 
         IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
@@ -496,17 +499,15 @@ namespace Core {
                 ::Thunder::Core::NodeId(connector.c_str(), port));
 
             ASSERT_EQ(server.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
 
-            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
             ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
 
             ASSERT_EQ(server.Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
         };
 
         IPTestAdministrator::Callback callback_parent = [&](IPTestAdministrator& testAdmin) {
-            SleepMs(maxInitTime);
-
-            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
 
             JSONRPCHTTPClient client(::Thunder::Core::NodeId(connector.c_str(), port));
 
@@ -549,10 +550,10 @@ namespace Core {
     // status), and the Error.Code should be -32601.
     TEST(HTTPJSONRPC, ErrorResponse)
     {
-        constexpr uint32_t initHandshakeValue = 0, maxWaitTimeMs = 8000, maxInitTime = 4000;
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTimeMs = 8000;
         constexpr uint8_t maxRetries = 10;
 
-        const std::string connector{ "0.0.0.0" };
+        const std::string connector{ "127.0.0.1" };
         const uint16_t port = 12352;
 
         IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
@@ -560,17 +561,15 @@ namespace Core {
                 ::Thunder::Core::NodeId(connector.c_str(), port));
 
             ASSERT_EQ(server.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
 
-            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
             ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
 
             ASSERT_EQ(server.Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
         };
 
         IPTestAdministrator::Callback callback_parent = [&](IPTestAdministrator& testAdmin) {
-            SleepMs(maxInitTime);
-
-            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
 
             JSONRPCHTTPClient client(::Thunder::Core::NodeId(connector.c_str(), port));
 
@@ -613,10 +612,10 @@ namespace Core {
     // size (2048 bytes configured on client/server).
     TEST(HTTPJSONRPC, LargePayload)
     {
-        constexpr uint32_t initHandshakeValue = 0, maxWaitTimeMs = 8000, maxInitTime = 4000;
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTimeMs = 8000;
         constexpr uint8_t maxRetries = 10;
 
-        const std::string connector{ "0.0.0.0" };
+        const std::string connector{ "127.0.0.1" };
         const uint16_t port = 12353;
 
         IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
@@ -624,17 +623,15 @@ namespace Core {
                 ::Thunder::Core::NodeId(connector.c_str(), port));
 
             ASSERT_EQ(server.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
 
-            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
             ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
 
             ASSERT_EQ(server.Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
         };
 
         IPTestAdministrator::Callback callback_parent = [&](IPTestAdministrator& testAdmin) {
-            SleepMs(maxInitTime);
-
-            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
 
             JSONRPCHTTPClient client(::Thunder::Core::NodeId(connector.c_str(), port));
 
@@ -682,10 +679,10 @@ namespace Core {
     // across multiple round-trips on a persistent TCP connection.
     TEST(HTTPJSONRPC, MultipleSequentialRequests)
     {
-        constexpr uint32_t initHandshakeValue = 0, maxWaitTimeMs = 8000, maxInitTime = 4000;
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTimeMs = 8000;
         constexpr uint8_t maxRetries = 10;
 
-        const std::string connector{ "0.0.0.0" };
+        const std::string connector{ "127.0.0.1" };
         const uint16_t port = 12354;
 
         IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
@@ -693,17 +690,15 @@ namespace Core {
                 ::Thunder::Core::NodeId(connector.c_str(), port));
 
             ASSERT_EQ(server.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
 
-            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
             ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
 
             ASSERT_EQ(server.Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
         };
 
         IPTestAdministrator::Callback callback_parent = [&](IPTestAdministrator& testAdmin) {
-            SleepMs(maxInitTime);
-
-            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
 
             JSONRPCHTTPClient client(::Thunder::Core::NodeId(connector.c_str(), port));
 
@@ -732,6 +727,178 @@ namespace Core {
                 EXPECT_EQ(response.Id.Value(), i);
                 EXPECT_TRUE(response.Result.IsSet());
                 EXPECT_STREQ(response.Result.Value().c_str(), std::to_string(i + i * 10).c_str());
+            }
+
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+        };
+
+        IPTestAdministrator testAdmin(callback_parent, callback_child, initHandshakeValue, 20);
+
+        ::Thunder::Core::Singleton::Dispose();
+    }
+
+    // =========================================================================
+    // Gap 6 Extension: HTTP POST edge cases
+    // =========================================================================
+
+    // NOTE: MockServer_EmptyBodyReturnsBadRequest and MockServer_NonPostVerbReturnsMethodNotAllowed exercise
+    // the verb/body validation in the JSONRPCHTTPServer helper defined in this file,
+    // not in Thunder production code.  They verify the HTTP framing layer but cannot
+    // catch a regression in Thunder's own request-validation logic.
+    TEST(HTTPJSONRPC, MockServer_EmptyBodyReturnsBadRequest)
+    {
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTimeMs = 8000;
+        constexpr uint8_t maxRetries = 10;
+
+        const std::string connector{ "127.0.0.1" };
+        const uint16_t port = 12355;
+
+        IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
+            ::Thunder::Core::SocketServerType<JSONRPCHTTPServer> server(
+                ::Thunder::Core::NodeId(connector.c_str(), port));
+
+            ASSERT_EQ(server.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+
+            ASSERT_EQ(server.Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+        };
+
+        IPTestAdministrator::Callback callback_parent = [&](IPTestAdministrator& testAdmin) {
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+
+            JSONRPCHTTPClient client(::Thunder::Core::NodeId(connector.c_str(), port));
+
+            ASSERT_EQ(client.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+            ASSERT_TRUE(client.IsOpen());
+
+            // Send a POST request with no body
+            {
+                ::Thunder::Core::ProxyType<Web::Request> request(
+                    ::Thunder::Core::ProxyType<Web::Request>::Create());
+                request->Verb = Web::Request::HTTP_POST;
+                request->Path = _T("/jsonrpc");
+                // Deliberately NOT setting a body
+
+                EXPECT_TRUE(client.Submit(request));
+
+                ASSERT_TRUE(client.WaitForResponse());
+
+                // Server should reject with 400 Bad Request
+                EXPECT_EQ(client.StatusCode(), Web::STATUS_BAD_REQUEST);
+            }
+
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+        };
+
+        IPTestAdministrator testAdmin(callback_parent, callback_child, initHandshakeValue, 20);
+
+        ::Thunder::Core::Singleton::Dispose();
+    }
+
+    // NOTE: see MockServer_EmptyBodyReturnsBadRequest and MockServer_NonPostVerbReturnsMethodNotAllowed — tests the local mock's verb validation.
+    TEST(HTTPJSONRPC, MockServer_NonPostVerbReturnsMethodNotAllowed)
+    {
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTimeMs = 8000;
+        constexpr uint8_t maxRetries = 10;
+
+        const std::string connector{ "127.0.0.1" };
+        const uint16_t port = 12356;
+
+        IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
+            ::Thunder::Core::SocketServerType<JSONRPCHTTPServer> server(
+                ::Thunder::Core::NodeId(connector.c_str(), port));
+
+            ASSERT_EQ(server.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+
+            ASSERT_EQ(server.Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+        };
+
+        IPTestAdministrator::Callback callback_parent = [&](IPTestAdministrator& testAdmin) {
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+
+            JSONRPCHTTPClient client(::Thunder::Core::NodeId(connector.c_str(), port));
+
+            ASSERT_EQ(client.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+            ASSERT_TRUE(client.IsOpen());
+
+            // Send a GET request (wrong verb for JSON-RPC)
+            {
+                ::Thunder::Core::ProxyType<Web::Request> request(
+                    ::Thunder::Core::ProxyType<Web::Request>::Create());
+                request->Verb = Web::Request::HTTP_GET;
+                request->Path = _T("/jsonrpc");
+
+                EXPECT_TRUE(client.Submit(request));
+
+                ASSERT_TRUE(client.WaitForResponse());
+
+                // Server should reject with 405 Method Not Allowed
+                EXPECT_EQ(client.StatusCode(), Web::STATUS_METHOD_NOT_ALLOWED);
+            }
+
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+        };
+
+        IPTestAdministrator testAdmin(callback_parent, callback_child, initHandshakeValue, 20);
+
+        ::Thunder::Core::Singleton::Dispose();
+    }
+
+    // Verifies that an unknown JSON-RPC method returns a proper error
+    // response with HTTP 200 and JSON-RPC error code.
+    TEST(HTTPJSONRPC, UnknownMethodReturnsJSONRPCError)
+    {
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTimeMs = 8000;
+        constexpr uint8_t maxRetries = 10;
+
+        const std::string connector{ "127.0.0.1" };
+        const uint16_t port = 12357;
+
+        IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
+            ::Thunder::Core::SocketServerType<JSONRPCHTTPServer> server(
+                ::Thunder::Core::NodeId(connector.c_str(), port));
+
+            ASSERT_EQ(server.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+
+            ASSERT_EQ(server.Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+        };
+
+        IPTestAdministrator::Callback callback_parent = [&](IPTestAdministrator& testAdmin) {
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+
+            JSONRPCHTTPClient client(::Thunder::Core::NodeId(connector.c_str(), port));
+
+            ASSERT_EQ(client.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+            ASSERT_TRUE(client.IsOpen());
+
+            {
+                ::Thunder::Core::JSONRPC::Message request;
+                request.JSONRPC = _T("2.0");
+                request.Id = 99;
+                request.Designator = _T("nonExistentMethod");
+                request.Parameters = _T("{}");
+
+                EXPECT_TRUE(client.SendJSONRPC(request));
+
+                ASSERT_TRUE(client.WaitForResponse());
+
+                // HTTP status is 200 — errors are in the JSON-RPC body
+                EXPECT_EQ(client.StatusCode(), Web::STATUS_OK);
+
+                ::Thunder::Core::JSONRPC::Message response;
+                client.RetrieveMessage(response);
+
+                EXPECT_EQ(response.Id.Value(), 99u);
+                EXPECT_TRUE(response.Error.IsSet());
+                EXPECT_FALSE(response.Result.IsSet());
             }
 
             ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
