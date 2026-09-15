@@ -115,10 +115,10 @@ namespace Controller {
         // @brief Framework attributes
         // @details Changes are not persisted automatically. Call Persist("PluginHost") to retain them.
         // @param attribute Attribute name (omit to retrieve all)
-        // @retval ERROR_NONE Attribute was retrieved or is unchanged
+        // @retval ERROR_NONE Attribute was retrieved or matches the active value
         // @retval ERROR_UNKNOWN_KEY Attribute does not exist
         // @retval ERROR_BAD_REQUEST Attribute value is invalid
-        // @retval ERROR_UNSUPPORTED Attribute cannot be changed in current framework configuration
+        // @retval ERROR_NOT_SUPPORTED Attribute cannot be changed in current framework configuration
         // @retval ERROR_REQUEST_SUBMITTED Attribute will take effect after framework restart
         virtual Core::hresult Attribute(const Core::OptionalType<attribute>& attribute /* @index */, string& value /* @out @opaque */) const = 0;
         virtual Core::hresult Attribute(const attribute attribute /* @index */, const string& value /* @opaque */) = 0;

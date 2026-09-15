@@ -403,20 +403,14 @@ namespace Plugin {
 
         PluginHost::Config& configuration(_pluginServer->Configuration());
         const PluginHost::Config::Attributes active(configuration.ActiveAttributes());
-        const PluginHost::Config::Attributes pending(configuration.PendingAttributes());
 
         if (attribute == IConfiguration::PREFIX) {
             Core::JSON::String prefix;
 
             result = Core::ERROR_BAD_REQUEST;
             if (prefix.FromString(value) == true) {
-                if (prefix.Value() == pending.Prefix) {
-                    result = Core::ERROR_NONE;
-                }
-                else {
-                    configuration.SetPendingPrefix(prefix.Value());
-                    result = (prefix.Value() == active.Prefix ? Core::ERROR_NONE : Core::ERROR_REQUEST_SUBMITTED);
-                }
+                configuration.SetPrefix(prefix.Value());
+                result = (prefix.Value() == active.Prefix ? Core::ERROR_NONE : Core::ERROR_REQUEST_SUBMITTED);
             }
         }
         else if (attribute == IConfiguration::IDLETIME) {
@@ -424,13 +418,8 @@ namespace Plugin {
 
             result = Core::ERROR_BAD_REQUEST;
             if (idleTime.FromString(value) == true) {
-                if (idleTime.Value() == pending.IdleTime) {
-                    result = Core::ERROR_NONE;
-                }
-                else {
-                    configuration.SetPendingIdleTime(idleTime.Value());
-                    result = (idleTime.Value() == active.IdleTime ? Core::ERROR_NONE : Core::ERROR_REQUEST_SUBMITTED);
-                }
+                configuration.SetIdleTime(idleTime.Value());
+                result = (idleTime.Value() == active.IdleTime ? Core::ERROR_NONE : Core::ERROR_REQUEST_SUBMITTED);
             }
         }
 

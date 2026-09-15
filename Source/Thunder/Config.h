@@ -939,12 +939,6 @@ namespace PluginHost {
         }
         inline void SetPrefix(const string& newValue) {
             Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
-            _attributes.Prefix = newValue;
-            _pendingAttributes.Prefix = newValue;
-            _webPrefix = '/' + _attributes.Prefix;
-        }
-        inline void SetPendingPrefix(const string& newValue) {
-            Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
             _pendingAttributes.Prefix = newValue;
         }
         inline const string& Model() const
@@ -1107,12 +1101,13 @@ namespace PluginHost {
         }
         inline void SetIdleTime(const uint16_t newValue)  {
             Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
-            _attributes.IdleTime = newValue;
             _pendingAttributes.IdleTime = newValue;
         }
-        inline void SetPendingIdleTime(const uint16_t newValue)  {
+        inline void LoadAttributes(const Attributes& attributes) {
             Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
-            _pendingAttributes.IdleTime = newValue;
+            _attributes = attributes;
+            _pendingAttributes = attributes;
+            _webPrefix = '/' + _attributes.Prefix;
         }
         inline Attributes PendingAttributes() const {
             Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);

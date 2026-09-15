@@ -698,6 +698,13 @@ int main(int argc, char** argv)
 
     if (_config != nullptr) {
 
+        if (_config->PersistentPath().empty() == false) {
+            Core::Directory persistentPath(_config->PersistentPath().c_str());
+            if ((persistentPath.Exists() == false) && (persistentPath.Create() == false)) {
+                SYSLOG(Logging::Startup, (_T("Failed to create persistent directory [%s]."), _config->PersistentPath().c_str()));
+            }
+        }
+
         if (_config->Process().IsSet() == true) {
 
             Core::ProcessCurrent myself;

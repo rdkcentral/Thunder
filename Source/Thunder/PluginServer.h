@@ -33,6 +33,11 @@
 
 #define MAX_EXTERNAL_WAITS 2000 /* Wait for 2 Seconds */
 
+#ifndef HIBERNATE_WAKEUP_TIMEOUT
+#define HIBERNATE_WAKEUP_TIMEOUT 10000 /* ms */
+#endif
+
+
 namespace Thunder {
 
 namespace Core {
@@ -1451,7 +1456,7 @@ namespace PluginHost {
             }
 
         private:
-            uint32_t Wakeup(const uint32_t timeout);
+            uint32_t Wakeup(const uint32_t timeout = HIBERNATE_WAKEUP_TIMEOUT);
 
             #ifdef HIBERNATE_SUPPORT_ENABLED
             uint32_t HibernateChildren(const pid_t parentPID, const uint32_t timeout);
@@ -1953,14 +1958,14 @@ namespace PluginHost {
             ~Override() = default;
 
         public:
+            uint32_t LoadPluginHost()
+            {
+                return (LoadPluginHostConfig());
+            }
+
             uint32_t Load()
             {
                 uint32_t result = Core::ERROR_NONE;
-
-                const uint32_t rc = LoadPluginHostConfig();
-                if ((result == Core::ERROR_NONE) && (rc != Core::ERROR_NONE)) {
-                    result = rc;
-                }
 
                 ServiceMap::Iterator indexService(_services.Services());
                 while (indexService.Next() == true) {
@@ -2229,12 +2234,15 @@ namespace PluginHost {
                             (Version.IsSet() == true) && (Version.Value() == CurrentVersion()));
 
                         if (valid == true) {
+                            Config::Attributes attributes(_serverconfig.ActiveAttributes());
+
                             if (Prefix.IsSet() == true) {
-                                _serverconfig.SetPrefix(Prefix.Value());
+                                attributes.Prefix = Prefix.Value();
                             }
                             if (IdleTime.IsSet() == true) {
-                                _serverconfig.SetIdleTime(IdleTime.Value());
+                                attributes.IdleTime = IdleTime.Value();
                             }
+                            _serverconfig.LoadAttributes(attributes);
                         }
                         storage.Close();
 
@@ -2255,32 +2263,28 @@ namespace PluginHost {
             uint32_t SavePluginHostConfig()
             {
                 uint32_t result = Core::ERROR_NONE;
-                const Config::Attributes active(_serverconfig.ActiveAttributes());
                 const Config::Attributes pending(_serverconfig.PendingAttributes());
-                const bool pendingChanges = ((pending.Prefix != active.Prefix) || (pending.IdleTime != active.IdleTime));
                 Core::File storage(CreateOverridePath(PluginHostCallsign()));
 
-                if (pendingChanges == true) {
-                    if (storage.Create() == true) {
-                        Version = CurrentVersion();
-                        Prefix = pending.Prefix;
-                        IdleTime = pending.IdleTime;
+                if (storage.Create() == true) {
+                    Version = CurrentVersion();
+                    Prefix = pending.Prefix;
+                    IdleTime = pending.IdleTime;
 
-                        if (IElement::ToFile(storage) == false) {
-                            result = storage.ErrorCode();
-                            if (result == Core::ERROR_NONE) {
-                                result = Core::ERROR_WRITE_ERROR;
-                            }
-                        }
-                        storage.Close();
-
-                        if (result != Core::ERROR_NONE) {
-                            storage.Destroy();
-                        }
-                    }
-                    else {
+                    if (IElement::ToFile(storage) == false) {
                         result = storage.ErrorCode();
+                        if (result == Core::ERROR_NONE) {
+                            result = Core::ERROR_WRITE_ERROR;
+                        }
                     }
+                    storage.Close();
+
+                    if (result != Core::ERROR_NONE) {
+                        storage.Destroy();
+                    }
+                }
+                else {
+                    result = storage.ErrorCode();
                 }
                 return result;
             }
@@ -5828,12 +5832,6 @@ namespace PluginHost {
         {
             Override infoBlob(_config, _services, Configuration().PersistentPath() + PluginOverrideDirectory);
             return (infoBlob.Destroy(callsign));
-        }
-
-        uint32_t Load()
-        {
-            Override infoBlob(_config, _services, Configuration().PersistentPath() + PluginOverrideDirectory);
-            return (infoBlob.Load());
         }
 
         void Visit(const std::function<void(const Channel&)>& handler)
