@@ -2225,14 +2225,16 @@ namespace PluginHost {
                 if (storage.Exists() == true) {
                     if (storage.Open(true) == true) {
                         IElement::FromFile(storage);
-                        
+                        Config::Attributes attributes(_serverconfig.ActiveAttributes());
+
                         if (Prefix.IsSet() == true) {
-                            _serverconfig.SetPrefix(Prefix.Value());
+                            attributes.Prefix = Prefix.Value();
                         }
                         if (IdleTime.IsSet() == true) {
-                            _serverconfig.SetIdleTime(IdleTime.Value());
+                            attributes.IdleTime = IdleTime.Value();
                         }
-                        
+                        _serverconfig.LoadAttributes(attributes);
+
                         storage.Close();
                     }
                     else {
@@ -2245,31 +2247,27 @@ namespace PluginHost {
             uint32_t SavePluginHostConfig()
             {
                 uint32_t result = Core::ERROR_NONE;
-                const Config::Attributes active(_serverconfig.ActiveAttributes());
                 const Config::Attributes pending(_serverconfig.PendingAttributes());
-                const bool pendingChanges = ((pending.Prefix != active.Prefix) || (pending.IdleTime != active.IdleTime));
                 Core::File storage(CreateOverridePath(PluginHostCallsign()));
 
-                if (pendingChanges == true) {
-                    if (storage.Create() == true) {
-                        Prefix = pending.Prefix;
-                        IdleTime = pending.IdleTime;
+                if (storage.Create() == true) {
+                    Prefix = pending.Prefix;
+                    IdleTime = pending.IdleTime;
 
-                        if (IElement::ToFile(storage) == false) {
-                            result = storage.ErrorCode();
-                            if (result == Core::ERROR_NONE) {
-                                result = Core::ERROR_WRITE_ERROR;
-                            }
-                        }
-                        storage.Close();
-
-                        if (result != Core::ERROR_NONE) {
-                            storage.Destroy();
-                        }
-                    }
-                    else {
+                    if (IElement::ToFile(storage) == false) {
                         result = storage.ErrorCode();
+                        if (result == Core::ERROR_NONE) {
+                            result = Core::ERROR_WRITE_ERROR;
+                        }
                     }
+                    storage.Close();
+
+                    if (result != Core::ERROR_NONE) {
+                        storage.Destroy();
+                    }
+                }
+                else {
+                    result = storage.ErrorCode();
                 }
                 return result;
             }
