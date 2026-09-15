@@ -1953,14 +1953,14 @@ namespace PluginHost {
             ~Override() = default;
 
         public:
+            uint32_t LoadPluginHost()
+            {
+                return (LoadPluginHostConfig());
+            }
+
             uint32_t Load()
             {
                 uint32_t result = Core::ERROR_NONE;
-
-                const uint32_t rc = LoadPluginHostConfig();
-                if ((result == Core::ERROR_NONE) && (rc != Core::ERROR_NONE)) {
-                    result = rc;
-                }
 
                 ServiceMap::Iterator indexService(_services.Services());
                 while (indexService.Next() == true) {
@@ -5815,12 +5815,6 @@ namespace PluginHost {
         {
             Override infoBlob(_config, _services, Configuration().PersistentPath() + PluginOverrideDirectory);
             return (infoBlob.Destroy(callsign));
-        }
-
-        uint32_t Load()
-        {
-            Override infoBlob(_config, _services, Configuration().PersistentPath() + PluginOverrideDirectory);
-            return (infoBlob.Load());
         }
 
         void Visit(const std::function<void(const Channel&)>& handler)
