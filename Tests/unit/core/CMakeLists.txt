@@ -115,6 +115,7 @@ target_link_libraries(${TEST_RUNNER_NAME}
 ]]
 else()
 add_executable(${TEST_RUNNER_NAME}
+    ../Module.cpp
    test_databuffer.cpp
    test_dataelement.cpp
    test_dataelementfile.cpp
