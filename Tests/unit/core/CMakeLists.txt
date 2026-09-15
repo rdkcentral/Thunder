@@ -21,12 +21,16 @@ if(LINUX)
     # IPTestAdministrator only supported on LINUX platform
 add_executable(${TEST_RUNNER_NAME}
    ../IPTestAdministrator.cpp
+   ${CMAKE_SOURCE_DIR}/Source/Thunder/DiagnosticsEvents.cpp
+   ${CMAKE_SOURCE_DIR}/Source/Thunder/DiagnosticsManager.cpp
+   ${CMAKE_SOURCE_DIR}/Source/Thunder/DiagnosticsMetrics.cpp
    test_cyclicbuffer.cpp
    test_cyclicbuffer_dataexchange.cpp
    test_databuffer.cpp
    test_dataelement.cpp
    test_dataelementfile.cpp
    test_doorbell.cpp
+   test_diagnostics.cpp
    test_enumerate.cpp
    test_event.cpp
    test_filesystem.cpp

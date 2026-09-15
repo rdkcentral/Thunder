@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include "DiagnosticsTypes.h"
 #include "Module.h"
 #include <common/ConfigurationEnums.h>
 
@@ -351,6 +352,49 @@ namespace PluginHost {
                 Core::JSON::String PluginConfigPath;
             };
 
+            // Diagnostics defaults remain inert unless the host initializes its manager
+            // from this optional configuration at a non-OFF observability level.
+            class ObservabilityConfig : public Core::JSON::Container {
+            public:
+                ObservabilityConfig()
+                    : Core::JSON::Container()
+                    , Level(_T("OFF"))
+                    , SlowRpcThresholdMs(0)
+                    , EventBufferCapacity(256)
+                    , TransactionBufferCapacity(64)
+                    , MaxMethodsPerPlugin(64)
+                    , PercentileSampleCapacity(128)
+                    , EnableConnectionMetrics(false)
+                    , EnableResourceMetrics(false)
+                    , ResourceSampleIntervalMs(0)
+                    , EnableCorrelationRecords(false)
+                {
+                    Add(_T("level"), &Level);
+                    Add(_T("slowrpcthresholdms"), &SlowRpcThresholdMs);
+                    Add(_T("eventbuffercapacity"), &EventBufferCapacity);
+                    Add(_T("transactionbuffercapacity"), &TransactionBufferCapacity);
+                    Add(_T("maxmethodsperplugin"), &MaxMethodsPerPlugin);
+                    Add(_T("percentilesamplecapacity"), &PercentileSampleCapacity);
+                    Add(_T("enableconnectionmetrics"), &EnableConnectionMetrics);
+                    Add(_T("enableresourcemetrics"), &EnableResourceMetrics);
+                    Add(_T("resourcesampleintervalms"), &ResourceSampleIntervalMs);
+                    Add(_T("enablecorrelationrecords"), &EnableCorrelationRecords);
+                }
+
+                ~ObservabilityConfig() override = default;
+
+                Core::JSON::String Level;
+                Core::JSON::DecUInt32 SlowRpcThresholdMs;
+                Core::JSON::DecUInt32 EventBufferCapacity;
+                Core::JSON::DecUInt32 TransactionBufferCapacity;
+                Core::JSON::DecUInt32 MaxMethodsPerPlugin;
+                Core::JSON::DecUInt32 PercentileSampleCapacity;
+                Core::JSON::Boolean EnableConnectionMetrics;
+                Core::JSON::Boolean EnableResourceMetrics;
+                Core::JSON::DecUInt32 ResourceSampleIntervalMs;
+                Core::JSON::Boolean EnableCorrelationRecords;
+            };
+
 #ifdef HIBERNATE_SUPPORT_ENABLED
             class HibernateConfig : public Core::JSON::Container {
             public:
@@ -447,6 +491,7 @@ namespace PluginHost {
 #endif
                 , LinkerPluginPaths()
                 , Observe()
+                , Observability()
 #ifdef HIBERNATE_SUPPORT_ENABLED
                 , Hibernate()
 #endif
@@ -501,6 +546,7 @@ namespace PluginHost {
 #endif
                 Add(_T("linkerpluginpaths"), &LinkerPluginPaths);
                 Add(_T("observe"), &Observe);
+                Add(_T("observability"), &Observability);
 #ifdef HIBERNATE_SUPPORT_ENABLED
                 Add(_T("hibernate"), &Hibernate);
 #endif
@@ -559,6 +605,7 @@ namespace PluginHost {
 #endif
             Core::JSON::ArrayType<Core::JSON::String> LinkerPluginPaths;
             Observables Observe;
+            ObservabilityConfig Observability;
 #ifdef HIBERNATE_SUPPORT_ENABLED
             HibernateConfig Hibernate;
 #endif
@@ -744,6 +791,7 @@ namespace PluginHost {
             , _throttle((_threadPoolCount > 1) ? (_threadPoolCount / 2) : 1)
             , _channelThrottle((_threadPoolCount > 1) ? (_threadPoolCount / 2) : 1)
             , _metadataDiscovery(true)
+            , _observability()
 #ifdef PROCESSCONTAINERS_ENABLED
             , _processContainersConfig()
 #endif
@@ -853,6 +901,26 @@ namespace PluginHost {
                 _throttle = config.Throttle.Value();
                 _channelThrottle = config.ChannelThrottle.Value();
                 _metadataDiscovery = config.MetadataDiscovery.Value();
+                _observability.slowRpcThresholdMs = config.Observability.SlowRpcThresholdMs.Value();
+                _observability.eventBufferCapacity = config.Observability.EventBufferCapacity.Value();
+                _observability.transactionBufferCapacity = config.Observability.TransactionBufferCapacity.Value();
+                _observability.maxMethodsPerPlugin = config.Observability.MaxMethodsPerPlugin.Value();
+                _observability.percentileSampleCapacity = config.Observability.PercentileSampleCapacity.Value();
+                _observability.enableConnectionMetrics = config.Observability.EnableConnectionMetrics.Value();
+                _observability.enableResourceMetrics = config.Observability.EnableResourceMetrics.Value();
+                _observability.resourceSampleIntervalMs = config.Observability.ResourceSampleIntervalMs.Value();
+                _observability.enableCorrelationRecords = config.Observability.EnableCorrelationRecords.Value();
+
+                const string level(config.Observability.Level.Value());
+                if (level == _T("BASIC")) {
+                    _observability.level = Diagnostics::ObservabilityLevel::BASIC;
+                } else if (level == _T("STANDARD")) {
+                    _observability.level = Diagnostics::ObservabilityLevel::STANDARD;
+                } else if (level == _T("DETAILED")) {
+                    _observability.level = Diagnostics::ObservabilityLevel::DETAILED;
+                } else if (level == _T("DEBUG")) {
+                    _observability.level = Diagnostics::ObservabilityLevel::DEBUG;
+                }
                 if( config.Latitude.IsSet() || config.Longitude.IsSet() ) {
                     SYSLOG(Logging::Error, (_T("Support for Latitude and Longitude moved from Thunder configuration to plugin providing ILocation support")));
                 }
@@ -1142,6 +1210,15 @@ namespace PluginHost {
         inline bool MetadataDiscovery() const {
             return (_metadataDiscovery);
         }
+        // PUBLIC_INTERFACE
+        /**
+         * @brief Returns the parsed, bounded diagnostics configuration for host-local initialization.
+         *
+         * @return A copy of the runtime diagnostics configuration. The default level is OFF.
+         */
+        inline const Diagnostics::Configuration& Observability() const {
+            return (_observability);
+        }
         inline const InputInfo& Input() const {
             return(_inputInfo);
         }
@@ -1396,6 +1473,7 @@ namespace PluginHost {
         uint8_t _throttle;
         uint8_t _channelThrottle;
         bool _metadataDiscovery;
+        Diagnostics::Configuration _observability;
 
 #ifdef PROCESSCONTAINERS_ENABLED
         string _processContainersConfig;

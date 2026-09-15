@@ -1,0 +1,106 @@
+# If not stated otherwise in this file or this component's license file the
+# following copyright and licenses apply:
+#
+# Copyright 2020 Metrological
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+if(NOT PYTHON_EXECUTABLE)
+    find_package(Python3 3.5 REQUIRED QUIET)
+endif()
+
+set(PROXYSTUB_GENERATOR "${CMAKE_CURRENT_LIST_DIR}/../ProxyStubGenerator/StubGenerator.py")
+
+function(ProxyStubGenerator)
+    if (NOT PROXYSTUB_GENERATOR)
+        message(FATAL_ERROR "The path PROXYSTUB_GENERATOR is not set!")
+    endif()
+
+    if(NOT EXISTS "${PROXYSTUB_GENERATOR}" OR IS_DIRECTORY "${PROXYSTUB_GENERATOR}")
+        message(FATAL_ERROR "ProxyStubGenerator path ${PROXYSTUB_GENERATOR} invalid.")
+    endif()
+
+    set(optionsArgs SECURE COHERENT TRACES VERBOSE NO_WARNINGS KEEP FORCE_GENERATE)
+    set(oneValueArgs OUTDIR FRAMEWORK_NAMESPACE)
+    set(multiValueArgs INPUT INCLUDE INCLUDE_PATH NAMESPACE)
+
+    cmake_parse_arguments(Argument "${optionsArgs}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
+
+    if(Argument_UNPARSED_ARGUMENTS)
+        message(FATAL_ERROR "Unknown keywords given to ProxyStubGenerator(): \"${Argument_UNPARSED_ARGUMENTS}\"")
+    endif()
+
+    cmake_parse_arguments(Argument "${optionsArgs}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
+
+    set(_execute_command ${PROXYSTUB_GENERATOR})
+
+    if(Argument_SECURE OR OFF)
+        list(APPEND _execute_command  "--secure")
+    endif()
+
+    if(Argument_COHERENT OR OFF)
+        list(APPEND _execute_command  "--coherent")
+    endif()
+
+    if(Argument_NO_WARNINGS)
+        list(APPEND _execute_command  "--no-warnings")
+    endif()
+
+    if(Argument_TRACES)
+        list(APPEND _execute_command  "--traces")
+    endif()
+
+    if(Argument_VERBOSE)
+        list(APPEND _execute_command  "--verbose")
+    endif()
+
+    if(Argument_KEEP)
+        list(APPEND _execute_command  "--keep")
+    endif()
+
+    if(Argument_FORCE_GENERATE)
+        list(APPEND _execute_command  "--force")
+    endif()
+
+    if(Argument_FRAMEWORK_NAMESPACE)
+        list(APPEND _execute_command  "--framework-namespace" "${Argument_FRAMEWORK_NAMESPACE}")
+    endif()
+
+    if(Argument_OUTDIR)
+        file(MAKE_DIRECTORY "${Argument_OUTDIR}")
+        list(APPEND _execute_command  "--outdir" "${Argument_OUTDIR}")
+    endif()
+
+    foreach(_namespace ${Argument_NAMESPACE})
+        list(APPEND _execute_command  "--namespace" "${_namespace}")
+    endforeach(_namespace)
+
+    foreach(_include ${Argument_INCLUDE})
+        list(APPEND _execute_command  "-I" "${_include}")
+    endforeach(_include)
+
+    foreach(_include_path ${Argument_INCLUDE_PATH})
+        list(APPEND _execute_command  "-I" "${_include_path}")
+    endforeach(_include_path)
+
+    foreach(_input ${Argument_INPUT})
+        execute_process(COMMAND ${PYTHON_EXECUTABLE} ${_execute_command} ${_input} RESULT_VARIABLE rv)
+        if(NOT ${rv} EQUAL 0)
+            message(FATAL_ERROR "ProxyStubGenerator generator failed.")
+        endif()
+    endforeach(_input)
+
+
+endfunction(ProxyStubGenerator)
+
+message(VERBOSE "ProxyStubGenerator ready ${PROXYSTUB_GENERATOR}")

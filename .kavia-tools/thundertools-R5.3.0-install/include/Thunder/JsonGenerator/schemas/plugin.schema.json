@@ -1,0 +1,194 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "history": {
+      "description": "Definition of the document history.",
+      "type": "array",
+      "items": {
+        "description": "Definition of a changelog entry.",
+        "type": "object",
+        "properties": {
+          "version": {
+            "description": "Spec version",
+            "type": "string"
+          },
+          "date": {
+            "description": "Spec date.",
+            "type": "string"
+          },
+          "comment": {
+            "description": "Comment on the changes.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "version",
+          "date",
+          "comment"
+        ]
+      }
+    },
+    "info": {
+      "description": "Meta information about the plugin.",
+      "type": "object",
+      "properties": {
+        "title": {
+          "description": "Name of the plugin.",
+          "type": "string"
+        },
+        "callsign": {
+          "description": "Plugin callsign.",
+          "type": "string"
+        },
+        "locator": {
+          "description": "Name of the plugin SO.",
+          "type": "string"
+        },
+        "class": {
+          "description": "Name of the plugin class.",
+          "type": "string"
+        },
+        "version": {
+          "description": "Current version of the plugin API.",
+          "type": "string"
+        },
+        "scope": {
+          "description": "Description of scope of the spec.",
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        "terms": {
+          "description": "Definition of terms used in the spec.",
+          "type": "array",
+          "items": {
+            "description": "Definition of a term.",
+            "type": "object",
+            "properties": {
+              "term": {
+                "description": "Term.",
+                "type": "string"
+              },
+              "comment": {
+                "description": "Comment.",
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "comment"
+            ]
+          }
+        },
+        "acronyms": {
+          "description": "Definition of acronyms/abbreviations used in the spec.",
+          "type": "array",
+          "items": {
+            "description": "Definition of an acronym or abbreviation.",
+            "type": "object",
+            "properties": {
+              "name": {
+                "description": "Acronym.",
+                "type": "string"
+              },
+              "comment": {
+                "description": "Comment.",
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "comment"
+            ]
+          }
+        },
+        "standards": {
+          "description": "Description of standards referred in the documentation.",
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        "description": {
+          "description": "Detailed description of the the plugin.",
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ]
+        }
+      },
+      "required": [
+        "title",
+        "version"
+      ]
+    },
+    "configuration": {
+      "description": "Definitions of configurations.",
+      "type": "object",
+      "patternProperties": {
+        "^.*$": {
+          "description": "Definition of a configuration.",
+          "type": "object",
+          "properties": {
+            "summary": {
+              "description": "Short summary of the configuration.",
+              "type": "string"
+            },
+            "description": {
+              "description": "Longer description of the configuration.",
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              ]
+            },
+            "params": {
+              "description": "JSON-Schema of the configuration properties.",
+              "type": "object",
+              "$ref": "http://json-schema.org/draft-07/schema#"
+            }
+          },
+          "required": [
+            "summary"
+          ]
+        }
+      }
+    },
+    "interface": {
+      "description": "The plugins JSON-RPC interface",
+      "$ref": "interface.schema.json#"
+    }
+  },
+  "required": [
+    "info"
+  ]
+}

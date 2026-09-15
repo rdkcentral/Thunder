@@ -22,6 +22,7 @@
 #include "Module.h"
 #include "SystemInfo.h"
 #include "Config.h"
+#include "DiagnosticsManager.h"
 #include "IRemoteInstantiation.h"
 #include "WarningReportingCategories.h"
 #include "PostMortem.h"
@@ -5960,6 +5961,9 @@ namespace PluginHost {
 
         // Remember the interesting and properly formatted part of the configuration.
         PluginHost::Config& _config;
+
+        // Diagnostics remains host-local and is stopped before dispatch infrastructure is torn down.
+        Diagnostics::DiagnosticsManager _diagnostics;
 
         // Create the server. This is a socket listening for incoming connections. Any connection comming in, will be
         // linked to this server and will forward the received requests to this server. This server will than handl it using a thread pool.

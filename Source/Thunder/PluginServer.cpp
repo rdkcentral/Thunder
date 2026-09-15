@@ -1293,6 +1293,9 @@ namespace PluginHost {
     {
         IFactories::Assign(&_factoriesImplementation);
 
+        // Keep diagnostics host-local and inert unless the parsed configuration enables it.
+        _diagnostics.Initialize(_config.Observability());
+
         // See if the persistent path for our-selves exist, if not we will create it :-)
         Core::File persistentPath(_config.PersistentPath() + PluginOverrideDirectory);
 
@@ -1345,6 +1348,9 @@ namespace PluginHost {
 
     Server::~Server()
     {
+        // Observer calls must be ignored before dispatch infrastructure starts to disappear.
+        _diagnostics.Shutdown();
+
         // The workerpool is about to dissapear!!!!
         Core::WorkerPool::Assign(nullptr);
         IFactories::Assign(nullptr);
