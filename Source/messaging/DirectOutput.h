@@ -36,16 +36,18 @@ namespace Thunder {
             DirectOutput()
                 : _baseTime(Core::Time::Now().Ticks())
                 , _isSyslog(false)
+                , _time(true)
                 , _abbreviate(Core::Messaging::MessageInfo::abbreviate::FULL)
             {
             }
             ~DirectOutput() = default;
 
         public:
-            void Mode(const bool syslog, const Core::Messaging::MessageInfo::abbreviate abbreviated)
+            void Mode(const bool syslog, const Core::Messaging::MessageInfo::abbreviate abbreviated, const bool time)
             {
                 _isSyslog = syslog;
                 _abbreviate = abbreviated;
+                _time = time;
             }
             
             void Output(const Core::Messaging::MessageInfo& messageInfo, const Core::Messaging::IEvent* message) const;
@@ -53,6 +55,7 @@ namespace Thunder {
         private:
             uint64_t _baseTime;
             bool _isSyslog;
+            bool _time;
             Core::Messaging::MessageInfo::abbreviate _abbreviate;
         };
 

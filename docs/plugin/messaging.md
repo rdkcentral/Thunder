@@ -37,6 +37,7 @@ Config()
     , SysLog(false)
     , FileName()
     , Abbreviated(true)
+    , Time(true)
     , MaxExportConnections(Publishers::WebSocketOutput::DefaultMaxConnections)
     , Remote()
 {
@@ -44,17 +45,19 @@ Config()
     Add(_T("syslog"), &SysLog); // (2)
     Add(_T("filepath"), &FileName); // (3)
     Add(_T("abbreviated"), &Abbreviated); // (4)
-    Add(_T("maxexportconnections"), &MaxExportConnections); // (5)
-    Add(_T("remote"), &Remote); // (6)
+    Add(_T("time"), &Time); // (5)
+    Add(_T("maxexportconnections"), &MaxExportConnections); // (6)
+    Add(_T("remote"), &Remote); // (7)
 }
 ```
 
 1. Boolean value indicating if console output is enabled/disabled
 2. Boolean value indicating if syslog output is enabled/disabled
 3. Path to the file in which the messages should be stored. If the path is not empty, the file output is enabled
-4. Reducing the amount of information in the messages coming from the `MessageControl` plugin (e.g. timestamp reduced to the time of day instead of the full date; removing file name, line number and class name for tracing type messages)
-5. Specifying to how many WebSockets can the messages be outputted
-6. An object that should have two properties: `binding` which corresponds to a binding address and `port` on which the UDP connection will be established
+4. Reducing the amount of information in messages from the `MessageControl` plugin, such as using time-only timestamps and omitting tracing source details
+5. Including message timestamps in text outputs, enabled by default
+6. Specifying to how many WebSockets can the messages be outputted
+7. An object that should have two properties: `binding` which corresponds to a binding address and `port` on which the UDP connection will be established
 
 !!! note
 	Even though by default no output is set to either true or false in this config file, the plugin will output the messages to a console or syslog depending on whether Thunder is running in the background or not.
@@ -66,21 +69,18 @@ It is important to note that when the `MessageControl` plugin is not actively ru
 ```c++
 void DirectOutput::Output(const Core::Messaging::MessageInfo& messageInfo, const Core::Messaging::IEvent* message) const
 {
-    ASSERT(message != nullptr);
+    INTERNAL_ASSERT(message != nullptr);
     ASSERT(messageInfo.Type() != Core::Messaging::Metadata::type::INVALID);
-
-    string result = messageInfo.ToString(_abbreviate).c_str() +
-                    Core::Format("%s\n", message->Data().c_str());
 
 #ifndef __WINDOWS__
     if (_isSyslog == true) {
         //use longer messages for syslog
-        syslog(LOG_NOTICE, "%s\n", result.c_str());
+        syslog(LOG_NOTICE, "%s%s\n", messageInfo.ToString(_abbreviate, _time).c_str(), message->Data().c_str());
     }
     else
 #endif
     {
-        std::cout << result << std::endl;
+        std::cout << messageInfo.ToString(_abbreviate, _time).c_str() << message->Data() << std::endl;
     }
 }
 ```
@@ -91,15 +91,36 @@ void DirectOutput::Output(const Core::Messaging::MessageInfo& messageInfo, const
 
 The main config file (` /etc/Thunder/config.json`) can be used to enable/disable the default messaging categories used for logging, tracing and warning reporting.
 
-Messages are split into 3 types: logging, tracing and warning reporting. Each type has a list of categories which can be marked as enabled or disabled. There is also a similar list for tracing when it comes to enabling or disabling certain modules (e.g. plugins). By default, all categories are enabled for logging and warning reporting, but in terms of tracing, if a category or a module is not present in the config, it will be disabled.
+Messages are split into several types. Each type has a list of categories which can be marked as enabled or disabled. There is also a similar list for tracing when it comes to enabling or disabling certain modules (e.g. plugins). By default, all categories are enabled for logging and warning reporting, but in terms of tracing, if a category or a module is not present in the config, it will be disabled.
+
+Build-time defaults can also be supplied with the `MESSAGING_TYPE_DEFAULTS` CMake cache variable. The value is a semicolon-separated list of message type assignments:
+
+```sh
+cmake -DMESSAGING_TYPE_DEFAULTS='TRACING=ON;LOGGING=OFF;TELEMETRY=ON' ..
+```
+
+Supported types are `TRACING`, `LOGGING`, `REPORTING`, `ASSERTION`, and `TELEMETRY`. These entries are applied as type-wide wildcard settings, equivalent to a configuration entry with no module or category. Types omitted from the list retain their existing defaults. Explicit runtime configuration is applied afterward and takes precedence over these build-time defaults. This setting changes enablement defaults only; it does not remove message types, alter their serialized identifiers, or remove their public APIs.
+
+Specific tracing modules and categories can be enabled at startup with the `ENABLE_TRACING_MODULES` and `ENABLE_TRACING_CATEGORIES` CMake cache variables. Both accept space-separated names, for example:
+
+```sh
+cmake -DENABLE_TRACING_MODULES='Plugin_BluetoothControl Plugin_WebServer' \
+    -DENABLE_TRACING_CATEGORIES='Information Warning' ..
+```
+
+The resulting module and category entries are added to the tracing settings with `enabled` set to `true`.
 
 Below is an example of the messaging section in the config:
 
 ```json
 {
 	"messaging": {
+        "output": "handler",
+        "direct": {
+            "abbreviated": false,
+            "time": true
+        },
 		"logging": {
-			"abbreviated": true, // (1)
             "settings":[
                 {
                 	"category": "Notification", // (2)
@@ -120,7 +141,6 @@ Below is an example of the messaging section in the config:
 			]
 		},
 		"reporting": {
-			"abbreviated": true,
 			"settings": [
 				{
 					"category": "TooLongWaitingForLock", // (5)
@@ -144,7 +164,9 @@ Below is an example of the messaging section in the config:
 }
 ```
 
-1. Reducing the amount of information in the messages coming from the `DirectOutput` (e.g. timestamp reduced to the time of day instead of the full date; removing file name, line number and class name for tracing type messages). This setting can be included separately in each message type.
+The global `output` setting controls the default destination for every message type. It can be overridden by a message-type or entry-level `output` setting. The legacy `flush` setting is still accepted for compatibility but is ignored; use `output: "direct"` instead.
+
+1. Routing fallback for all message types. Entry-level `output` overrides the message-type setting, which overrides this global value. The default is `handler` during normal operation and `direct` in DirectOutput mode.
 
 2. Disabling logging messages from the `Notification` category
 
@@ -950,7 +972,7 @@ string Text::Convert(const Core::Messaging::MessageInfo& metadata, const string&
 {
     ASSERT(metadata.Type() != Core::Messaging::Metadata::type::INVALID);
 
-    string output = metadata.ToString(_abbreviated).c_str() +
+    string output = metadata.ToString(_abbreviated, _time) +
                     Core::Format("%s\n", text.c_str());
 
     return (output);
@@ -960,27 +982,27 @@ string Text::Convert(const Core::Messaging::MessageInfo& metadata, const string&
 The final step before the message is sent to the output involves invoking the `Convert()` method. As demonstrated in the above code listing, this method is responsible for constructing a string that combines the metadata, formatted according to the specific message type, with an actual text of the message. The resulting string provides a comprehensive representation of the message, ready for output. For instance, this is how the `ToString()` method looks like for tracing type messages:
 
 ```c++
-string IStore::Tracing::ToString(const abbreviate abbreviate) const
+string IStore::Tracing::ToString(const abbreviate abbreviate, const bool time) const
 {
     string result;
-    const Core::Time now(TimeStamp());
 
     if (abbreviate == abbreviate::ABBREVIATED) {
-        const string time(now.ToTimeOnly(true));
-        result = Core::Format("[%s]:[%s]:[%s]: ",
-                time.c_str(),
-                Module().c_str(),
-                Category().c_str());
+        if (time == true) {
+            const string timestamp(Core::Time(TimeStamp()).ToTimeOnly(true));
+            result = Core::Format("[%s]:[%s]:[%s]: ", timestamp.c_str(), Module().c_str(), Category().c_str());
+        }
+        else {
+            result = Core::Format("[%s]:[%s]: ", Module().c_str(), Category().c_str());
+        }
     }
     else {
-        const string time(now.ToRFC1123(true));
-        result = Core::Format("[%s]:[%s]:[%s:%u]:[%s]:[%s]: ",
-                time.c_str(),
-                Module().c_str(),
-                Core::FileNameOnly(FileName().c_str()),
-                LineNumber(),
-                ClassName().c_str(),
-                Category().c_str());
+        if (time == true) {
+            const string timestamp(Core::Time(TimeStamp()).ToRFC1123(true));
+            result = Core::Format("[%s]:[%s]:[%s:%u]:[%s]:[%s]: ", timestamp.c_str(), Module().c_str(), Core::FileNameOnly(FileName().c_str()), LineNumber(), ClassName().c_str(), Category().c_str());
+        }
+        else {
+            result = Core::Format("[%s:%u]:[%s]:[%s]: ", Core::FileNameOnly(FileName().c_str()), LineNumber(), ClassName().c_str(), Category().c_str());
+        }
     }
 
     return (result);

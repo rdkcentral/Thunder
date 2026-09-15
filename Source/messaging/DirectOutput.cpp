@@ -34,12 +34,12 @@ namespace Thunder {
 #ifndef __WINDOWS__
             if (_isSyslog == true) {
                 //use longer messages for syslog
-                syslog(LOG_NOTICE, "%s%s\n", messageInfo.ToString(_abbreviate).c_str(), message->Data().c_str());
+                syslog(LOG_NOTICE, "%s%s\n", messageInfo.ToString(_abbreviate, _time).c_str(), message->Data().c_str());
             }
             else
 #endif
             {
-                std::cout << messageInfo.ToString(_abbreviate).c_str() << message->Data() << std::endl;
+                std::cout << messageInfo.ToString(_abbreviate, _time).c_str() << message->Data() << std::endl;
             }
         }
     } // namespace Messaging
