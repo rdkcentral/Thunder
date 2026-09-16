@@ -28,6 +28,25 @@
 #include "PostMortem.h"
 #include <atomic>
 
+#ifdef THUNDER_NOTIFICATION_TIMEOUT_INSTRUMENTATION
+// Special, non-upstream diagnostic instrumentation - see com/NotificationTimeoutDebug.h.
+#include <com/IUnknown.h>
+#include <com/NotificationTimeoutDebug.h>
+
+// Records, for the duration of a single notification call, which position in ServiceMap::_notifiers is
+// currently being invoked on this thread, so a resulting IPC timeout (detected generically in
+// com/IUnknown.cpp's UnknownProxy::Invoke) can be correlated back to this exact client.
+#define NOTIFICATION_TIMEOUT_DEBUG_ENTER(POSITION, SINKPTR)                                    \
+    WPEFramework::RPC::NotificationTimeoutDebug::CurrentIteratorIndex = (POSITION);            \
+    WPEFramework::RPC::NotificationTimeoutDebug::CurrentSinkPointer = static_cast<const void*>(SINKPTR)
+#define NOTIFICATION_TIMEOUT_DEBUG_LEAVE()                                                     \
+    WPEFramework::RPC::NotificationTimeoutDebug::CurrentIteratorIndex = static_cast<uint32_t>(~0); \
+    WPEFramework::RPC::NotificationTimeoutDebug::CurrentSinkPointer = nullptr
+#else
+#define NOTIFICATION_TIMEOUT_DEBUG_ENTER(POSITION, SINKPTR)
+#define NOTIFICATION_TIMEOUT_DEBUG_LEAVE()
+#endif
+
 #ifdef PROCESSCONTAINERS_ENABLED
 #include "../processcontainers/ProcessContainer.h"
 #endif
@@ -3148,10 +3167,14 @@ POP_WARNING()
                 _notificationLock.Lock();
 
                 Notifiers::iterator index(_notifiers.begin());
+                uint32_t position = 0;
 
                 while (index != _notifiers.end()) {
+                    NOTIFICATION_TIMEOUT_DEBUG_ENTER(position, *index);
                     (*index)->Activated(callsign, entry);
+                    NOTIFICATION_TIMEOUT_DEBUG_LEAVE();
                     index++;
+                    position++;
                 }
 
                 _notificationLock.Unlock();
@@ -3161,10 +3184,14 @@ POP_WARNING()
                 _notificationLock.Lock();
 
                 Notifiers::iterator index(_notifiers.begin());
+                uint32_t position = 0;
 
                 while (index != _notifiers.end()) {
+                    NOTIFICATION_TIMEOUT_DEBUG_ENTER(position, *index);
                     (*index)->Deactivated(callsign, entry);
+                    NOTIFICATION_TIMEOUT_DEBUG_LEAVE();
                     index++;
+                    position++;
                 }
 
                 _notificationLock.Unlock();
@@ -3191,10 +3218,14 @@ POP_WARNING()
                 _notificationLock.Lock();
 
                 Notifiers::iterator index(_notifiers.begin());
+                uint32_t position = 0;
 
                 while (index != _notifiers.end()) {
+                    NOTIFICATION_TIMEOUT_DEBUG_ENTER(position, *index);
                     (*index)->Unavailable(callsign, entry);
+                    NOTIFICATION_TIMEOUT_DEBUG_LEAVE();
                     index++;
+                    position++;
                 }
 
                 _notificationLock.Unlock();
@@ -3206,7 +3237,12 @@ POP_WARNING()
                 ASSERT(std::find(_notifiers.begin(), _notifiers.end(), sink) == _notifiers.end());
 
                 sink->AddRef();
+                const uint32_t registrationOrder = static_cast<uint32_t>(_notifiers.size());
                 _notifiers.push_back(sink);
+
+#ifdef THUNDER_NOTIFICATION_TIMEOUT_INSTRUMENTATION
+                LogNotificationClientRegistered(sink, registrationOrder);
+#endif
 
                 // Tell this "new" sink all our actived plugins..
                 ServiceContainer::iterator index(_services.begin());
@@ -3563,6 +3599,35 @@ POP_WARNING()
             }
 
         private:
+#ifdef THUNDER_NOTIFICATION_TIMEOUT_INSTRUMENTATION
+            // Special, non-upstream diagnostic instrumentation. Logs the registration order (0-based position
+            // in _notifiers at the moment this client was added), the total client count so far, and - if this
+            // sink is a remote COM-RPC proxy whose channel already captured the announcing PID (see
+            // com/Communicator.h RemoteConnectionMap::Announce) - the client's process ID. This lets the
+            // eventual "IPC timeout at iterator index N" log (com/IUnknown.cpp) be correlated back to a
+            // specific, identifiable client.
+            void LogNotificationClientRegistered(const PluginHost::IPlugin::INotification* sink, const uint32_t registrationOrder)
+            {
+                uint32_t pid = 0;
+
+                const ProxyStub::UnknownProxyType<PluginHost::IPlugin::INotification>* proxy =
+                    dynamic_cast<const ProxyStub::UnknownProxyType<PluginHost::IPlugin::INotification>*>(sink);
+
+                if (proxy != nullptr) {
+                    const ProxyStub::UnknownProxy* administration = proxy->Administration();
+                    if (administration != nullptr) {
+                        const Core::ProxyType<Core::IPCChannel>& channel = administration->Channel();
+                        if (channel.IsValid() == true) {
+                            pid = RPC::NotificationTimeoutDebug::LookupChannelPid(channel->LinkId());
+                        }
+                    }
+                }
+
+                SYSLOG(Logging::Notification, (_T("[NOTIFY-TIMEOUT-DEBUG] IPlugin::INotification client registered: registrationOrder=%u, totalClients=%u, pid=%u, sinkPtr=%p"),
+                    registrationOrder, static_cast<uint32_t>(_notifiers.size()), pid, static_cast<const void*>(sink)));
+            }
+#endif // THUNDER_NOTIFICATION_TIMEOUT_INSTRUMENTATION
+
             void Dangling(const Core::IUnknown* source, const uint32_t interfaceId) {
                 if (interfaceId == RPC::IRemoteConnection::INotification::ID)
                 {

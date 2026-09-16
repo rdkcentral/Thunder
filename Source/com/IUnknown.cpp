@@ -20,8 +20,51 @@
 #include "IUnknown.h"
 #include "Administrator.h"
 #include "Communicator.h"
+#include "NotificationTimeoutDebug.h"
+
+#ifdef THUNDER_NOTIFICATION_TIMEOUT_INSTRUMENTATION
+#include <map>
+#endif
 
 namespace WPEFramework {
+
+#ifdef THUNDER_NOTIFICATION_TIMEOUT_INSTRUMENTATION
+namespace RPC {
+namespace NotificationTimeoutDebug {
+
+    thread_local uint32_t CurrentIteratorIndex = static_cast<uint32_t>(~0);
+    thread_local const void* CurrentSinkPointer = nullptr;
+
+    namespace {
+        Core::CriticalSection _channelPidLock;
+        std::map<uintptr_t, uint32_t> _channelPidMap;
+    }
+
+    void RecordChannelPid(uintptr_t linkId, uint32_t pid)
+    {
+        _channelPidLock.Lock();
+        _channelPidMap[linkId] = pid;
+        _channelPidLock.Unlock();
+    }
+
+    uint32_t LookupChannelPid(uintptr_t linkId)
+    {
+        uint32_t result = 0;
+
+        _channelPidLock.Lock();
+        std::map<uintptr_t, uint32_t>::const_iterator index(_channelPidMap.find(linkId));
+        if (index != _channelPidMap.end()) {
+            result = index->second;
+        }
+        _channelPidLock.Unlock();
+
+        return (result);
+    }
+
+} // namespace NotificationTimeoutDebug
+} // namespace RPC
+#endif // THUNDER_NOTIFICATION_TIMEOUT_INSTRUMENTATION
+
 namespace ProxyStub {
     // -------------------------------------------------------------------------------------------
     // STUB
@@ -110,6 +153,19 @@ namespace ProxyStub {
 
                 if (result == Core::ERROR_TIMEDOUT) {
                     SYSLOG(Logging::Error, (_T("IPC method Invoke failed due to timeout (Interface ID 0x%X, Method ID 0x%X). Execution of code may or may not have happened. Side effects are to be expected after this message"), message->Parameters().InterfaceId(), message->Parameters().MethodId()));
+
+#ifdef THUNDER_NOTIFICATION_TIMEOUT_INSTRUMENTATION
+                    // Special, non-upstream instrumentation: correlate this timeout back to the exact
+                    // IPlugin::INotification client ServiceMap's notification loop was calling when it fired,
+                    // then intentionally crash so a crash report captures process state at this exact point.
+                    if (message->Parameters().InterfaceId() == RPC::ID_PLUGIN_NOTIFICATION) {
+                        SYSLOG(Logging::Error, (_T("[NOTIFY-TIMEOUT-DEBUG] IPC timeout notifying an IPlugin::INotification client: registrationOrder(iteratorIndex)=%u, sinkPtr=%p"),
+                            RPC::NotificationTimeoutDebug::CurrentIteratorIndex, RPC::NotificationTimeoutDebug::CurrentSinkPointer));
+
+                        INTENTIONAL_CRASH("IPC timeout notifying IPlugin::INotification client at registration order/iterator index %u (sink %p)",
+                            RPC::NotificationTimeoutDebug::CurrentIteratorIndex, RPC::NotificationTimeoutDebug::CurrentSinkPointer);
+                    }
+#endif // THUNDER_NOTIFICATION_TIMEOUT_INSTRUMENTATION
                 }
 
                 result |= COM_ERROR;

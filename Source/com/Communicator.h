@@ -30,6 +30,10 @@
 #include "IUnknown.h"
 #include "Ids.h"
 
+#ifdef THUNDER_NOTIFICATION_TIMEOUT_INSTRUMENTATION
+// Special, non-upstream diagnostic instrumentation - see NotificationTimeoutDebug.h.
+#include "NotificationTimeoutDebug.h"
+#endif
 
 #ifdef PROCESSCONTAINERS_ENABLED
 #include <processcontainers/ProcessContainer.h>
@@ -1142,6 +1146,18 @@ namespace RPC {
 
                         channel->Extension().Link(*this, remoteConnection->Id());
                         ASSERT(remoteConnection != nullptr);
+
+#ifdef THUNDER_NOTIFICATION_TIMEOUT_INSTRUMENTATION
+                        // Special, non-upstream instrumentation: record the announcing client's PID (already
+                        // sent on the wire, unchanged 4.x AnnounceMessage/Data::Init::Id() field - no protocol
+                        // change) keyed by this channel's LinkId(), so any code holding a proxy created over
+                        // this same channel (e.g. a registered IPlugin::INotification observer) can cheaply
+                        // recover "which process is on the other end" later, without a fresh IPC round trip.
+                        // Deliberately NOT using Core::IPCChannel::CustomData() here - that slot is already
+                        // used by real Thunder code (Administrator::IsValid, CommunicatorClient::Offer/Revoke)
+                        // for security-sensitive instance validation and must not be repurposed.
+                        RPC::NotificationTimeoutDebug::RecordChannelPid(channel->LinkId(), info.Id());
+#endif // THUNDER_NOTIFICATION_TIMEOUT_INSTRUMENTATION
 
                         // Add ref is done during the creation, no need to take another reference unless we also would release it after
                         // insertion :-)

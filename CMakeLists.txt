@@ -37,9 +37,15 @@ option(LEGACY_CONFIG_GENERATOR
      If switched OFF, plugins need to use the new python-based templates. (*.conf.in)" ON) 
 option(BUILD_PLUGIN_ACTIVATOR
      "Build the standalone plugin activator utility to activate plugins using systemd" OFF) 
+option(THUNDER_NOTIFICATION_TIMEOUT_INSTRUMENTATION
+    "Special, non-upstream diagnostic instrumentation: identifies IPlugin::INotification clients (registration order/count/pid) and intentionally crashes with the offending client's iterator index when an IPC timeout occurs notifying them. Not intended for production/upstream builds." OFF)
 
 if (BUILD_REFERENCE)
     add_definitions (-DBUILD_REFERENCE=${BUILD_REFERENCE})
+endif()
+
+if (THUNDER_NOTIFICATION_TIMEOUT_INSTRUMENTATION)
+    add_definitions (-DTHUNDER_NOTIFICATION_TIMEOUT_INSTRUMENTATION)
 endif()
 
 list(APPEND CMAKE_MODULE_PATH

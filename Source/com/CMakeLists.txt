@@ -43,6 +43,9 @@ set(PUBLIC_HEADERS
     Messages.h
     ProxyStubs.h
     Module.h
+    # NOTE: special, non-upstream diagnostic instrumentation - see file header. Guarded by
+    # THUNDER_NOTIFICATION_TIMEOUT_INSTRUMENTATION, compiles to nothing when that is not defined.
+    NotificationTimeoutDebug.h
 )
 
 target_link_libraries(${TARGET}
