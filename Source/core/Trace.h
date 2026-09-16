@@ -296,6 +296,25 @@ do {                                                                            
         fflush(stderr);                                                     \
     } while(0)
 
+// ---------------------------------------------------------------------------------------------------------------
+// Deliberately and unconditionally terminates the current process (SIGABRT), regardless of build type. Unlike
+// ASSERT/VERIFY (which are compiled out, or non-fatal, in production builds), INTENTIONAL_CRASH always aborts, so
+// it can be used to reliably crash Thunder at an exact, reproducible point (e.g. to force a crash report/core
+// dump that captures live process state at the moment of an otherwise-silent failure). Before aborting, it logs
+// the caller-supplied reason to stderr.
+// Note: PluginHost installs a SIGABRT handler (ExitDaemonHandler, see WPEFramework/PluginHost.cpp) that dumps
+// WorkerPool/callstack metadata (ExitHandler::DumpMetadata) and then re-raises the signal, so the callstack and
+// the platform crash-reporter/core dump still capture the final process state as usual - no need to duplicate
+// that here.
+// ---------------------------------------------------------------------------------------------------------------
+#define INTENTIONAL_CRASH(format, ...)                                                                                         \
+    do {                                                                                                                       \
+        fprintf(stderr, "===== $$ [%d]: INTENTIONAL CRASH [%s:%d]: " format "\n", TRACE_PROCESS_ID, __FILE__, __LINE__, ##__VA_ARGS__); \
+        fflush(stderr);                                                                                                        \
+        ::abort();                                                                                                             \
+    } while (0)
+
+
 
 namespace WPEFramework {
 namespace Core {

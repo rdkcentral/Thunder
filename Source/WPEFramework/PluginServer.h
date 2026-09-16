@@ -2434,6 +2434,7 @@ namespace PluginHost {
         public:
             using ServiceContainer = std::map<string, Core::ProxyType<Service>>;
             using Notifiers = std::vector<PluginHost::IPlugin::INotification*>;
+            using NotifierOrigins = std::unordered_map<const PluginHost::IPlugin::INotification*, string>;
             using Iterator = Core::IteratorMapType<ServiceContainer, Core::ProxyType<Service>, const string&>;
             using RemoteInstantiators = std::unordered_map<string, IRemoteInstantiation*>;
             using CompositPlugins = std::list< Core::Sink<CompositPlugin> >;
@@ -3150,7 +3151,7 @@ POP_WARNING()
                 Notifiers::iterator index(_notifiers.begin());
 
                 while (index != _notifiers.end()) {
-                    SYSLOG(Logging::Notification, (_T("IPlugin::INotification::Activated([%s]) -> sink [%p] %s"), callsign.c_str(), static_cast<const void*>(*index), NotificationSinkOrigin(*index).c_str()));
+                    SYSLOG(Logging::Notification, (_T("IPlugin::INotification::Activated([%s]) -> sink [%p] %s"), callsign.c_str(), static_cast<const void*>(*index), NotifierOrigin(*index).c_str()));
                     (*index)->Activated(callsign, entry);
                     index++;
                 }
@@ -3164,7 +3165,7 @@ POP_WARNING()
                 Notifiers::iterator index(_notifiers.begin());
 
                 while (index != _notifiers.end()) {
-                    SYSLOG(Logging::Notification, (_T("IPlugin::INotification::Deactivated([%s]) -> sink [%p] %s"), callsign.c_str(), static_cast<const void*>(*index), NotificationSinkOrigin(*index).c_str()));
+                    SYSLOG(Logging::Notification, (_T("IPlugin::INotification::Deactivated([%s]) -> sink [%p] %s"), callsign.c_str(), static_cast<const void*>(*index), NotifierOrigin(*index).c_str()));
                     (*index)->Deactivated(callsign, entry);
                     index++;
                 }
@@ -3195,12 +3196,19 @@ POP_WARNING()
                 Notifiers::iterator index(_notifiers.begin());
 
                 while (index != _notifiers.end()) {
-                    SYSLOG(Logging::Notification, (_T("IPlugin::INotification::Unavailable([%s]) -> sink [%p] %s"), callsign.c_str(), static_cast<const void*>(*index), NotificationSinkOrigin(*index).c_str()));
+                    SYSLOG(Logging::Notification, (_T("IPlugin::INotification::Unavailable([%s]) -> sink [%p] %s"), callsign.c_str(), static_cast<const void*>(*index), NotifierOrigin(*index).c_str()));
                     (*index)->Unavailable(callsign, entry);
                     index++;
                 }
 
                 _notificationLock.Unlock();
+            }
+            // Cached lookup of a previously resolved sink origin (caller must hold _notificationLock).
+            const string& NotifierOrigin(const PluginHost::IPlugin::INotification* sink) const
+            {
+                static const string unknown(_T("unknown"));
+                NotifierOrigins::const_iterator index(_notifierOrigins.find(sink));
+                return (index != _notifierOrigins.end() ? index->second : unknown);
             }
             // Best-effort identification of a IPlugin::INotification sink so it can be traced in the logs.
             // Sinks arriving over COM-RPC (client libraries / out-of-process plugins) resolve to the
@@ -3256,6 +3264,7 @@ POP_WARNING()
 
                 sink->AddRef();
                 _notifiers.push_back(sink);
+                _notifierOrigins.emplace(sink, origin);
 
                 SYSLOG(Logging::Notification, (_T("IPlugin::INotification sink [%p] registered - origin: %s (total observers: %u)"), static_cast<const void*>(sink), origin.c_str(), static_cast<uint32_t>(_notifiers.size())));
 
@@ -3286,8 +3295,6 @@ POP_WARNING()
             }
             void Unregister(const PluginHost::IPlugin::INotification* sink)
             {
-                const string origin(NotificationSinkOrigin(sink));
-
                 _notificationLock.Lock();
 
                 Notifiers::iterator index(std::find(_notifiers.begin(), _notifiers.end(), sink));
@@ -3295,8 +3302,10 @@ POP_WARNING()
                 if (index != _notifiers.end()) {
                     (*index)->Release();
                     _notifiers.erase(index);
-                    SYSLOG(Logging::Notification, (_T("IPlugin::INotification sink [%p] unregistered - origin: %s (total observers: %u)"), static_cast<const void*>(sink), origin.c_str(), static_cast<uint32_t>(_notifiers.size())));
+                    SYSLOG(Logging::Notification, (_T("IPlugin::INotification sink [%p] unregistered - origin: %s (total observers: %u)"), static_cast<const void*>(sink), NotifierOrigin(sink).c_str(), static_cast<uint32_t>(_notifiers.size())));
                 }
+
+                _notifierOrigins.erase(sink);
 
                 _notificationLock.Unlock();
             }
@@ -3643,6 +3652,7 @@ POP_WARNING()
                         if (index != _notifiers.end()) {
                             (*index)->Release();
                             _notifiers.erase(index);
+                            _notifierOrigins.erase(base);
                             TRACE(Activity, (_T("Unregistered the dangling: PluginHost::IPlugin::INotification")));
                             SYSLOG(Logging::Notification, (_T("IPlugin::INotification sink [%p] removed (dangling/disconnect) (total observers: %u)"), static_cast<const void*>(base), static_cast<uint32_t>(_notifiers.size())));
                         }
@@ -3756,6 +3766,7 @@ POP_WARNING()
             ServiceContainer _services;
             mutable RemoteInstantiators _instantiators;
             Notifiers _notifiers;
+            NotifierOrigins _notifierOrigins;
             Core::ProxyType<RPC::InvokeServer> _engine;
             CommunicatorServer _processAdministrator;
             Core::Sink<SubSystems> _subSystems;

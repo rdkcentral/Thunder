@@ -110,6 +110,9 @@ namespace ProxyStub {
 
                 if (result == Core::ERROR_TIMEDOUT) {
                     SYSLOG(Logging::Error, (_T("IPC method Invoke failed due to timeout (Interface ID 0x%X, Method ID 0x%X). Execution of code may or may not have happened. Side effects are to be expected after this message"), message->Parameters().InterfaceId(), message->Parameters().MethodId()));
+                    if (message->Parameters().InterfaceId() == RPC::ID_PLUGIN_NOTIFICATION) {
+                        INTENTIONAL_CRASH("IPC timeout notifying IPlugin::INotification");
+                    }
                 }
 
                 result |= COM_ERROR;
