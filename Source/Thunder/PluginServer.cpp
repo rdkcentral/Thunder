@@ -1249,6 +1249,12 @@ namespace PluginHost {
         // Lets assign a workerpool, we created it...
         Core::WorkerPool::Assign(&_dispatcher);
 
+        Override overrides(_config, _services, configuration.PersistentPath() + PluginOverrideDirectory);
+        const uint32_t hostResult = overrides.LoadPluginHost();
+        if (hostResult != Core::ERROR_NONE) {
+            SYSLOG(Logging::Startup, (_T("Loading PluginHost overrides failed. Error [%u]"), hostResult));
+        }
+
         Plugin::Config metaDataConfig;
 
         metaDataConfig.ClassName = Core::ClassNameOnly(typeid(Plugin::Controller).name()).Text();
@@ -1267,7 +1273,10 @@ namespace PluginHost {
         }
 
         // Get the configuration from the persistent location.
-        Load();
+        const uint32_t pluginResult = overrides.Load();
+        if (pluginResult != Core::ERROR_NONE) {
+            SYSLOG(Logging::Startup, (_T("Loading plugin overrides failed. Error [%u]"), pluginResult));
+        }
 
         // Create input handle
         _inputHandler.Initialize(
