@@ -4,6 +4,7 @@ option(WORKERPOOL_TEST "WorkerPool stress test" OFF)
 option(FILE_UNLINK_TEST "File unlink test" OFF)
 option(REDIRECT_TEST "Test stream redirection" OFF)
 option(MESSAGEBUFFER_TEST "Test message buffer" OFF)
+option(DIRECTOUTPUT_TEST "Benchmark direct message output" OFF)
 option(UNRAVELLER "reveal thread details" OFF)
 option(STREAMJSON_GARBAGE_TEST "Reproducer for issue #1963: infinite loop on garbage data in StreamJSONType::ReceiveData()" OFF)
 option(ENABLE_TEST_RUNTIME "Build Thunder test support library for plugin integration tests" OFF)
@@ -34,6 +35,10 @@ endif()
 
 if(MESSAGEBUFFER_TEST AND MESSAGING)
     add_subdirectory(message-buffer)
+endif()
+
+if(DIRECTOUTPUT_TEST AND MESSAGING)
+    add_subdirectory(direct-output)
 endif()
 
 if(CYCLICBUFFER_TEST)
