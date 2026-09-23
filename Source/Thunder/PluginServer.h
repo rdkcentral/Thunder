@@ -1860,15 +1860,17 @@ namespace PluginHost {
 
                 Plugin()
                     : Core::JSON::Container()
-                    #ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+                    , Version()
+#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
                     , Configuration()
-                #else
+#else
                     , Configuration(_T("{}"), false)
-                #endif
+#endif
                     , SystemRootPath()
                     , StartMode()
                     , Resumed()
                 {
+                    Add(_T("$version"), &Version);
                     Add(_T("configuration"), &Configuration);
                     Add(_T("systemrootpath"), &SystemRootPath);
                     Add(_T("startmode"), &StartMode);
@@ -1876,6 +1878,7 @@ namespace PluginHost {
                 }
                 Plugin(const string& config, const string& systemRootPath, const PluginHost::IShell::startmode value, const bool resumed)
                     : Core::JSON::Container()
+                    , Version()
 #ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
                     , Configuration(config)
 #else
@@ -1885,6 +1888,7 @@ namespace PluginHost {
                     , StartMode(static_cast<Thunder::Plugin::Configuration::startmode>(value))
                     , Resumed(resumed)
                 {
+                    Add(_T("$version"), &Version);
                     Add(_T("configuration"), &Configuration);
                     Add(_T("systemrootpath"), &SystemRootPath);
                     Add(_T("startmode"), &StartMode);
@@ -1892,11 +1896,13 @@ namespace PluginHost {
                 }
                 Plugin(Plugin const& copy)
                     : Core::JSON::Container()
+                    , Version(copy.Version)
                     , Configuration(copy.Configuration)
                     , SystemRootPath(copy.SystemRootPath)
                     , StartMode(copy.StartMode)
                     , Resumed(copy.Resumed)
                 {
+                    Add(_T("$version"), &Version);
                     Add(_T("configuration"), &Configuration);
                     Add(_T("systemrootpath"), &SystemRootPath);
                     Add(_T("startmode"), &StartMode);
@@ -1904,11 +1910,13 @@ namespace PluginHost {
                 }
                 Plugin(Plugin&& move)
                     : Core::JSON::Container()
+                    , Version(std::move(move.Version))
                     , Configuration(std::move(move.Configuration))
                     , SystemRootPath(std::move(move.SystemRootPath))
                     , StartMode(std::move(move.StartMode))
                     , Resumed(std::move(move.Resumed))
                 {
+                    Add(_T("$version"), &Version);
                     Add(_T("configuration"), &Configuration);
                     Add(_T("systemrootpath"), &SystemRootPath);
                     Add(_T("startmode"), &StartMode);
@@ -1918,6 +1926,7 @@ namespace PluginHost {
                 ~Plugin() override = default;
 
             public:
+                Core::JSON::String Version;
 #ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
                 Core::JSON::Variant Configuration;
 #else
@@ -1979,9 +1988,11 @@ namespace PluginHost {
                         if (storage.Open(true) == true) {
 
                             indexCallsigns->second.Clear();
-                            indexCallsigns->second.IElement::FromFile(storage);
+                            const bool valid = ((indexCallsigns->second.IElement::FromFile(storage) == true) &&
+                                (indexCallsigns->second.Version.IsSet() == true) &&
+                                (indexCallsigns->second.Version.Value() == CurrentVersion()));
 
-                            if (indexCallsigns->second.IsSet() == true) {
+                            if (valid == true) {
                                 if (indexCallsigns->second.Configuration.IsSet() == true) {
                                     indexService->ConfigLine(indexCallsigns->second.Configuration.Value());
                                 }
@@ -1996,6 +2007,13 @@ namespace PluginHost {
                                 }
                             }
                             storage.Close();
+
+                            if (valid == false) {
+                                indexCallsigns->second.Clear();
+                                if ((storage.Destroy() == false) && (result == Core::ERROR_NONE)) {
+                                    result = storage.ErrorCode();
+                                }
+                            }
                         }
                         else if (result == Core::ERROR_NONE) {
                             result = storage.ErrorCode();
@@ -2150,6 +2168,7 @@ namespace PluginHost {
                         Callsigns::iterator it = RegisterService(callsign);
                         ASSERT(it != _callsigns.end());
 
+                        it->second.Version = CurrentVersion();
                         it->second.Configuration = configValue;
                         it->second.SystemRootPath = shell.SystemRootPath();
                         it->second.StartMode = static_cast<Thunder::Plugin::Configuration::startmode>(shell.StartMode());
