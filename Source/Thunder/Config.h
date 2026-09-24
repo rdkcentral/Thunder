@@ -20,21 +20,35 @@
 #pragma once
 
 #include "Module.h"
-
+#include <common/ConfigurationEnums.h>
 
 namespace Thunder {
 
 namespace PluginHost {
+
+    enum class PostMortemDataSink : uint8_t {
+        DISABLED = 0,
+        FILE     = 1,
+        LOG      = 2,
+        ALL      = 3
+    };
+
     /**
      * IMPORTANT: If updating this class to add/remove/modify configuration options, ensure
      * the documentation in docs/introduction/config.md is updated to reflect the changes!
     */
     class EXTERNAL Config {
+    public:
+        struct Attributes {
+            string Prefix;
+            uint16_t IdleTime = 180;
+        };
+
     private:
         class Substituter {
         private:
             static constexpr TCHAR Delimeter = _T('%');
-            typedef string (*ValueHandler)(const Config& config, const Plugin::Config* info);
+            typedef const string (*ValueHandler)(const Config& config, const Plugin::Config* info);
             typedef std::map<string, ValueHandler> VariableMap;
 
         public:
@@ -45,22 +59,25 @@ namespace PluginHost {
             Substituter(const Config& parent)
                 : _parent(parent)
             {
-                _variables.insert(std::make_pair("datapath", [](const Config& config, const Plugin::Config* info) { 
+                _variables.insert(std::make_pair("datapath", [](const Config& config, const Plugin::Config* info) -> const string { 
                     return (info == nullptr ? config.DataPath() : info->DataPath(config.DataPath()));
                 }));
-                _variables.insert(std::make_pair("persistentpath", [](const Config& config, const Plugin::Config* info) { 
+                _variables.insert(std::make_pair("persistentpath", [](const Config& config, const Plugin::Config* info) -> const string { 
                     return (info == nullptr ? config.PersistentPath() : info->PersistentPath(config.PersistentPath()));
                 }));
-                _variables.insert(std::make_pair("systempath", [](const Config& config, const Plugin::Config*) {
+                _variables.insert(std::make_pair("systempath", [](const Config& config, const Plugin::Config*) -> const string {
                     return (config.SystemPath());
                 }));
-                _variables.insert(std::make_pair("volatilepath", [](const Config& config, const Plugin::Config* info) {
+                _variables.insert(std::make_pair("extensionpath", [](const Config& config, const Plugin::Config*) -> const string {
+                    return (config.ExtensionPath());
+                }));
+                _variables.insert(std::make_pair("volatilepath", [](const Config& config, const Plugin::Config* info) -> const string {
                     return (info == nullptr ? config.VolatilePath() : info->VolatilePath(config.VolatilePath()));
                 }));
-                _variables.insert(std::make_pair("proxystubpath", [](const Config& config, const Plugin::Config*) {
+                _variables.insert(std::make_pair("proxystubpath", [](const Config& config, const Plugin::Config*) -> const string {
                     return (config.ProxyStubPath());
                 }));
-                _variables.insert(std::make_pair("postmortempath", [](const Config& config, const Plugin::Config*) {
+                _variables.insert(std::make_pair("postmortempath", [](const Config& config, const Plugin::Config*) -> const string {
                     return (config.PostMortemPath());
                 }));
             }
@@ -127,6 +144,7 @@ namespace PluginHost {
                     , StackSize(0)
                     , LowPriorityThreadCount(THREADPOOL_COUNT > 1 ? THREADPOOL_COUNT - 1 : 1)
                     , MediumPriorityThreadCount(THREADPOOL_COUNT > 1 ? THREADPOOL_COUNT - 1 : 1)
+                    , QueueSize(64 * THREADPOOL_COUNT)
                     , Umask(1)
                 {
                     Add(_T("user"), &User);
@@ -138,6 +156,7 @@ namespace PluginHost {
                     Add(_T("stacksize"), &StackSize);
                     Add(_T("lowprioritythreadcount"), &LowPriorityThreadCount);
                     Add(_T("mediumprioritythreadcount"), &MediumPriorityThreadCount);
+                    Add(_T("queuesize"), &QueueSize);
                     Add(_T("umask"), &Umask);
                 }
                 ProcessSet(const ProcessSet& copy)
@@ -151,6 +170,7 @@ namespace PluginHost {
                     , StackSize(copy.StackSize)
                     , LowPriorityThreadCount(copy.LowPriorityThreadCount)
                     , MediumPriorityThreadCount(copy.MediumPriorityThreadCount)
+                    , QueueSize(copy.QueueSize)
                     , Umask(copy.Umask)
                 {
                     Add(_T("user"), &User);
@@ -162,6 +182,7 @@ namespace PluginHost {
                     Add(_T("stacksize"), &StackSize);
                     Add(_T("lowprioritythreadcount"), &LowPriorityThreadCount);
                     Add(_T("mediumprioritythreadcount"), &MediumPriorityThreadCount);
+                    Add(_T("queuesize"), &QueueSize);
                     Add(_T("umask"), &Umask);
                 }
                 ProcessSet(ProcessSet&& move) noexcept
@@ -175,6 +196,7 @@ namespace PluginHost {
                     , StackSize(std::move(move.StackSize))
                     , LowPriorityThreadCount(std::move(move.LowPriorityThreadCount))
                     , MediumPriorityThreadCount(std::move(move.MediumPriorityThreadCount))
+                    , QueueSize(std::move(move.QueueSize))
                     , Umask(std::move(move.Umask))
                 {
                     Add(_T("user"), &User);
@@ -186,6 +208,7 @@ namespace PluginHost {
                     Add(_T("stacksize"), &StackSize);
                     Add(_T("lowprioritythreadcount"), &LowPriorityThreadCount);
                     Add(_T("mediumprioritythreadcount"), &MediumPriorityThreadCount);
+                    Add(_T("queuesize"), &QueueSize);
                     Add(_T("umask"), &Umask);
                 }
 
@@ -202,6 +225,7 @@ namespace PluginHost {
                     StackSize = RHS.StackSize;
                     LowPriorityThreadCount = RHS.LowPriorityThreadCount;
                     MediumPriorityThreadCount = RHS.MediumPriorityThreadCount;
+                    QueueSize = RHS.QueueSize;
                     Umask = RHS.Umask;
 
                     return (*this);
@@ -219,6 +243,7 @@ namespace PluginHost {
                         StackSize = std::move(move.StackSize);
                         LowPriorityThreadCount = std::move(move.LowPriorityThreadCount);
                         MediumPriorityThreadCount = std::move(move.MediumPriorityThreadCount);
+                        QueueSize = std::move(move.QueueSize);
                         Umask = std::move(move.Umask);
                     }
                     return (*this);
@@ -233,6 +258,7 @@ namespace PluginHost {
                 Core::JSON::DecUInt32 StackSize;
                 Core::JSON::DecUInt8 LowPriorityThreadCount;
                 Core::JSON::DecUInt8 MediumPriorityThreadCount;
+                Core::JSON::DecUInt32 QueueSize;
                 Core::JSON::DecUInt16 Umask;
             };
 
@@ -384,6 +410,7 @@ namespace PluginHost {
                 , PersistentPath()
                 , DataPath()
                 , SystemPath()
+                , ExtensionPath()
 #ifdef __WINDOWS__
                 , VolatilePath(_T("c:/temp"))
 #else
@@ -407,6 +434,10 @@ namespace PluginHost {
                 , DefaultMessagingCategories(false)
                 , Process()
                 , Input()
+                , DisablePluginAutoActivation(false)
+                , AuthorizedExtensions()
+                , ExtensionConfigs()
+                , Extensions()
                 , Configs()
                 , EthernetCard()
                 , Environments()
@@ -438,9 +469,12 @@ namespace PluginHost {
                 Add(_T("persistentpath"), &PersistentPath);
                 Add(_T("datapath"), &DataPath);
                 Add(_T("systempath"), &SystemPath);
+                Add(_T("extensionpath"), &ExtensionPath);
                 Add(_T("volatilepath"), &VolatilePath);
                 Add(_T("proxystubpath"), &ProxyStubPath);
                 Add(_T("postmortempath"), &PostMortemPath);
+                Add(_T("postmortemworkerpoolsink"), &PostMortemWorkerPoolSink);
+                Add(_T("postmortemcallstacksink"), &PostMortemCallstackSink);
                 Add(_T("communicator"), &Communicator);
                 Add(_T("signature"), &Signature);
                 Add(_T("idletime"), &IdleTime);
@@ -453,6 +487,10 @@ namespace PluginHost {
                 Add(_T("redirect"), &Redirect);
                 Add(_T("process"), &Process);
                 Add(_T("input"), &Input);
+                Add(_T("disablepluginautoactivation"), &DisablePluginAutoActivation);
+                Add(_T("authorizedextensions"), &AuthorizedExtensions);
+                Add(_T("extensionconfigs"), &ExtensionConfigs);
+                Add(_T("extensions"), &Extensions);
                 Add(_T("plugins"), &Plugins);
                 Add(_T("configs"), &Configs);
                 Add(_T("ethernetcard"), &EthernetCard);
@@ -489,9 +527,12 @@ namespace PluginHost {
             Core::JSON::String PersistentPath;
             Core::JSON::String DataPath;
             Core::JSON::String SystemPath;
+            Core::JSON::String ExtensionPath;
             Core::JSON::String VolatilePath;
             Core::JSON::String ProxyStubPath;
             Core::JSON::String PostMortemPath;
+            Core::JSON::EnumType<PostMortemDataSink> PostMortemWorkerPoolSink;
+            Core::JSON::EnumType<PostMortemDataSink> PostMortemCallstackSink;
             Core::JSON::String Communicator;
             Core::JSON::String Redirect;
             Core::JSON::String Signature;
@@ -504,11 +545,15 @@ namespace PluginHost {
             Core::JSON::String DefaultMessagingCategories; 
             ProcessSet Process;
             InputConfig Input;
+            Core::JSON::Boolean DisablePluginAutoActivation;
+            Core::JSON::ArrayType<Core::JSON::String> AuthorizedExtensions;
+            Core::JSON::String ExtensionConfigs;
+            Core::JSON::ArrayType<Plugin::Config> Extensions;
             Core::JSON::String Configs;
             Core::JSON::String EthernetCard;
             Core::JSON::ArrayType<Plugin::Config> Plugins;
             Core::JSON::ArrayType<Plugin::Config::Environment> Environments;
-            Core::JSON::ArrayType<Core::JSON::EnumType<PluginHost::IShell::reason>> ExitReasons;
+            Core::JSON::ArrayType<Core::JSON::EnumType<Plugin::Configuration::reason>> ExitReasons;
             Core::JSON::DecSInt32 Latitude;
             Core::JSON::DecSInt32 Longitude;
             Core::JSON::Boolean DelegatedReleases;
@@ -636,6 +681,13 @@ namespace PluginHost {
         };
 
     public:
+        // until we have c++17 inline var support...
+        static const TCHAR* AllExtensionsAuthorized() {
+            static constexpr TCHAR allExtensionsAuthorized[] = _T("*");
+            return allExtensionsAuthorized;
+        }
+
+    public:
         Config() = delete;
         Config(const Config&) = delete;
         Config& operator=(const Config&) = delete;
@@ -643,7 +695,8 @@ namespace PluginHost {
         PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
         Config(Core::File& file, const bool background, Core::OptionalType<Core::JSON::Error>& error)
             : _background(background)
-            , _prefix()
+            , _attributes()
+            , _pendingAttributes()
             , _webPrefix()
             , _JSONRPCPrefix()
             , _volatilePath()
@@ -652,10 +705,17 @@ namespace PluginHost {
             , _hashKey()
             , _appPath()
             , _systemPath()
+            , _extensionPath()
+            , _disablePluginAutoActivation()
+            , _authorizedExtensions()
+            , _extensionsPath()
+            , _extensions()
             , _configsPath()
             , _proxyStubPath()
             , _observableProxyStubPath()
             , _postMortemPath()
+            , _workerPoolSink(static_cast<PostMortemDataSink>(THUNDER_POSTMORTEM_WORKERPOOL_SINK_DEFAULT))
+            , _callstackSink(static_cast<PostMortemDataSink>(THUNDER_POSTMORTEM_CALLSTACK_SINK_DEFAULT))
             , _pluginConfigPath()
             , _accessor()
             , _communicator()
@@ -672,7 +732,6 @@ namespace PluginHost {
             , _portNumber(0)
             , _IPV6()
             , _legacyInitialize(false)
-            , _idleTime(180)
             , _softKillCheckWaitTime(3)
             , _hardKillCheckWaitTime(10)
             , _outOfProcessWaitTime(3000)
@@ -680,6 +739,7 @@ namespace PluginHost {
             , _stackSize(0)
             , _lowPriorityThreadCount(THREADPOOL_COUNT > 1 ? THREADPOOL_COUNT - 1 : 1)
             , _mediumPriorityThreadCount(THREADPOOL_COUNT > 1 ? THREADPOOL_COUNT - 1 : 1)
+            , _queueSize(64 * THREADPOOL_COUNT)
             , _inputInfo()
             , _processInfo()
             , _plugins()
@@ -706,8 +766,8 @@ namespace PluginHost {
             config.IElement::FromFile(file, error);
 
             if (error.IsSet() == false) {
-                _prefix = config.Prefix.Value();
-                _webPrefix = '/' + _prefix;
+                _attributes.Prefix = config.Prefix.Value();
+                _webPrefix = '/' + _attributes.Prefix;
                 _JSONRPCPrefix = '/' + config.JSONRPC.Value();
 #ifdef PROCESSCONTAINERS_ENABLED
                 _processContainersConfig = config.ProcessContainers.Value();
@@ -722,6 +782,45 @@ namespace PluginHost {
                 _persistentPath = Core::Directory::Normalize(config.PersistentPath.Value());
                 _dataPath = Core::Directory::Normalize(config.DataPath.Value());
                 _systemPath = Core::Directory::Normalize(config.SystemPath.Value());
+                _extensionPath = Core::Directory::Normalize(config.ExtensionPath.Value());
+                _disablePluginAutoActivation = config.DisablePluginAutoActivation.Value();
+
+                if ((config.AuthorizedExtensions.IsSet() == true) && (config.AuthorizedExtensions.Length() > 0)) {
+                    Core::JSON::ArrayType<Core::JSON::String>::Iterator index(config.AuthorizedExtensions.Elements());
+                    _authorizedExtensions.reserve(config.AuthorizedExtensions.Length());
+
+                    uint32_t pos = 0; // no way to find out with the arrayiterator if I'm at the last pos, using Reset for positioning too expensive and I don't want to change Array iterator now
+                    while (index.Next() == true) {
+                        if (index.Current().Value() == AllExtensionsAuthorized()) {
+                            if (pos != (index.Count()-1)) {
+                                SYSLOG(Logging::Startup, (_T("All Extensions Authorized indication found at position other then last, ignored")));
+                            }
+                            else {
+                                _authorizedExtensions.push_back(index.Current().Value());
+                            }
+                        } else {
+                            _authorizedExtensions.push_back(index.Current().Value());
+                        }
+                        ++pos;
+                    }
+                }
+
+                _extensionsPath = Core::Directory::Normalize(config.ExtensionConfigs.Value());
+
+
+                if ((config.Extensions.IsSet() == true) && (config.Extensions.Length() > 0)) {
+                    Core::JSON::ArrayType<Thunder::Plugin::Config>::Iterator index(config.Extensions.Elements());
+
+                    while (index.Next() == true) {
+
+                        if (ExtensionAuthorized(index.Current().Callsign.Value()) == true) {
+                            _extensions.Add(index.Current());
+                        } else {
+                            SYSLOG(Logging::Startup, (_T("Extension %s is not authorized to be loaded, ignoring"), index.Current().Callsign.Value().c_str()));
+                        }
+                    }
+                }
+
                 _configsPath = Core::Directory::Normalize(config.Configs.Value());
                 _proxyStubPath = Core::Directory::Normalize(config.ProxyStubPath.Value());
                 if (config.Observe.IsSet() == true) {
@@ -729,11 +828,17 @@ namespace PluginHost {
                     _pluginConfigPath = Core::Directory::Normalize(config.Observe.PluginConfigPath.Value());
                 }
                 _postMortemPath = Core::Directory::Normalize(config.PostMortemPath.Value());
+                _workerPoolSink = config.PostMortemWorkerPoolSink.IsSet()
+                    ? config.PostMortemWorkerPoolSink.Value()
+                    : static_cast<PostMortemDataSink>(THUNDER_POSTMORTEM_WORKERPOOL_SINK_DEFAULT);
+                _callstackSink = config.PostMortemCallstackSink.IsSet()
+                    ? config.PostMortemCallstackSink.Value()
+                    : static_cast<PostMortemDataSink>(THUNDER_POSTMORTEM_CALLSTACK_SINK_DEFAULT);
                 _appPath = Core::Directory::Normalize(Core::File::PathName(Core::ProcessInfo().Executable()));
                 _hashKey = config.Signature.Value();
                 _communicator = Core::NodeId(config.Communicator.Value().c_str());
                 _redirect = config.Redirect.Value();
-                _idleTime = config.IdleTime.Value();
+                _attributes.IdleTime = config.IdleTime.Value();
                 _softKillCheckWaitTime = config.SoftKillCheckWaitTime.Value();
                 _hardKillCheckWaitTime = config.HardKillCheckWaitTime.Value();
                 _outOfProcessWaitTime = config.OutOfProcessWaitTime.Value() * 1000; // Move to milliseconds
@@ -744,8 +849,9 @@ namespace PluginHost {
                 _portNumber = config.Port.Value();
                 _threadPoolCount = config.Process.IsSet() ? config.Process.ThreadPoolCount.Value() : 4;
                 _stackSize = config.Process.IsSet() ? config.Process.StackSize.Value() : 0;
-                _lowPriorityThreadCount = config.Process.IsSet() ? config.Process.LowPriorityThreadCount.Value() : (_threadPoolCount > 1 ? (_threadPoolCount - 1) : 1);
-                _mediumPriorityThreadCount = config.Process.IsSet() ? config.Process.MediumPriorityThreadCount.Value() : (_threadPoolCount > 1 ? (_threadPoolCount - 1) : 1);
+                _lowPriorityThreadCount = (config.Process.IsSet() && config.Process.LowPriorityThreadCount.IsSet()) ? config.Process.LowPriorityThreadCount.Value() : (_threadPoolCount > 1 ? (_threadPoolCount - 1) : 1);
+                _mediumPriorityThreadCount = (config.Process.IsSet() && config.Process.MediumPriorityThreadCount.IsSet()) ? config.Process.MediumPriorityThreadCount.Value() : (_threadPoolCount > 1 ? (_threadPoolCount - 1) : 1);
+                _queueSize = (config.Process.IsSet() && config.Process.QueueSize.IsSet()) ? config.Process.QueueSize.Value() : (64 * _threadPoolCount);
                 _inputInfo.Set(config.Input);
                 _processInfo.Set(config.Process);
                 _ethernetCard = config.EthernetCard.Value();
@@ -770,10 +876,10 @@ namespace PluginHost {
                 }
 
                 if ((config.ExitReasons.IsSet() == true) && (config.ExitReasons.Length() > 0)) {
-                    Core::JSON::ArrayType<Core::JSON::EnumType<PluginHost::IShell::reason>>::Iterator index(config.ExitReasons.Elements());
+                    Core::JSON::ArrayType<Core::JSON::EnumType<Plugin::Configuration::reason>>::Iterator index(config.ExitReasons.Elements());
 
                     while (index.Next() == true) {
-                        _reasons.push_back(index.Current().Value());
+                        _reasons.push_back(static_cast<PluginHost::IShell::reason>(index.Current().Value()));
                     }
                 }
 
@@ -793,13 +899,28 @@ namespace PluginHost {
                 UpdateBinder();
 
                 // Get all in the config configure Plugins..
-                _plugins = config.Plugins;
+                if ((config.Plugins.IsSet() == true) && (config.Plugins.Length() > 0)) {
+                    Core::JSON::ArrayType<Thunder::Plugin::Config>::Iterator index(config.Plugins.Elements());
+
+                    while (index.Next() == true) {
+                        Core::JSON::ArrayType<Thunder::Plugin::Config>::Iterator  index2 = Core::JSON::ArrayType<Plugin::Config>::Iterator(_extensions.Elements());
+                        while ((index2.Next() == true) && (index2.Current().Callsign.Value() != index.Current().Callsign.Value())) /* INTENTIONALLY */
+                            ;
+                        if (index2.IsValid() == false) {
+                            _plugins.Add(index.Current());
+                        } else {
+                            SYSLOG(Logging::Startup, (_T("Plugin %s already exists as Extension, ignoring"), index.Current().Callsign.Value().c_str()));
+                        }
+                    }
+                }
 
                 Core::JSON::ArrayType<Core::JSON::String>::Iterator itr(config.LinkerPluginPaths.Elements());
                 while (itr.Next() == true) {
                     _linkerPluginPaths.push_back(itr.Current().Value());
                 }
             }
+
+            _pendingAttributes = _attributes;
         }
         POP_WARNING()
         ~Config()
@@ -814,12 +935,11 @@ namespace PluginHost {
         inline const string& Prefix() const
         {
             Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
-            return (_prefix);
+            return (_attributes.Prefix);
         }
         inline void SetPrefix(const string& newValue) {
             Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
-            _prefix = newValue;
-            _webPrefix = '/' + _prefix;
+            _pendingAttributes.Prefix = newValue;
         }
         inline const string& Model() const
         {
@@ -900,6 +1020,36 @@ namespace PluginHost {
         {
             return (_systemPath);
         }
+        inline const string& ExtensionPath() const
+        {
+            return (_extensionPath);
+        }
+        inline bool DisablePluginAutoActivation() const
+        {
+            return (_disablePluginAutoActivation);
+        }
+        inline const std::vector<std::string>& AuthorizedExtensions() const
+        {
+            return (_authorizedExtensions);
+        }
+        inline const string& ExtensionsPath() const
+        {
+            return (_extensionsPath);
+        }
+        const Plugin::Config* Extension(const string& name) const
+        {
+            Core::JSON::ArrayType<Plugin::Config>::ConstIterator index(_extensions.Elements());
+
+            // Check if there is already an extension config with this callsign
+            while ((index.Next() == true) && (index.Current().Callsign.Value() != name)) /* INTENTIONALLY */
+                ;
+
+            return (index.IsValid() ? &(index.Current()) : nullptr);
+        }
+        Core::JSON::ArrayType<Plugin::Config>::Iterator Extensions()
+        {
+            return (_extensions.Elements());
+        }
         inline const string& ConfigsPath() const
         {
             return (_configsPath);
@@ -915,6 +1065,14 @@ namespace PluginHost {
         inline const string& PostMortemPath() const
         {
             return (_postMortemPath);
+        }
+        inline PostMortemDataSink PostMortemWorkerPoolSink() const
+        {
+            return (_workerPoolSink);
+        }
+        inline PostMortemDataSink PostMortemCallstackSink() const
+        {
+            return (_callstackSink);
         }
         inline bool PostMortemAllowed(PluginHost::IShell::reason why) const
         {
@@ -939,11 +1097,25 @@ namespace PluginHost {
         }
         inline uint16_t IdleTime() const {
             Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
-            return (_idleTime);
+            return (_attributes.IdleTime);
         }
         inline void SetIdleTime(const uint16_t newValue)  {
             Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
-            _idleTime = newValue;
+            _pendingAttributes.IdleTime = newValue;
+        }
+        inline void LoadAttributes(const Attributes& attributes) {
+            Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
+            _attributes = attributes;
+            _pendingAttributes = attributes;
+            _webPrefix = '/' + _attributes.Prefix;
+        }
+        inline Attributes PendingAttributes() const {
+            Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
+            return (_pendingAttributes);
+        }
+        inline Attributes ActiveAttributes() const {
+            Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
+            return (_attributes);
         }
         inline uint8_t SoftKillCheckWaitTime() const {
             return _softKillCheckWaitTime;
@@ -971,6 +1143,10 @@ namespace PluginHost {
         inline uint8_t MediumPriorityThreadCount() const
         {
             return (_mediumPriorityThreadCount);
+        }
+        inline uint32_t QueueSize() const
+        {
+            return (_queueSize);
         }
         inline string EthernetCard() const {
             return _ethernetCard;
@@ -1011,20 +1187,66 @@ namespace PluginHost {
         Core::JSON::ArrayType<Plugin::Config>::Iterator Plugins() {
             return (_plugins.Elements());
         }
-        bool Add(const Plugin::Config& plugin) {
+        bool Add(const Plugin::Config& plugin, bool thunderextension) {
 
             bool added = false;
             const string& name (plugin.Callsign.Value());
 
-            Core::JSON::ArrayType<Plugin::Config>::Iterator index(_plugins.Elements());
+            Core::JSON::ArrayType<Plugin::Config>::Iterator index;
 
-            // Check if there is already a plugin config with this callsign
-            while ((index.Next() == true) && (index.Current().Callsign.Value() != name)) /* INTENTIONALLY */ ;
+            bool addingallowed = true;
+            if (thunderextension == true) {
 
-            if (index.IsValid()  == false) {
-                added = true;
-                _plugins.Add(plugin);
+                index = Core::JSON::ArrayType<Plugin::Config>::Iterator(_extensions.Elements());
+
+                if (ExtensionAuthorized(name) == false) {
+                    SYSLOG(Logging::Startup, (_T("Extension:%s is not authorized to be loaded, ignoring"), name.c_str()));
+                    addingallowed = false;
+                } 
+
+            } else {
+                index = Core::JSON::ArrayType<Plugin::Config>::Iterator(_plugins.Elements());
             }
+
+            if (addingallowed == true) {
+                // Check if there is already a plugin config with this callsign
+                while ((index.Next() == true) && (index.Current().Callsign.Value() != name)) /* INTENTIONALLY */
+                    ;
+                if (index.IsValid() == false) {
+                    if (thunderextension == true) {
+                        _extensions.Add(plugin);
+                        added = true;
+                        // extensions should be loaded before plugins, duplicates with plugins can only exist if the plugins were brought in with "plugins" config which is unexpected if the extensions are loaded by file, but anyway let's take care of it
+                        index = Core::JSON::ArrayType<Plugin::Config>::Iterator(_plugins.Elements());
+                        while ((index.Next() == true) && (index.Current().Callsign.Value() != name)) /* INTENTIONALLY */
+                            ;
+                        if (index.IsValid() == true) {
+                            // we found an existing plugin with same callsign as let's remove the plugin
+                            Core::JSON::ArrayType<Plugin::Config> newplugins;
+                            index = Core::JSON::ArrayType<Plugin::Config>::Iterator(_plugins.Elements());
+                            while ((index.Next() == true) && (index.Current().Callsign.Value() != name)) {
+                                newplugins.Add(index.Current());
+                            };
+                            _plugins = std::move(newplugins);
+                            SYSLOG(Logging::Startup, (_T("Extension:%s was already defined as plugin, plugin being ignored"), name.c_str()));
+                        }
+                    } else {
+                        // plugins cannot have the same callsign as extensions, so we need to check for that as well
+                        index = Core::JSON::ArrayType<Plugin::Config>::Iterator(_extensions.Elements());
+                        while ((index.Next() == true) && (index.Current().Callsign.Value() != name)) /* INTENTIONALLY */
+                            ;
+                        if (index.IsValid() == false) {
+                            _plugins.Add(plugin);
+                            added = true;
+                        } else {
+                            SYSLOG(Logging::Startup, (_T("Plugin:%s is already defined as Thunder extension, ignoring"), name.c_str()));
+                        }
+                    }
+                } else {
+                    SYSLOG(Logging::Startup, (_T("Plugin:%s is already defined, ignoring"), name.c_str()));
+                }
+            } 
+
             return (added);
         }
         void UpdateAccessor() {
@@ -1035,9 +1257,7 @@ namespace PluginHost {
     
                 _configLock.Lock();
                 if (selectedNode.IsValid() == true) {
-                    _accessor = selectedNode;
-                    result = _accessor;
-                    
+                    _accessor = std::move(selectedNode);
                 }
             } else if (result.IsAnyInterface() == true) {
                 // TODO: We should iterate here over all interfaces to find a suitable IPv4 address or IPv6.
@@ -1045,17 +1265,17 @@ namespace PluginHost {
 
                 _configLock.Lock();
                 if (selectedNode.IsValid() == true) {
-                    _accessor = selectedNode;
+                    _accessor = std::move(selectedNode);
                 }
             } else {
                 _configLock.Lock();
-                _accessor = result;
+                _accessor = std::move(result);
             }
             string hostaddress;
             if (_accessor.IsValid() == false) {
 
                 // Let's go for the default and make the best of it :-)
-                struct sockaddr_in value;
+                struct sockaddr_in value {};
 
                 value.sin_addr.s_addr = 0;
                 value.sin_family = AF_INET;
@@ -1094,6 +1314,25 @@ namespace PluginHost {
     private:
         friend class Server;
 
+        bool ExtensionAuthorized(const string& extensionname) const
+        {
+            bool allowed = false;
+
+            if ((AuthorizedExtensions().empty() == false) && (AuthorizedExtensions().back() != AllExtensionsAuthorized())) {
+                for (auto& allowedextension : AuthorizedExtensions()) {
+                    if (extensionname == allowedextension) {
+                        allowed = true;
+                        break;
+                    }
+                }
+            } else {
+                allowed = true;
+            }
+
+            return allowed;
+        }
+
+
         inline void UpdateBinder() {
             // Update binding address
             if (_interface.empty() == false) {
@@ -1101,8 +1340,7 @@ namespace PluginHost {
 
             }
             if (_binder.IsValid() == false) {
-                Core::NodeId binder(_binding.c_str(), _portNumber);
-                _binder = binder;
+                _binder = Core::NodeId(_binding.c_str(), _portNumber);
             }
             else {
                 _binder.PortNumber(_portNumber);
@@ -1124,7 +1362,8 @@ namespace PluginHost {
 
     private:
         const bool _background;
-        string _prefix; // store prefix to make it overridable
+        Attributes _attributes;
+        Attributes _pendingAttributes;
         string _webPrefix;
         string _JSONRPCPrefix;
         string _volatilePath;
@@ -1133,10 +1372,17 @@ namespace PluginHost {
         string _hashKey;
         string _appPath;
         string _systemPath;
+        string _extensionPath;
+        bool _disablePluginAutoActivation;
+        std::vector<std::string> _authorizedExtensions;
+        string _extensionsPath;
+        Core::JSON::ArrayType<Plugin::Config> _extensions;
         string _configsPath;
         string _proxyStubPath;
         string _observableProxyStubPath;
         string _postMortemPath;
+        PostMortemDataSink _workerPoolSink;
+        PostMortemDataSink _callstackSink;
         string _pluginConfigPath;
         Core::NodeId _accessor;
         Core::NodeId _communicator;
@@ -1153,7 +1399,6 @@ namespace PluginHost {
         uint16_t _portNumber;
         bool _IPV6;
         bool _legacyInitialize;
-        uint16_t _idleTime;
         uint8_t _softKillCheckWaitTime;
         uint8_t _hardKillCheckWaitTime;
         uint16_t _outOfProcessWaitTime;
@@ -1161,6 +1406,7 @@ namespace PluginHost {
         uint32_t _stackSize;
         uint8_t _lowPriorityThreadCount;
         uint8_t _mediumPriorityThreadCount;
+        uint32_t _queueSize;
         InputInfo _inputInfo;
         ProcessInfo _processInfo;
         Core::JSON::ArrayType<Plugin::Config> _plugins;

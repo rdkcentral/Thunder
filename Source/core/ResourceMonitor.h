@@ -207,8 +207,8 @@ namespace Core {
                 char procfn[64];
                 snprintf(procfn, sizeof(procfn), "/proc/self/fd/%d", info.descriptor);
 
-                size_t len = readlink(procfn, info.filename, sizeof(info.filename) - 1);
-                info.filename[len] = '\0';
+                ssize_t len = readlink(procfn, info.filename, sizeof(info.filename) - 1);
+                info.filename[len >= 0 ? len : 0] = '\0';
                 #endif
                 #ifdef __WINDOWS__
                 info.monitor = 0;
@@ -407,6 +407,8 @@ POP_WARNING()
 
                 // Resize the array to fit..
                 _descriptorArray = static_cast<::pollfd*>(::malloc(sizeof(::pollfd) * _descriptorArrayLength));
+
+                ASSERT(_descriptorArray != nullptr);
 
                 _descriptorArray[0].fd = _signalDescriptor;
                 _descriptorArray[0].events = POLLIN;

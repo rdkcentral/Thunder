@@ -823,7 +823,7 @@ void SerialPort::Read(const uint16_t readBytes)
 
             if ((_readBytes != 0) && (handledBytes != 0)) {
                 // Oops not all data was consumed, Lets remove the read data
-                ::memcpy(_receiveBuffer, &_receiveBuffer[handledBytes], _readBytes);
+                ::memmove(_receiveBuffer, &_receiveBuffer[handledBytes], _readBytes);
             }
         }
     }
@@ -899,7 +899,7 @@ void SerialPort::Read(const uint16_t readBytes)
 
                         if ((_readBytes != 0) && (handledBytes != 0)) {
                             // Oops not all data was consumed, Lets remove the read data
-                            ::memcpy(_receiveBuffer, &_receiveBuffer[handledBytes], _readBytes);
+                            ::memmove(_receiveBuffer, &_receiveBuffer[handledBytes], _readBytes);
                         }
                     }
                 } else {
@@ -933,6 +933,8 @@ void SerialPort::Read(const uint16_t readBytes)
         ASSERT((_sendBufferSize != 0) && (_receiveBufferSize != 0));
 
         uint8_t* allocatedMemory = static_cast<uint8_t*>(::calloc(_sendBufferSize + _receiveBufferSize, 1));
+
+        ASSERT(allocatedMemory != nullptr);
 
         _sendBuffer = allocatedMemory;
         _receiveBuffer = &(allocatedMemory[_sendBufferSize]);

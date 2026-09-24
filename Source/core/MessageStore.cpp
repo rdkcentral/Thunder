@@ -31,6 +31,7 @@ ENUM_CONVERSION_BEGIN(Core::Messaging::Metadata::type)
     { Core::Messaging::Metadata::type::REPORTING, _TXT("Reporting") },
     { Core::Messaging::Metadata::type::OPERATIONAL_STREAM, _TXT("OperationalStream") },
     { Core::Messaging::Metadata::type::ASSERT, _TXT("Assert") },
+    { Core::Messaging::Metadata::type::TELEMETRY, _TXT("Telemetry") },
 ENUM_CONVERSION_END(Core::Messaging::Metadata::type)
 
     namespace {
@@ -75,6 +76,7 @@ ENUM_CONVERSION_END(Core::Messaging::Metadata::type)
 
                 if (_storage != nullptr) {
                     control->Enable(_storage->Default(control->Metadata()));
+                    control->Routing(_storage->DefaultOutput(control->Metadata()));
                 }
 
                 _adminLock.Unlock();
@@ -151,7 +153,7 @@ namespace Core {
             if (_type != ASSERT) {
                 length += static_cast<uint16_t>(_category.size() + 1);
 
-                if (_type == TRACING) {
+                if ((_type == TRACING) || (_type == TELEMETRY)) {
                     length += static_cast<uint16_t>(_module.size() + 1);
                 }
             }
@@ -166,7 +168,7 @@ namespace Core {
                 if (_type != ASSERT) {
                     frameWriter.NullTerminatedText(_category);
 
-                    if (_type == TRACING) {
+                    if ((_type == TRACING) || (_type == TELEMETRY)) {
                         frameWriter.NullTerminatedText(_module);
                     }
                 }
@@ -195,7 +197,7 @@ namespace Core {
                     _category = frameReader.NullTerminatedText();
                     length += static_cast<uint16_t>(_category.size()) + 1;
 
-                    if (_type == TRACING) {
+                    if ((_type == TRACING) || (_type == TELEMETRY)) {
                         _module = frameReader.NullTerminatedText();
                         length += static_cast<uint16_t>(_module.size()) + 1;
                     }
@@ -265,22 +267,18 @@ namespace Core {
             return (length);
         }
 
-        string MessageInfo::ToString(const abbreviate abbreviate) const
+        string MessageInfo::ToString(const abbreviate abbreviate, const bool time) const
         {
             string result;
-            const Core::Time now(TimeStamp());
-            string time;
 
-            if (abbreviate == abbreviate::ABBREVIATED) {
-                time = now.ToTimeOnly(true);
+            if (time == true) {
+                const Core::Time now(TimeStamp());
+                const string timestamp((abbreviate == abbreviate::ABBREVIATED) ? now.ToTimeOnly(true) : now.ToRFC1123(true));
+                result = Core::Format("[%s]:[%s]:[%s]: ", timestamp.c_str(), Module().c_str(), Category().c_str());
             }
             else {
-                time = now.ToRFC1123(true);
+                result = Core::Format("[%s]:[%s]: ", Module().c_str(), Category().c_str());
             }
-            result = Core::Format("[%s]:[%s]:[%s]: ",
-                    time.c_str(),
-                    Module().c_str(),
-                    Category().c_str());
 
             return (result);
         }
@@ -331,27 +329,27 @@ namespace Core {
             return (length);
         }
 
-        string IStore::Tracing::ToString(const abbreviate abbreviate) const
+        string IStore::Tracing::ToString(const abbreviate abbreviate, const bool time) const
         {
             string result;
-            const Core::Time now(TimeStamp());
 
             if (abbreviate == abbreviate::ABBREVIATED) {
-                const string time(now.ToTimeOnly(true));
-                result = Core::Format("[%s]:[%s]:[%s]: ",
-                        time.c_str(),
-                        Module().c_str(),
-                        Category().c_str());
+                if (time == true) {
+                    const string timestamp(Core::Time(TimeStamp()).ToTimeOnly(true));
+                    result = Core::Format("[%s]:[%s]:[%s]: ", timestamp.c_str(), Module().c_str(), Category().c_str());
+                }
+                else {
+                    result = Core::Format("[%s]:[%s]: ", Module().c_str(), Category().c_str());
+                }
             }
             else {
-                const string time(now.ToRFC1123(true));
-                result = Core::Format("[%s]:[%s]:[%s:%u]:[%s]:[%s]: ",
-                        time.c_str(),
-                        Module().c_str(),
-                        Core::FileNameOnly(FileName().c_str()),
-                        LineNumber(),
-                        ClassName().c_str(),
-                        Category().c_str());
+                if (time == true) {
+                    const string timestamp(Core::Time(TimeStamp()).ToRFC1123(true));
+                    result = Core::Format("[%s]:[%s]:[%s:%u]:[%s]:[%s]: ", timestamp.c_str(), Module().c_str(), Core::FileNameOnly(FileName().c_str()), LineNumber(), ClassName().c_str(), Category().c_str());
+                }
+                else {
+                    result = Core::Format("[%s]:[%s:%u]:[%s]:[%s]: ", Module().c_str(), Core::FileNameOnly(FileName().c_str()), LineNumber(), ClassName().c_str(), Category().c_str());
+                }
             }
 
             return (result);
@@ -399,25 +397,27 @@ namespace Core {
             return (length);
         }
 
-        string IStore::WarningReporting::ToString(const abbreviate abbreviate) const
+        string IStore::WarningReporting::ToString(const abbreviate abbreviate, const bool time) const
         {
             string result;
-            const Core::Time now(TimeStamp());
 
             if (abbreviate == abbreviate::ABBREVIATED) {
-                const string time(now.ToTimeOnly(true));
-                result = Core::Format("[%s]:[%s]:[%s]: ",
-                        time.c_str(),
-                        Module().c_str(),
-                        Category().c_str());
+                if (time == true) {
+                    const string timestamp(Core::Time(TimeStamp()).ToTimeOnly(true));
+                    result = Core::Format("[%s]:[%s]:[%s]: ", timestamp.c_str(), Module().c_str(), Category().c_str());
+                }
+                else {
+                    result = Core::Format("[%s]:[%s]: ", Module().c_str(), Category().c_str());
+                }
             }
             else {
-                const string time(now.ToRFC1123(true));
-                result = Core::Format("[%s]:[%s]:[%s]:[%s]: ",
-                        time.c_str(),
-                        Module().c_str(),
-                        Callsign().c_str(),
-                        Category().c_str());
+                if (time == true) {
+                    const string timestamp(Core::Time(TimeStamp()).ToRFC1123(true));
+                    result = Core::Format("[%s]:[%s]:[%s]:[%s]: ", timestamp.c_str(), Module().c_str(), Callsign().c_str(), Category().c_str());
+                }
+                else {
+                    result = Core::Format("[%s]:[%s]:[%s]: ", Module().c_str(), Callsign().c_str(), Category().c_str());
+                }
             }
 
             return (result);
@@ -471,32 +471,27 @@ namespace Core {
             return (length);
         }
 
-        string IStore::Assert::ToString(const abbreviate abbreviate) const
+        string IStore::Assert::ToString(const abbreviate abbreviate, const bool time) const
         {
             string result;
-            const Core::Time now(TimeStamp());
 
             if (abbreviate == abbreviate::ABBREVIATED) {
-                const string time(now.ToTimeOnly(true));
-                result = Core::Format("%s[%s]:[%s]:[%s]:[%s:%u]: ",
-                        Callstack().c_str(),
-                        time.c_str(),
-                        Module().c_str(),
-                        ProcessName().c_str(),
-                        Core::FileNameOnly(FileName().c_str()),
-                        LineNumber());
+                if (time == true) {
+                    const string timestamp(Core::Time(TimeStamp()).ToTimeOnly(true));
+                    result = Core::Format("%s[%s]:[%s]:[%s]:[%s:%u]: ", Callstack().c_str(), timestamp.c_str(), Module().c_str(), ProcessName().c_str(), Core::FileNameOnly(FileName().c_str()), LineNumber());
+                }
+                else {
+                    result = Core::Format("%s[%s]:[%s]:[%s:%u]: ", Callstack().c_str(), Module().c_str(), ProcessName().c_str(), Core::FileNameOnly(FileName().c_str()), LineNumber());
+                }
             }
             else {
-                const string time(now.ToRFC1123(true));
-                result = Core::Format("%s[%s]:[%s]:[%s]:[%u]:[%s]:[%s:%u]: ",
-                        Callstack().c_str(),
-                        time.c_str(),
-                        Module().c_str(),
-                        Category().c_str(),
-                        ProcessId(),
-                        ProcessName().c_str(),
-                        Core::FileNameOnly(FileName().c_str()),
-                        LineNumber());
+                if (time == true) {
+                    const string timestamp(Core::Time(TimeStamp()).ToRFC1123(true));
+                    result = Core::Format("%s[%s]:[%s]:[%s]:[%u]:[%s]:[%s:%u]: ", Callstack().c_str(), timestamp.c_str(), Module().c_str(), Category().c_str(), ProcessId(), ProcessName().c_str(), Core::FileNameOnly(FileName().c_str()), LineNumber());
+                }
+                else {
+                    result = Core::Format("%s[%s]:[%s]:[%u]:[%s]:[%s:%u]: ", Callstack().c_str(), Module().c_str(), Category().c_str(), ProcessId(), ProcessName().c_str(), Core::FileNameOnly(FileName().c_str()), LineNumber());
+                }
             }
 
             return (result);

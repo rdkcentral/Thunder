@@ -260,7 +260,7 @@ target_link_libraries(${TARGET}
         )
 
 set_target_properties(${TARGET} PROPERTIES
-          CXX_STANDARD 11
+          CXX_STANDARD ${CXX_STD}
           CXX_STANDARD_REQUIRED YES
           FRAMEWORK FALSE
           PUBLIC_HEADER "${PUBLIC_HEADERS}" # specify the public headers
@@ -309,7 +309,7 @@ if(SYSTEMD_FOUND)
         PRIVATE
         Systemd::Systemd
     )
-    SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -DSYSTEMD_FOUND")
+    target_compile_definitions(${TARGET} PRIVATE SYSTEMD_FOUND)
 endif()
 
 # ===========================================================================================

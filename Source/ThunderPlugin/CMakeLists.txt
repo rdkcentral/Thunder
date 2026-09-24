@@ -40,11 +40,16 @@ target_link_libraries(${TARGET}
         PRIVATE
           CompileSettingsDebug::CompileSettingsDebug
           ${NAMESPACE}Core::${NAMESPACE}Core
-          ${NAMESPACE}Messaging::${NAMESPACE}Messaging
           ${NAMESPACE}Plugins::${NAMESPACE}Plugins
           ${NAMESPACE}WebSocket::${NAMESPACE}WebSocket
           ${NAMESPACE}COM::${NAMESPACE}COM
         )
+
+if(MESSAGING)
+    target_link_libraries(${TARGET}
+        PRIVATE
+            ${NAMESPACE}Messaging::${NAMESPACE}Messaging)
+endif()
         
 if (WARNING_REPORTING)
     target_link_libraries(${TARGET}
@@ -60,7 +65,7 @@ if(BREAKPAD_FOUND)
 endif(BREAKPAD_FOUND)
 
 set_target_properties(${TARGET} PROPERTIES
-        CXX_STANDARD 11
+        CXX_STANDARD ${CXX_STD}
         CXX_STANDARD_REQUIRED YES
         FRAMEWORK FALSE
         SOVERSION ${VERSION_MAJOR}

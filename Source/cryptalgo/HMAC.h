@@ -126,7 +126,7 @@ namespace Crypto {
                 length++;
             }
 
-            _algorithm.Input(&message_array, length);
+            _algorithm.Input(message_array, length);
 
             return (*this);
         }

@@ -165,7 +165,7 @@ namespace WarningReporting {
         }
         bool IsModuleExcluded(const string& module) const
         {
-            return _modules.find(module) != _callsigns.end();
+            return _modules.find(module) != _modules.end();
         }
         void InsertCallsign(const string& callsign)
         {
@@ -396,11 +396,16 @@ namespace WarningReporting {
             WarningReportingControl()
                 : _categoryName(CallCategoryName())
                 , _enabled(0x03)
+                , _outputMode(Thunder::Core::Messaging::OutputMode::HANDLER)
+#ifdef __CORE_MESSAGING__
                 , _metadata(Thunder::Core::Messaging::Metadata::type::REPORTING, _categoryName, Thunder::Core::Messaging::MODULE_REPORTING)
+#endif
             {
                 // Register Our control unit, so it can be influenced from the outside
                 // if nessecary..
+#ifdef __CORE_MESSAGING__
                 Core::Messaging::IControl::Announce(this);
+#endif
                 WarningReportingUnitProxy::Instance().AddToCategoryList(*this);
 
                 bool isDefaultCategory = false;
@@ -449,6 +454,14 @@ namespace WarningReporting {
             {
                 _enabled = (_enabled & 0xFE) | (enabled ? 0x01 : 0x00);
             }
+            Thunder::Core::Messaging::OutputMode Routing() const override
+            {
+                return (_outputMode);
+            }
+            void Routing(Thunder::Core::Messaging::OutputMode routing) override
+            {
+                _outputMode = routing;
+            }
             void Exclude(const string& toExclude) override
             {
                 WarningReportingUnitProxy::Instance().FillExcludedWarnings(toExclude, _excludedWarnings);
@@ -460,22 +473,33 @@ namespace WarningReporting {
             void Destroy() override
             {
                 if ((_enabled & 0x02) != 0) {
+#ifdef __CORE_MESSAGING__
                     Core::Messaging::IControl::Revoke(this);
+#endif
 
                     WarningReportingUnitProxy::Instance().RemoveFromCategoryList(*this);
                     _enabled = 0;
                 }
             }
+#ifdef __CORE_MESSAGING__
             const Core::Messaging::Metadata& Metadata() const override
             {
                 return (_metadata);
+            }
+#endif
+            const char* Category() const override
+            {
+                return _categoryName.c_str();
             }
 
         protected:
             const string _categoryName;
             uint8_t _enabled;
+            Thunder::Core::Messaging::OutputMode _outputMode;
             ExcludedWarnings _excludedWarnings;
+#ifdef __CORE_MESSAGING__
             Core::Messaging::Metadata _metadata;
+#endif
         };
 
     public:
@@ -523,6 +547,11 @@ namespace WarningReporting {
             return _sWarningControl.IsEnabled();
         }
 
+        Core::Messaging::OutputMode Routing() const override
+        {
+            return _sWarningControl.Routing();
+        }
+
         inline static void Enable(const bool status)
         {
             _sWarningControl.Enabled(status);
@@ -530,7 +559,7 @@ namespace WarningReporting {
 
         const char* Category() const override
         {
-            return _sWarningControl.Metadata().Category().c_str();
+            return _sWarningControl.Category();
         }
 
         uint16_t Serialize(uint8_t data[], const uint16_t size) const override

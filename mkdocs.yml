@@ -80,6 +80,8 @@ nav:
       - Client development:
         - JSON-RPC: walkthrough/hello-world/client-jsonrpc.md
         - COM-RPC: walkthrough/hello-world/client-comrpc.md
+  - Testing:
+    - Thunder Test Support: ThunderTestSupport/ThunderTestSupport.md
   - Misc:
     - Documentation: docs.md
     - References: references/references.md

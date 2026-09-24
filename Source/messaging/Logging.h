@@ -27,6 +27,7 @@ namespace Thunder {
 
 namespace Logging {
 
+#ifdef __CORE_MESSAGING__
     void EXTERNAL DumpException(const string& exceptionType);
     void EXTERNAL DumpSystemFiles(const pid_t pid);
 
@@ -61,11 +62,40 @@ namespace Logging {
         inline static void Enable(const bool enable) {
             Instance().Enable(enable);
         }
+
+        inline static Core::Messaging::OutputMode Routing() {
+            return (Instance().Routing());
+        }
         
         inline static const Core::Messaging::Metadata& Metadata() {
             return (Instance().Metadata());
         }
     };
+#else
+    inline void DumpException(const string& exceptionType)
+    {
+        TRACE_L1("Unhandled exception: %s", exceptionType.c_str());
+    }
+
+    inline void DumpSystemFiles(const pid_t pid)
+    {
+        TRACE_L1("System diagnostics requested for process %d", pid);
+    }
+
+    template <typename CATEGORY>
+    class BaseLoggingType : public Core::Messaging::BaseCategoryType<Core::Messaging::Metadata::type::LOGGING> {
+    public:
+        using BaseClass = Core::Messaging::BaseCategoryType<Core::Messaging::Metadata::type::LOGGING>;
+
+        BaseLoggingType(const BaseLoggingType&) = delete;
+        BaseLoggingType& operator=(const BaseLoggingType&) = delete;
+
+        BaseLoggingType() = default;
+        ~BaseLoggingType() = default;
+
+        using BaseClass::BaseClass;
+    };
+#endif
 
 } // namespace Logging
 }
@@ -73,6 +103,7 @@ namespace Logging {
 #define DEFINE_LOGGING_CATEGORY(CATEGORY) \
     DEFINE_MESSAGING_CATEGORY(Thunder::Logging::BaseLoggingType<CATEGORY>, CATEGORY)
 
+#ifdef __CORE_MESSAGING__
 #define SYSLOG_ANNOUNCE(CATEGORY) \
     Thunder::Logging::BaseLoggingType<CATEGORY>::Instance();
 
@@ -87,11 +118,24 @@ namespace Logging {
             );                                                                                                                              \
             Thunder::Core::Messaging::IStore::Logging __log__(__info__);                                                                    \
             Thunder::Core::Messaging::TextMessage __message__(__data__.Data());                                                             \
-            Thunder::Messaging::MessageUnit::Instance().Push(__log__, &__message__);                                                        \
+            Thunder::Messaging::MessageUnit::Instance().Push(__log__, &__message__, CATEGORY::Routing());                                   \
         }                                                                                                                                   \
     } while(false)
 
 #define SYSLOG_GLOBAL(CATEGORY, PARAMETERS)                                                                                                 \
     _Pragma ("GCC warning \"'SYSLOG_GLOBAL' macro is deprecated, use SYSLOG instead\"")                                                     \
     SYSLOG(CATEGORY, PARAMETERS)
+#else
+#define SYSLOG_ANNOUNCE(CATEGORY)
+
+#define SYSLOG(CATEGORY, PARAMETERS)                                                                                                        \
+    do {                                                                                                                                    \
+        static_assert(std::is_base_of<Thunder::Logging::BaseLoggingType<CATEGORY>, CATEGORY>::value, "SYSLOG() only for Logging controls"); \
+        CATEGORY __data__ PARAMETERS;                                                                                                       \
+        TRACE_L1("%s: %s", Thunder::Core::ClassNameOnly(typeid(CATEGORY).name()).Text().c_str(), __data__.Data());                          \
+    } while(false)
+
+#define SYSLOG_GLOBAL(CATEGORY, PARAMETERS) \
+    SYSLOG(CATEGORY, PARAMETERS)
+#endif
 

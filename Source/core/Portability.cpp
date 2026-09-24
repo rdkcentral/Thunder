@@ -85,6 +85,8 @@ uint64_t gettid()
 
 #if defined(THUNDER_BACKTRACE)
 
+static constexpr int CALLSTACK_SIGNAL = SIGWINCH; // Terminal window-size change, usually ignored by debuggers.... 
+
 static std::atomic<bool> g_lock(false);
 static pthread_t g_targetThread;
 static void** g_threadCallstackBuffer;
@@ -169,7 +171,7 @@ uint32_t GetCallStack(const Thunder::Core::thread_id threadId, void* addresses[]
         sigfillset(&callstack.sa_mask);
         callstack.sa_flags = SA_SIGINFO;
         callstack.sa_sigaction = CallstackSignalHandler;
-        sigaction(SA_SIGINFO, &callstack, &original);
+        sigaction(CALLSTACK_SIGNAL, &callstack, &original);
 
         g_targetThread = threadId;
         g_threadCallstackBuffer = addresses;
@@ -178,12 +180,12 @@ uint32_t GetCallStack(const Thunder::Core::thread_id threadId, void* addresses[]
         g_callstackCompleted.ResetEvent();
 
         // call _callstack_signal_handler in target thread
-        if (pthread_kill((pthread_t)threadId, SA_SIGINFO) == 0) {
+        if (pthread_kill((pthread_t)threadId, CALLSTACK_SIGNAL) == 0) {
             g_callstackCompleted.Lock(200); // This should definitely be possible in 200 ms :-)
         }
 
         // Resore the original signal handler
-        sigaction(SA_SIGINFO, &original, nullptr);
+        sigaction(CALLSTACK_SIGNAL, &original, nullptr);
 
         result = g_threadCallstackBufferUsed;
 
@@ -230,7 +232,7 @@ void DumpCallStack(const Thunder::Core::thread_id threadId VARIABLE_IS_NOT_USED,
             }
         }
 
-        stackList.push_back(entry);
+        stackList.push_back(std::move(entry));
     }
 
 #else
@@ -446,8 +448,8 @@ namespace Core {
     TextFragment ClassNameOnly(const char name[]) {
 
         TextFragment result(Demangled(name));
-        uint16_t index = 0;
-        uint16_t lastIndex = static_cast<uint16_t>(~0);
+        uint32_t index = 0;
+        uint32_t lastIndex = static_cast<uint32_t>(~0);
 
         while ((index < result.Length()) && (result[index] != '<')) {
             if (result[index] == ':') {
@@ -456,7 +458,7 @@ namespace Core {
             index++;
         }
 
-        return (lastIndex < (index - 1) ? TextFragment(result, lastIndex + 1, result.Length() - (lastIndex + 1)) : result);
+        return ((index != 0) and (lastIndex < (index - 1)) ? TextFragment(result, lastIndex + 1, result.Length() - (lastIndex + 1)) : result);
     }
 
 

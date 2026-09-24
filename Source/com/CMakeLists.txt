@@ -17,6 +17,8 @@
 
 set(TARGET ${NAMESPACE}COM)
 
+set(COMRPC_TIMEOUT 3000 CACHE STRING "COMRPC communication timeout in milliseconds")
+
 ProxyStubGenerator(NAMESPACE "Thunder::RPC" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/ICOM.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
 
 add_library(${TARGET}
@@ -41,7 +43,6 @@ set(PUBLIC_HEADERS
     ICOM.h
     IUnknown.h
     Messages.h
-    ProxyStubs.h
     Module.h
 )
 
@@ -50,9 +51,14 @@ target_compile_options(${TARGET} PRIVATE -Wno-psabi)
 target_link_libraries(${TARGET}
         PRIVATE
           ${NAMESPACE}Core::${NAMESPACE}Core
-          ${NAMESPACE}Messaging::${NAMESPACE}Messaging
           CompileSettingsDebug::CompileSettingsDebug
         )
+
+if(MESSAGING)
+    target_link_libraries(${TARGET}
+        PRIVATE
+            ${NAMESPACE}Messaging::${NAMESPACE}Messaging)
+endif()
 
 if (WARNING_REPORTING)
 target_compile_definitions(${TARGET}
@@ -72,7 +78,12 @@ target_include_directories(${TARGET}
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
         )
 
-target_compile_definitions(${TARGET} PRIVATE COM_EXPORTS)
+target_compile_definitions(${TARGET}
+        PRIVATE
+          COM_EXPORTS
+        PUBLIC
+          COMRPC_TIMEOUT=${COMRPC_TIMEOUT}
+        )
 
 if(PROCESSCONTAINERS)
     target_link_libraries(${TARGET}
@@ -84,7 +95,7 @@ if(PROCESSCONTAINERS)
 endif(PROCESSCONTAINERS)
 
 set_target_properties(${TARGET} PROPERTIES
-        CXX_STANDARD 11
+        CXX_STANDARD ${CXX_STD}
         CXX_STANDARD_REQUIRED YES
         FRAMEWORK FALSE
         PUBLIC_HEADER "${PUBLIC_HEADERS}" # specify the public headers

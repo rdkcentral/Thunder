@@ -110,11 +110,11 @@ namespace Plugin {
             }
         }
 
-        Core::JSON::ArrayType<Core::JSON::EnumType<PluginHost::ISubSystem::subsystem>>::ConstIterator eventListIterator(static_cast<const Config&>(config).SubSystems.Elements());
+        Core::JSON::ArrayType<Core::JSON::EnumType<Configuration::subsystem>>::ConstIterator eventListIterator(static_cast<const Config&>(config).SubSystems.Elements());
 
         // Insert the subsystems found in the config..
         while (eventListIterator.Next() == true) {
-            PluginHost::ISubSystem::subsystem current = eventListIterator.Current().Value();
+            PluginHost::ISubSystem::subsystem current = static_cast<PluginHost::ISubSystem::subsystem>(eventListIterator.Current().Value());
 
             if (current >= PluginHost::ISubSystem::END_LIST) {
                 Core::EnumerateType<PluginHost::ISubSystem::subsystem> name(current);
@@ -241,19 +241,28 @@ namespace Plugin {
         return (result);
     }
 
-    Core::hresult Controller::Persist()
+    Core::hresult Controller::Persist(const Core::OptionalType<string>& callsign)
     {
         ASSERT(_pluginServer != nullptr);
-
-        Core::hresult result = _pluginServer->Persist();
+        Core::hresult result = _pluginServer->Persist(callsign);
 
         // Normalise return code
         if (result != Core::ERROR_NONE) {
             result = Core::ERROR_GENERAL;
         }
-
         return result;
+    }
 
+    Core::hresult Controller::Restore(const Core::OptionalType<string>& callsign)
+    {
+        ASSERT(_pluginServer != nullptr);
+        Core::hresult result = _pluginServer->Restore(callsign);
+
+        // Normalise return code
+        if (result != Core::ERROR_NONE) {
+            result = Core::ERROR_GENERAL;
+        }
+        return result;
     }
 
     Core::hresult Controller::Delete(const string& path)
@@ -344,6 +353,71 @@ namespace Plugin {
                 if (result != Core::ERROR_NONE) {
                     result = Core::ERROR_GENERAL;
                 }
+            }
+        }
+
+        return result;
+    }
+
+    Core::hresult Controller::Attribute(const Core::OptionalType<IConfiguration::attribute>& attribute, string& value) const
+    {
+        Core::hresult result = Core::ERROR_UNKNOWN_KEY;
+
+        ASSERT(_pluginServer != nullptr);
+
+        const PluginHost::Config& configuration(_pluginServer->Configuration());
+        const PluginHost::Config::Attributes attributes(configuration.ActiveAttributes());
+
+        if (attribute.IsSet() == false) {
+            Core::JSON::VariantContainer response;
+            response.Set(Core::EnumToCString(IConfiguration::PREFIX), Core::JSON::Variant(attributes.Prefix));
+            response.Set(Core::EnumToCString(IConfiguration::IDLETIME), Core::JSON::Variant(static_cast<uint32_t>(attributes.IdleTime)));
+            response.ToString(value);
+
+            result = Core::ERROR_NONE;
+        }
+        else if (attribute.Value() == IConfiguration::PREFIX) {
+            Core::JSON::String prefix;
+            prefix = attributes.Prefix;
+            prefix.ToString(value);
+
+            result = Core::ERROR_NONE;
+        }
+        else if (attribute.Value() == IConfiguration::IDLETIME) {
+            Core::JSON::DecUInt16 idleTime(attributes.IdleTime, true);
+            idleTime.ToString(value);
+
+            result = Core::ERROR_NONE;
+        }
+
+        return result;
+    }
+
+    Core::hresult Controller::Attribute(const IConfiguration::attribute attribute, const string& value)
+    {
+        Core::hresult result = Core::ERROR_UNKNOWN_KEY;
+
+        ASSERT(_pluginServer != nullptr);
+
+        PluginHost::Config& configuration(_pluginServer->Configuration());
+        const PluginHost::Config::Attributes active(configuration.ActiveAttributes());
+
+        if (attribute == IConfiguration::PREFIX) {
+            Core::JSON::String prefix;
+
+            result = Core::ERROR_BAD_REQUEST;
+            if (prefix.FromString(value) == true) {
+                configuration.SetPrefix(prefix.Value());
+                result = (prefix.Value() == active.Prefix ? Core::ERROR_NONE : Core::ERROR_REQUEST_SUBMITTED);
+            }
+        }
+        else if (attribute == IConfiguration::IDLETIME) {
+            Core::JSON::DecUInt16 idleTime;
+
+            result = Core::ERROR_BAD_REQUEST;
+            if (idleTime.FromString(value) == true) {
+                configuration.SetIdleTime(idleTime.Value());
+                result = (idleTime.Value() == active.IdleTime ? Core::ERROR_NONE : Core::ERROR_REQUEST_SUBMITTED);
             }
         }
 
@@ -662,7 +736,7 @@ namespace Plugin {
                     }
                 }
             } else if (index.Current() == _T("Discovery")) {
-                if (_probe != nullptr) {
+                if (_probe == nullptr) {
                     result->ErrorCode = Web::STATUS_BAD_REQUEST;
                     result->Message = _T("Probe functionality not enabled!");
                 }
@@ -677,7 +751,7 @@ namespace Plugin {
                 }
             } else if (index.Current() == _T("Persist")) {
 
-                _pluginServer->Persist();
+                _pluginServer->Persist(Core::OptionalType<string>());
 
                 result->ErrorCode = Web::STATUS_OK;
                 result->Message = _T("Current configuration stored");
@@ -1142,10 +1216,11 @@ namespace Plugin {
 
     Core::hresult Controller::DiscoveryResults(IDiscovery::Data::IDiscoveryResultsIterator*& outResults) const
     {
-        std::list<IDiscovery::Data::DiscoveryResult> results;
+        std::vector<IDiscovery::Data::DiscoveryResult> results;
 
         if (_probe != nullptr) {
             Probe::Iterator index(_probe->Instances());
+            results.reserve(_probe->Instances().Count());
 
             while (index.Next() == true) {
                 IDiscovery::Data::DiscoveryResult result;
@@ -1162,8 +1237,9 @@ namespace Plugin {
 
         if (results.empty() == false) {
             using Iterator = IDiscovery::Data::IDiscoveryResultsIterator;
+            using IteratorImpl = RPC::IteratorType<Iterator, decltype(results)>;
 
-            outResults = Core::ServiceType<RPC::IteratorType<Iterator>>::Create<Iterator>(results);
+            outResults = Core::ServiceType<IteratorImpl>::Create<Iterator>(std::move(results));
             ASSERT(outResults != nullptr);
         }
         else {
@@ -1176,7 +1252,7 @@ namespace Plugin {
     Core::hresult Controller::Services(const Core::OptionalType<string>& callsign, IMetadata::Data::IServicesIterator*& outServices) const
     {
         Core::hresult result = Core::ERROR_UNAVAILABLE;
-        std::list<IMetadata::Data::Service> services;
+        std::vector<IMetadata::Data::Service> services;
 
         if (callsign.IsSet() == false) {
             auto it = _pluginServer->Services().Services();
@@ -1193,14 +1269,7 @@ namespace Plugin {
                         meta.Callsign = cs;
                     }
 
-                    IMetadata::Data::Service service(meta);
-
-                    // Make sure the list is sorted..
-                    std::list<IMetadata::Data::Service>::iterator index(services.begin());
-                    while ((index != services.end()) && (index->Callsign < cs)) {
-                        index++;
-                    }
-                    services.insert(index, service);
+                    services.push_back(IMetadata::Data::Service(meta));
                 }
             }
         }
@@ -1213,6 +1282,7 @@ namespace Plugin {
                     meta.FromString(info);
                     services.push_back(IMetadata::Data::Service(meta));
                 }
+                shell->Release();
             }
             else {
                 result = Core::ERROR_UNKNOWN_KEY;
@@ -1220,9 +1290,15 @@ namespace Plugin {
         }
 
         if (services.empty() == false) {
-            using Iterator = IMetadata::Data::IServicesIterator;
+            std::sort(services.begin(), services.end(),
+                [](const IMetadata::Data::Service& a, const IMetadata::Data::Service& b) {
+                    return a.Callsign < b.Callsign;
+                });
 
-            outServices = Core::ServiceType<RPC::IteratorType<Iterator>>::Create<Iterator>(services);
+            using Iterator = IMetadata::Data::IServicesIterator;
+            using IteratorImpl = RPC::IteratorType<Iterator, decltype(services)>;
+
+            outServices = Core::ServiceType<IteratorImpl>::Create<Iterator>(std::move(services));
             ASSERT(outServices != nullptr);
             result = Core::ERROR_NONE;
         }
@@ -1245,7 +1321,8 @@ namespace Plugin {
 
         if (callStackInfo.empty() == false) {
 
-            std::list<IMetadata::Data::CallStack> callstack;
+            std::vector<IMetadata::Data::CallStack> callstack;
+            callstack.reserve(callStackInfo.size());
 
             for (const Core::callstack_info& entry : callStackInfo) {
                 IMetadata::Data::CallStack cs;
@@ -1264,8 +1341,9 @@ namespace Plugin {
             }
 
             using Iterator = IMetadata::Data::ICallStackIterator;
+            using IteratorImpl = RPC::IteratorType<Iterator, decltype(callstack)>;
 
-            outCallStack = Core::ServiceType<RPC::IteratorType<Iterator>>::Create<Iterator>(callstack);
+            outCallStack = Core::ServiceType<IteratorImpl>::Create<Iterator>(std::move(callstack));
             ASSERT(outCallStack != nullptr);
 
             result = Core::ERROR_NONE;
@@ -1286,8 +1364,8 @@ namespace Plugin {
         _pluginServer->Metadata(meta);
 
         if (meta.Length() > 0) {
-            std::list<IMetadata::Data::Link> links;
-
+            std::vector<IMetadata::Data::Link> links;
+            links.reserve(meta.Length());
             auto it = meta.Elements();
 
             while (it.Next() == true) {
@@ -1307,8 +1385,9 @@ namespace Plugin {
             }
 
             using Iterator = IMetadata::Data::ILinksIterator;
+            using IteratorImpl = RPC::IteratorType<Iterator, decltype(links)>;
 
-            outLinks = Core::ServiceType<RPC::IteratorType<Iterator>>::Create<Iterator>(links);
+            outLinks = Core::ServiceType<IteratorImpl>::Create<Iterator>(std::move(links));
             ASSERT(outLinks != nullptr);
         }
         else {
@@ -1341,8 +1420,9 @@ namespace Plugin {
 
         if (proxySearch == true) {
             using Iterator = IMetadata::Data::IProxiesIterator;
+            using IteratorImpl = RPC::IteratorType<Iterator, decltype(collection)>;
 
-            outProxies = Core::ServiceType<RPC::IteratorType<Iterator>>::Create<Iterator>(std::move(collection));
+            outProxies = Core::ServiceType<IteratorImpl>::Create<Iterator>(std::move(collection));
             ASSERT(outProxies != nullptr);
             result = Core::ERROR_NONE;
         }
@@ -1357,8 +1437,8 @@ namespace Plugin {
 
         if (meta.ThreadPoolRuns.Length() > 0) {
 
-            std::list<IMetadata::Data::Thread> threads;
-
+            std::vector<IMetadata::Data::Thread> threads;
+            threads.reserve(meta.ThreadPoolRuns.Length());
             auto it = meta.ThreadPoolRuns.Elements();
 
             while (it.Next() == true) {
@@ -1367,8 +1447,9 @@ namespace Plugin {
             }
 
             using Iterator = IMetadata::Data::IThreadsIterator;
+            using IteratorImpl = RPC::IteratorType<Iterator, decltype(threads)>;
 
-            outThreads = Core::ServiceType<RPC::IteratorType<Iterator>>::Create<Iterator>(threads);
+            outThreads = Core::ServiceType<IteratorImpl>::Create<Iterator>(std::move(threads));
             ASSERT(outThreads != nullptr);
         }
         else {
@@ -1386,8 +1467,8 @@ namespace Plugin {
 
         if (meta.PendingRequests.Length() > 0) {
 
-            std::list<string> requests;
-
+            std::vector<string> requests;
+            requests.reserve(meta.PendingRequests.Length());
             auto it = meta.PendingRequests.Elements();
 
             while (it.Next() == true) {
@@ -1395,8 +1476,9 @@ namespace Plugin {
             }
 
             using Iterator = IMetadata::Data::IPendingRequestsIterator;
+            using IteratorImpl = RPC::IteratorType<Iterator, decltype(requests)>;
 
-            outRequests = Core::ServiceType<RPC::IteratorType<Iterator>>::Create<Iterator>(requests);
+            outRequests = Core::ServiceType<IteratorImpl>::Create<Iterator>(std::move(requests));
             ASSERT(outRequests != nullptr);
         }
         else {
@@ -1413,8 +1495,8 @@ namespace Plugin {
         PluginHost::ISubSystem* subSystem = _service->SubSystems();
 
         if (subSystem != nullptr) {
-            std::list<ISubsystems::Subsystem> subsystems;
-
+            std::vector<ISubsystems::Subsystem> subsystems;
+            subsystems.reserve(PluginHost::ISubSystem::END_LIST);
             std::underlying_type<PluginHost::ISubSystem::subsystem>::type i = 0;
 
             while (i < PluginHost::ISubSystem::END_LIST) {
@@ -1426,7 +1508,9 @@ namespace Plugin {
 
             subSystem->Release();
 
-            outSubsystems = Core::ServiceType<RPC::IteratorType<ISubsystems::ISubsystemsIterator>>::Create<ISubsystems::ISubsystemsIterator>(subsystems);
+            using IteratorImpl = RPC::IteratorType<ISubsystems::ISubsystemsIterator, decltype(subsystems)>;
+
+            outSubsystems = Core::ServiceType<IteratorImpl>::Create<ISubsystems::ISubsystemsIterator>(std::move(subsystems));
             ASSERT(outSubsystems != nullptr);
         }
         else {

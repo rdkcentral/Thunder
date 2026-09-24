@@ -21,9 +21,9 @@
 #include "Module.h"
 #include "IShell.h"
 
-// @stubgen:include <plugins/IShell.h>
-// @stubgen:include <plugins/ISubSystem.h>
-// @stubgen:include <com/IIteratorType.h>
+// @insert <com/ICOM.h>
+// @insert <plugins/IShell.h>
+// @insert <plugins/ISubSystem.h>
 
 namespace Thunder {
 
@@ -86,14 +86,42 @@ namespace Controller {
     struct EXTERNAL IConfiguration : virtual public Core::IUnknown {
         enum { ID = RPC::ID_CONTROLLER_CONFIGURATION };
 
+        enum attribute : uint8_t {
+            PREFIX /* @text:prefix */,
+            IDLETIME /* @text:idletime */
+        };
+
         // @alt storeconfig
-        // @brief Stores all configuration to the persistent memory
-        virtual Core::hresult Persist() = 0;
+        // @brief Stores configuration to the persistent memory
+        // @details If callsign is not provided, configuration for all plugins is persisted.
+        //          If callsign is provided but empty, only the Controller configuration is persisted.
+        //          If callsign is provided with a specific value, only that plugin's configuration is persisted.
+        // @param callsign: Plugin callsign to persist (omit for all plugins, empty string for Controller only)
+        virtual Core::hresult Persist(const Core::OptionalType<string>& callsign = {}) = 0;
+
+        // @brief Restores configuration back to default
+        // @details If callsign is not provided, configuration for all plugins is restored to default.
+        //          If callsign is provided but empty, only the Controller configuration is restored.
+        //          If callsign is provided with a specific value, only that plugin's configuration is restored.
+        // @param callsign: Plugin callsign to restore (omit for all plugins, empty string for Controller only)
+        virtual Core::hresult Restore(const Core::OptionalType<string>& callsign = {}) = 0;
 
         // @property
         // @brief Service configuration
         virtual Core::hresult Configuration(const Core::OptionalType<string>& callsign /* @index */, string& configuration /* @out @opaque */) const = 0;
         virtual Core::hresult Configuration(const string& callsign /* @index */, const string& configuration /* @opaque */) = 0;
+
+        // @property
+        // @brief Framework attributes
+        // @details Changes are not persisted automatically. Call Persist("PluginHost") to retain them.
+        // @param attribute Attribute name (omit to retrieve all)
+        // @retval ERROR_NONE Attribute was retrieved or matches the active value
+        // @retval ERROR_UNKNOWN_KEY Attribute does not exist
+        // @retval ERROR_BAD_REQUEST Attribute value is invalid
+        // @retval ERROR_NOT_SUPPORTED Attribute cannot be changed in current framework configuration
+        // @retval ERROR_REQUEST_SUBMITTED Attribute will take effect after framework restart
+        virtual Core::hresult Attribute(const Core::OptionalType<attribute>& attribute /* @index */, string& value /* @out @opaque */) const = 0;
+        virtual Core::hresult Attribute(const attribute attribute /* @index */, const string& value /* @opaque */) = 0;
     };
 
     // @json 1.0.0 @text:legacy_lowercase
@@ -262,7 +290,7 @@ namespace Controller {
                 enum extensiontype : uint8_t {
                     WARNING_REPORTING = 1,
                     BLUETOOTH = 2,
-                    HIBERBATE = 4,
+                    HIBERNATE = 4,
                     PROCESS_CONTAINERS = 8
                 };
 

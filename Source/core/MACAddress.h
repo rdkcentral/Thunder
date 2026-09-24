@@ -40,19 +40,13 @@ namespace Thunder {
             inline MACAddress() {
                 ::memset(_address, 0xFF, sizeof(_address));
             }
-            inline MACAddress(const TCHAR input[]) {
-                uint8_t begin = 0;
-
-                // Skip the whitespace in front...
-                while ((input[begin] != '\0') && (::isspace(input[begin]))) {
-                    begin++;
-                }
-
-                if (Convert(Analyze(&input[begin]), &input[begin]) == false) {
-                    ::memset(_address, 0xFF, sizeof(_address));
-                }
+            inline explicit MACAddress(const TCHAR input[]) {
+                FromCString(input);
             }
-            inline MACAddress(const uint8_t address[6]) {
+            inline explicit MACAddress(const string& input) {
+                FromCString(input.c_str());
+            }
+            inline explicit MACAddress(const uint8_t address[6]) {
                 ::memcpy(_address, address, sizeof(_address));
             }
             inline MACAddress(MACAddress&& move) noexcept {
@@ -71,7 +65,10 @@ namespace Thunder {
                 ::memcpy(_address, rhs._address, sizeof(_address));
                 return (*this);
             }
-
+            inline MACAddress& operator=(const string& rhs) {
+                FromCString(rhs.c_str());
+                return (*this);
+            }
             inline bool operator== (const MACAddress& rhs) const {
                 return (::memcmp(rhs._address, _address, sizeof(_address)) == 0);
             }
@@ -176,6 +173,20 @@ namespace Thunder {
                 }
                 }
                 return (converted);
+            }
+
+        private:
+            void FromCString(const TCHAR input[]) {
+                uint8_t begin = 0;
+
+                // Skip the whitespace in front...
+                while ((input[begin] != '\0') && (::isspace(input[begin]))) {
+                    begin++;
+                }
+
+                if (Convert(Analyze(&input[begin]), &input[begin]) == false) {
+                    ::memset(_address, 0xFF, sizeof(_address));
+                }
             }
 
         private:

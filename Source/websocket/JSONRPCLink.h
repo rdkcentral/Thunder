@@ -22,6 +22,10 @@
 #include "Module.h"
 #include "WebSocketLink.h"
 
+#ifndef JSONRPC_OPEN_TIMEOUT
+#define JSONRPC_OPEN_TIMEOUT 2000
+#endif
+
 namespace Thunder {
 
     namespace JSONRPC {
@@ -29,7 +33,7 @@ namespace Thunder {
         using namespace Core::TypeTraits;
 
         template<typename INTERFACE>
-        class LinkType {
+        class EXTERNAL LinkType {
         private:
             typedef std::function<void(const Core::JSONRPC::Message&)> CallbackFunction;
 
@@ -161,7 +165,7 @@ namespace Thunder {
                     {
                         _parent.StateChange();
                     }
-                    virtual bool IsIdle() const
+                    virtual bool IsIdle() const override
                     {
                         return (true);
                     }
@@ -262,7 +266,7 @@ namespace Thunder {
                 }
                 uint32_t Initialize()
                 {
-                    return (Open(1000));
+                    return (Open(JSONRPC_OPEN_TIMEOUT));
                 }
                 void Deinitialize()
                 {
@@ -285,11 +289,11 @@ namespace Thunder {
                     }
                     _adminLock.Unlock();
                 }
-                bool Open(const uint32_t waitTime)
+                uint32_t Open(const uint32_t waitTime)
                 {
-                    bool result = true;
+                    uint32_t result = Core::ERROR_NONE;
                     if (_channel.IsClosed() == true) {
-                        result = (_channel.Open(waitTime) == Core::ERROR_NONE);
+                        result = _channel.Open(waitTime);
                     }
                     return (result);
                 }
@@ -585,11 +589,17 @@ namespace Thunder {
             {
                 std::function<void(const INBOUND& parameters)> actualMethod = method;
                 InvokeFunction implementation = [actualMethod](const Core::JSONRPC::Context&, const string&, const string& parameters, string& result) -> uint32_t {
+                    Core::OptionalType<Core::JSON::Error> report;
                     INBOUND inbound;
-                    inbound.FromString(parameters);
-                    actualMethod(inbound);
+                    uint32_t resultCode = Core::ERROR_PARSE_FAILURE;
+                    inbound.FromString(parameters, report);
+
+                    if (report.IsSet() == false) {
+                        actualMethod(inbound);
+                        resultCode = Core::ERROR_NONE;
+                    }
                     result.clear();
-                    return (Core::ERROR_NONE);
+                    return (resultCode);
                 };
 
                 _handler.Register(eventName, implementation);
@@ -600,11 +610,17 @@ namespace Thunder {
                 // using INBOUND = typename Core::TypeTraits::func_traits<METHOD>::template argument<0>::type;
                 std::function<void(INBOUND parameters)> actualMethod = std::bind(method, objectPtr, std::placeholders::_1);
                 InvokeFunction implementation = [actualMethod](const Core::JSONRPC::Context&, const string&, const string& parameters, string& result) -> uint32_t {
+                    Core::OptionalType<Core::JSON::Error> report;
                     INBOUND inbound;
-                    inbound.FromString(parameters);
-                    actualMethod(inbound);
+                    uint32_t resultCode = Core::ERROR_PARSE_FAILURE;
+                    inbound.FromString(parameters, report);
+
+                    if (report.IsSet() == false) {
+                        actualMethod(inbound);
+                        resultCode = Core::ERROR_NONE;
+                    }
                     result.clear();
-                    return (Core::ERROR_NONE);
+                    return (resultCode);
                 };
                 _handler.Register(eventName, implementation);
             }
@@ -865,11 +881,11 @@ namespace Thunder {
                         index++;
                     }
                 }
-                _scheduledTime = (result != static_cast<uint64_t>(~0) ? result : 0);
-
+                const uint64_t scheduledTime = (result != static_cast<uint64_t>(~0) ? result : 0);
+                _scheduledTime = scheduledTime;
                 _adminLock.Unlock();
 
-                return (_scheduledTime);
+                return (scheduledTime);
             }
             template <typename PARAMETERS, typename RESPONSE>
             uint32_t InternalInvoke(const uint32_t waitTime, const string& method, const PARAMETERS& parameters, RESPONSE& inbound)
@@ -1213,6 +1229,15 @@ namespace Thunder {
             uint64_t _scheduledTime;
             string _versionstring;
         };
+
+        // Suppress implicit instantiation in all consumer TUs.
+        // The websocket library provides the single authoritative instantiation.
+        // This ensures channelMap, CommunicationChannel, ChannelImpl, and HandlerType
+        // vtables are all anchored in the websocket library, preventing use-after-free
+        // when a plugin that first instantiated the template is unloaded.
+        // Add a matching `template class LinkType<...>` line in JSONRPCLink.cpp for each new INTERFACE type.
+        extern template class LinkType<Core::JSON::IElement>;
+        extern template class LinkType<Core::JSON::IMessagePack>;
 
         // This is for backward compatibility. Please use the template and not the typedef below!!!
         typedef LinkType<Core::JSON::IElement> DEPRECATED Client;

@@ -118,9 +118,16 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
         {
             Core::ServiceAdministrator::Instance().Callback(&_sink);
 
-            if (threads > 1) {
-                SYSLOG(Logging::Notification, ("Spawned: %d additional minions.", threads - 1));
-            }
+            SYSLOG(Logging::Startup, (_T("<PID:%d>: WorkerPool config: callsign=%s, created threads=%d, additional threads=%d, total thread capacity=%d, queue size=%u, stack size=%u, low priority limit=%d, medium priority limit=%d"),
+                Core::ProcessInfo().Id(),
+                callsign.c_str(),
+                static_cast<uint8_t>(threads - additionalThreads),
+                additionalThreads,
+                threads,
+                queueSize,
+                stackSize,
+                (threads > 2 ? (threads - 1) : threads),
+                (threads > 2 ? (threads - 1) : threads)));
         }
 POP_WARNING()
 
@@ -169,7 +176,7 @@ POP_WARNING()
         ConsoleOptions& operator= (const ConsoleOptions&&) = delete;
 
         ConsoleOptions(int argumentCount, TCHAR* arguments[])
-            : Core::Options(argumentCount, arguments, _T("h:l:c:C:r:p:s:d:a:m:i:u:g:t:e:E:x:V:v:P:S:f:"))
+            : Core::Options(argumentCount, arguments, _T("h:l:c:C:r:p:s:X:d:a:m:i:u:g:t:e:E:x:V:v:P:S:f:"))
             , Locator(nullptr)
             , ClassName(nullptr)
             , Callsign(nullptr)
@@ -179,6 +186,7 @@ POP_WARNING()
             , Exchange(0)
             , PersistentPath()
             , SystemPath()
+            , ExtensionPath()
             , DataPath()
             , VolatilePath()
             , AppPath()
@@ -204,6 +212,7 @@ POP_WARNING()
         uint32_t Exchange;
         string PersistentPath;
         string SystemPath;
+        string ExtensionPath;
         string DataPath;
         string VolatilePath;
         string AppPath;
@@ -249,6 +258,9 @@ POP_WARNING()
                 break;
             case 's':
                 SystemPath = Core::Directory::Normalize(Strip(argument));
+                break;
+            case 'X':
+                ExtensionPath = Core::Directory::Normalize(Strip(argument));
                 break;
             case 'd':
                 DataPath = Core::Directory::Normalize(Strip(argument));
@@ -352,10 +364,16 @@ POP_WARNING()
                     result = CheckInstance((Core::Directory::Normalize(options.SystemRootPath + options.SystemPath) + options.Locator), options);
 
                     if (result == nullptr) {
-                        result = CheckInstance((Core::Directory::Normalize(options.SystemRootPath + options.DataPath) + options.Locator), options);
+                        if (options.ExtensionPath.empty() == false) {
+                            result = CheckInstance((Core::Directory::Normalize(options.SystemRootPath + options.ExtensionPath) + options.Locator), options);
+                        }
 
                         if (result == nullptr) {
-                            result = CheckInstance((Core::Directory::Normalize(options.SystemRootPath + options.AppPath + _T("Plugins")) + options.Locator), options);
+                            result = CheckInstance((Core::Directory::Normalize(options.SystemRootPath + options.DataPath) + options.Locator), options);
+
+                            if (result == nullptr) {
+                                result = CheckInstance((Core::Directory::Normalize(options.SystemRootPath + options.AppPath + _T("Plugins")) + options.Locator), options);
+                            }
                         }
                     }
                 }
@@ -518,7 +536,7 @@ public:
                 Core::Library library(index.Current().c_str());
 
                 if (library.IsLoaded() == true) {
-                    _proxyStubs.push_back(library);
+                    _proxyStubs.push_back(std::move(library));
                 }
             }
         }
@@ -601,6 +619,7 @@ int main(int argc, char** argv)
         printf("        [-g <group>]\n");
         printf("        [-p <persistent path>]\n");
         printf("        [-s <system path>]\n");
+        printf("        [-X <extension path>]\n");
         printf("        [-d <data path>]\n");
         printf("        [-v <volatile path>]\n");
         printf("        [-f <linker_path>...\n");
@@ -673,8 +692,10 @@ int main(int argc, char** argv)
 
         TRACE_L1("Opening a message file with ID: [%d].", options.Exchange);
 
+#ifdef __CORE_MESSAGING__
         // Due to the LXC container support all ID's get mapped. For the MessageBuffer, use the host given ID.
         Messaging::MessageUnit::Instance().Open(options.Exchange);
+#endif
 
         if (remoteNode.IsValid()) {
             void* base = nullptr;
@@ -700,8 +721,10 @@ int main(int argc, char** argv)
             }
         }
 
-        //close messaging unit before singletons are cleared
+        // Close messaging unit before singletons are cleared.
+#ifdef __CORE_MESSAGING__
         Messaging::MessageUnit::Instance().Close();
+#endif
     }
 
     TRACE_L1("End of Process!!!!");

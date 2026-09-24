@@ -3,6 +3,10 @@ name: Build Thunder on MacOS
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
 on:
   workflow_dispatch:
   push:
@@ -20,11 +24,15 @@ on:
 
 jobs:
   Thunder_MacOS:
-    uses: rdkcentral/Thunder/.github/workflows/MacOS build template.yml@master
+    uses: ./.github/workflows/MacOS build template.yml
 
   ThunderInterfaces_MacOS:
     needs: Thunder_MacOS
     uses: rdkcentral/ThunderInterfaces/.github/workflows/MacOS build template.yml@master
+
+  ThunderExtensions_MacOS:
+    needs: Thunder_MacOS
+    uses: rdkcentral/ThunderExtensions/.github/workflows/MacOS build template.yml@main
 
   ThunderClientLibraries_MacOS:
     needs: ThunderInterfaces_MacOS

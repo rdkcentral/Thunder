@@ -32,6 +32,7 @@ namespace Crypto {
 
     AESEncryption::~AESEncryption()
     {
+        mbedtls_aes_free(&_context);
     }
 
     uint32_t AESEncryption::Key(const uint8_t length, const uint8_t key[])
@@ -170,8 +171,6 @@ namespace Crypto {
             }
             break;
         }
-            result = mbedtls_aes_crypt_ofb(&_context, length, &_offset, _iv, input, output);
-            break;
 #endif
         default:
             ASSERT(false);
@@ -191,6 +190,7 @@ namespace Crypto {
 
     AESDecryption::~AESDecryption()
     {
+        mbedtls_aes_free(&_context);
     }
 
     uint32_t AESDecryption::Key(const uint8_t length, const uint8_t key[])

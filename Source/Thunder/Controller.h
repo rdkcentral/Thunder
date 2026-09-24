@@ -171,7 +171,7 @@ namespace Plugin {
         public:
             ProbeConfig Probe;
             Core::JSON::ArrayType<Core::JSON::String> Resumes;
-            Core::JSON::ArrayType<Core::JSON::EnumType<PluginHost::ISubSystem::subsystem>> SubSystems;
+            Core::JSON::ArrayType<Core::JSON::EnumType<Configuration::subsystem>> SubSystems;
             Core::JSON::Boolean Ui;
         };
 
@@ -311,9 +311,12 @@ namespace Plugin {
         Core::hresult DiscoveryResults(IDiscovery::Data::IDiscoveryResultsIterator*& results) const override;
 
         // IConfiguration overrides
-        Core::hresult Persist() override;
+        Core::hresult Persist(const Core::OptionalType<string>& callsign) override;
+        Core::hresult Restore(const Core::OptionalType<string>& callsign) override;
         Core::hresult Configuration(const Core::OptionalType<string>& callsign, string& configuration) const override;
         Core::hresult Configuration(const string& callsign, const string& configuration) override;
+        Core::hresult Attribute(const Core::OptionalType<IConfiguration::attribute>& attribute, string& value) const override;
+        Core::hresult Attribute(const IConfiguration::attribute attribute, const string& value) override;
 
         // ILifeTime overrides
         Core::hresult Register(Exchange::Controller::ILifeTime::INotification* notification, const Core::OptionalType<string>& callsign = {}) override;

@@ -21,6 +21,32 @@ get_filename_component(TARGET ${CMAKE_CURRENT_SOURCE_DIR} NAME)
 
 set(THREADPOOL_COUNT "4" CACHE STRING "The number of threads in the thread pool")
 set(ENABLE_TRACING_MODULES ""  CACHE STRING "A space separated list of specific tracing modules to be enabled at start.")
+set(ENABLE_TRACING_CATEGORIES "" CACHE STRING "A space separated list of specific tracing categories to be enabled at start.")
+set(MESSAGING_TYPE_DEFAULTS "" CACHE STRING "A semicolon separated list of message type defaults (TYPE=ON or TYPE=OFF).")
+set(HIBERNATE_WAKEUP_TIMEOUT 10000 CACHE STRING "Maximum time allowed for wakeup from hibernation in milliseconds")
+
+macro(thunder_postmortem_sink_value VAR_IN VAR_OUT)
+    string(TOUPPER "${${VAR_IN}}" _s)
+    if (_s STREQUAL "FILE")
+        set(${VAR_OUT} 1)
+    elseif(_s STREQUAL "LOG")
+        set(${VAR_OUT} 2)
+    elseif(_s STREQUAL "ALL")
+        set(${VAR_OUT} 3)
+    else()
+        set(${VAR_OUT} 0)
+    endif()
+endmacro()
+
+set(POSTMORTEM_WORKERPOOL_SINK "FILE" CACHE STRING "Default WorkerPool JSON dump sink on crash (FILE | LOG | ALL | DISABLED)")
+set(POSTMORTEM_CALLSTACK_SINK "DISABLED" CACHE STRING "Default inline callstack print sink on crash (FILE | LOG | ALL | DISABLED)")
+set_property(CACHE POSTMORTEM_WORKERPOOL_SINK PROPERTY STRINGS FILE LOG ALL DISABLED)
+set_property(CACHE POSTMORTEM_CALLSTACK_SINK  PROPERTY STRINGS FILE LOG ALL DISABLED)
+
+thunder_postmortem_sink_value(POSTMORTEM_WORKERPOOL_SINK _wp_sink)
+thunder_postmortem_sink_value(POSTMORTEM_CALLSTACK_SINK  _cs_sink)
+
+option(SKIP_PERSISTENT_PATH_INSTALL "This will skip installing the persistent path and its privileges. Needed for local build/installs" OFF)
 
 add_executable(${TARGET}
         Controller.cpp
@@ -36,6 +62,8 @@ target_compile_definitions(${TARGET}
           NAMESPACE=${NAMESPACE}
           APPLICATION_NAME=${TARGET}
           THREADPOOL_COUNT=${THREADPOOL_COUNT}
+          THUNDER_POSTMORTEM_WORKERPOOL_SINK_DEFAULT=${_wp_sink}
+          THUNDER_POSTMORTEM_CALLSTACK_SINK_DEFAULT=${_cs_sink}
         )
 
 target_compile_options (${TARGET} PRIVATE -Wno-psabi)
@@ -46,6 +74,12 @@ if (TREE_REFERENCE)
               -DTREE_REFERENCE=${TREE_REFERENCE}
             )
 endif()
+
+if(ACCEPT_VERSION_IN_CALLSIGN)
+   target_compile_definitions(${TARGET} PRIVATE __ACCEPT_VERSION_IN_CALLSIGN__=${ACCEPT_VERSION_IN_CALLSIGN})
+   message(STATUS "accept version in callsign syntax")
+endif()
+
 
 target_include_directories(${TARGET}
         PUBLIC
@@ -65,12 +99,17 @@ target_link_libraries(${TARGET}
           ${NAMESPACE}Core::${NAMESPACE}Core
           ${NAMESPACE}Cryptalgo::${NAMESPACE}Cryptalgo
           ${NAMESPACE}COM::${NAMESPACE}COM
-          ${NAMESPACE}Messaging::${NAMESPACE}Messaging
           ${NAMESPACE}WebSocket::${NAMESPACE}WebSocket
           ${NAMESPACE}Plugins::${NAMESPACE}Plugins
           ${NAMESPACE}COMProcess::${NAMESPACE}COMProcess  # For COM executable define
           Threads::Threads
         )
+
+if(MESSAGING)
+    target_link_libraries(${TARGET}
+        PRIVATE
+            ${NAMESPACE}Messaging::${NAMESPACE}Messaging)
+endif()
 
 if(WARNING_REPORTING)
     target_sources(${TARGET} PRIVATE WarningReportingCategories.cpp)
@@ -89,11 +128,12 @@ if(HIBERNATESUPPORT)
     target_link_libraries(${TARGET} PRIVATE
         ${NAMESPACE}Hibernate::${NAMESPACE}Hibernate)
     target_compile_definitions(${TARGET} PUBLIC
-         HIBERNATE_SUPPORT_ENABLED=1)
+         HIBERNATE_SUPPORT_ENABLED=1
+         HIBERNATE_WAKEUP_TIMEOUT=${HIBERNATE_WAKEUP_TIMEOUT})
 endif()
 
 set_target_properties(${TARGET} PROPERTIES
-        CXX_STANDARD 11
+        CXX_STANDARD ${CXX_STD}
         CXX_STANDARD_REQUIRED YES
         FRAMEWORK FALSE
         VERSION ${VERSION}
@@ -107,10 +147,12 @@ install(
         FRAMEWORK DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT ${NAMESPACE}_Runtime
 )
 
+if(NOT SKIP_PERSISTENT_PATH_INSTALL)
 install(DIRECTORY
     DESTINATION ${PERSISTENT_PATH} COMPONENT ${NAMESPACE}_Runtime
     DIRECTORY_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_WRITE GROUP_EXECUTE
 )
+endif()
 
 add_subdirectory(scripts)
 

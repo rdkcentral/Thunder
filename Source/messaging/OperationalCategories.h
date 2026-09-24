@@ -60,6 +60,10 @@ namespace OperationalStream {
             return (Instance().IsEnabled());
         }
 
+        inline static Core::Messaging::OutputMode Routing() {
+            return (Instance().Routing());
+        }
+
         inline static void Enable(const bool enable) {
             Instance().Enable(enable);
         }
