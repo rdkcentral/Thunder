@@ -33,6 +33,11 @@
 
 #define MAX_EXTERNAL_WAITS 2000 /* Wait for 2 Seconds */
 
+#ifndef HIBERNATE_WAKEUP_TIMEOUT
+#define HIBERNATE_WAKEUP_TIMEOUT 10000 /* ms */
+#endif
+
+
 namespace Thunder {
 
 namespace Core {
@@ -1451,7 +1456,7 @@ namespace PluginHost {
             }
 
         private:
-            uint32_t Wakeup(const uint32_t timeout);
+            uint32_t Wakeup(const uint32_t timeout = HIBERNATE_WAKEUP_TIMEOUT);
 
             #ifdef HIBERNATE_SUPPORT_ENABLED
             uint32_t HibernateChildren(const pid_t parentPID, const uint32_t timeout);
@@ -1940,8 +1945,6 @@ namespace PluginHost {
                 , _serverconfig(serverconfig)
                 , _persistentFolder(persistentFolder)
                 , _callsigns()
-                , _defaultPrefix(serverconfig.Prefix())
-                , _defaultIdleTime(serverconfig.IdleTime())
             {
                 Add(_T("Services"), &Services);
                 Add(_T("prefix"), &Prefix);
@@ -1950,14 +1953,14 @@ namespace PluginHost {
             ~Override() = default;
 
         public:
+            uint32_t LoadPluginHost()
+            {
+                return (LoadPluginHostConfig());
+            }
+
             uint32_t Load()
             {
                 uint32_t result = Core::ERROR_NONE;
-
-                const uint32_t rc = LoadPluginHostConfig();
-                if ((result == Core::ERROR_NONE) && (rc != Core::ERROR_NONE)) {
-                    result = rc;
-                }
 
                 ServiceMap::Iterator indexService(_services.Services());
                 while (indexService.Next() == true) {
@@ -2003,7 +2006,7 @@ namespace PluginHost {
 
                 const bool saveAll = (callsign.IsSet() == false);
                 const bool isPluginHost = (callsign.IsSet() == true) && (callsign.Value() == PluginHostCallsign());
-                if ((saveAll == true) || (isPluginHost == true)) {
+                if (isPluginHost == true) {
                     const uint32_t rc = SavePluginHostConfig();
                     if ((result == Core::ERROR_NONE) && (rc != Core::ERROR_NONE)) {
                         result = rc;
@@ -2050,7 +2053,7 @@ namespace PluginHost {
                 const bool destroyAll = (callsign.IsSet() == false);
                 const bool isPluginHost = (callsign.IsSet() == true) && (callsign.Value() == PluginHostCallsign());
 
-                if ((destroyAll == true) || (isPluginHost == true)) {
+                if (isPluginHost == true) {
                     const uint32_t rc = DestroyOverride(PluginHostCallsign());
                     if ((result == Core::ERROR_NONE) && (rc != Core::ERROR_NONE)) {
                         result = rc;
@@ -2222,14 +2225,16 @@ namespace PluginHost {
                 if (storage.Exists() == true) {
                     if (storage.Open(true) == true) {
                         IElement::FromFile(storage);
-                        
+                        Config::Attributes attributes(_serverconfig.ActiveAttributes());
+
                         if (Prefix.IsSet() == true) {
-                            _serverconfig.SetPrefix(Prefix.Value());
+                            attributes.Prefix = Prefix.Value();
                         }
                         if (IdleTime.IsSet() == true) {
-                            _serverconfig.SetIdleTime(IdleTime.Value());
+                            attributes.IdleTime = IdleTime.Value();
                         }
-                        
+                        _serverconfig.LoadAttributes(attributes);
+
                         storage.Close();
                     }
                     else {
@@ -2242,26 +2247,27 @@ namespace PluginHost {
             uint32_t SavePluginHostConfig()
             {
                 uint32_t result = Core::ERROR_NONE;
-                const string& currentPrefix = _serverconfig.Prefix();
-                const uint16_t currentIdleTime = _serverconfig.IdleTime();
-
-                const bool differs = ((currentPrefix != _defaultPrefix) || (currentIdleTime != _defaultIdleTime));
+                const Config::Attributes pending(_serverconfig.PendingAttributes());
                 Core::File storage(CreateOverridePath(PluginHostCallsign()));
-                if (differs == true) {
-                    if (storage.Create() == true) {
-                        Prefix   = currentPrefix;
-                        IdleTime = currentIdleTime;
-                        IElement::ToFile(storage);
-                        storage.Close();
-                    }
-                    else {
+
+                if (storage.Create() == true) {
+                    Prefix = pending.Prefix;
+                    IdleTime = pending.IdleTime;
+
+                    if (IElement::ToFile(storage) == false) {
                         result = storage.ErrorCode();
+                        if (result == Core::ERROR_NONE) {
+                            result = Core::ERROR_WRITE_ERROR;
+                        }
+                    }
+                    storage.Close();
+
+                    if (result != Core::ERROR_NONE) {
+                        storage.Destroy();
                     }
                 }
-                else if (storage.Exists() == true) {
-                    if (storage.Destroy() == false) {
-                        result = storage.ErrorCode();
-                    }
+                else {
+                    result = storage.ErrorCode();
                 }
                 return result;
             }
@@ -2293,8 +2299,6 @@ namespace PluginHost {
             PluginHost::Config& _serverconfig;
             const string _persistentFolder;
             Callsigns _callsigns;
-            const string _defaultPrefix;
-            const uint16_t _defaultIdleTime;
         };
 
         class ServiceMap {
@@ -5811,12 +5815,6 @@ namespace PluginHost {
         {
             Override infoBlob(_config, _services, Configuration().PersistentPath() + PluginOverrideDirectory);
             return (infoBlob.Destroy(callsign));
-        }
-
-        uint32_t Load()
-        {
-            Override infoBlob(_config, _services, Configuration().PersistentPath() + PluginOverrideDirectory);
-            return (infoBlob.Load());
         }
 
         void Visit(const std::function<void(const Channel&)>& handler)

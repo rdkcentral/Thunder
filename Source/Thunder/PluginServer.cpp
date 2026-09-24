@@ -379,7 +379,7 @@ namespace PluginHost {
             Unlock();
             result = Core::ERROR_ILLEGAL_STATE;
         } else if (currentState == IShell::state::HIBERNATED) {
-            result = Wakeup(3000);
+            result = Wakeup();
             Unlock();
         } else if ((currentState == IShell::state::DEACTIVATED) || (currentState == IShell::state::PRECONDITION)) {
 
@@ -593,7 +593,7 @@ namespace PluginHost {
 
             if(currentState == IShell::state::HIBERNATED)
             {
-                uint32_t wakeupResult = Wakeup(3000);
+                uint32_t wakeupResult = Wakeup();
                 if(wakeupResult != Core::ERROR_NONE)
                 {
                     //Force Activated state
@@ -1303,6 +1303,12 @@ namespace PluginHost {
         // Lets assign a workerpool, we created it...
         Core::WorkerPool::Assign(&_dispatcher);
 
+        Override overrides(_config, _services, configuration.PersistentPath() + PluginOverrideDirectory);
+        const uint32_t hostResult = overrides.LoadPluginHost();
+        if (hostResult != Core::ERROR_NONE) {
+            SYSLOG(Logging::Startup, (_T("Loading PluginHost overrides failed. Error [%u]"), hostResult));
+        }
+
         Plugin::Config metaDataConfig;
 
         metaDataConfig.ClassName = Core::ClassNameOnly(typeid(Plugin::Controller).name()).Text();
@@ -1321,7 +1327,10 @@ namespace PluginHost {
         }
 
         // Get the configuration from the persistent location.
-        Load();
+        const uint32_t pluginResult = overrides.Load();
+        if (pluginResult != Core::ERROR_NONE) {
+            SYSLOG(Logging::Startup, (_T("Loading plugin overrides failed. Error [%u]"), pluginResult));
+        }
 
         // Create input handle
         _inputHandler.Initialize(
