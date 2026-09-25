@@ -81,9 +81,11 @@ POP_WARNING()
                 else {
                     TRACE_L1("All living objects are killed. Time for HaraKiri!!.");
 
-                    // Seems there is no more live here, time to signal the
-                    // WorkerPool to quit running and close down...
-                    _parent.Stop();
+                    if (_parent.HostsPluginInterface() == false) {
+                        // IPlugin interface is released by the host, which
+                        // terminates this process after the final proxy release completes
+                        _parent.Stop();
+                    }
                 }
             }
             void Destructed() override {
@@ -111,10 +113,11 @@ POP_WARNING()
         WorkerPoolImplementation& operator=(const WorkerPoolImplementation&) = delete;
 
 PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
-        WorkerPoolImplementation(const uint8_t threads, const uint32_t stackSize, const uint32_t queueSize, const string& callsign, const uint8_t additionalThreads = 1)
+        WorkerPoolImplementation(const uint8_t threads, const uint32_t stackSize, const uint32_t queueSize, const string& callsign, const uint32_t interfaceId, const uint8_t additionalThreads = 1)
             : WorkerPool((threads - additionalThreads), stackSize, queueSize, &_dispatcher, this, (threads > 2 ? (threads - 1) : threads), (threads > 2 ? (threads - 1) : threads), additionalThreads)
             , _dispatcher(callsign)
             , _sink(*this)
+            , _interfaceId(interfaceId)
         {
             Core::ServiceAdministrator::Instance().Callback(&_sink);
 
@@ -147,6 +150,10 @@ POP_WARNING()
         {
             Core::WorkerPool::Stop();
         }
+        bool HostsPluginInterface() const
+        {
+            return (_interfaceId == PluginHost::IPlugin::ID);
+        }
         void Idle() override
         {
             // If we handled all pending requests, it is safe to "unload"
@@ -165,6 +172,7 @@ POP_WARNING()
     private:
         Dispatcher _dispatcher;
         Sink _sink;
+        const uint32_t _interfaceId;
     };
 
     class ConsoleOptions : public Core::Options {
@@ -503,10 +511,10 @@ public:
 
         _lock.Unlock();
     }
-    void Startup(const uint8_t threadCount, const Core::NodeId& remoteNode, const string& callsign)
+    void Startup(const uint8_t threadCount, const Core::NodeId& remoteNode, const string& callsign, const uint32_t interfaceId)
     {
         // Seems like we have enough information, open up the Process communcication Channel.
-        _engine = Core::ProxyType<Process::WorkerPoolImplementation>::Create(threadCount, Core::Thread::DefaultStackSize(), 16, callsign);
+        _engine = Core::ProxyType<Process::WorkerPoolImplementation>::Create(threadCount, Core::Thread::DefaultStackSize(), 16, callsign, interfaceId);
 
         // Whenever someone is looking for a WorkerPool, here it is, register it..
         Core::IWorkerPool::Assign(&(*_engine));
@@ -711,7 +719,7 @@ int main(int argc, char** argv)
                 Core::ProcessCurrent().User(string(options.User));
             }
 
-            process.Startup(options.Threads, remoteNode, callsign);
+            process.Startup(options.Threads, remoteNode, callsign, options.InterfaceId);
 
             // Register an interface to handle incoming requests for interfaces.
             if ((base = Process::AcquireInterfaces(options)) != nullptr) {
