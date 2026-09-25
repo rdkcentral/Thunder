@@ -4829,7 +4829,7 @@ namespace Core {
                     ::fprintf(stderr, "MOVE: VariantContainer HasLabel = %s\n", HasLabel(index->first.c_str()) ? "true" : "false");
                     ::fprintf(stderr, "MOVE: Container HasLabel = %s\n", Container::HasLabel(index->first.c_str()) ? "true" : "false");
                     ::fflush(stderr);
-                    ASSERT (HasLabel(index->first.c_str()));
+                    ASSERT (move.HasLabel(index->first.c_str()));
                     Container::Add(index->first.c_str(), &(index->second));
                     ::fprintf(stderr, "MOVE: after Add Container HasLabel = %s\n", Container::HasLabel(index->first.c_str()) ? "true" : "false");
                     ::fflush(stderr);
