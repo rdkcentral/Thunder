@@ -4825,8 +4825,14 @@ namespace Core {
                 Elements::iterator index(_elements.begin());
 
                 while (index != _elements.end()) {
+                    ::fprintf(stderr, "MOVE: label = %s\n", index->first.c_str());
+                    ::fprintf(stderr, "MOVE: VariantContainer HasLabel = %s\n", HasLabel(index->first.c_str()) ? "true" : "false");
+                    ::fprintf(stderr, "MOVE: Container HasLabel = %s\n", Container::HasLabel(index->first.c_str()) ? "true" : "false");
+                    ::fflush(stderr);
                     ASSERT (HasLabel(index->first.c_str()));
                     Container::Add(index->first.c_str(), &(index->second));
+                    ::fprintf(stderr, "MOVE: after Add Container HasLabel = %s\n", Container::HasLabel(index->first.c_str()) ? "true" : "false");
+                    ::fflush(stderr);
                     index++;
                 }
             }
