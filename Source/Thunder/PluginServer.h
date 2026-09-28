@@ -4092,6 +4092,17 @@ namespace PluginHost {
             inline uint32_t Clone(const Core::ProxyType<IShell>& originalShell, const string& newCallsign, Core::ProxyType<IShell>& newService)
             {
                 uint32_t result = Core::ERROR_GENERAL;
+
+                // Security: Reject callsigns containing path separators or traversal
+                // sequences.  The callsign is concatenated into filesystem paths
+                // (mkdir, dlopen search paths) so a value like "../../tmp/evil"
+                // would create arbitrary directories as root.
+                if ((newCallsign.find('/') != string::npos) || (newCallsign.find('\\') != string::npos) ||
+                    (newCallsign.find("..") != string::npos) || (newCallsign.empty() == true)) {
+                    SYSLOG(Logging::Error, (_T("Security: Clone rejected — invalid callsign '%s'"), newCallsign.c_str()));
+                    return (Core::ERROR_BAD_REQUEST);
+                }
+
                 const Core::ProxyType<Service> original = Core::ProxyType<Service>(originalShell);
 
                 ASSERT(original.IsValid());
