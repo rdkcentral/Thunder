@@ -243,8 +243,21 @@ namespace Web {
                                 bytesToMove = (bytesToMove << 8) | static_cast<uint64_t>(dataFrame[i]);
                             }
                         }
+
+                        // Security: cap the decoded payload length to prevent integer
+                        // overflow when added to actualHeader (uint16_t arithmetic) and
+                        // to avoid an unbounded XOR write past the receive buffer.
+                        // RFC 6455 allows 64-bit lengths but no sane frame exceeds ~16 MB.
+                        static constexpr uint64_t maxPayloadLength = 16u * 1024u * 1024u;
+                        if (bytesToMove > maxPayloadLength) {
+                            TRACE_L1("WebSocket payload length %" PRIu64 " exceeds safety limit", bytesToMove);
+                            _frameType = VIOLATION;
+                            receivedSize = 0;
+                            actualHeader = 0;
+                        }
+
                         // We might not have the full body yet...
-                        if ((actualHeader + bytesToMove) > receivedSize) {
+                        if (((_frameType & 0xF8) == 0) && ((actualHeader + bytesToMove) > receivedSize)) {
                             _pendingReceiveBytes = static_cast<uint32_t>(actualHeader + bytesToMove - receivedSize);
                             bytesToMove = receivedSize - actualHeader;
                             _progressInfo &= (~0x20);
