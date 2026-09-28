@@ -1475,6 +1475,13 @@ namespace PluginHost {
                 ASSERT_VERBOSE((normalized.empty() == locator.empty()), "path normalization failed");
                 ASSERT_VERBOSE((rootPath.empty() == PluginHost::Service::Configuration().SystemRootPath.Value().empty()), "path normalization failed");
 
+                // Security: Reject locators containing path traversal sequences
+                // to prevent dlopen of attacker-controlled libraries.
+                if ((normalized.find("..") != string::npos)) {
+                    SYSLOG(Logging::Error, (_T("Security: GetLibrarySearchPaths rejected locator with traversal: '%s'"), locator.c_str()));
+                    return (Core::ServiceType<RPC::StringIterator>::Create<RPC::IStringIterator>(searchPaths));
+                }
+
                 if (normalized.empty() == false)  {
                     if (Core::File::IsPathAbsolute(locator) == true) {
                         searchPaths.push_back(Core::File::Normalize(rootPath + normalized));
