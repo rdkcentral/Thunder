@@ -303,10 +303,13 @@ namespace PluginHost {
             _queryInterfaceLock.Lock();
             if ((State() == IShell::state::ACTIVATED) || (State() == IShell::state::DEACTIVATION)) { //needed as we only want to send plugin state notifications when the plugin is active or deactivating which is not guaranteed by the lock itself as it comes from the same thread handling the activation and deactivation
                 if (id == PluginHost::IDispatcher::ID) {
-                    if (_jsonrpc != nullptr) {
-                        _jsonrpc->AddRef();
-                        asIUnknown == false ? result = _jsonrpc : result = static_cast<Core::IUnknown*>(_jsonrpc);
-                    }
+                    // Security: IDispatcher allows invoking any plugin JSON-RPC
+                    // method with an attacker-chosen token, bypassing the HTTP-side
+                    // security layer.  Gate access behind the external interface
+                    // offset check (same policy as MinimalCommunicator::Acquire).
+                    SYSLOG(Logging::Error, (_T("Security: IDispatcher acquisition gated — use JSON-RPC channel instead")));
+                    // Do not hand out IDispatcher over COM-RPC to prevent
+                    // security layer bypass.
                 } else if (_handler != nullptr) {
                     result = _handler->QueryInterface(id, asIUnknown);
                 }
