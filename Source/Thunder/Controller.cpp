@@ -790,9 +790,23 @@ namespace Plugin {
                     result->ErrorCode = Web::STATUS_BAD_REQUEST;
                 }
                 else {
-                    Core::Directory((_service->PersistentPath() + normalized).c_str()).Destroy();
-                    result->Message = "OK";
-                    result->ErrorCode = Web::STATUS_OK;
+                    const string fullPath(_service->PersistentPath() + normalized);
+
+                    // Security: Verify the resolved path still starts with
+                    // PersistentPath after normalization.  Also reject if the
+                    // normalized path still contains '..' (defense-in-depth
+                    // against Normalize bypass — see High_007).
+                    if ((fullPath.find("..") != string::npos) ||
+                        (fullPath.compare(0, _service->PersistentPath().length(), _service->PersistentPath()) != 0)) {
+                        result->Message = "path escapes persistent directory";
+                        result->ErrorCode = Web::STATUS_FORBIDDEN;
+                    }
+                    else {
+                        SYSLOG(Logging::Notification, (_T("DELETE Persistent: '%s'"), fullPath.c_str()));
+                        Core::Directory(fullPath.c_str()).Destroy();
+                        result->Message = "OK";
+                        result->ErrorCode = Web::STATUS_OK;
+                    }
                 }
             }
         }
