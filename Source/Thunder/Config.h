@@ -421,7 +421,7 @@ namespace PluginHost {
 #ifdef __WINDOWS__
                 , Communicator(_T("127.0.0.1:7889"))
 #else
-                , Communicator(_T("/tmp/communicator|0777"))
+                , Communicator(_T("/tmp/communicator|0660"))
 #endif
                 , Redirect(_T("http://127.0.0.1/Service/Controller/UI/index.html"))
                 , Signature(_T("TestSecretKey"))
