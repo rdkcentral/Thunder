@@ -325,6 +325,9 @@ namespace Core
         string result;
 
         if (IsValid() == true) {
+            // MaximumURLLength (2048) bounds all CopyFragment calls below,
+            // preventing stack buffer overflow from long URL components.
+            static_assert(MaximumURLLength <= 8192, "MaximumURLLength too large for stack allocation");
             uint32_t url_len = MaximumURLLength;
             TCHAR* url = reinterpret_cast<TCHAR*>(alloca((url_len + 1) * sizeof(TCHAR)));
              
