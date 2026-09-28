@@ -1435,11 +1435,13 @@ namespace PluginHost {
         controller->SetServer(this, std::move(externallyControlled));
 
         if ((_services.SubSystemInfo().Value() & (1 << ISubSystem::SECURITY)) != 0) {
-            // The controller is in control of the security, so I guess all systems green
-            // as the controller does not know anything about security :-)
+            // A plugin has claimed the SECURITY subsystem — it will enforce
+            // authorization.  The default provider can step back.
             securityProvider->Security(false);
         } else {
-            SYSLOG(Logging::Startup, (_T("Security ENABLED, incoming requests need to be authorized!!!")));
+            // Security: When no plugin claims SECURITY, keep the default
+            // security provider active.  Log a warning for operator visibility.
+            SYSLOG(Logging::Startup, (_T("WARNING: No SECURITY subsystem claimant — default security remains active")));
         }
 
         securityProvider->Release();
