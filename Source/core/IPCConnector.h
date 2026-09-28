@@ -183,6 +183,15 @@ namespace Core {
 
                         while ((_offset < 8) && (result < maxLength)) {
                             _label |= ((stream[result] & (_offset == 7 ? 0xFF : 0x7F)) << (7 * (_offset - 4)));
+
+                            // Security: Guard against underflow of _length when
+                            // processing malformed varint label bytes.  A crafted
+                            // frame could make _length reach 0 before the label
+                            // is fully consumed, wrapping to ~4 GB and causing
+                            // an infinite read loop.
+                            if (_length == 0) {
+                                break;
+                            }
                             _length--;
 
                             if ((stream[result++] & 0x80) != 0) {
