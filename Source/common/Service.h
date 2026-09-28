@@ -208,6 +208,14 @@ namespace PluginHost {
         }
         Core::hresult SystemRootPath(const string& systemRootPath) override
         {
+            // Security: Validate that the new SystemRootPath does not contain
+            // path traversal sequences.  This setter is exposed over COM-RPC
+            // without authorization and could be used to redirect the library
+            // load path to attacker-controlled directories.
+            if (systemRootPath.find("..") != string::npos) {
+                SYSLOG(Logging::Error, (_T("Security: SystemRootPath rejected — traversal detected: '%s'"), systemRootPath.c_str()));
+                return (Core::ERROR_BAD_REQUEST);
+            }
             _config.SystemRootPath(systemRootPath);
             return (Core::ERROR_NONE);
         }
