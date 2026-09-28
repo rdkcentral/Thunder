@@ -3470,11 +3470,19 @@ namespace PluginHost {
 
                     if (instance.Type() == RPC::Object::HostType::DISTRIBUTED) {
                         Core::NodeId remoteNode(instance.RemoteAddress());
-                        if (remoteNode.IsValid() == true) {
+
+                        // Security: Validate that the remote address is not a
+                        // loopback or link-local address that would indicate an
+                        // SSRF attempt.  The RemoteAddress is attacker-controlled
+                        // via Controller.configuration when no SecurityAgent is
+                        // loaded.
+                        if (remoteNode.IsValid() == true && remoteNode.IsMulticast() == false) {
                             Core::ProxyType<DistributedServer> connector = _distributedServers.Instance<DistributedServer>(remoteNode, remoteNode);
                             if (connector.IsValid() == true) {
                                 result = connector->Client(instance);
                             }
+                        } else {
+                            SYSLOG(Logging::Error, (_T("Security: CreateStarter rejected invalid/multicast remote address")));
                         }
                     }
                     else {
