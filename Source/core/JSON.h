@@ -4855,7 +4855,7 @@ namespace Core {
             {
                 Elements::iterator index(_elements.begin());
                 while (index != _elements.end()) {
-                    ASSERT (HasLabel(index->first.c_str()));
+                    ASSERT(static_cast<const Container&>(move).HasLabel(index->first.c_str()));
                     Container::Add(index->first.c_str(), &(index->second));
                     index++;
                 }
@@ -4936,7 +4936,7 @@ namespace Core {
                     Elements::iterator index(_elements.begin());
 
                     while (index != _elements.end()) {
-                        ASSERT (HasLabel(index->first.c_str()));
+                        ASSERT(static_cast<const Container&>(move).HasLabel(index->first.c_str()));
                         Container::Add(index->first.c_str(), &(index->second));
                         index++;
                     }
