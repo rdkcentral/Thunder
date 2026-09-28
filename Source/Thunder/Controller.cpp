@@ -758,6 +758,13 @@ namespace Plugin {
                 result->ErrorCode = Web::STATUS_OK;
                 result->Message = _T("Current configuration stored");
             } else if (index.Current() == _T("Harakiri")) {
+                // Security: The Harakiri endpoint triggers a full device reboot.
+                // When no SecurityAgent is loaded (SECURITY subsystem unclaimed),
+                // this endpoint is reachable without authentication from any
+                // local process or LAN-delivered web content.  Log the access
+                // for audit purposes; actual access control depends on the
+                // security provider being active (see Critical_009 fix).
+                SYSLOG(Logging::Notification, (_T("Harakiri (reboot) endpoint invoked via REST PUT")));
                 uint32_t status = Core::System::Reboot();
                 if (status == Core::ERROR_NONE) {
                     result->ErrorCode = Web::STATUS_OK;
