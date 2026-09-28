@@ -4902,11 +4902,12 @@ namespace Core {
             VariantContainer& operator=(VariantContainer&& move) noexcept
             {
                 if (this != &move) {
+                    this->Reset();
                     _elements = std::move(move._elements);
                     Elements::iterator index(_elements.begin());
 
                     while (index != _elements.end()) {
-                        ASSERT (HasLabel(index->first.c_str()));
+                        ASSERT(static_cast<const Container&>(move).HasLabel(index->first.c_str()));
                         Container::Add(index->first.c_str(), &(index->second));
                         index++;
                     }
