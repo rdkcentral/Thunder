@@ -245,6 +245,15 @@ namespace PluginHost {
             // The postFixURL should *NOT* contain a starting or trailing slash!!!
             ASSERT((postFixURL.length() > 0) && (postFixURL[0] != '/') && (postFixURL[postFixURL.length() - 1] != '/'));
 
+            // Security: Reject file root paths containing traversal sequences
+            // or that attempt to serve from outside the data path hierarchy.
+            // This API is exposed over COM-RPC without authorization and an
+            // attacker could point it at '/' to serve arbitrary files as root.
+            if ((fileRootPath.find("..") != string::npos) || (postFixURL.find("..") != string::npos)) {
+                SYSLOG(Logging::Error, (_T("Security: EnableWebServer rejected — traversal in path")));
+                return;
+            }
+
             // The postFixURL should *NOT* contain a starting or trailing slash!!!
             // We signal the request to service web files via a non-empty _webServerFilePath.
             _webURLPath = postFixURL;
