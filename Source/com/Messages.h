@@ -60,7 +60,20 @@ namespace RPC {
             }
             uint16_t Deserialize(const uint32_t offset, const uint8_t stream[], const uint16_t maxLength)
             {
-                Size(offset + maxLength);
+                // Security: Cap the total frame size to prevent unbounded heap
+                // allocation from attacker-controlled wire lengths, and verify
+                // the resize succeeded before copying.
+                static constexpr uint32_t MAX_FRAME_SIZE = 4u * 1024u * 1024u;
+                const uint32_t required = offset + maxLength;
+                if ((required < offset) || (required > MAX_FRAME_SIZE)) {
+                    return (0);
+                }
+
+                Size(required);
+
+                if (Size() < required) {
+                    return (0);
+                }
 
                 ::memcpy(&(operator[](offset)), stream, maxLength);
 
