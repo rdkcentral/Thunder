@@ -128,7 +128,19 @@ namespace Core {
                                 }
 
                                 // ...but don't swallow another ..
-                                if ((result[offset] != '.') && (result[offset + 1] != '.')) {
+                                // Security: The previous check `(result[offset] != '.') &&
+                                // (result[offset + 1] != '.')` failed when the parent
+                                // segment was a dot-prefixed name (e.g. '.hidden') because
+                                // both characters matched dot individually.  Check for an
+                                // actual '..' segment bounded by '/' instead.
+                                bool isParentRef = false;
+                                if (result[offset] == '/') {
+                                    isParentRef = ((offset + 2 < result.length()) && (result[offset + 1] == '.') && (result[offset + 2] == '.'));
+                                } else {
+                                    isParentRef = ((offset + 1 < result.length()) && (result[offset] == '.') && (result[offset + 1] == '.') &&
+                                                   ((offset + 2 >= result.length()) || (result[offset + 2] == '/')));
+                                }
+                                if (isParentRef == false) {
                                     result.erase(offset + (result[offset] == '/' ? 1 : 0), index - offset + (result[offset] == '/' ? 0 : -1));
                                     index = offset;
                                 }
@@ -181,7 +193,14 @@ namespace Core {
                             }
 
                             // again do not swallow another ..
-                            if ((result[offset] != '.') && (result[offset + 1] != '.')) {
+                            bool isParentRef2 = false;
+                            if (result[offset] == '/') {
+                                isParentRef2 = ((offset + 2 < result.length()) && (result[offset + 1] == '.') && (result[offset + 2] == '.'));
+                            } else {
+                                isParentRef2 = ((offset + 1 < result.length()) && (result[offset] == '.') && (result[offset + 1] == '.') &&
+                                               ((offset + 2 >= result.length()) || (result[offset + 2] == '/')));
+                            }
+                            if (isParentRef2 == false) {
                                 result.erase(offset + (result[offset] == '/' ? 1 : 0));
 
                                 if ((result.empty() == true) && (allowDirs == true)) {
