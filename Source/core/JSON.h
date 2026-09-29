@@ -4859,6 +4859,7 @@ namespace Core {
                     Container::Add(index->first.c_str(), &(index->second));
                     index++;
                 }
+                move.Reset();
             }
 
             VariantContainer(const VariantContainer& copy)
@@ -4937,10 +4938,11 @@ namespace Core {
                     Elements::iterator index(_elements.begin());
 
                     while (index != _elements.end()) {
-                        ASSERT (static_cast<const Container&>(move).HasLabel(index->first.c_str()));
+                        ASSERT(static_cast<const Container&>(move).HasLabel(index->first.c_str()));
                         Container::Add(index->first.c_str(), &(index->second));
                         index++;
                     }
+                    move.Reset();
                 }
    
                 return (*this);

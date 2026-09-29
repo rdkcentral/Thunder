@@ -22,6 +22,7 @@
 #include <condition_variable>
 #include <mutex>
 #include <thread>
+#include <utility>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -548,6 +549,82 @@ namespace Core {
 
             ASSERT_EQ(client.Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
             ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+        };
+
+        IPTestAdministrator testAdmin(callback_parent, callback_child,
+                                      initHandshakeValue, maxWaitTime);
+        ::Thunder::Core::Singleton::Dispose();
+    }
+
+    TEST(test_socketport, socket_server_iterator_move_and_copy_rebinds)
+    {
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 4,
+                           maxWaitTimeMs = 4000, maxInitTime = 500;
+        constexpr uint8_t maxRetries = 1;
+
+        const string connector = "/tmp/test_sp_iterator_rebind.sock";
+
+        IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
+            ::unlink(connector.c_str());
+
+            ::Thunder::Core::SocketServerType<EchoConnector> server(
+                ::Thunder::Core::NodeId(connector.c_str()));
+
+            ASSERT_EQ(server.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+
+            for (uint32_t waited = 0; (waited < maxWaitTimeMs) && (server.Count() < 2); waited += 10) {
+                SleepMs(10);
+            }
+            ASSERT_EQ(server.Count(), 2u);
+
+            auto copiedSource = server.Clients();
+            ASSERT_TRUE(copiedSource.Next());
+            auto copied = copiedSource;
+            EXPECT_TRUE(copied.Next());
+            EXPECT_TRUE(copied.Client().IsValid());
+
+            auto movedSource = server.Clients();
+            ASSERT_TRUE(movedSource.Next());
+            auto moved(std::move(movedSource));
+            EXPECT_TRUE(moved.Next());
+            EXPECT_TRUE(moved.Client().IsValid());
+            movedSource.Reset();
+            EXPECT_FALSE(movedSource.Next());
+
+            auto copyAssignedSource = server.Clients();
+            ASSERT_TRUE(copyAssignedSource.Next());
+            auto copyAssigned = server.Clients();
+            copyAssigned = copyAssignedSource;
+            EXPECT_TRUE(copyAssigned.Next());
+            EXPECT_TRUE(copyAssigned.Client().IsValid());
+
+            auto moveAssignedSource = server.Clients();
+            ASSERT_TRUE(moveAssignedSource.Next());
+            auto moveAssigned = server.Clients();
+            moveAssigned = std::move(moveAssignedSource);
+            EXPECT_TRUE(moveAssigned.Next());
+            EXPECT_TRUE(moveAssigned.Client().IsValid());
+            moveAssignedSource.Reset();
+            EXPECT_FALSE(moveAssignedSource.Next());
+
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(server.Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+        };
+
+        IPTestAdministrator::Callback callback_parent = [&](IPTestAdministrator& testAdmin) {
+            SleepMs(maxInitTime);
+
+            EchoConnector client1(::Thunder::Core::NodeId(connector.c_str()));
+            EchoConnector client2(::Thunder::Core::NodeId(connector.c_str()));
+
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(client1.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(client2.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+
+            ASSERT_EQ(client1.Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(client2.Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
         };
 
         IPTestAdministrator testAdmin(callback_parent, callback_child,
