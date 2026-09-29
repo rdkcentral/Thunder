@@ -139,7 +139,13 @@ namespace WarningReporting {
         _adminLock.Unlock();
     }
 
-    void WarningReportingUnit::ReportWarningEvent(const char identifier[], const IWarningEvent& information)
+    OutputTargets WarningReportingUnit::Targets(const char category[], const Core::Messaging::OutputMode routing, const bool enabled) const
+    {
+        const Core::Messaging::Metadata metadata(Core::Messaging::Metadata::type::REPORTING, category, Core::Messaging::MODULE_REPORTING);
+        return (Messaging::MessageUnit::Instance().Targets(metadata, routing, enabled));
+    }
+
+    void WarningReportingUnit::ReportWarningEvent(const char identifier[], const IWarningEvent& information, const OutputTargets& targets)
     {
 #ifdef __CORE_MESSAGING__
         Thunder::Core::Messaging::Metadata metadata(Thunder::Core::Messaging::Metadata::type::REPORTING, information.Category(), Thunder::Core::Messaging::MODULE_REPORTING);
@@ -150,7 +156,7 @@ namespace WarningReporting {
         information.ToString(text);
         Thunder::Core::Messaging::TextMessage data(text);
 
-        Thunder::Messaging::MessageUnit::Instance().Push(report, &data, information.Routing());
+        Thunder::Messaging::MessageUnit::Instance().Push(report, &data, targets);
     #else
         string text;
         information.ToString(text);
