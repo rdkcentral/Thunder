@@ -63,9 +63,9 @@ namespace Core {
             {
             }
             IteratorType(IteratorType<HANDLECLIENT>&& move)
-                : _atHead(move._atHead)
+                : _atHead(true)
                 , _clients(std::move(move._clients))
-                , _iterator(std::move(move._iterator))
+                , _iterator(_clients.begin())
             {
                 move._atHead = true;
             }
@@ -73,20 +73,23 @@ namespace Core {
 
             IteratorType& operator=(const IteratorType<HANDLECLIENT>& RHS)
             {
-
-                _atHead = RHS._atHead;
+                _atHead = true;
                 _clients = RHS._clients;
-                _iterator = RHS._iterator;
+                _iterator = _clients.begin();
+
+                return (*this);
             }
             IteratorType& operator=(IteratorType<HANDLECLIENT>&& move)
             {
                 if (this != &move) {
-                    _atHead = move._atHead;
+                    _atHead = true;
                     _clients = std::move(move._clients);
-                    _iterator = std::move(move._iterator);
+                    _iterator = _clients.begin();
 
                     move._atHead = true;
                 }
+
+                return (*this);
             }
 
         public:
