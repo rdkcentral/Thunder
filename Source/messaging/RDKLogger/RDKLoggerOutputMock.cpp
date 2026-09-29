@@ -1,29 +1,124 @@
 #include "ExternalOutput.h"
+#include "RDKLoggerOutputMock.h"
 
 #include "Module.h"
+
+namespace {
+    struct MockState {
+        uint32_t initializeResult;
+        uint32_t enabled;
+        uint32_t submitResult;
+        uint32_t initializeCount;
+        uint32_t deinitializeCount;
+        uint32_t queryCount;
+        uint32_t submitCount;
+        string lastModule;
+        ThunderExternalLogLevel lastLevel;
+        string lastPayload;
+        std::map<string, uint32_t> queryCounts;
+    };
+
+    MockState& State()
+    {
+        static MockState state = { 0, 1, 0, 0, 0, 0, 0, string(), THUNDER_EXTERNAL_LOG_LEVEL_INFO, string(), {} };
+        return (state);
+    }
+}
 
 extern "C" {
     uint32_t ThunderExternalOutput_Initialize(void)
     {
+        State().initializeCount++;
         TRACE_L1("RDKLogger mock backend initialized");
-        return (0);
+        return (State().initializeResult);
     }
 
     uint32_t ThunderExternalOutput_IsEnabled(const char* module, const ThunderExternalLogLevel level)
     {
+        State().queryCount++;
+        State().lastModule = module;
+        State().lastLevel = level;
+        State().queryCounts[string(module) + '#' + Thunder::Core::NumberType<uint8_t>(static_cast<uint8_t>(level)).Text()]++;
         TRACE_L1("RDKLogger mock enablement query: module=%s level=%u", module, static_cast<unsigned>(level));
-        return (1);
+        return (State().enabled);
     }
 
     uint32_t ThunderExternalOutput_Submit(const char* module, const ThunderExternalLogLevel level, const char* payload)
     {
+        State().submitCount++;
+        State().lastModule = module;
+        State().lastLevel = level;
+        State().lastPayload = payload;
         TRACE_L1("RDKLogger mock message: module=%s level=%u payload=%s", module, static_cast<unsigned>(level), payload);
-        return (0);
+        return (State().submitResult);
     }
 
     uint32_t ThunderExternalOutput_Deinitialize(void)
     {
+        State().deinitializeCount++;
         TRACE_L1("RDKLogger mock backend deinitialized");
         return (0);
+    }
+
+    void ThunderExternalOutputMock_Reset(void)
+    {
+        State() = { 0, 1, 0, 0, 0, 0, 0, string(), THUNDER_EXTERNAL_LOG_LEVEL_INFO, string(), {} };
+    }
+
+    void ThunderExternalOutputMock_SetInitializeResult(const uint32_t result)
+    {
+        State().initializeResult = result;
+    }
+
+    void ThunderExternalOutputMock_SetEnabled(const uint32_t enabled)
+    {
+        State().enabled = enabled;
+    }
+
+    void ThunderExternalOutputMock_SetSubmitResult(const uint32_t result)
+    {
+        State().submitResult = result;
+    }
+
+    uint32_t ThunderExternalOutputMock_InitializeCount(void)
+    {
+        return (State().initializeCount);
+    }
+
+    uint32_t ThunderExternalOutputMock_DeinitializeCount(void)
+    {
+        return (State().deinitializeCount);
+    }
+
+    uint32_t ThunderExternalOutputMock_QueryCount(void)
+    {
+        return (State().queryCount);
+    }
+
+    uint32_t ThunderExternalOutputMock_QueryCountFor(const char* module, const ThunderExternalLogLevel level)
+    {
+        const string key = string(module) + '#' + Thunder::Core::NumberType<uint8_t>(static_cast<uint8_t>(level)).Text();
+        const auto entry = State().queryCounts.find(key);
+        return (entry == State().queryCounts.end() ? 0 : entry->second);
+    }
+
+    uint32_t ThunderExternalOutputMock_SubmitCount(void)
+    {
+        return (State().submitCount);
+    }
+
+    const char* ThunderExternalOutputMock_LastModule(void)
+    {
+        return (State().lastModule.c_str());
+    }
+
+    ThunderExternalLogLevel ThunderExternalOutputMock_LastLevel(void)
+    {
+        return (State().lastLevel);
+    }
+
+    const char* ThunderExternalOutputMock_LastPayload(void)
+    {
+        return (State().lastPayload.c_str());
     }
 }

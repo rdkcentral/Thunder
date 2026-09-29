@@ -38,11 +38,11 @@
 
 ## Tests and documentation
 
-- [ ] Add adapter tests for module/level mapping and payload submission.
-- [ ] Add cache tests for eager population, duplicate suppression, and late announcements.
-- [ ] Add routing tests for each route and for independent local/external gates.
-- [ ] Add failure tests proving local output survives RDKLogger failure.
+- [x] Add adapter tests for module/level mapping and payload submission.
+- [x] Add cache tests for eager population, duplicate suppression, and late announcements.
+- [x] Add routing tests for each route and for independent local/external gates.
+- [x] Add failure tests proving local output survives RDKLogger failure.
 - [ ] Add an integration test or target-device check for category registration.
-- [ ] Add a regression test proving `ALL` does not duplicate external output through MessageControl.
+- [x] Add a regression test proving `ALL` does not duplicate external output through MessageControl.
 - [x] Document the build option, RDKLogger-owned category registration, and synchronous submission assumption.
 - [ ] Build and test both RDK-enabled and RDK-disabled configurations.
