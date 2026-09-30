@@ -428,6 +428,11 @@ namespace Core {
 
                         Arm();
 
+                        // Logged right before the dispatch so a crash inside Handle() still leaves
+                        // the offending resource's runtime type/fd/events in the log as the last line.
+                        TRACE_L1("ResourceMonitor(%s): dispatching Handle() classname=%s fd=%d events=0x%04x",
+                            _name.c_str(), typeid(*entry).name(), _descriptorArray[fd_index].fd, flagsSet);
+
                         // Event if the flagsSet == 0, call handle, maybe a break was issued by this RESOURCE..
                         entry->Handle(flagsSet);
 
