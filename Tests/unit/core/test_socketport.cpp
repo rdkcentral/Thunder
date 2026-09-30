@@ -589,7 +589,7 @@ namespace Core {
             auto moved(std::move(movedSource));
             EXPECT_TRUE(moved.Next());
             EXPECT_TRUE(moved.Client().IsValid());
-            movedSource.Reset();
+            EXPECT_FALSE(movedSource.IsValid());
             EXPECT_FALSE(movedSource.Next());
 
             auto copyAssignedSource = server.Clients();
@@ -605,7 +605,7 @@ namespace Core {
             moveAssigned = std::move(moveAssignedSource);
             EXPECT_TRUE(moveAssigned.Next());
             EXPECT_TRUE(moveAssigned.Client().IsValid());
-            moveAssignedSource.Reset();
+            EXPECT_FALSE(moveAssignedSource.IsValid());
             EXPECT_FALSE(moveAssignedSource.Next());
 
             ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);

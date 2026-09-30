@@ -68,6 +68,7 @@ namespace Core {
                 , _iterator(_clients.begin())
             {
                 move._atHead = true;
+                move._iterator = move._clients.begin();
             }
             ~IteratorType() = default;
 
@@ -87,6 +88,7 @@ namespace Core {
                     _iterator = _clients.begin();
 
                     move._atHead = true;
+                    move._iterator = move._clients.begin();
                 }
 
                 return (*this);
