@@ -141,8 +141,14 @@ namespace WarningReporting {
 
     OutputTargets WarningReportingUnit::Targets(const char category[], const Core::Messaging::OutputMode routing, const bool enabled) const
     {
+#ifdef __CORE_MESSAGING__
         const Core::Messaging::Metadata metadata(Core::Messaging::Metadata::type::REPORTING, category, Core::Messaging::MODULE_REPORTING);
         return (Messaging::MessageUnit::Instance().Targets(metadata, routing, enabled));
+#else
+        (void)category;
+        (void)routing;
+        return (OutputTargets { enabled, false, false });
+#endif
     }
 
     void WarningReportingUnit::ReportWarningEvent(const char identifier[], const IWarningEvent& information, const OutputTargets& targets)

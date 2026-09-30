@@ -319,7 +319,7 @@ ENUM_CONVERSION_END(Thunder::Core::Messaging::OutputMode)
                 const string& module = metadata.Module();
                 const string key = module + '#' + Core::NumberType<uint8_t>(static_cast<uint8_t>(level)).Text();
 
-                _adminLock.Lock();
+                _adminLock.LockWithoutWarning();
                 auto entry = _externalControls.find(key);
 
                 if (entry != _externalControls.end()) {
