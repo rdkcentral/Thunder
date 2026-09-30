@@ -52,15 +52,22 @@ namespace Core {
 #if defined(__CORE_CRITICAL_SECTION_LOG__)
             TryLock();
 #else
+            REPORT_DURATION_WARNING({ LockWithoutWarning(); }, WarningReporting::TooLongWaitingForLock);
+#endif
+#endif
 
-            int result  = 0;
+#ifdef __WINDOWS__
+            ::EnterCriticalSection(&m_syncMutex);
+#endif
+        }
 
-            REPORT_DURATION_WARNING( { result = pthread_mutex_lock(&m_syncMutex); }, WarningReporting::TooLongWaitingForLock);
+        inline void LockWithoutWarning()
+        {
+#ifdef __POSIX__
+            const int result = pthread_mutex_lock(&m_syncMutex);
             if (result != 0) {
                 TRACE_L1("Probably creating a deadlock situation or lock on already destroyed mutex. <%d>", result);
             }
-
-#endif
 #endif
 
 #ifdef __WINDOWS__

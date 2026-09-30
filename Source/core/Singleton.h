@@ -125,7 +125,7 @@ namespace Core {
 
             SINGLETON* ptr = g_TypedSingleton.load(std::memory_order_acquire);
             if (ptr == nullptr) {
-                g_AdminLock.Lock();
+                g_AdminLock.LockWithoutWarning();
                 ptr = g_TypedSingleton.load(std::memory_order_relaxed);
                 if (ptr == nullptr) {
                     ptr = static_cast<SINGLETON*>(new SingletonType<SINGLETON>(std::forward<Args>(args)...));
@@ -192,7 +192,7 @@ namespace Core {
 
             SINGLETON* ptr = g_TypedSingleton.load(std::memory_order_acquire);
             if (ptr == nullptr) {
-                g_AdminLock.Lock();
+                g_AdminLock.LockWithoutWarning();
                 ptr = g_TypedSingleton.load(std::memory_order_relaxed);
                 if (ptr == nullptr) {
                     ptr = static_cast<SINGLETON*>(new SingletonType<SINGLETON>());
