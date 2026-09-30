@@ -40,3 +40,7 @@ enable_testing()
 add_subdirectory(core)
 add_subdirectory(tests)
 add_subdirectory(workerpool)
+
+if(MESSAGING AND MESSAGING_RDKLOGGER AND MESSAGING_RDKLOGGER_USE_MOCK)
+    add_subdirectory(messaging)
+endif()

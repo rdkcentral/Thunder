@@ -38,11 +38,12 @@ namespace Thunder {
         public:
             void Output(const uint16_t length, const TCHAR buffer[])
             {
-                if (OperationalStream::StandardOut::IsEnabled() == true) {
+                const auto targets = MessageUnit::Instance().Targets(OperationalStream::StandardOut::Metadata(), OperationalStream::StandardOut::Routing(), OperationalStream::StandardOut::IsEnabled());
+                if (targets.Any() == true) {
                     Core::Messaging::MessageInfo messageInfo(OperationalStream::StandardOut::Metadata(), Core::Time::Now().Ticks());
                     Core::Messaging::IStore::OperationalStream operationalStream(messageInfo);
                     Core::Messaging::TextMessage data(length, buffer);
-                    MessageUnit::Instance().Push(operationalStream, &data, OperationalStream::StandardOut::Routing());
+                    MessageUnit::Instance().Push(operationalStream, &data, targets);
                 }
             }
 
@@ -61,11 +62,12 @@ namespace Thunder {
         public:
             void Output(const uint16_t length, const TCHAR buffer[])
             {
-                if (OperationalStream::StandardError::IsEnabled() == true) {
+                const auto targets = MessageUnit::Instance().Targets(OperationalStream::StandardError::Metadata(), OperationalStream::StandardError::Routing(), OperationalStream::StandardError::IsEnabled());
+                if (targets.Any() == true) {
                     Core::Messaging::MessageInfo messageInfo(OperationalStream::StandardError::Metadata(), Core::Time::Now().Ticks());
                     Core::Messaging::IStore::OperationalStream operationalStream(messageInfo);
                     Core::Messaging::TextMessage data(length, buffer);
-                    MessageUnit::Instance().Push(operationalStream, &data, OperationalStream::StandardError::Routing());
+                    MessageUnit::Instance().Push(operationalStream, &data, targets);
                 }
             }
         };
