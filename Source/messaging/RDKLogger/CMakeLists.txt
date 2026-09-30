@@ -17,10 +17,10 @@
 
 cmake_minimum_required(VERSION 3.15)
 
-set(TARGET ${NAMESPACE}MessagingRDKLogger)
+set(TARGET ${NAMESPACE}Messaging)
 
 if(MESSAGING_RDKLOGGER_USE_MOCK)
-    add_library(${TARGET} STATIC RDKLoggerOutputMock.cpp)
+    target_sources(${TARGET} PRIVATE RDKLoggerOutputMock.cpp)
 else()
     find_path(RDKLOGGER_INCLUDE_DIR rdk_logger.h)
     find_library(RDKLOGGER_LIBRARY NAMES rdkloggers)
@@ -29,22 +29,7 @@ else()
         message(FATAL_ERROR "RDKLogger support requires rdk_logger.h and librdkloggers; set MESSAGING_RDKLOGGER_USE_MOCK=ON for SDK-independent builds")
     endif()
 
-    add_library(${TARGET} STATIC RDKLoggerOutput.cpp)
+    target_sources(${TARGET} PRIVATE RDKLoggerOutput.cpp)
     target_include_directories(${TARGET} PRIVATE ${RDKLOGGER_INCLUDE_DIR})
     target_link_libraries(${TARGET} PRIVATE ${RDKLOGGER_LIBRARY})
 endif()
-
-target_include_directories(${TARGET}
-    PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/..
-        ${CMAKE_CURRENT_SOURCE_DIR}/../../core)
-
-target_link_libraries(${TARGET}
-    PRIVATE
-        ${NAMESPACE}Core::${NAMESPACE}Core
-        CompileSettingsDebug::CompileSettingsDebug)
-
-set_target_properties(${TARGET} PROPERTIES
-    CXX_STANDARD ${CXX_STD}
-    CXX_STANDARD_REQUIRED YES
-    POSITION_INDEPENDENT_CODE ON)

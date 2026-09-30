@@ -33,7 +33,6 @@ option(MESSAGING_RDKLOGGER_USE_MOCK "Use the console-printing RDKLogger backend.
 
 if(MESSAGING_RDKLOGGER)
         add_subdirectory(RDKLogger)
-        target_link_libraries(${TARGET} PRIVATE ${NAMESPACE}MessagingRDKLogger)
         target_compile_definitions(${TARGET} PRIVATE MESSAGING_EXTERNAL_OUTPUT=1)
 endif()
 
