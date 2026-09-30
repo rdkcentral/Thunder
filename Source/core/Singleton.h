@@ -125,7 +125,7 @@ namespace Core {
 
             SINGLETON* ptr = g_TypedSingleton.load(std::memory_order_acquire);
             if (ptr == nullptr) {
-                g_AdminLock.LockWithoutWarning();
+                g_AdminLock.Lock();
                 ptr = g_TypedSingleton.load(std::memory_order_relaxed);
                 if (ptr == nullptr) {
                     ptr = static_cast<SINGLETON*>(new SingletonType<SINGLETON>(std::forward<Args>(args)...));
@@ -144,7 +144,12 @@ namespace Core {
             // declarations, we can not rely on the output of it.
             // If this Instance method id called, assume it has a
             // default constructor..
-            return (GetObject(TemplateIntToType<true>()));
+            return (GetObject(TemplateIntToType<true>(), false));
+        }
+
+        inline static SINGLETON& InstanceWithoutWarning()
+        {
+            return (GetObject(TemplateIntToType<true>(), true));
         }
 
         // The Create() and Dispose() methods should only be used if the lifetime of 
@@ -186,13 +191,17 @@ namespace Core {
         }
 
     private:
-        static SINGLETON& GetObject(const TemplateIntToType<true>& /* For compile time diffrentiation */)
+        static SINGLETON& GetObject(const TemplateIntToType<true>& /* For compile time diffrentiation */, const bool withoutWarning)
         {
             static CriticalSection g_AdminLock;
 
             SINGLETON* ptr = g_TypedSingleton.load(std::memory_order_acquire);
             if (ptr == nullptr) {
-                g_AdminLock.LockWithoutWarning();
+                if (withoutWarning == true) {
+                    g_AdminLock.LockWithoutWarning();
+                } else {
+                    g_AdminLock.Lock();
+                }
                 ptr = g_TypedSingleton.load(std::memory_order_relaxed);
                 if (ptr == nullptr) {
                     ptr = static_cast<SINGLETON*>(new SingletonType<SINGLETON>());

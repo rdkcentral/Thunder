@@ -90,7 +90,7 @@ namespace WarningReporting {
 
     WarningReportingUnitProxy& WarningReportingUnitProxy::Instance()
     {
-        return (Core::SingletonType<WarningReportingUnitProxy>::Instance());
+        return (Core::SingletonType<WarningReportingUnitProxy>::InstanceWithoutWarning());
     }
 
     OutputTargets WarningReportingUnitProxy::Targets(const char category[], const Core::Messaging::OutputMode routing, const bool enabled) const
