@@ -3,6 +3,7 @@ option(HTTPSCLIENT_TEST "Example how to do https requests with Thunder." OFF)
 option(WORKERPOOL_TEST "WorkerPool stress test" OFF)
 option(FILE_UNLINK_TEST "File unlink test" OFF)
 option(STREAMJSON_GARBAGE_TEST "Reproducer for issue #1963: infinite loop on garbage data in StreamJSONType::ReceiveData()" OFF)
+option(JOBLIFETIME_REPRO_TEST "Reproducer for reentrant self-release UAF/double-free in RevokeAndBlockJobType-style wrappers (PluginInitializerService job lifetime bug)" OFF)
 
 if(BUILD_TESTS)
     add_subdirectory(unit)
@@ -26,4 +27,8 @@ endif()
 
 if(STREAMJSON_GARBAGE_TEST)
     add_subdirectory(streamjson-garbage)
+endif()
+
+if(JOBLIFETIME_REPRO_TEST)
+    add_subdirectory(job-lifetime-repro)
 endif()
