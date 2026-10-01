@@ -237,10 +237,13 @@ namespace TestCore {
 
         JsonObject config;
         JsonArray pluginList;
+        JsonObject process;
 
         config["port"] = port;
         config["binding"] = "127.0.0.1";
         config["idletime"] = 180;
+        process["threadpoolcount"] = static_cast<uint32_t>(THREADPOOL_COUNT);
+        config["process"] = process;
 
         if (channelThrottle != 0) {
             config["channel_throttle"] = channelThrottle;
