@@ -4911,6 +4911,7 @@ namespace Core {
                         Container::Add(index->first.c_str(), &(index->second));
                         index++;
                     }
+                    move.Reset();
                 }
    
                 return (*this);
