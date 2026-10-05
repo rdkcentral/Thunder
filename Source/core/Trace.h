@@ -206,12 +206,16 @@ namespace Thunder {
             Thunder::Assertion::AssertionUnitProxy::Instance().AssertionEvent(                                  \
                 __assertMetadata__,                                                                             \
                 __message__,                                                                                    \
-                Thunder::Assertion::BaseAssertType::Routing());
+                __targets__);
 
         #define ASSERT(expr)                                                                                    \
             do {                                                                                                \
                 if (!(expr)) {                                                                                  \
-                    if (Thunder::Assertion::BaseAssertType::IsEnabled()) {                                      \
+                    const auto __targets__ = Thunder::Assertion::AssertionUnitProxy::Instance().Targets(        \
+                        Thunder::Assertion::BaseAssertType::Metadata(),                                         \
+                        Thunder::Assertion::BaseAssertType::Routing(),                                          \
+                        Thunder::Assertion::BaseAssertType::IsEnabled());                                       \
+                    if (__targets__.Any() == true) {                                                            \
                         ASSERT_METADATA                                                                         \
                         Thunder::Core::Messaging::TextMessage __message__(#expr);                               \
                         ASSERT_SENT                                                                             \
@@ -223,7 +227,11 @@ namespace Thunder {
         #define ASSERT_VERBOSE(expr, format, ...)                                                               \
             do {                                                                                                \
                 if (!(expr)) {                                                                                  \
-                    if (Thunder::Assertion::BaseAssertType::IsEnabled()) {                                      \
+                    const auto __targets__ = Thunder::Assertion::AssertionUnitProxy::Instance().Targets(        \
+                        Thunder::Assertion::BaseAssertType::Metadata(),                                         \
+                        Thunder::Assertion::BaseAssertType::Routing(),                                          \
+                        Thunder::Assertion::BaseAssertType::IsEnabled());                                       \
+                    if (__targets__.Any() == true) {                                                            \
                         ASSERT_METADATA                                                                         \
                         char __buffer__[256];                                                                   \
                         std::snprintf(__buffer__, sizeof(__buffer__), "%s: " #format, #expr, ##__VA_ARGS__);    \

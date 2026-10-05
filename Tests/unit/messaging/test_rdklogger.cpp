@@ -248,6 +248,19 @@ namespace Messaging {
             EXPECT_TRUE(targets.external);
         }
 
+        TEST_F(RDKLoggerTest, RoutesExternallyEnabledAssertionsWhenLocalAssertionIsDisabled)
+        {
+            Open();
+            ::Thunder::Assertion::AssertionUnit::Instance();
+
+            const OutputTargets targets = ::Thunder::Assertion::AssertionUnitProxy::Instance().Targets(
+                ::Thunder::Assertion::BaseAssertType::Metadata(), OutputMode::EXTERNAL_DIRECT, false);
+
+            EXPECT_FALSE(targets.direct);
+            EXPECT_FALSE(targets.handler);
+            EXPECT_TRUE(targets.external);
+        }
+
         TEST_F(RDKLoggerTest, ReportsNoInterestWhenBothGatesAreDisabled)
         {
             ThunderExternalOutputMock_SetEnabled(0);
