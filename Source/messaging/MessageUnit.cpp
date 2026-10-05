@@ -88,9 +88,9 @@ namespace {
 namespace Thunder {
 
 ENUM_CONVERSION_BEGIN(Thunder::Core::Messaging::OutputMode)
-    { Thunder::Core::Messaging::OutputMode::HANDLER, _TXT("handler") },
-    { Thunder::Core::Messaging::OutputMode::DIRECT,  _TXT("direct")  },
-    { Thunder::Core::Messaging::OutputMode::ALL,     _TXT("all")     },
+    { Thunder::Core::Messaging::OutputMode::HANDLER,         _TXT("handler")         },
+    { Thunder::Core::Messaging::OutputMode::DIRECT,          _TXT("direct")          },
+    { Thunder::Core::Messaging::OutputMode::ALL,             _TXT("all")             },
     { Thunder::Core::Messaging::OutputMode::EXTERNAL_DIRECT, _TXT("external_direct") },
 ENUM_CONVERSION_END(Thunder::Core::Messaging::OutputMode)
 
@@ -263,7 +263,7 @@ ENUM_CONVERSION_END(Thunder::Core::Messaging::OutputMode)
         void MessageUnit::InitializeExternal()
         {
 #if defined(MESSAGING_EXTERNAL_OUTPUT)
-            _externalInitialized = (ThunderExternalOutput_Initialize() == 0);
+            _externalInitialized = ThunderExternalOutput_Initialize();
             if (_externalInitialized == false) {
                 TRACE_L1("Unable to initialize external output");
             }
@@ -326,7 +326,7 @@ ENUM_CONVERSION_END(Thunder::Core::Messaging::OutputMode)
                     enabled = entry->second;
                 }
                 else {
-                    enabled = (ThunderExternalOutput_IsEnabled(module.c_str(), level) != 0);
+                    enabled = ThunderExternalOutput_IsEnabled(module.c_str(), level);
                     _externalControls.emplace(key, enabled);
                 }
                 _adminLock.Unlock();

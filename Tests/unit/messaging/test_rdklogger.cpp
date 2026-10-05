@@ -327,7 +327,7 @@ namespace Messaging {
 
         TEST_F(RDKLoggerTest, InitializationFailureDisablesOnlyExternalOutput)
         {
-            ThunderExternalOutputMock_SetInitializeResult(1);
+            ThunderExternalOutputMock_SetInitializeSucceeds(false);
             Open();
             const OutputTargets targets = Targets(
                 Metadata(Metadata::type::LOGGING, _T("Information"), _T("Module")), OutputMode::ALL, true);
@@ -335,20 +335,6 @@ namespace Messaging {
             EXPECT_TRUE(targets.handler);
             EXPECT_TRUE(targets.direct);
             EXPECT_FALSE(targets.external);
-        }
-
-        TEST_F(RDKLoggerTest, SubmissionFailureDoesNotChangeSelectedLocalRoutes)
-        {
-            ThunderExternalOutputMock_SetSubmitResult(1);
-            Open();
-            const Metadata metadata(Metadata::type::LOGGING, _T("Error"), _T("Module"));
-            const OutputTargets targets = Targets(metadata, OutputMode::ALL, true);
-
-            Submit(metadata, _T("payload"), targets);
-
-            EXPECT_TRUE(targets.handler);
-            EXPECT_TRUE(targets.direct);
-            EXPECT_EQ(1u, ThunderExternalOutputMock_SubmitCount());
         }
 
         TEST_F(RDKLoggerTest, AllSubmitsExternallyExactlyOnce)

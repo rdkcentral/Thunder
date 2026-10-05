@@ -26,7 +26,7 @@
 namespace {
     rdk_LogLevel Level(const ThunderExternalLogLevel level)
     {
-        uint8_t value = 4;
+        uint8_t value;
 
         switch (level) {
         case THUNDER_EXTERNAL_LOG_LEVEL_FATAL:
@@ -60,27 +60,25 @@ namespace {
 }
 
 extern "C" {
-    uint32_t ThunderExternalOutput_Initialize(void)
+    bool ThunderExternalOutput_Initialize(void)
     {
-        return (RDKLOGGER_INIT() == RDK_SUCCESS ? 0 : 1);
+        return (RDKLOGGER_INIT() == RDK_SUCCESS);
     }
 
-    uint32_t ThunderExternalOutput_IsEnabled(const char* module, const ThunderExternalLogLevel level)
+    bool ThunderExternalOutput_IsEnabled(const char* module, const ThunderExternalLogLevel level)
     {
         const std::string moduleName = Module(module);
-        return (rdk_logger_is_logLevel_enabled(moduleName.c_str(), Level(level)) == TRUE ? 1 : 0);
+        return (rdk_logger_is_logLevel_enabled(moduleName.c_str(), Level(level)) == TRUE);
     }
 
-    uint32_t ThunderExternalOutput_Submit(const char* module, const ThunderExternalLogLevel level, const char* payload)
+    void ThunderExternalOutput_Submit(const char* module, const ThunderExternalLogLevel level, const char* payload)
     {
         const std::string moduleName = Module(module);
         RDK_LOG(Level(level), moduleName.c_str(), "%s", payload);
-        return (0);
     }
 
-    uint32_t ThunderExternalOutput_Deinitialize(void)
+    void ThunderExternalOutput_Deinitialize(void)
     {
         rdk_logger_deinit();
-        return (0);
     }
 }

@@ -19,25 +19,25 @@
 
 #pragma once
 
-#include <stdint.h>
+#include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 typedef enum {
-    THUNDER_EXTERNAL_LOG_LEVEL_FATAL = 0,
-    THUNDER_EXTERNAL_LOG_LEVEL_ERROR = 1,
-    THUNDER_EXTERNAL_LOG_LEVEL_WARN = 2,
+    THUNDER_EXTERNAL_LOG_LEVEL_FATAL  = 0,
+    THUNDER_EXTERNAL_LOG_LEVEL_ERROR  = 1,
+    THUNDER_EXTERNAL_LOG_LEVEL_WARN   = 2,
     THUNDER_EXTERNAL_LOG_LEVEL_NOTICE = 3,
-    THUNDER_EXTERNAL_LOG_LEVEL_INFO = 4,
-    THUNDER_EXTERNAL_LOG_LEVEL_TRACE = 5
+    THUNDER_EXTERNAL_LOG_LEVEL_INFO   = 4,
+    THUNDER_EXTERNAL_LOG_LEVEL_TRACE  = 5
 } ThunderExternalLogLevel;
 
-uint32_t ThunderExternalOutput_Initialize(void);
-uint32_t ThunderExternalOutput_IsEnabled(const char* module, ThunderExternalLogLevel level);
-uint32_t ThunderExternalOutput_Submit(const char* module, ThunderExternalLogLevel level, const char* payload);
-uint32_t ThunderExternalOutput_Deinitialize(void);
+bool ThunderExternalOutput_Initialize(void);
+bool ThunderExternalOutput_IsEnabled(const char* module, ThunderExternalLogLevel level);
+void ThunderExternalOutput_Submit(const char* module, ThunderExternalLogLevel level, const char* payload);
+void ThunderExternalOutput_Deinitialize(void);
 
 #ifdef __cplusplus
 }

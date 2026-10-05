@@ -27,9 +27,8 @@ extern "C" {
 #endif
 
 EXTERNAL void ThunderExternalOutputMock_Reset(void);
-EXTERNAL void ThunderExternalOutputMock_SetInitializeResult(uint32_t result);
-EXTERNAL void ThunderExternalOutputMock_SetEnabled(uint32_t enabled);
-EXTERNAL void ThunderExternalOutputMock_SetSubmitResult(uint32_t result);
+EXTERNAL void ThunderExternalOutputMock_SetInitializeSucceeds(bool succeeds);
+EXTERNAL void ThunderExternalOutputMock_SetEnabled(bool enabled);
 EXTERNAL uint32_t ThunderExternalOutputMock_InitializeCount(void);
 EXTERNAL uint32_t ThunderExternalOutputMock_DeinitializeCount(void);
 EXTERNAL uint32_t ThunderExternalOutputMock_QueryCount(void);

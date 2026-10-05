@@ -24,9 +24,8 @@
 
 namespace {
     struct MockState {
-        uint32_t initializeResult;
-        uint32_t enabled;
-        uint32_t submitResult;
+        bool initializeSucceeds;
+        bool enabled;
         uint32_t initializeCount;
         uint32_t deinitializeCount;
         uint32_t queryCount;
@@ -39,20 +38,20 @@ namespace {
 
     MockState& State()
     {
-        static MockState state = { 0, 1, 0, 0, 0, 0, 0, string(), THUNDER_EXTERNAL_LOG_LEVEL_INFO, string(), {} };
+        static MockState state = { true, true, 0, 0, 0, 0, string(), THUNDER_EXTERNAL_LOG_LEVEL_INFO, string(), {} };
         return (state);
     }
 }
 
 extern "C" {
-    uint32_t ThunderExternalOutput_Initialize(void)
+    bool ThunderExternalOutput_Initialize(void)
     {
         State().initializeCount++;
         TRACE_L1("RDKLogger mock backend initialized");
-        return (State().initializeResult);
+        return (State().initializeSucceeds);
     }
 
-    uint32_t ThunderExternalOutput_IsEnabled(const char* module, const ThunderExternalLogLevel level)
+    bool ThunderExternalOutput_IsEnabled(const char* module, const ThunderExternalLogLevel level)
     {
         State().queryCount++;
         State().lastModule = module;
@@ -62,41 +61,34 @@ extern "C" {
         return (State().enabled);
     }
 
-    uint32_t ThunderExternalOutput_Submit(const char* module, const ThunderExternalLogLevel level, const char* payload)
+    void ThunderExternalOutput_Submit(const char* module, const ThunderExternalLogLevel level, const char* payload)
     {
         State().submitCount++;
         State().lastModule = module;
         State().lastLevel = level;
         State().lastPayload = payload;
         TRACE_L1("RDKLogger mock message: module=%s level=%u payload=%s", module, static_cast<unsigned>(level), payload);
-        return (State().submitResult);
     }
 
-    uint32_t ThunderExternalOutput_Deinitialize(void)
+    void ThunderExternalOutput_Deinitialize(void)
     {
         State().deinitializeCount++;
         TRACE_L1("RDKLogger mock backend deinitialized");
-        return (0);
     }
 
     void ThunderExternalOutputMock_Reset(void)
     {
-        State() = { 0, 1, 0, 0, 0, 0, 0, string(), THUNDER_EXTERNAL_LOG_LEVEL_INFO, string(), {} };
+        State() = { true, true, 0, 0, 0, 0, string(), THUNDER_EXTERNAL_LOG_LEVEL_INFO, string(), {} };
     }
 
-    void ThunderExternalOutputMock_SetInitializeResult(const uint32_t result)
+    void ThunderExternalOutputMock_SetInitializeSucceeds(const bool succeeds)
     {
-        State().initializeResult = result;
+        State().initializeSucceeds = succeeds;
     }
 
-    void ThunderExternalOutputMock_SetEnabled(const uint32_t enabled)
+    void ThunderExternalOutputMock_SetEnabled(const bool enabled)
     {
         State().enabled = enabled;
-    }
-
-    void ThunderExternalOutputMock_SetSubmitResult(const uint32_t result)
-    {
-        State().submitResult = result;
     }
 
     uint32_t ThunderExternalOutputMock_InitializeCount(void)
