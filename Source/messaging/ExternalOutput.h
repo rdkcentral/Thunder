@@ -22,6 +22,23 @@
 #include <stdbool.h>
 
 #ifdef __cplusplus
+    #include "Module.h"
+    #define THUNDER_MESSAGING_API EXTERNAL
+#else
+    #if defined(_WIN32) || defined(__CYGWIN__)
+        #if defined(MESSAGING_EXPORTS)
+            #define THUNDER_MESSAGING_API __declspec(dllexport)
+        #else
+            #define THUNDER_MESSAGING_API __declspec(dllimport)
+        #endif
+    #elif defined(__GNUC__)
+        #define THUNDER_MESSAGING_API __attribute__((visibility("default")))
+    #else
+        #define THUNDER_MESSAGING_API
+    #endif
+#endif
+
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -34,10 +51,10 @@ typedef enum {
     THUNDER_EXTERNAL_LOG_LEVEL_TRACE  = 5
 } ThunderExternalLogLevel;
 
-bool ThunderExternalOutput_Initialize(void);
-bool ThunderExternalOutput_IsEnabled(const char* module, ThunderExternalLogLevel level);
-void ThunderExternalOutput_Submit(const char* module, ThunderExternalLogLevel level, const char* payload);
-void ThunderExternalOutput_Deinitialize(void);
+THUNDER_MESSAGING_API bool ThunderExternalOutput_Initialize(void);
+THUNDER_MESSAGING_API bool ThunderExternalOutput_IsEnabled(const char* module, ThunderExternalLogLevel level);
+THUNDER_MESSAGING_API void ThunderExternalOutput_Submit(const char* module, ThunderExternalLogLevel level, const char* payload);
+THUNDER_MESSAGING_API void ThunderExternalOutput_Deinitialize(void);
 
 #ifdef __cplusplus
 }

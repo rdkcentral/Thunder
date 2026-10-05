@@ -41,4 +41,8 @@ target_include_directories(${TEST_RUNNER_NAME}
     PRIVATE
         ${CMAKE_SOURCE_DIR}/Source/messaging/RDKLogger)
 
+install(
+    TARGETS ${TEST_RUNNER_NAME}
+    DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT ${NAMESPACE}_Test)
+
 add_test(NAME ${TEST_RUNNER_NAME} COMMAND ${TEST_RUNNER_NAME})

@@ -146,6 +146,7 @@ namespace Messaging {
         TEST_P(RDKLoggerMappingTest, MapsThunderTypeAndCategoryToExternalLevel)
         {
             const MappingCase& test = GetParam();
+            Open();
             Submit(Metadata(test.type, test.category, _T("Plugin.Module")), _T("payload"));
 
             EXPECT_EQ(1u, ThunderExternalOutputMock_SubmitCount());
@@ -175,6 +176,7 @@ namespace Messaging {
 
         TEST_F(RDKLoggerTest, PrefixesDefaultLoggingAndTracingPayloads)
         {
+            Open();
             Submit(Metadata(Metadata::type::LOGGING, _T("Information"), _T("LoggingModule")), _T("log payload"));
             EXPECT_STREQ("Information: log payload", ThunderExternalOutputMock_LastPayload());
 
@@ -184,6 +186,7 @@ namespace Messaging {
 
         TEST_F(RDKLoggerTest, PreservesExplicitSeverityPayload)
         {
+            Open();
             Submit(Metadata(Metadata::type::LOGGING, _T("Error"), _T("Module")), _T("original payload"));
             EXPECT_STREQ("original payload", ThunderExternalOutputMock_LastPayload());
         }
@@ -323,6 +326,19 @@ namespace Messaging {
 
             ::Thunder::Messaging::MessageUnit::Instance().Close();
             EXPECT_EQ(1u, ThunderExternalOutputMock_DeinitializeCount());
+        }
+
+        TEST_F(RDKLoggerTest, DoesNotSubmitAfterExternalOutputDeinitializes)
+        {
+            Open();
+            const Metadata metadata(Metadata::type::LOGGING, _T("Information"), _T("Module"));
+            const OutputTargets targets = Targets(metadata, OutputMode::EXTERNAL_DIRECT, false);
+
+            ASSERT_TRUE(targets.external);
+            ::Thunder::Messaging::MessageUnit::Instance().Close();
+            Submit(metadata, _T("payload"), targets);
+
+            EXPECT_EQ(0u, ThunderExternalOutputMock_SubmitCount());
         }
 
         TEST_F(RDKLoggerTest, InitializationFailureDisablesOnlyExternalOutput)
