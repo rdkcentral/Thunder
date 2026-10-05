@@ -18,7 +18,7 @@ Messaging SHALL cache RDKLogger enabled-state queries by the existing `MODULE_NA
 ### Requirement: External enablement does not replace local enablement
 The cached external result SHALL control only RDKLogger admission and SHALL NOT mutate Thunder's local category state.
 
-#### Scenario: External state changes local behavior
+#### Scenario: External state does not change local behavior
 - **WHEN** RDKLogger reports a module/level as disabled while local Thunder output is enabled
 - **THEN** local output remains governed by Thunder's existing enablement state
 

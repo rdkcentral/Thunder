@@ -26,7 +26,8 @@ add_library(${TARGET}
         DirectOutput.cpp
         ConsoleStreamRedirect.cpp
         OperationalCategories.cpp
-        AssertionUnit.cpp)
+        AssertionUnit.cpp
+        ExternalOutput.cpp)
 
 option(MESSAGING_RDKLOGGER "Enable RDKLogger output support." OFF)
 option(MESSAGING_RDKLOGGER_USE_MOCK "Use the console-printing RDKLogger backend." OFF)
