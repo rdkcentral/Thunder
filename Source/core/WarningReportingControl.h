@@ -123,7 +123,7 @@
     }
 
 #define REPORT_DURATION_WARNING(CODE, CATEGORY, ...) \
-    if (const auto __targets__ = Thunder::WarningReporting::WarningReportingUnitProxy::Instance().Targets( \
+    if (const auto __targets__ = Thunder::WarningReporting::ResolveTargets( \
         Thunder::WarningReporting::WarningReportingType<Thunder::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::CategoryName(), \
         Thunder::WarningReporting::WarningReportingType<Thunder::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::RoutingMode(), \
         Thunder::WarningReporting::WarningReportingType<Thunder::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::IsEnabled()); __targets__.Any() == true) { \
@@ -151,6 +151,28 @@ namespace Core {
 }
 
 namespace WarningReporting {
+
+    inline OutputTargets ResolveTargets(const char category[], const Core::Messaging::OutputMode routing, const bool enabled)
+    {
+        OutputTargets targets = { false, false, false };
+
+        if ((routing == Core::Messaging::OutputMode::ALL) || (routing == Core::Messaging::OutputMode::EXTERNAL_DIRECT)) {
+            targets = WarningReportingUnitProxy::Instance().Targets(category, routing, enabled);
+        } else {
+            switch (routing) {
+            case Core::Messaging::OutputMode::DIRECT:
+                targets.direct = enabled;
+                break;
+            case Core::Messaging::OutputMode::HANDLER:
+                targets.handler = enabled;
+                break;
+            default:
+                break;
+            }
+        }
+
+        return (targets);
+    }
 
     class ExcludedWarnings {
     public:
