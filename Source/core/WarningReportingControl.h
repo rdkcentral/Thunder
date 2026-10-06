@@ -80,7 +80,7 @@
     Thunder::WarningReporting::WarningReportingType<Thunder::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::IsEnabled()
 
 #define REPORT_WARNING(CATEGORY, ...) \
-    if (const auto __targets__ = Thunder::WarningReporting::WarningReportingUnitProxy::Instance().Targets( \
+    if (const auto __targets__ = Thunder::WarningReporting::ResolveTargets( \
         Thunder::WarningReporting::WarningReportingType<CATEGORY>::CategoryName(), \
         Thunder::WarningReporting::WarningReportingType<CATEGORY>::RoutingMode(), \
         Thunder::WarningReporting::WarningReportingType<CATEGORY>::IsEnabled()); __targets__.Any() == true) { \
@@ -95,7 +95,7 @@
     }
 
 #define REPORT_OUTOFBOUNDS_WARNING(CATEGORY, ACTUALVALUE, ...) \
-    if (const auto __targets__ = Thunder::WarningReporting::WarningReportingUnitProxy::Instance().Targets( \
+    if (const auto __targets__ = Thunder::WarningReporting::ResolveTargets( \
         Thunder::WarningReporting::WarningReportingType<Thunder::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::CategoryName(), \
         Thunder::WarningReporting::WarningReportingType<Thunder::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::RoutingMode(), \
         Thunder::WarningReporting::WarningReportingType<Thunder::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::IsEnabled()); __targets__.Any() == true) { \
@@ -110,7 +110,7 @@
     }
 
 #define REPORT_OUTOFBOUNDS_WARNING_EX(CATEGORY, CALLSIGN, ACTUALVALUE, ...) \
-    if (const auto __targets__ = Thunder::WarningReporting::WarningReportingUnitProxy::Instance().Targets( \
+    if (const auto __targets__ = Thunder::WarningReporting::ResolveTargets( \
         Thunder::WarningReporting::WarningReportingType<Thunder::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::CategoryName(), \
         Thunder::WarningReporting::WarningReportingType<Thunder::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::RoutingMode(), \
         Thunder::WarningReporting::WarningReportingType<Thunder::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::IsEnabled()); __targets__.Any() == true) { \
