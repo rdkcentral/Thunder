@@ -105,19 +105,13 @@ namespace {
         return (std::string("LOG.RDK.THUNDER.") + module);
     }
 
-    class BackendState {
-    public:
+    struct BackendState {
         std::map<std::string, bool> controls;
     };
 
-    BackendState& State()
-    {
-        return (Thunder::Core::SingletonType<BackendState>::InstanceWithoutWarning());
-    }
-
     std::map<std::string, bool>& Controls()
     {
-        return (State().controls);
+        return (Thunder::Core::SingletonType<BackendState>::InstanceWithoutWarning().controls);
     }
 }
 
