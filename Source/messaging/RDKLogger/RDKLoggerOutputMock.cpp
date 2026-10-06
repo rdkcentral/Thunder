@@ -21,6 +21,7 @@
 #include "RDKLoggerOutputMock.h"
 
 #include "Module.h"
+#include "../../core/Singleton.h"
 #include "../../core/Sync.h"
 
 namespace {
@@ -100,8 +101,7 @@ namespace {
 
     MockState& State()
     {
-        static MockState state;
-        return (state);
+        return (Thunder::Core::SingletonType<MockState>::InstanceWithoutWarning());
     }
 }
 
