@@ -55,6 +55,28 @@ namespace Assertion {
         Core::CriticalSection* _adminLock;
     };
 
+    inline Core::Messaging::OutputTargets ResolveTargets(const Core::Messaging::Metadata& metadata, const Core::Messaging::OutputMode routing, const bool enabled)
+    {
+        Core::Messaging::OutputTargets targets = { false, false, false };
+
+        if ((routing == Core::Messaging::OutputMode::ALL) || (routing == Core::Messaging::OutputMode::EXTERNAL_DIRECT)) {
+            targets = AssertionUnitProxy::Instance().Targets(metadata, routing, enabled);
+        } else {
+            switch (routing) {
+            case Core::Messaging::OutputMode::DIRECT:
+                targets.direct = enabled;
+                break;
+            case Core::Messaging::OutputMode::HANDLER:
+                targets.handler = enabled;
+                break;
+            default:
+                break;
+            }
+        }
+
+        return (targets);
+    }
+
     class EXTERNAL BaseAssertType : public Core::Messaging::BaseCategoryType<Core::Messaging::Metadata::type::ASSERT> {
     public:
         using BaseClass = Core::Messaging::BaseCategoryType<Core::Messaging::Metadata::type::ASSERT>;

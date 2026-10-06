@@ -211,7 +211,7 @@ namespace Thunder {
         #define ASSERT(expr)                                                                                    \
             do {                                                                                                \
                 if (!(expr)) {                                                                                  \
-                    const auto __targets__ = Thunder::Assertion::AssertionUnitProxy::Instance().Targets(        \
+                    const auto __targets__ = Thunder::Assertion::ResolveTargets(                             \
                         Thunder::Assertion::BaseAssertType::Metadata(),                                         \
                         Thunder::Assertion::BaseAssertType::Routing(),                                          \
                         Thunder::Assertion::BaseAssertType::IsEnabled());                                       \
@@ -227,7 +227,7 @@ namespace Thunder {
         #define ASSERT_VERBOSE(expr, format, ...)                                                               \
             do {                                                                                                \
                 if (!(expr)) {                                                                                  \
-                    const auto __targets__ = Thunder::Assertion::AssertionUnitProxy::Instance().Targets(        \
+                    const auto __targets__ = Thunder::Assertion::ResolveTargets(                             \
                         Thunder::Assertion::BaseAssertType::Metadata(),                                         \
                         Thunder::Assertion::BaseAssertType::Routing(),                                          \
                         Thunder::Assertion::BaseAssertType::IsEnabled());                                       \
