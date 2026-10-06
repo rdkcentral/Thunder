@@ -2095,6 +2095,44 @@ namespace Core {
         buffer.Close();
     }
 
+    TEST(Core_CyclicBuffer, PeekWrapAroundWithLessDataThanRequested)
+    {
+        const std::string bufferName{"cyclicbuffer_peek_short_wrap"};
+        const uint32_t bufferSize = 64;
+        const uint32_t mode =
+            ::Thunder::Core::File::Mode::USER_READ |
+            ::Thunder::Core::File::Mode::USER_WRITE |
+            ::Thunder::Core::File::Mode::CREATE;
+
+        ::Thunder::Core::CyclicBuffer buffer(bufferName.c_str(), mode, bufferSize, false);
+        ASSERT_TRUE(buffer.IsValid());
+
+        // Move the tail to offset 60, then leave four bytes across the boundary.
+        uint8_t initial[60] = {};
+        uint8_t discarded[60] = {};
+        ASSERT_EQ(buffer.Write(initial, sizeof(initial)), sizeof(initial));
+        ASSERT_EQ(buffer.Read(discarded, sizeof(discarded)), sizeof(discarded));
+
+        const uint8_t data[] = {0x11, 0x22, 0x33, 0x44, 0x55, 0x66};
+        ASSERT_EQ(buffer.Write(data, sizeof(data)), sizeof(data));
+        uint8_t consumed[3] = {};
+        ASSERT_EQ(buffer.Read(consumed, sizeof(consumed)), sizeof(consumed));
+        const uint8_t expected[] = {0x44, 0x55, 0x66};
+
+        uint8_t peeked[9];
+        memset(peeked, 0xA5, sizeof(peeked));
+        EXPECT_EQ(buffer.Peek(peeked, 8), sizeof(expected));
+        for (uint32_t i = 0; i < sizeof(expected); ++i) {
+            EXPECT_EQ(peeked[i], expected[i]);
+        }
+        for (uint32_t i = sizeof(expected); i < sizeof(peeked); ++i) {
+            EXPECT_EQ(peeked[i], 0xA5) << "Peek modified byte " << i;
+        }
+        EXPECT_EQ(buffer.Used(), sizeof(expected));
+
+        buffer.Close();
+    }
+
     TEST(Core_CyclicBuffer, RapidWritesExceedCapacity)
     {
         const std::string bufferName{"cyclicbuffer_rapid"};

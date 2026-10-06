@@ -676,7 +676,8 @@ namespace Core {
             } else {
                 // Needs to be done in two passes.
                 uint32_t firstLength = _administration->_size - tail;
-                uint32_t secondLength = length - firstLength;
+                // Result may be smaller than the requested length when data is scarce.
+                uint32_t secondLength = result - firstLength;
 
                 memcpy(buffer, _realBuffer + tail, firstLength);
                 memcpy(buffer + firstLength, _realBuffer, secondLength);
