@@ -21,6 +21,7 @@
 #include "RDKLoggerOutputMock.h"
 
 #include "Module.h"
+#include "../../core/Sync.h"
 
 namespace {
     ThunderExternalLogLevel Level(const ThunderMessageType type, const char* category)
@@ -52,6 +53,38 @@ namespace {
     }
 
     struct MockState {
+        MockState()
+            : lock()
+            , initializeSucceeds(true)
+            , enabled(true)
+            , initializeCount(0)
+            , deinitializeCount(0)
+            , queryCount(0)
+            , submitCount(0)
+            , lastModule()
+            , lastLevel(THUNDER_EXTERNAL_LOG_LEVEL_INFO)
+            , lastPayload()
+            , queryCounts()
+            , enabledControls()
+        {
+        }
+
+        void Reset()
+        {
+            initializeSucceeds = true;
+            enabled = true;
+            initializeCount = 0;
+            deinitializeCount = 0;
+            queryCount = 0;
+            submitCount = 0;
+            lastModule.clear();
+            lastLevel = THUNDER_EXTERNAL_LOG_LEVEL_INFO;
+            lastPayload.clear();
+            queryCounts.clear();
+            enabledControls.clear();
+        }
+
+        Thunder::Core::CriticalSection lock;
         bool initializeSucceeds;
         bool enabled;
         uint32_t initializeCount;
@@ -67,7 +100,7 @@ namespace {
 
     MockState& State()
     {
-        static MockState state = { true, true, 0, 0, 0, 0, string(), THUNDER_EXTERNAL_LOG_LEVEL_INFO, string(), {}, {} };
+        static MockState state;
         return (state);
     }
 }
@@ -75,28 +108,33 @@ namespace {
 extern "C" {
     bool ThunderExternalOutput_Initialize(void)
     {
-        State().initializeCount++;
+        MockState& state = State();
+        Thunder::Core::SafeSyncType<Thunder::Core::CriticalSection> lock(state.lock);
+        state.initializeCount++;
+        const bool succeeds = state.initializeSucceeds;
         TRACE_L1("RDKLogger mock backend initialized");
-        return (State().initializeSucceeds);
+        return (succeeds);
     }
 
     bool ThunderExternalOutput_IsEnabled(const char* module, const ThunderMessageType type, const char* category)
     {
         const ThunderExternalLogLevel level = Level(type, category);
         const string key = string(module) + '#' + Thunder::Core::NumberType<uint8_t>(static_cast<uint8_t>(level)).Text();
-        const auto cached = State().enabledControls.find(key);
-        bool enabled = State().enabled;
+        MockState& state = State();
+        Thunder::Core::SafeSyncType<Thunder::Core::CriticalSection> lock(state.lock);
+        const auto cached = state.enabledControls.find(key);
+        bool enabled = state.enabled;
 
-        if (cached != State().enabledControls.end()) {
+        if (cached != state.enabledControls.end()) {
             enabled = cached->second;
         }
         else {
-            State().queryCount++;
-            State().lastModule = module;
-            State().lastLevel = level;
-            State().queryCounts[string(module) + '#' + Thunder::Core::NumberType<uint8_t>(static_cast<uint8_t>(level)).Text()]++;
+            state.queryCount++;
+            state.lastModule = module;
+            state.lastLevel = level;
+            state.queryCounts[key]++;
             TRACE_L1("RDKLogger mock enablement query: module=%s level=%u", module, static_cast<unsigned>(level));
-            State().enabledControls.emplace(key, enabled);
+            state.enabledControls.emplace(key, enabled);
         }
 
         return (enabled);
@@ -105,77 +143,107 @@ extern "C" {
     void ThunderExternalOutput_Submit(const char* module, const ThunderMessageType type, const char* category, const char* payload)
     {
         const ThunderExternalLogLevel level = Level(type, category);
-        State().submitCount++;
-        State().lastModule = module;
-        State().lastLevel = level;
-        State().lastPayload = payload;
+        MockState& state = State();
+        Thunder::Core::SafeSyncType<Thunder::Core::CriticalSection> lock(state.lock);
+        state.submitCount++;
+        state.lastModule = module;
+        state.lastLevel = level;
+        state.lastPayload = payload;
         if (((type == THUNDER_EXTERNAL_MESSAGE_LOGGING) && (level == THUNDER_EXTERNAL_LOG_LEVEL_INFO)) ||
             ((type == THUNDER_EXTERNAL_MESSAGE_TRACING) && (level == THUNDER_EXTERNAL_LOG_LEVEL_TRACE) && (category[0] != '\0'))) {
-            State().lastPayload = string(category) + ": " + payload;
+            state.lastPayload = string(category) + ": " + payload;
         }
         TRACE_L1("RDKLogger mock message: module=%s level=%u payload=%s", module, static_cast<unsigned>(level), payload);
     }
 
     void ThunderExternalOutput_Deinitialize(void)
     {
-        State().deinitializeCount++;
+        MockState& state = State();
+        Thunder::Core::SafeSyncType<Thunder::Core::CriticalSection> lock(state.lock);
+        state.deinitializeCount++;
         TRACE_L1("RDKLogger mock backend deinitialized");
     }
 
     void ThunderExternalOutputMock_Reset(void)
     {
-        State() = { true, true, 0, 0, 0, 0, string(), THUNDER_EXTERNAL_LOG_LEVEL_INFO, string(), {}, {} };
+        MockState& state = State();
+        Thunder::Core::SafeSyncType<Thunder::Core::CriticalSection> lock(state.lock);
+        state.Reset();
     }
 
     void ThunderExternalOutputMock_SetInitializeSucceeds(const bool succeeds)
     {
-        State().initializeSucceeds = succeeds;
+        MockState& state = State();
+        Thunder::Core::SafeSyncType<Thunder::Core::CriticalSection> lock(state.lock);
+        state.initializeSucceeds = succeeds;
     }
 
     void ThunderExternalOutputMock_SetEnabled(const bool enabled)
     {
-        State().enabled = enabled;
+        MockState& state = State();
+        Thunder::Core::SafeSyncType<Thunder::Core::CriticalSection> lock(state.lock);
+        state.enabled = enabled;
     }
 
     uint32_t ThunderExternalOutputMock_InitializeCount(void)
     {
-        return (State().initializeCount);
+        MockState& state = State();
+        Thunder::Core::SafeSyncType<Thunder::Core::CriticalSection> lock(state.lock);
+        return (state.initializeCount);
     }
 
     uint32_t ThunderExternalOutputMock_DeinitializeCount(void)
     {
-        return (State().deinitializeCount);
+        MockState& state = State();
+        Thunder::Core::SafeSyncType<Thunder::Core::CriticalSection> lock(state.lock);
+        return (state.deinitializeCount);
     }
 
     uint32_t ThunderExternalOutputMock_QueryCount(void)
     {
-        return (State().queryCount);
+        MockState& state = State();
+        Thunder::Core::SafeSyncType<Thunder::Core::CriticalSection> lock(state.lock);
+        return (state.queryCount);
     }
 
     uint32_t ThunderExternalOutputMock_QueryCountFor(const char* module, const ThunderExternalLogLevel level)
     {
         const string key = string(module) + '#' + Thunder::Core::NumberType<uint8_t>(static_cast<uint8_t>(level)).Text();
-        const auto entry = State().queryCounts.find(key);
-        return (entry == State().queryCounts.end() ? 0 : entry->second);
+        MockState& state = State();
+        Thunder::Core::SafeSyncType<Thunder::Core::CriticalSection> lock(state.lock);
+        const auto entry = state.queryCounts.find(key);
+        return (entry == state.queryCounts.end() ? 0 : entry->second);
     }
 
     uint32_t ThunderExternalOutputMock_SubmitCount(void)
     {
-        return (State().submitCount);
+        MockState& state = State();
+        Thunder::Core::SafeSyncType<Thunder::Core::CriticalSection> lock(state.lock);
+        return (state.submitCount);
     }
 
     const char* ThunderExternalOutputMock_LastModule(void)
     {
-        return (State().lastModule.c_str());
+        static thread_local string lastModule;
+        MockState& state = State();
+        Thunder::Core::SafeSyncType<Thunder::Core::CriticalSection> lock(state.lock);
+        lastModule = state.lastModule;
+        return (lastModule.c_str());
     }
 
     ThunderExternalLogLevel ThunderExternalOutputMock_LastLevel(void)
     {
-        return (State().lastLevel);
+        MockState& state = State();
+        Thunder::Core::SafeSyncType<Thunder::Core::CriticalSection> lock(state.lock);
+        return (state.lastLevel);
     }
 
     const char* ThunderExternalOutputMock_LastPayload(void)
     {
-        return (State().lastPayload.c_str());
+        static thread_local string lastPayload;
+        MockState& state = State();
+        Thunder::Core::SafeSyncType<Thunder::Core::CriticalSection> lock(state.lock);
+        lastPayload = state.lastPayload;
+        return (lastPayload.c_str());
     }
 }
