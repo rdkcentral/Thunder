@@ -26,6 +26,15 @@
 extern "C" {
 #endif
 
+typedef enum {
+	THUNDER_EXTERNAL_LOG_LEVEL_FATAL  = 0,
+	THUNDER_EXTERNAL_LOG_LEVEL_ERROR  = 1,
+	THUNDER_EXTERNAL_LOG_LEVEL_WARN   = 2,
+	THUNDER_EXTERNAL_LOG_LEVEL_NOTICE = 3,
+	THUNDER_EXTERNAL_LOG_LEVEL_INFO   = 4,
+	THUNDER_EXTERNAL_LOG_LEVEL_TRACE  = 5
+} ThunderExternalLogLevel;
+
 EXTERNAL void ThunderExternalOutputMock_Reset(void);
 EXTERNAL void ThunderExternalOutputMock_SetInitializeSucceeds(bool succeeds);
 EXTERNAL void ThunderExternalOutputMock_SetEnabled(bool enabled);

@@ -23,7 +23,6 @@
 #include "MessageDispatcher.h"
 #include "TraceFactory.h"
 #include "DirectOutput.h"
-#include "ExternalOutput.h"
 
 #include <map>
 

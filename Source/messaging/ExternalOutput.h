@@ -43,17 +43,17 @@ extern "C" {
 #endif
 
 typedef enum {
-    THUNDER_EXTERNAL_LOG_LEVEL_FATAL  = 0,
-    THUNDER_EXTERNAL_LOG_LEVEL_ERROR  = 1,
-    THUNDER_EXTERNAL_LOG_LEVEL_WARN   = 2,
-    THUNDER_EXTERNAL_LOG_LEVEL_NOTICE = 3,
-    THUNDER_EXTERNAL_LOG_LEVEL_INFO   = 4,
-    THUNDER_EXTERNAL_LOG_LEVEL_TRACE  = 5
-} ThunderExternalLogLevel;
+    THUNDER_EXTERNAL_MESSAGE_ASSERT             = 0,
+    THUNDER_EXTERNAL_MESSAGE_REPORTING          = 1,
+    THUNDER_EXTERNAL_MESSAGE_OPERATIONAL_STREAM = 2,
+    THUNDER_EXTERNAL_MESSAGE_TELEMETRY          = 3,
+    THUNDER_EXTERNAL_MESSAGE_TRACING            = 4,
+    THUNDER_EXTERNAL_MESSAGE_LOGGING            = 5
+} ThunderMessageType;
 
 THUNDER_MESSAGING_API bool ThunderExternalOutput_Initialize(void);
-THUNDER_MESSAGING_API bool ThunderExternalOutput_IsEnabled(const char* module, ThunderExternalLogLevel level);
-THUNDER_MESSAGING_API void ThunderExternalOutput_Submit(const char* module, ThunderExternalLogLevel level, const char* payload);
+THUNDER_MESSAGING_API bool ThunderExternalOutput_IsEnabled(const char* module, ThunderMessageType type, const char* category);
+THUNDER_MESSAGING_API void ThunderExternalOutput_Submit(const char* module, ThunderMessageType type, const char* category, const char* payload);
 THUNDER_MESSAGING_API void ThunderExternalOutput_Deinitialize(void);
 
 #ifdef __cplusplus

@@ -26,8 +26,7 @@ add_library(${TARGET}
         DirectOutput.cpp
         ConsoleStreamRedirect.cpp
         OperationalCategories.cpp
-        AssertionUnit.cpp
-        ExternalOutput.cpp)
+        AssertionUnit.cpp)
 
 option(MESSAGING_RDKLOGGER "Enable RDKLogger output support." OFF)
 option(MESSAGING_RDKLOGGER_USE_MOCK "Use the console-printing RDKLogger backend." OFF)
@@ -54,8 +53,7 @@ set(PUBLIC_HEADERS
         TraceFactory.h
         ConsoleStreamRedirect.h
         OperationalCategories.h
-        AssertionUnit.h
-        ExternalOutput.h)
+        AssertionUnit.h)
 
 target_compile_definitions(${TARGET} PRIVATE MESSAGING_EXPORTS)
 

@@ -21,33 +21,79 @@
 
 #include "rdk_logger.h"
 
+#include <cstring>
+#include <map>
 #include <string>
 
 namespace {
-    rdk_LogLevel Level(const ThunderExternalLogLevel level)
-    {
-        uint8_t value;
+    enum ThunderExternalLogLevel {
+        THUNDER_EXTERNAL_LOG_LEVEL_FATAL,
+        THUNDER_EXTERNAL_LOG_LEVEL_ERROR,
+        THUNDER_EXTERNAL_LOG_LEVEL_WARN,
+        THUNDER_EXTERNAL_LOG_LEVEL_NOTICE,
+        THUNDER_EXTERNAL_LOG_LEVEL_INFO,
+        THUNDER_EXTERNAL_LOG_LEVEL_TRACE
+    };
 
-        switch (level) {
-        case THUNDER_EXTERNAL_LOG_LEVEL_FATAL:
-            value = 0;
+    ThunderExternalLogLevel Level(const ThunderMessageType type, const char* category)
+    {
+        ThunderExternalLogLevel level = THUNDER_EXTERNAL_LOG_LEVEL_INFO;
+
+        switch (type) {
+        case THUNDER_EXTERNAL_MESSAGE_ASSERT:
+            level = THUNDER_EXTERNAL_LOG_LEVEL_FATAL;
             break;
-        case THUNDER_EXTERNAL_LOG_LEVEL_ERROR:
-            value = 1;
+        case THUNDER_EXTERNAL_MESSAGE_REPORTING:
+            level = THUNDER_EXTERNAL_LOG_LEVEL_WARN;
             break;
-        case THUNDER_EXTERNAL_LOG_LEVEL_WARN:
-            value = 2;
+        case THUNDER_EXTERNAL_MESSAGE_OPERATIONAL_STREAM:
+            level = THUNDER_EXTERNAL_LOG_LEVEL_TRACE;
             break;
-        case THUNDER_EXTERNAL_LOG_LEVEL_NOTICE:
-            value = 3;
+        case THUNDER_EXTERNAL_MESSAGE_TELEMETRY:
+            level = THUNDER_EXTERNAL_LOG_LEVEL_NOTICE;
             break;
-        case THUNDER_EXTERNAL_LOG_LEVEL_TRACE:
-            value = 6;
+        case THUNDER_EXTERNAL_MESSAGE_TRACING:
+            if ((strcmp(category, "Fatal") == 0) || (strcmp(category, "Crash") == 0)) {
+                level = THUNDER_EXTERNAL_LOG_LEVEL_FATAL;
+            } else if (strcmp(category, "Error") == 0) {
+                level = THUNDER_EXTERNAL_LOG_LEVEL_ERROR;
+            } else if ((strcmp(category, "Warning") == 0) || (strcmp(category, "Warn") == 0)) {
+                level = THUNDER_EXTERNAL_LOG_LEVEL_WARN;
+            } else if (strcmp(category, "Notice") == 0) {
+                level = THUNDER_EXTERNAL_LOG_LEVEL_NOTICE;
+            } else {
+                level = THUNDER_EXTERNAL_LOG_LEVEL_TRACE;
+            }
             break;
-        case THUNDER_EXTERNAL_LOG_LEVEL_INFO:
+        case THUNDER_EXTERNAL_MESSAGE_LOGGING:
+            if ((strcmp(category, "Fatal") == 0) || (strcmp(category, "Crash") == 0)) {
+                level = THUNDER_EXTERNAL_LOG_LEVEL_FATAL;
+            } else if (strcmp(category, "Error") == 0) {
+                level = THUNDER_EXTERNAL_LOG_LEVEL_ERROR;
+            } else if ((strcmp(category, "Warning") == 0) || (strcmp(category, "Warn") == 0)) {
+                level = THUNDER_EXTERNAL_LOG_LEVEL_WARN;
+            } else if (strcmp(category, "Notice") == 0) {
+                level = THUNDER_EXTERNAL_LOG_LEVEL_NOTICE;
+            }
+            break;
         default:
-            value = 4;
             break;
+        }
+
+        return (level);
+    }
+
+    rdk_LogLevel Level(const ThunderMessageType type, const char* category)
+    {
+        uint8_t value = 4;
+
+        switch (Level(type, category)) {
+        case THUNDER_EXTERNAL_LOG_LEVEL_FATAL: value = 0; break;
+        case THUNDER_EXTERNAL_LOG_LEVEL_ERROR: value = 1; break;
+        case THUNDER_EXTERNAL_LOG_LEVEL_WARN: value = 2; break;
+        case THUNDER_EXTERNAL_LOG_LEVEL_NOTICE: value = 3; break;
+        case THUNDER_EXTERNAL_LOG_LEVEL_TRACE: value = 6; break;
+        default: break;
         }
 
         return (static_cast<rdk_LogLevel>(value));
@@ -57,28 +103,59 @@ namespace {
     {
         return (std::string("LOG.RDK.THUNDER.") + module);
     }
+
+    std::map<std::string, bool>& Controls()
+    {
+        static std::map<std::string, bool> controls;
+        return (controls);
+    }
 }
 
 extern "C" {
     bool ThunderExternalOutput_Initialize(void)
     {
+        Controls().clear();
         return (RDKLOGGER_INIT() == RDK_SUCCESS);
     }
 
-    bool ThunderExternalOutput_IsEnabled(const char* module, const ThunderExternalLogLevel level)
+    bool ThunderExternalOutput_IsEnabled(const char* module, const ThunderMessageType type, const char* category)
     {
         const std::string moduleName = Module(module);
-        return (rdk_logger_is_logLevel_enabled(moduleName.c_str(), Level(level)) == TRUE);
+        const rdk_LogLevel level = Level(type, category);
+        const std::string key = moduleName + '#' + std::to_string(static_cast<unsigned>(level));
+        const auto entry = Controls().find(key);
+        bool enabled = false;
+
+        if (entry != Controls().end()) {
+            enabled = entry->second;
+        }
+        else {
+            enabled = (rdk_logger_is_logLevel_enabled(moduleName.c_str(), level) == TRUE);
+            Controls().emplace(key, enabled);
+        }
+
+        return (enabled);
     }
 
-    void ThunderExternalOutput_Submit(const char* module, const ThunderExternalLogLevel level, const char* payload)
+    void ThunderExternalOutput_Submit(const char* module, const ThunderMessageType type, const char* category, const char* payload)
     {
         const std::string moduleName = Module(module);
-        RDK_LOG(Level(level), moduleName.c_str(), "%s", payload);
+        const ThunderExternalLogLevel level = Level(type, category);
+
+        if (((((type == THUNDER_EXTERNAL_MESSAGE_LOGGING) && (level == THUNDER_EXTERNAL_LOG_LEVEL_INFO)) ||
+              ((type == THUNDER_EXTERNAL_MESSAGE_TRACING) && (level == THUNDER_EXTERNAL_LOG_LEVEL_TRACE))) &&
+             (category[0] != '\0'))) {
+            const std::string prefixedPayload = std::string(category) + ": " + payload;
+            RDK_LOG(Level(type, category), moduleName.c_str(), "%s", prefixedPayload.c_str());
+        }
+        else {
+            RDK_LOG(Level(type, category), moduleName.c_str(), "%s", payload);
+        }
     }
 
     void ThunderExternalOutput_Deinitialize(void)
     {
+        Controls().clear();
         rdk_logger_deinit();
     }
 }

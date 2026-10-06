@@ -19,69 +19,39 @@
 
 #include "MessageUnit.h"
 #include "ConsoleStreamRedirect.h"
+#include "ExternalOutput.h"
 
 #if defined(MESSAGING_EXTERNAL_OUTPUT)
 namespace {
-    ThunderExternalLogLevel ExternalLevel(const Thunder::Core::Messaging::Metadata& metadata)
+    ThunderMessageType ExternalType(const Thunder::Core::Messaging::Metadata& metadata)
     {
-        ThunderExternalLogLevel level = THUNDER_EXTERNAL_LOG_LEVEL_INFO;
+        ThunderMessageType type = THUNDER_EXTERNAL_MESSAGE_LOGGING;
 
         switch (metadata.Type()) {
         case Thunder::Core::Messaging::Metadata::type::ASSERT:
-            level = THUNDER_EXTERNAL_LOG_LEVEL_FATAL;
+            type = THUNDER_EXTERNAL_MESSAGE_ASSERT;
             break;
         case Thunder::Core::Messaging::Metadata::type::REPORTING:
-            level = THUNDER_EXTERNAL_LOG_LEVEL_WARN;
+            type = THUNDER_EXTERNAL_MESSAGE_REPORTING;
             break;
         case Thunder::Core::Messaging::Metadata::type::OPERATIONAL_STREAM:
-            level = THUNDER_EXTERNAL_LOG_LEVEL_TRACE;
+            type = THUNDER_EXTERNAL_MESSAGE_OPERATIONAL_STREAM;
             break;
         case Thunder::Core::Messaging::Metadata::type::TELEMETRY:
-            level = THUNDER_EXTERNAL_LOG_LEVEL_NOTICE;
+            type = THUNDER_EXTERNAL_MESSAGE_TELEMETRY;
             break;
         case Thunder::Core::Messaging::Metadata::type::TRACING:
-            if ((metadata.Category() == "Fatal") || (metadata.Category() == "Crash")) {
-                level = THUNDER_EXTERNAL_LOG_LEVEL_FATAL;
-            } else if (metadata.Category() == "Error") {
-                level = THUNDER_EXTERNAL_LOG_LEVEL_ERROR;
-            } else if ((metadata.Category() == "Warning") || (metadata.Category() == "Warn")) {
-                level = THUNDER_EXTERNAL_LOG_LEVEL_WARN;
-            } else if (metadata.Category() == "Notice") {
-                level = THUNDER_EXTERNAL_LOG_LEVEL_NOTICE;
-            } else {
-                level = THUNDER_EXTERNAL_LOG_LEVEL_TRACE;
-            }
+            type = THUNDER_EXTERNAL_MESSAGE_TRACING;
             break;
         case Thunder::Core::Messaging::Metadata::type::LOGGING:
-            if ((metadata.Category() == "Fatal") || (metadata.Category() == "Crash")) {
-                level = THUNDER_EXTERNAL_LOG_LEVEL_FATAL;
-            } else if (metadata.Category() == "Error") {
-                level = THUNDER_EXTERNAL_LOG_LEVEL_ERROR;
-            } else if ((metadata.Category() == "Warning") || (metadata.Category() == "Warn")) {
-                level = THUNDER_EXTERNAL_LOG_LEVEL_WARN;
-            } else if (metadata.Category() == "Notice") {
-                level = THUNDER_EXTERNAL_LOG_LEVEL_NOTICE;
-            }
             break;
         default:
             break;
         }
 
-        return (level);
+        return (type);
     }
 
-    string ExternalPayload(const Thunder::Core::Messaging::Metadata& metadata, const Thunder::Core::Messaging::IEvent& message)
-    {
-        const bool defaultLevel = ((metadata.Type() == Thunder::Core::Messaging::Metadata::type::LOGGING) && (ExternalLevel(metadata) == THUNDER_EXTERNAL_LOG_LEVEL_INFO)) ||
-                                  ((metadata.Type() == Thunder::Core::Messaging::Metadata::type::TRACING) && (ExternalLevel(metadata) == THUNDER_EXTERNAL_LOG_LEVEL_TRACE));
-        string payload = message.Data();
-
-        if ((defaultLevel == true) && (metadata.Category().empty() == false)) {
-            payload = metadata.Category() + ": " + payload;
-        }
-
-        return (payload);
-    }
 }
 #endif
 
@@ -316,9 +286,8 @@ ENUM_CONVERSION_END(Thunder::Core::Messaging::OutputMode)
 #if defined(MESSAGING_EXTERNAL_OUTPUT)
             _adminLock.LockWithoutWarning();
             if (_externalInitialized == true) {
-                const ThunderExternalLogLevel level = ExternalLevel(metadata);
                 const string& module = metadata.Module();
-                const string key = module + '#' + Core::NumberType<uint8_t>(static_cast<uint8_t>(level)).Text();
+                const string key = module + '#' + Core::NumberType<uint8_t>(static_cast<uint8_t>(ExternalType(metadata))).Text() + '#' + metadata.Category();
 
                 auto entry = _externalControls.find(key);
 
@@ -326,7 +295,7 @@ ENUM_CONVERSION_END(Thunder::Core::Messaging::OutputMode)
                     enabled = entry->second;
                 }
                 else {
-                    enabled = ThunderExternalOutput_IsEnabled(module.c_str(), level);
+                    enabled = ThunderExternalOutput_IsEnabled(module.c_str(), ExternalType(metadata), metadata.Category().c_str());
                     _externalControls.emplace(key, enabled);
                 }
             }
@@ -560,9 +529,8 @@ ENUM_CONVERSION_END(Thunder::Core::Messaging::OutputMode)
 
             if (targets.external == true) {
 #if defined(MESSAGING_EXTERNAL_OUTPUT)
-                const string payload = ExternalPayload(messageInfo, *message);
                 if (_externalInitialized == true) {
-                    ThunderExternalOutput_Submit(messageInfo.Module().c_str(), ExternalLevel(messageInfo), payload.c_str());
+                    ThunderExternalOutput_Submit(messageInfo.Module().c_str(), ExternalType(messageInfo), messageInfo.Category().c_str(), message->Data().c_str());
                 }
 #endif
             }
