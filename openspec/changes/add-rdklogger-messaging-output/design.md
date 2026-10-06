@@ -82,7 +82,7 @@ Thunder documents the selected `LOG.RDK.THUNDER.<MODULE_NAME>` category mapping 
 
 ### Public adapter contract and mock backend
 
-The adapter SHALL follow the existing Telemetry backend pattern: a small public C interface defines lifecycle, enablement, and submission operations, while Messaging selects the real or mock implementation at build time. The public contract is intentionally narrow and does not expose RDKLogger or other backend internals.
+The adapter SHALL follow the existing Telemetry backend pattern: a small internal C interface defines lifecycle, enablement, and submission operations between Messaging and its selected backend implementation. Messaging selects the real or mock implementation at build time. The internal contract is intentionally narrow and does not expose RDKLogger or other backend internals as part of the installed Thunder SDK.
 
 The mock backend implements the same interface, prints submissions to the console, and may expose test-only call inspection. It allows SDK-independent builds and tests without weakening the production boundary.
 

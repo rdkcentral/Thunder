@@ -19,6 +19,8 @@
 
 #pragma once
 
+// Internal Messaging/backend contract. This header is not part of the installed SDK.
+
 #include <stdbool.h>
 
 #ifdef __cplusplus
