@@ -21,6 +21,8 @@
 
 #include <unordered_set>
 #include "Thread.h"
+#include <chrono>
+#include <thread>
 #include "ResourceMonitor.h"
 #include "Number.h"
 
@@ -331,6 +333,11 @@ namespace Core {
                 }
                 return (result);
             }
+            // Unconditional handle to the underlying IDispatch, independent of _state;
+            // lets callers wait on the real Minion reference even when RevokeRequired() reports nothing to do.
+            ProxyType<IDispatch> WorkerProxy() {
+                return (ProxyType<IDispatch>(ProxyType<Worker>(_job)));
+            }
             void Revoked() {
                 state expected = REVOKING;
                 VARIABLE_IS_NOT_USED bool result = _state.compare_exchange_strong(expected, IDLE);
@@ -457,7 +464,9 @@ namespace Core {
 
                 _adminLock.Lock();
 
-                if (_currentRequest != job) {
+                bool mismatch = (_currentRequest != job);
+                printf("[Minion::Completed DEBUG] mismatch=%d currentReq=%p job=%p\n", (int)mismatch, static_cast<void*>(_currentRequest.operator->()), static_cast<void*>(job.operator->())); fflush(stdout);
+                if (mismatch) {
                     _adminLock.Unlock();
                 }
                 else {
@@ -499,6 +508,9 @@ namespace Core {
                     #endif
 
                     _parent.Completed(_currentRequest);
+
+                    // TEMP STRESS-TEST ONLY, not for commit: widen EXECUTING->IDLE / Release() gap.
+                    std::this_thread::sleep_for(std::chrono::milliseconds(200));
 
                     // if someone is observing this run, (WaitForCompletion) make sure that
                     // thread, sees that his object was running and is now completed.

@@ -86,9 +86,21 @@ namespace Core {
             void Revoke()
             {
                 Core::ProxyType<IDispatch> job(ThreadPool::JobType<IMPLEMENTATION>::Revoke());
+                const bool stateRevoked = job.IsValid();
+
+                printf("[Revoke DEBUG] stateRevoked=%d\\n", (int)stateRevoked); fflush(stdout);
+                if (stateRevoked == false) {
+                    // _state already reads IDLE, but Minion::Process() flips EXECUTING->IDLE
+                    // before releasing its _currentRequest reference. Fall back to the real
+                    // reference-based wait so we do not return before that release happens.
+                    job = ThreadPool::JobType<IMPLEMENTATION>::WorkerProxy();
+                }
 
                 if (job.IsValid() == true) {
                     Core::IWorkerPool::Instance().Revoke(job);
+                }
+
+                if (stateRevoked == true) {
                     ThreadPool::JobType<IMPLEMENTATION>::Revoked();
                 }
             }
