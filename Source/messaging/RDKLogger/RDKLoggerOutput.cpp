@@ -18,6 +18,7 @@
  */
 
 #include "ExternalOutput.h"
+#include "../../core/Singleton.h"
 
 #include "rdk_logger.h"
 
@@ -104,10 +105,19 @@ namespace {
         return (std::string("LOG.RDK.THUNDER.") + module);
     }
 
+    class BackendState {
+    public:
+        std::map<std::string, bool> controls;
+    };
+
+    BackendState& State()
+    {
+        return (Thunder::Core::SingletonType<BackendState>::InstanceWithoutWarning());
+    }
+
     std::map<std::string, bool>& Controls()
     {
-        static std::map<std::string, bool> controls;
-        return (controls);
+        return (State().controls);
     }
 }
 
