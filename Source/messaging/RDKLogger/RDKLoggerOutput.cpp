@@ -36,7 +36,7 @@ namespace {
         THUNDER_EXTERNAL_LOG_LEVEL_TRACE
     };
 
-    ThunderExternalLogLevel Level(const ThunderMessageType type, const char* category)
+    ThunderExternalLogLevel ThunderLevel(const ThunderMessageType type, const char* category)
     {
         ThunderExternalLogLevel level = THUNDER_EXTERNAL_LOG_LEVEL_INFO;
 
@@ -84,11 +84,11 @@ namespace {
         return (level);
     }
 
-    rdk_LogLevel Level(const ThunderMessageType type, const char* category)
+    rdk_LogLevel RDKLevel(const ThunderMessageType type, const char* category)
     {
         uint8_t value = 4;
 
-        switch (Level(type, category)) {
+        switch (ThunderLevel(type, category)) {
         case THUNDER_EXTERNAL_LOG_LEVEL_FATAL: value = 0; break;
         case THUNDER_EXTERNAL_LOG_LEVEL_ERROR: value = 1; break;
         case THUNDER_EXTERNAL_LOG_LEVEL_WARN: value = 2; break;
@@ -125,7 +125,7 @@ extern "C" {
     bool ThunderExternalOutput_IsEnabled(const char* module, const ThunderMessageType type, const char* category)
     {
         const std::string moduleName = Module(module);
-        const rdk_LogLevel level = Level(type, category);
+        const rdk_LogLevel level = RDKLevel(type, category);
         const std::string key = moduleName + '#' + std::to_string(static_cast<unsigned>(level));
         const auto entry = Controls().find(key);
         bool enabled = false;
@@ -144,16 +144,16 @@ extern "C" {
     void ThunderExternalOutput_Submit(const char* module, const ThunderMessageType type, const char* category, const char* payload)
     {
         const std::string moduleName = Module(module);
-        const ThunderExternalLogLevel level = Level(type, category);
+        const ThunderExternalLogLevel level = ThunderLevel(type, category);
 
         if (((((type == THUNDER_EXTERNAL_MESSAGE_LOGGING) && (level == THUNDER_EXTERNAL_LOG_LEVEL_INFO)) ||
               ((type == THUNDER_EXTERNAL_MESSAGE_TRACING) && (level == THUNDER_EXTERNAL_LOG_LEVEL_TRACE))) &&
              (category[0] != '\0'))) {
             const std::string prefixedPayload = std::string(category) + ": " + payload;
-            RDK_LOG(Level(type, category), moduleName.c_str(), "%s", prefixedPayload.c_str());
+            RDK_LOG(RDKLevel(type, category), moduleName.c_str(), "%s", prefixedPayload.c_str());
         }
         else {
-            RDK_LOG(Level(type, category), moduleName.c_str(), "%s", payload);
+            RDK_LOG(RDKLevel(type, category), moduleName.c_str(), "%s", payload);
         }
     }
 
