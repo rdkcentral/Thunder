@@ -149,7 +149,7 @@ extern "C" {
         state.lastModule = module;
         state.lastLevel = level;
         state.lastPayload = payload;
-        if (((type == THUNDER_EXTERNAL_MESSAGE_LOGGING) && (level == THUNDER_EXTERNAL_LOG_LEVEL_INFO)) ||
+        if (((type == THUNDER_EXTERNAL_MESSAGE_LOGGING) && (level == THUNDER_EXTERNAL_LOG_LEVEL_INFO) && (category[0] != '\0')) ||
             ((type == THUNDER_EXTERNAL_MESSAGE_TRACING) && (level == THUNDER_EXTERNAL_LOG_LEVEL_TRACE) && (category[0] != '\0'))) {
             state.lastPayload = string(category) + ": " + payload;
         }
