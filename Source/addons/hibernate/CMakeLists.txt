@@ -47,13 +47,8 @@ set_target_properties(${TARGET} PROPERTIES
         )
 endif()
 
-if(HIBERNATE_CHECKPOINTLIB)
-        find_package(Memcr REQUIRED)
-        target_link_libraries(${TARGET} PRIVATE MEMCR::MEMCR)
-        target_include_directories(${TARGET} PRIVATE MEMCR::MEMCR)
-elseif(HIBERNATE_CHECKPOINTSERVER)
-    # nothing to add here
-endif()
+# The checkpoint-library backend currently reports unsupported operation.
+# Restore a Memcr dependency only together with a real API implementation.
 
 install(
         TARGETS ${TARGET}  EXPORT ${TARGET}Targets

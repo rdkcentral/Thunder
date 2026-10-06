@@ -25,6 +25,12 @@
 
 #include <core/core.h>
 
+#if defined(__APPLE__)
+#include <ifaddrs.h>
+#include <memory>
+#include <set>
+#endif
+
 namespace Thunder {
 namespace Tests {
 namespace Core {
@@ -95,6 +101,39 @@ namespace Core {
 
         ::Thunder::Core::Singleton::Dispose();
     }
+
+#if defined(__APPLE__)
+    TEST(Core_NetworkInfo, AppleAdapterSnapshotLifetime)
+    {
+        // Read only: do not assume eth0 exists or change host network settings.
+        struct ifaddrs* raw = nullptr;
+        ASSERT_EQ(0, getifaddrs(&raw));
+        const std::unique_ptr<struct ifaddrs, decltype(&freeifaddrs)> reference(raw, &freeifaddrs);
+        std::set<string> expected;
+        for (auto* entry = raw; entry != nullptr; entry = entry->ifa_next) {
+            if (entry->ifa_name != nullptr) {
+                expected.insert(entry->ifa_name);
+            }
+        }
+        ASSERT_FALSE(expected.empty());
+
+        // Under ASan, Name/MAC/Address would touch the previously freed list.
+        for (unsigned attempt = 0; attempt < 20; ++attempt) {
+            ::Thunder::Core::AdapterIterator adapters;
+            EXPECT_EQ(expected.size(), adapters.Count());
+            std::set<string> actual;
+            while (adapters.Next()) {
+                actual.insert(adapters.Name());
+                EXPECT_FALSE(adapters.MACAddress(':').empty());
+                uint8_t mac[6] = {};
+                adapters.MACAddress(mac, sizeof(mac));
+                auto addresses = adapters.IPV4Addresses();
+                (void)addresses.Address();
+            }
+            EXPECT_EQ(expected, actual);
+        }
+    }
+#endif
 
     TEST(DISABLED_test_adapteriterator, simple_adapteriterator)
     {

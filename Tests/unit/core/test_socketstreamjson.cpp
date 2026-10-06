@@ -983,29 +983,13 @@ namespace Core {
     // -------------------------------------------------------------------------
     // Test 13: garbage byte immediately before valid JSON in one chunk
     //
-    // DISABLED: exposes a data-loss bug in ReceiveData().
-    //
-    // When DeserializerImpl::Deserialize() returns processed=0 (parse error
-    // at position 0), the do/while loop breaks immediately:
-    //
-    //   do {
-    //       processed = _deserializer.Deserialize(&dataFrame[handled], ...);
-    //       handled += processed;   // 0 added
-    //   } while ((processed != 0) && ...);  // breaks
-    //
-    // ReceiveData() returns handled=0. SocketPort discards the entire receive
-    // buffer. Any valid bytes that followed the error byte in the same chunk
-    // are silently dropped — they will never be presented to the parser again.
-    //
-    // Affected scenario: sender writes "\x02{valid json}" in a single send().
-    // Expected: valid message delivered (only \x02 should be skipped).
-    // Actual:   nothing delivered (entire buffer discarded).
-    //
-    // Fix: when processed=0 due to a parse error (not UNKNOWN), advance
-    // handled by 1 to skip the offending byte before continuing the loop,
-    // rather than returning immediately with the unprocessed buffer.
+    // A zero-progress parse error pins unconsumed bytes in SocketPort until
+    // more data arrives; a full receive buffer may then be discarded.
+    // Recovery must skip only the offending byte, preserving trailing JSON.
+    // One write does not guarantee one TCP read, so the in-memory
+    // Core_StreamJSONRecovery tests separately enforce exact chunk boundaries.
     // -------------------------------------------------------------------------
-    TEST(Core_Socket, DISABLED_StreamJSON_GarbagePrefixedValidInSingleChunk)
+    TEST(Core_Socket, StreamJSON_GarbagePrefixedValidInSingleChunk)
     {
         constexpr uint16_t PORT = 19285;
 
@@ -1025,12 +1009,8 @@ namespace Core {
             ASSERT_EQ(::Thunder::Core::ERROR_NONE, StreamJSONTestServer::WaitForConnect());
 
             // Single write: one invalid byte immediately followed by valid JSON.
-            // The invalid byte causes a parse error with loaded=0. The loop
-            // breaks and the valid JSON is dropped with it.
-            static const uint8_t prefix[] = { 0x02 };
-            sender.Send(prefix, sizeof(prefix));
-            SleepMs(1);
-            sender.Send(valid);
+            const string payload = string(1, '\x02') + valid;
+            ASSERT_EQ(payload.size(), sender.Send(payload));
             SleepMs(100);  // let server process before FIN arrives
         }
 

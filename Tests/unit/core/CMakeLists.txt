@@ -169,6 +169,19 @@ add_executable(${TEST_RUNNER_NAME}
 )
 endif()
 
+# Test the same rootfs helper used by CRun without requiring a container runtime.
+target_sources(${TEST_RUNNER_NAME} PRIVATE
+    test_crunconfig.cpp
+    test_streamjson_recovery.cpp
+)
+if(LINUX)
+    # Compile the real unsupported backend, not a mock of its return values.
+    target_sources(${TEST_RUNNER_NAME} PRIVATE
+        test_checkpointlib.cpp
+        ${CMAKE_SOURCE_DIR}/Source/addons/hibernate/checkpointlib/CheckpointLib.c
+    )
+endif()
+
 set_source_files_properties(test_systeminfo.cpp PROPERTIES COMPILE_OPTIONS "-fexceptions")
 
 target_compile_definitions(${TEST_RUNNER_NAME}

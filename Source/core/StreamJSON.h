@@ -159,6 +159,12 @@ namespace Core {
                                 CC_SYSLOG("StreamJSONType failed (errors after this one will not be reported until correct message is received again): %s", ErrorDisplayMessage(error.Value()).c_str());
                             }
                         }
+                        // A confirmed error at byte zero must not pin the receive
+                        // buffer. Skip only that byte, then retry the trailing input.
+                        // No-error/UNKNOWN input must retain its continuation state.
+                        if ((loaded == 0) && (length != 0)) {
+                            loaded = 1;
+                        }
                     } else {
                         _consecutiveErrors = 0;
                         if ((_offset == 0) || (loaded != length)) {

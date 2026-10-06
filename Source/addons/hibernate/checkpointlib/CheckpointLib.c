@@ -21,38 +21,40 @@
 #include "../hibernate.h"
 #include "../common/Log.h"
 
-//TODO: #include <memcr.h>
-#include <assert.h>
-#include <stdlib.h>
-
-typedef struct {
-    pid_t pid;
-} CheckpointMetaData;
-
+// PUBLIC_INTERFACE
+/**
+ * Attempt to checkpoint pid using the selected library backend.
+ * timeout and directory arguments describe the requested operation; storage
+ * belongs to the caller. Returns GENERAL without changing storage because
+ * this backend has no checkpoint implementation.
+ */
 uint32_t HibernateProcess(const uint32_t timeout, const pid_t pid, const char data_dir[], const char volatile_dir[], void** storage)
 {
-    assert(*storage == NULL);
-    CheckpointMetaData* metaData = (CheckpointMetaData*) malloc(sizeof(CheckpointMetaData));
-    assert(metaData);
-
-    metaData->pid = pid;
-
-    *storage = (void*)(metaData);
-
-    //TODO: MEMCR_Checkpoint(timeoute, pid, data_dir, volatile_dir);
-
-    return HIBERNATE_ERROR_NONE;
+    // Bookkeeping is not a checkpoint. Never let callers infer it is safe
+    // to suspend a process while the actual backend is unavailable.
+    (void)timeout;
+    (void)pid;
+    (void)data_dir;
+    (void)volatile_dir;
+    (void)storage;
+    LOGERR("Checkpoint library backend is not implemented");
+    return HIBERNATE_ERROR_GENERAL;
 }
 
+// PUBLIC_INTERFACE
+/**
+ * Attempt to resume pid with the supplied timeout, directories and storage.
+ * Returns GENERAL because resume is unavailable; opaque caller storage is
+ * preserved and may be NULL.
+ */
 uint32_t WakeupProcess(const uint32_t timeout, const pid_t pid, const char data_dir[], const char volatile_dir[], void** storage)
 {
-    assert(*storage != NULL);
-    CheckpointMetaData* metaData = (CheckpointMetaData*)(*storage);
-    assert(metaData->pid == pid);
-
-    //TODO: MEMCR_Resume(timeoute, pid, data_dir, volatile_dir);
-    free(metaData);
-    *storage = NULL;
-
-    return HIBERNATE_ERROR_NONE;
+    // Do not destroy metadata for an operation that was never performed.
+    (void)timeout;
+    (void)pid;
+    (void)data_dir;
+    (void)volatile_dir;
+    (void)storage;
+    LOGERR("Checkpoint library resume backend is not implemented");
+    return HIBERNATE_ERROR_GENERAL;
 }

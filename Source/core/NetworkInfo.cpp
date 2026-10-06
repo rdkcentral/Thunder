@@ -36,6 +36,7 @@
 #elif defined(__APPLE__)
 #include <ifaddrs.h>
 #include <net/if_dl.h>
+#include <memory>
 #elif defined(__POSIX__)
 #include <arpa/inet.h>
 #include <ifaddrs.h>
@@ -535,7 +536,11 @@ namespace Core {
     }
 
 #elif defined(__APPLE__)
-    using AdapterAddresses = std::vector<struct ifaddrs*>;
+    // Each snapshot keeps the allocation supplying its borrowed entries alive.
+    // Copying a selected vector also copies ownership, not dangling pointers.
+    struct AdapterAddresses : public std::vector<struct ifaddrs*> {
+        std::shared_ptr<struct ifaddrs> interfaces;
+    };
     using Adapters = std::map<string, AdapterAddresses>;
 
     inline void ConvertMACToString(const uint8_t address[], const uint8_t length, const char delimiter, string& output)
@@ -557,16 +562,25 @@ namespace Core {
 
     static uint8_t LoadAdapterInfo(const uint16_t adapterIndex, AdapterAddresses& addresses)
     {
-        struct ifaddrs *interfaces;
+        addresses.clear();
+        addresses.interfaces.reset();
+        struct ifaddrs *interfaces = nullptr;
         Adapters adapters;
         if (!getifaddrs(&interfaces)) {
+            // The output retains this owner after the local grouping is destroyed.
+            const std::shared_ptr<struct ifaddrs> owner(interfaces, &freeifaddrs);
 
             struct ifaddrs* index = interfaces;
             while (index != nullptr) {
-
+                // Some records have no name or address; never dereference them.
+                if (index->ifa_name == nullptr) {
+                    index = index->ifa_next;
+                    continue;
+                }
                 Adapters::iterator adapterIndex = adapters.find(index->ifa_name);
                 if (adapterIndex == adapters.end()) {
                     AdapterAddresses addresses;
+                    addresses.interfaces = owner;
                     addresses.push_back(index);
                     adapters.emplace(std::piecewise_construct, std::forward_as_tuple(index->ifa_name), std::forward_as_tuple(addresses));
                 } else {
@@ -583,15 +597,20 @@ namespace Core {
                     addresses = index->second;
                 }
             }
-
-            freeifaddrs(interfaces);
+            // freeifaddrs runs only when the last snapshot owner is destroyed.
         }
         return adapters.size();
     }
 
     IPV4AddressIterator::IPV4AddressIterator(const uint16_t adapter)
         : _adapter(adapter)
+        , _index(static_cast<uint16_t>(~0))
+        , _section1(0)
+        , _section2(0)
+        , _section3(0)
     {
+        // The Apple address accessor loads on demand; copies still require
+        // defined iterator fields even though enumeration counts are unimplemented.
     }
 
     IPNode IPV4AddressIterator::Address() const
@@ -602,6 +621,9 @@ namespace Core {
 
         if (addresses.size() > 0) {
             for (auto& address: addresses) {
+                 if (address->ifa_addr == nullptr) {
+                     continue;
+                 }
                  if (address->ifa_addr->sa_family == static_cast<uint8_t>(AF_INET)) {
                       result = IPNode(NodeId(*reinterpret_cast<struct sockaddr_in*>(address->ifa_addr)), 0);
                       break;
@@ -644,7 +666,7 @@ namespace Core {
 
         if (addresses.size() > 0) {
             for (auto& address: addresses) {
-                 if (address->ifa_addr->sa_family == AF_LINK && address->ifa_addr->sa_len >= 15) {
+                 if (address->ifa_addr != nullptr && address->ifa_addr->sa_family == AF_LINK && address->ifa_addr->sa_len >= 15) {
                      uint8_t MAC[6];
                      memcpy(MAC, &address->ifa_addr->sa_data[9], 6);
                      ConvertMACToString(MAC, sizeof(MAC), delimiter, result);
@@ -655,15 +677,19 @@ namespace Core {
         return (result);
     }
 
-    void AdapterIterator::MACAddress(uint8_t buffer[], const uint8_t /* length */) const
+    void AdapterIterator::MACAddress(uint8_t buffer[], const uint8_t length) const
     {
         ASSERT(IsValid());
+        // The MAC copy requires six writable bytes, even for sparse snapshots.
+        if ((buffer == nullptr) || (length < 6)) {
+            return;
+        }
         AdapterAddresses addresses;
         LoadAdapterInfo(_index, addresses);
 
         if (addresses.size() > 0) {
             for (auto& address: addresses) {
-                if (address->ifa_addr->sa_family == AF_LINK && address->ifa_addr->sa_len >= 15) {
+                if (address->ifa_addr != nullptr && address->ifa_addr->sa_family == AF_LINK && address->ifa_addr->sa_len >= 15) {
                     memcpy(buffer, &address->ifa_addr->sa_data[9], 6);
                 }
             }

@@ -25,7 +25,8 @@ list(APPEND CONTAINERS ${TARGET})
 set(CONTAINERS ${CONTAINERS} PARENT_SCOPE)
 
 add_library(${TARGET} STATIC
-        LXCImplementation.cpp
+        # Keep the selected producer and its startup validation reachable.
+        CRunImplementation.cpp
     )
 
 set_target_properties(${TARGET} PROPERTIES
@@ -36,12 +37,12 @@ set_target_properties(${TARGET} PROPERTIES
 target_include_directories(${TARGET}
     PRIVATE
         ${CMAKE_CURRENT_LIST_DIR}/../../../
-        libcrun::libcrun
     )
 
 target_link_libraries(${TARGET}
     PRIVATE
-        libcrun::libcrun
+        # FindLibCRUN exports this target with its include directories.
+        LibCRUN::LibCRUN
         CompileSettings::CompileSettings
         CompileSettingsDebug::CompileSettingsDebug
         ${NAMESPACE}Core::${NAMESPACE}Core

@@ -19,9 +19,8 @@
 
 #pragma once
 
-#include "processcontainers/ProcessContainer.h"
-#include "processcontainers/common/BaseAdministrator.h"
-#include "processcontainers/common/BaseRefCount.h"
+#include "processcontainers/IProcessContainers.h"
+#include "processcontainers/ContainerAdministrator.h"
 #include "processcontainers/common/CGroupContainerInfo.h"
 
 
@@ -39,10 +38,12 @@ POP_WARNING()
 namespace Thunder {
 namespace ProcessContainers {
 
-    class CRunContainer : public BaseRefCount<IContainer> {
-    private:
-        friend class CRunContainerAdministrator;
-
+    // PUBLIC_INTERFACE
+    /** Libcrun container managed by ContainerAdministrator's proxy list. */
+    class CRunContainer : public IContainer {
+    public:
+        // PUBLIC_INTERFACE
+        /** Bind a container ID to its OCI bundle and optional logging directory. */
         CRunContainer(const string& name, const string& path, const string& logPath);
         CRunContainer(const CRunContainer&) = delete;
         CRunContainer& operator=(const CRunContainer&) = delete;
@@ -51,6 +52,9 @@ namespace ProcessContainers {
         ~CRunContainer() override;
 
         // IContainerMethods
+        // PUBLIC_INTERFACE
+        /** Return the producer type used by the current administrator. */
+        containertype Type() const override { return IContainer::CRUN; }
         const string& Id() const override;
         uint32_t Pid() const override;
         bool IsRunning() const override;
@@ -63,7 +67,7 @@ namespace ProcessContainers {
 
     private:
         uint32_t ClearLeftovers();
-        void OverwriteContainerArgs(libcrun_container_t* container, const string& newComand, IStringIterator& newParameters);
+        bool OverwriteContainerArgs(libcrun_container_t* container, const string& newComand, IStringIterator& newParameters);
 
         mutable Core::CriticalSection _adminLock;
         bool _created; // keeps track if container was created and needs deletion
@@ -77,25 +81,31 @@ namespace ProcessContainers {
         libcrun_error_t _error;
     };
 
-    class CRunContainerAdministrator : public BaseContainerAdministrator<CRunContainer> {
-    private:
-        friend class Core::SingletonType<CRunContainerAdministrator>;
-
-        CRunContainerAdministrator();
-
+    // PUBLIC_INTERFACE
+    /** Producer registered with the shared ContainerAdministrator. */
+    class CRunContainerAdministrator : public IContainerProducer {
     public:
+        // PUBLIC_INTERFACE
+        /** Construct the stateless libcrun producer. */
+        CRunContainerAdministrator() = default;
         CRunContainerAdministrator(const CRunContainerAdministrator&) = delete;
         CRunContainerAdministrator& operator=(const CRunContainerAdministrator&) = delete;
 
-        ~CRunContainerAdministrator() override;
+        ~CRunContainerAdministrator() override = default;
 
-        IContainer* Container(const string& id,
+        // PUBLIC_INTERFACE
+        /** Search OCI bundles and return an administrator-owned container proxy. */
+        Core::ProxyType<IContainer> Container(const string& id,
             IStringIterator& searchpaths,
             const string& logpath,
             const string& configuration) override; //searchpaths will be searched in order in which they are iterated
 
-        // IContainerAdministrator methods
-        void Logging(const string& logDir, const string& loggingOptions) override;
+        // PUBLIC_INTERFACE
+        /** Accept producer configuration; logging is configured per container. */
+        uint32_t Initialize(const string& configuration) override;
+        // PUBLIC_INTERFACE
+        /** Release producer resources (none are retained by this producer). */
+        void Deinitialize() override { }
     };
 }
 }
