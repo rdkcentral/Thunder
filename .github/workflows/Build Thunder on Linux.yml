@@ -6,13 +6,13 @@ permissions:
 on:
   workflow_dispatch:
   push:
-    branches: ["master"]
+    branches: ["R5_3"]
     paths-ignore:
       - 'doc/**'
       - 'docs/**'
       - 'ReleaseNotes/**'
   pull_request:
-    branches: ["master"]
+    branches: ["R5_3"]
     paths-ignore:
       - 'doc/**'
       - 'docs/**'
@@ -20,24 +20,6 @@ on:
 
 jobs:
   Thunder:
-    uses: rdkcentral/Thunder/.github/workflows/Linux build template.yml@master
-
-  ThunderInterfaces:
-    needs: Thunder
-    uses: rdkcentral/ThunderInterfaces/.github/workflows/Linux build template.yml@master
-
-  ThunderLibraries:
-    needs: Thunder
-    uses: WebPlatformForEmbedded/ThunderLibraries/.github/workflows/Linux build template.yml@main
-
-  ThunderClientLibraries:
-    needs: ThunderInterfaces
-    uses: rdkcentral/ThunderClientLibraries/.github/workflows/Linux build template.yml@master
-
-  ThunderNanoServices:
-    needs: ThunderInterfaces
-    uses: rdkcentral/ThunderNanoServices/.github/workflows/Linux build template.yml@master
-
-  ThunderNanoServicesRDK:
-    needs: ThunderInterfaces
-    uses: WebPlatformForEmbedded/ThunderNanoServicesRDK/.github/workflows/Linux build template.yml@master
+    uses: ./.github/workflows/Linux build template.yml
+    with:
+      thunder_ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
