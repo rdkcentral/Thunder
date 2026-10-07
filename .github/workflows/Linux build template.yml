@@ -5,6 +5,11 @@ permissions:
 
 on:
   workflow_call:
+    inputs:
+      thunder_ref:
+        required: false
+        type: string
+        default: R5_3
 
 jobs:
   Thunder:
@@ -71,7 +76,7 @@ jobs:
       with:
         path: Thunder
         repository: rdkcentral/Thunder
-        ref: R5_3
+        ref: ${{ inputs.thunder_ref }}
 
     - name: Regex Thunder
       if: contains(github.event.pull_request.body, '[DependsOn=Thunder:')

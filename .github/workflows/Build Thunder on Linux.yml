@@ -21,3 +21,5 @@ on:
 jobs:
   Thunder:
     uses: ./.github/workflows/Linux build template.yml
+    with:
+      thunder_ref: ${{ github.sha }}
