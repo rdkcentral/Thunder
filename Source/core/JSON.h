@@ -1891,7 +1891,7 @@ namespace Core {
                             case '"': stream[result++] = '"'; break;
                             default: {
                                 uint16_t lowPart, highPart;
-                                int8_t codeSize = ToCodePoint(&(_value[offset - 1]), length, _storage);
+                                int8_t codeSize = ToCodePoint(&(_value[offset - 1]), static_cast<uint8_t>(std::min(length, static_cast<uint32_t>(0xFF))), _storage);
 
                                 if (codeSize < 0) {
                                     // Oops it is a bad code thingy, Skip it..
