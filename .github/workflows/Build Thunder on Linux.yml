@@ -22,4 +22,4 @@ jobs:
   Thunder:
     uses: ./.github/workflows/Linux build template.yml
     with:
-      thunder_ref: ${{ github.sha }}
+      thunder_ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
