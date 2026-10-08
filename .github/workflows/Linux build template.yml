@@ -10,6 +10,10 @@ on:
         required: false
         type: string
         default: R5_3
+      thunder_tools_ref:
+        required: false
+        type: string
+        default: R5_3
 
 jobs:
   Thunder:
@@ -102,7 +106,7 @@ jobs:
       with:
         path: ThunderTools
         repository: rdkcentral/ThunderTools
-        ref: R5_3
+        ref: ${{ inputs.thunder_tools_ref }}
 
     - name: Regex ThunderTools
       if: contains(github.event.pull_request.body, '[DependsOn=ThunderTools:')
