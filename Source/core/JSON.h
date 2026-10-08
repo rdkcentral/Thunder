@@ -784,7 +784,7 @@ namespace Core {
                         overflow = __builtin_mul_overflow(_value, (_set & 0x1F), &_value) || __builtin_add_overflow(stream[loaded] - '0', _value, &_value);
 #endif
                         loaded++;
-                    } else if (isxdigit(stream[loaded])) {
+                    } else if (((_set & QUOTED) != 0) && ((_set & 0x1F) == HEXADECIMAL) && isxdigit(stream[loaded])) {
 #ifdef __WINDOWS__
                         _value *= 16;
                         _value += (::toupper(stream[loaded]) - 'A') + 10;
