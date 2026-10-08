@@ -588,6 +588,26 @@ namespace Core {
         });
     }
 
+    TEST(JSONParser, UnquotedHexNumber)
+    {
+        TestData data;
+        data.key = "key";
+        data.keyToPutInJson = "\"" + data.key + "\"";
+        data.value = "4a";
+        data.valueToPutInJson = data.value;
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::HexUInt8>(data, false, nullptr);
+    }
+
+    TEST(JSONParser, HexNumberWithoutPrefix)
+    {
+        TestData data;
+        data.key = "key";
+        data.keyToPutInJson = "\"" + data.key + "\"";
+        data.value = "4a";
+        data.valueToPutInJson = "\"" + data.value + "\"";
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::HexUInt8>(data, false, nullptr);
+    }
+
     TEST(JSONParser, PositiveHexNumber)
     {
         TestData data;
