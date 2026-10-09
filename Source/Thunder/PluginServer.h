@@ -4461,6 +4461,15 @@ namespace PluginHost {
             {
                 void* result = nullptr;
 
+                // Security: Reject acquisition of internal/privileged interfaces
+                // (below the external interface offset) to prevent unauthenticated
+                // COM-RPC clients from obtaining IShell/IController references for
+                // any plugin including Controller itself.
+                if (interfaceId < RPC::IDS::ID_EXTERNAL_INTERFACE_OFFSET) {
+                    SYSLOG(Logging::Error, (_T("COM-RPC Acquire denied: interfaceId=%u for '%s' is a privileged internal interface"), interfaceId, className.c_str()));
+                    return (nullptr);
+                }
+
                 if ((interfaceId == PluginHost::IRemoteInstantiation::ID) && (version == static_cast<uint32_t>(~0))) {
                     result = _processAdministrator.Hosting();
                 } else {
