@@ -3433,6 +3433,14 @@ namespace PluginHost {
                 }
                 void* Acquire(const string& className, const uint32_t interfaceId, const uint32_t version) override
                 {
+                    // Security: Validate that the requested interface is not a privileged
+                    // internal interface when acquired over an unauthenticated COM-RPC channel.
+                    // The Controller and internal framework interfaces (below the external
+                    // interface offset) require authorization before handout.
+                    if ((className.empty() == false) && (interfaceId < RPC::IDS::ID_EXTERNAL_INTERFACE_OFFSET)) {
+                        SYSLOG(Logging::Error, (_T("COM-RPC Acquire denied: className='%s' interfaceId=%u is below external interface offset"), className.c_str(), interfaceId));
+                        return (nullptr);
+                    }
                     return (_parent.Acquire(interfaceId, className, version));
                 }
                 void Dangling(Danglings&& danglingProxies) override
