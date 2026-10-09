@@ -11,7 +11,7 @@ find_package(Threads REQUIRED)
 
 set(THUNDER_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../Source/Thunder")
 
-set(THREADPOOL_COUNT "4" CACHE STRING "The number of threads in the thread pool for test runtime")
+set(TEST_RUNTIME_THREADPOOL_COUNT "8" CACHE STRING "The number of threads in the test runtime worker pool")
 
 set(TARGET thunder_test_support)
 
@@ -40,7 +40,7 @@ target_compile_definitions(${TARGET}
         NAMESPACE=${NAMESPACE}
         APPLICATION_NAME=ThunderTestRuntime
         MODULE_NAME=ThunderTestRuntime
-        THREADPOOL_COUNT=${THREADPOOL_COUNT}
+        THREADPOOL_COUNT=${TEST_RUNTIME_THREADPOOL_COUNT}
         DEFAULT_SYSTEM_PATH="${SYSTEM_PATH}"
         DEFAULT_PROXYSTUB_PATH="${PROXYSTUB_PATH}"
         THUNDER_POSTMORTEM_WORKERPOOL_SINK_DEFAULT=1
