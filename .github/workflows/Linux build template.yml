@@ -58,11 +58,11 @@ jobs:
         ref: ${{steps.thunder.outputs.first_match}}
 
 # ------- RDK Logger Adapter -------
-    - name: Checkout ThunderMessagingRDKLogger
+    - name: Checkout ThunderNanoServicesRDK
       uses: actions/checkout@v5
       with:
-        path: ThunderMessagingRDKLogger
-        repository: rdkcentral/ThunderMessagingRDKLogger
+        path: ThunderNanoServicesRDK
+        repository: rdkcentral/ThunderNanoServicesRDK
 
 # ------- ThunderTools -------
     - name: Checkout ThunderTools - default
