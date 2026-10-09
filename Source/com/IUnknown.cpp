@@ -30,6 +30,19 @@ namespace ProxyStub {
 
         Core::instance_id rawIdentifier(message->Parameters().Implementation());
 
+        // Security: Always validate that the wire-supplied instance_id is a
+        // known registered interface before casting it to a pointer and calling
+        // virtual methods on it.  Previously this was gated behind
+        // SecureProxyStubs which defaults to off, allowing an attacker to
+        // supply an arbitrary address for vtable dispatch.
+        if (RPC::Administrator::Instance().IsValid(channel, rawIdentifier, message->Parameters().InterfaceId()) == false) {
+            if (log == true) {
+                SYSLOG(Logging::Error, (_T("COMRPC instance validation failed: unregistered instance_id, interface ID [%u]"), message->Parameters().InterfaceId()));
+                TRACE_L1("Warning: This COM-RPC failure will not propagate!");
+            }
+            return nullptr;
+        }
+
         Core::IUnknown* implementation(Convert(reinterpret_cast<void*>(rawIdentifier)));
 
         ASSERT(implementation != nullptr);
@@ -38,12 +51,6 @@ namespace ProxyStub {
                 SYSLOG(Logging::Error, (_T("COMRPC check failed, instance is nullptr, interface ID [%u]"), message->Parameters().InterfaceId()));
                 TRACE_L1("Warning: This COM-RPC failure will not propagate!");
             }
-        } else if ((RPC::Administrator::Instance().SecureProxyStubs() == true) && (RPC::Administrator::Instance().IsValid(channel, RPC::instance_cast(implementation), message->Parameters().InterfaceId()) == false)) {
-            if (log == true) {
-                SYSLOG(Logging::Error, (_T("COMRPC Security check failed, unknown instance, interface ID [%u]"), message->Parameters().InterfaceId()));
-                TRACE_L1("Warning: This COM-RPC failure will not propagate!");
-            }
-            implementation = nullptr;
         }
 
         return implementation;
