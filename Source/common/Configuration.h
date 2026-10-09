@@ -185,6 +185,19 @@ namespace Plugin {
                     if (error.IsSet() == true) {
                         SYSLOG(Logging::ParsingError, (_T("Parsing failed with %s"), ErrorDisplayMessage(error.Value()).c_str()));
                     }
+
+                    // Security: Sanitize the locator to prevent path traversal or
+                    // absolute paths that could cause dlopen of attacker-controlled
+                    // shared libraries.  Only allow simple filenames without directory
+                    // separators or traversal sequences.
+                    if (settings.Locator.Value().empty() == false) {
+                        const string& loc = settings.Locator.Value();
+                        if ((loc.find('/') != string::npos) || (loc.find('\\') != string::npos) || (loc.find("..") != string::npos)) {
+                            SYSLOG(Logging::Error, (_T("Security: rejecting locator with path separators or traversal: '%s'"), loc.c_str()));
+                            settings.Locator = Core::JSON::String();
+                        }
+                    }
+
                     *this = std::move(settings);
 
                     if (Locator.Value().empty() == true) {
