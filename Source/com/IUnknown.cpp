@@ -62,6 +62,15 @@ namespace ProxyStub {
             return;
         } 
 
+        // Security: Always validate that the wire-supplied implementation pointer
+        // resolves to a known registered interface, regardless of the SecureProxyStubs
+        // setting. This prevents an attacker from supplying an arbitrary memory address
+        // that would be used for virtual dispatch (AddRef/Release/QueryInterface).
+        if (RPC::Administrator::Instance().IsValid(channel, message->Parameters().Implementation(), message->Parameters().InterfaceId()) == false) {
+            SYSLOG(Logging::Error, (_T("COMRPC instance validation failed: unregistered implementation pointer, interface ID [%u]"), message->Parameters().InterfaceId()));
+            return;
+        }
+
         Core::IUnknown* implementation = ExtractInstance(channel, message, true);
 
         if (implementation != nullptr) {
