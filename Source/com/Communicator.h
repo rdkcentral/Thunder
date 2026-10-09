@@ -678,6 +678,15 @@ namespace RPC {
                 _ldLibLock.Lock();
                 if (_systemRootPath.empty() == false) {
 
+                    // Security: Validate that systemRootPath does not contain
+                    // path traversal sequences that could be used to poison
+                    // LD_LIBRARY_PATH with attacker-controlled directories.
+                    if (_systemRootPath.find("..") != string::npos) {
+                        SYSLOG(Logging::Error, (_T("Security: rejecting systemRootPath with traversal: '%s'"), _systemRootPath.c_str()));
+                        _ldLibLock.Unlock();
+                        return (Core::ERROR_BAD_REQUEST);
+                    }
+
                     string newLDLibraryPaths;
                     Core::SystemInfo::GetEnvironment(_T("LD_LIBRARY_PATH"), oldLDLibraryPaths);
 
