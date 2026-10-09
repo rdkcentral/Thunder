@@ -31,9 +31,31 @@ add_library(${TARGET}
 option(MESSAGING_RDKLOGGER "Enable RDKLogger output support." OFF)
 option(MESSAGING_RDKLOGGER_USE_MOCK "Use the console-printing RDKLogger backend." OFF)
 
+set(THUNDER_MESSAGING_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
+
 if(MESSAGING_RDKLOGGER)
-        add_subdirectory(RDKLogger)
+        set(MESSAGING_RDKLOGGER_SOURCE_DIR "" CACHE PATH "Source directory for the optional external messaging adapter")
+
+        if(NOT MESSAGING_RDKLOGGER_SOURCE_DIR)
+                set(_MESSAGING_RDKLOGGER_CANDIDATES
+                    "${CMAKE_BINARY_DIR}/../thunder-rdkservices-custom/MessageControl/RDKLogger"
+                    "${CMAKE_SOURCE_DIR}/../ThunderNanoServicesRDK/MessageControl/RDKLogger")
+
+                foreach(_candidate IN LISTS _MESSAGING_RDKLOGGER_CANDIDATES)
+                        if(EXISTS "${_candidate}/CMakeLists.txt")
+                                set(MESSAGING_RDKLOGGER_SOURCE_DIR "${_candidate}")
+                                break()
+                        endif()
+                endforeach()
+        endif()
+
+        if(NOT EXISTS "${MESSAGING_RDKLOGGER_SOURCE_DIR}/CMakeLists.txt")
+                message(FATAL_ERROR "Could not locate the external messaging adapter sources; set MESSAGING_RDKLOGGER_SOURCE_DIR explicitly")
+        endif()
+
+        add_subdirectory("${MESSAGING_RDKLOGGER_SOURCE_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/RDKLogger")
         target_compile_definitions(${TARGET} PRIVATE MESSAGING_EXTERNAL_OUTPUT=1)
+        target_link_libraries(${TARGET} PRIVATE ${NAMESPACE}MessagingRDKLogger)
 endif()
 
 set(PUBLIC_HEADERS

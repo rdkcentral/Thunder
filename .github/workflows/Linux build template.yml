@@ -57,6 +57,13 @@ jobs:
         repository: rdkcentral/Thunder
         ref: ${{steps.thunder.outputs.first_match}}
 
+# ------- RDK Logger Adapter -------
+    - name: Checkout ThunderMessagingRDKLogger
+      uses: actions/checkout@v5
+      with:
+        path: ThunderMessagingRDKLogger
+        repository: rdkcentral/ThunderMessagingRDKLogger
+
 # ------- ThunderTools -------
     - name: Checkout ThunderTools - default
       if: ${{ !contains(github.event.pull_request.body, '[DependsOn=ThunderTools:') }}

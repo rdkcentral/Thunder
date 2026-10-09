@@ -35,11 +35,12 @@ target_link_libraries(${TEST_RUNNER_NAME}
         ${GTEST_LIBRARY}
         ${CMAKE_THREAD_LIBS_INIT}
         ${NAMESPACE}Core::${NAMESPACE}Core
+        ${NAMESPACE}MessagingRDKLogger
         ${NAMESPACE}Messaging::${NAMESPACE}Messaging)
 
 target_include_directories(${TEST_RUNNER_NAME}
     PRIVATE
-        ${CMAKE_SOURCE_DIR}/Source/messaging/RDKLogger)
+        ${MESSAGING_RDKLOGGER_SOURCE_DIR})
 
 install(
     TARGETS ${TEST_RUNNER_NAME}
