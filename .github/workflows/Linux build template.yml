@@ -62,7 +62,7 @@ jobs:
       uses: actions/checkout@v5
       with:
         path: ThunderNanoServicesRDK
-        repository: rdkcentral/ThunderNanoServicesRDK
+        repository: WebPlatformForEmbedded/ThunderNanoServicesRDK
 
 # ------- ThunderTools -------
     - name: Checkout ThunderTools - default
