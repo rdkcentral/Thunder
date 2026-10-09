@@ -784,7 +784,7 @@ namespace Core {
                         overflow = __builtin_mul_overflow(_value, (_set & 0x1F), &_value) || __builtin_add_overflow(stream[loaded] - '0', _value, &_value);
 #endif
                         loaded++;
-                    } else if (isxdigit(stream[loaded])) {
+                    } else if (((_set & QUOTED) != 0) && ((_set & 0x1F) == HEXADECIMAL) && isxdigit(stream[loaded])) {
 #ifdef __WINDOWS__
                         _value *= 16;
                         _value += (::toupper(stream[loaded]) - 'A') + 10;
@@ -1891,7 +1891,7 @@ namespace Core {
                             case '"': stream[result++] = '"'; break;
                             default: {
                                 uint16_t lowPart, highPart;
-                                int8_t codeSize = ToCodePoint(&(_value[offset - 1]), length, _storage);
+                                int8_t codeSize = ToCodePoint(&(_value[offset - 1]), static_cast<uint8_t>(std::min(length, static_cast<uint32_t>(0xFF))), _storage);
 
                                 if (codeSize < 0) {
                                     // Oops it is a bad code thingy, Skip it..
