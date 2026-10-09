@@ -34,12 +34,13 @@
 
 #define TRACE_CONTROL(CATEGORY) Thunder::Messaging::LocalLifetimeType<CATEGORY, &Thunder::Core::System::MODULE_NAME, Thunder::Core::Messaging::Metadata::type::TRACING>
 
-#define TRACE_ENABLED(CATEGORY) TRACE_CONTROL(CATEGORY)::IsEnabled()
+#define TRACE_ENABLED(CATEGORY) (Thunder::Messaging::MessageUnit::Instance().Targets(TRACE_CONTROL(CATEGORY)::Metadata(), TRACE_CONTROL(CATEGORY)::Routing(), TRACE_CONTROL(CATEGORY)::IsEnabled()).Any())
 
 #define TRACE(CATEGORY, PARAMETERS)                                                     \
     do {                                                                                \
         using __control__ = TRACE_CONTROL(CATEGORY);                                    \
-        if (__control__::IsEnabled() == true) {                                         \
+        const auto __targets__ = Thunder::Messaging::MessageUnit::Instance().Targets(__control__::Metadata(), __control__::Routing(), __control__::IsEnabled()); \
+        if (__targets__.Any() == true) { \
             CATEGORY __data__ PARAMETERS;                                               \
             Thunder::Core::Messaging::MessageInfo __info__(                             \
                 __control__::Metadata(),                                                \
@@ -52,14 +53,15 @@
                 Thunder::Core::ClassNameOnly(typeid(*this).name()).Text()               \
             );                                                                          \
             Thunder::Core::Messaging::TextMessage __message__(__data__.Data());         \
-            Thunder::Messaging::MessageUnit::Instance().Push(__trace__, &__message__, __control__::Routing());  \
+            Thunder::Messaging::MessageUnit::Instance().Push(__trace__, &__message__, __targets__);  \
         }                                                                               \
     } while(false)
 
 #define TRACE_GLOBAL(CATEGORY, PARAMETERS)                                              \
     do {                                                                                \
         using __control__ = TRACE_CONTROL(CATEGORY);                                    \
-        if (__control__::IsEnabled() == true) {                                         \
+        const auto __targets__ = Thunder::Messaging::MessageUnit::Instance().Targets(__control__::Metadata(), __control__::Routing(), __control__::IsEnabled()); \
+        if (__targets__.Any() == true) { \
             CATEGORY __data__ PARAMETERS;                                               \
             Thunder::Core::Messaging::MessageInfo __info__(                             \
                 __control__::Metadata(),                                                \
@@ -72,7 +74,7 @@
                 __FUNCTION__                                                            \
             );                                                                          \
             Thunder::Core::Messaging::TextMessage __message__(__data__.Data());         \
-            Thunder::Messaging::MessageUnit::Instance().Push(__trace__, &__message__, __control__::Routing());  \
+            Thunder::Messaging::MessageUnit::Instance().Push(__trace__, &__message__, __targets__);  \
         }                                                                               \
     } while(false)
 
