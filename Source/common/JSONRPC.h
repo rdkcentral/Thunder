@@ -1193,6 +1193,15 @@ namespace PluginHost {
 
             message->Designator = designator;
             message->JSONRPC = Core::JSONRPC::Message::DefaultVersion;
+#ifdef W3C_TRACE_CONTEXT
+            Core::JobContext& jobContext = Core::JobContext::Instance();
+            if (jobContext.HasTraceParent() == true) {
+                message->traceparent = jobContext.TraceParent();
+            }
+            if (jobContext.HasTraceState() == true) {
+                message->tracestate = jobContext.TraceState();
+            }
+#endif
 
             _service->Submit(channelId, Core::ProxyType<Core::JSON::IElement>(message));
         }

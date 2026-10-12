@@ -35,6 +35,7 @@ add_library(${TARGET}
         ISO639.cpp
         JSON.cpp
         JSONRPC.cpp
+        JobContext.cpp
         Library.cpp
         Netlink.cpp
         NetworkInfo.cpp
@@ -90,6 +91,7 @@ set(PUBLIC_HEADERS
         IWarningReportingControl.h
         JSON.h
         JSONRPC.h
+        JobContext.h
         KeyValue.h
         Library.h
         Link.h

@@ -21,6 +21,9 @@
 
 #include "Module.h"
 #include "WebSocketLink.h"
+#ifdef W3C_TRACE_CONTEXT
+#include <core/JobContext.h>
+#endif
 
 #ifndef JSONRPC_OPEN_TIMEOUT
 #define JSONRPC_OPEN_TIMEOUT 2000
@@ -463,6 +466,50 @@ namespace Thunder {
 
             using PendingMap = std::unordered_map<uint32_t, Entry>;
             using InvokeFunction = Core::JSONRPC::InvokeFunction;
+
+#ifdef W3C_TRACE_CONTEXT
+            class ScopedTraceContext {
+            public:
+                ScopedTraceContext(const ScopedTraceContext&) = delete;
+                ScopedTraceContext& operator=(const ScopedTraceContext&) = delete;
+
+                explicit ScopedTraceContext(const Core::JSONRPC::Message& message)
+                    : _context(Core::JobContext::Instance())
+                    , _hadTraceParent(_context.HasTraceParent())
+                    , _hadTraceState(_context.HasTraceState())
+                    , _traceParent(_hadTraceParent ? _context.TraceParent() : string())
+                    , _traceState(_hadTraceState ? _context.TraceState() : string())
+                {
+                    _context.ClearTraceContext();
+
+                    if (message.traceparent.IsSet() == true) {
+                        _context.TraceParent(message.traceparent.Value());
+                    }
+                    if (message.tracestate.IsSet() == true) {
+                        _context.TraceState(message.tracestate.Value());
+                    }
+                }
+
+                ~ScopedTraceContext()
+                {
+                    _context.ClearTraceContext();
+
+                    if (_hadTraceParent == true) {
+                        _context.TraceParent(std::move(_traceParent));
+                    }
+                    if (_hadTraceState == true) {
+                        _context.TraceState(std::move(_traceState));
+                    }
+                }
+
+            private:
+                Core::JobContext& _context;
+                const bool _hadTraceParent;
+                const bool _hadTraceState;
+                string _traceParent;
+                string _traceState;
+            };
+#endif
 
             class Handler {
                 public:
@@ -1031,6 +1078,9 @@ namespace Thunder {
                         message->Designator = method;
                     }
                     ToMessage(parameters, message);
+#ifdef W3C_TRACE_CONTEXT
+                    ApplyTraceContext(message);
+#endif
 
                     _adminLock.Lock();
 
@@ -1095,6 +1145,9 @@ namespace Thunder {
                         message->Designator = method;
                     }
                     ToMessage(parameters, message);
+#ifdef W3C_TRACE_CONTEXT
+                    ApplyTraceContext(message);
+#endif
 
                     _adminLock.Lock();
 
@@ -1129,7 +1182,6 @@ namespace Thunder {
                 uint32_t result = Core::ERROR_INVALID_SIGNATURE;
 
                 ASSERT(inbound.IsValid() == true);
-
 
                 if ((inbound->Id.IsSet() == true) && (inbound->Result.IsSet() || inbound->Error.IsSet())) {
                     // Looks like this is a response..
@@ -1167,6 +1219,9 @@ namespace Thunder {
                         // Looks like this is an event.
                         ASSERT(inbound->Id.IsSet() == false);
 
+#ifdef W3C_TRACE_CONTEXT
+                        ScopedTraceContext traceContext(*inbound);
+#endif
                         string response;
                         _handler.Invoke(Core::JSONRPC::Context(), inbound->FullMethod(), inbound->Parameters.Value(), response);
                     }
@@ -1176,6 +1231,19 @@ namespace Thunder {
             }
 
         private:
+#ifdef W3C_TRACE_CONTEXT
+            void ApplyTraceContext(Core::ProxyType<Core::JSONRPC::Message>& message) const
+            {
+                const Core::JobContext& context = Core::JobContext::Instance();
+
+                if (context.HasTraceParent() == true) {
+                    message->traceparent = context.TraceParent();
+                }
+                if (context.HasTraceState() == true) {
+                    message->tracestate = context.TraceState();
+                }
+            }
+#endif
             void ToMessage(const string& parameters, Core::ProxyType<Core::JSONRPC::Message>& message) const
             {
                 if (parameters.empty() != true) {

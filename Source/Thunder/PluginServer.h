@@ -1093,6 +1093,16 @@ namespace PluginHost {
 
                     Core::InterlockedIncrement(_activity);
                     string output;
+#ifdef W3C_TRACE_CONTEXT
+                    Core::JobContext& jobContext = Core::JobContext::Instance();
+                    jobContext.ClearTraceContext();
+                    if (message.traceparent.IsSet() == true) {
+                        jobContext.TraceParent(message.traceparent.Value());
+                    }
+                    if (message.tracestate.IsSet() == true) {
+                        jobContext.TraceState(message.tracestate.Value());
+                    }
+#endif
                     uint32_t result = _jsonrpc->Invoke(channelId, message.Id.Value(), token, message.Designator.Value(), message.Parameters.Value(), output);
 
                     if ( (result != static_cast<uint32_t>(~0)) && ( (message.Id.IsSet()) || (result != Core::ERROR_NONE) ) )  {
@@ -1118,6 +1128,9 @@ namespace PluginHost {
                             }
                         }
                     }
+#ifdef W3C_TRACE_CONTEXT
+                    jobContext.ClearTraceContext();
+#endif
 
                     Core::InterlockedDecrement(_activity);
                 }
