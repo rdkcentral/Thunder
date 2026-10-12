@@ -652,7 +652,7 @@ int main(int argc, char** argv)
                 const uint16_t classNameLength = msg.SetText(AnnounceMessage::STRINGS_OFFSET, "className");
                 msg.SetText((AnnounceMessage::STRINGS_OFFSET + classNameLength), "callsign");
 
-                for (uint8_t i = RPC::ID_OFFSET_INTERNAL + 1; i < RPC::ID_EXTERNAL_INTERFACE_OFFSET; i++) {
+                for (uint32_t i = RPC::ID_OFFSET_INTERNAL + 1; i < RPC::ID_EXTERNAL_INTERFACE_OFFSET; i++) {
                     msg.SetNumber<uint32_t>(AnnounceMessage::INTERFACEID_OFFSET, i); // methodId
                     msg.Finish();
                     channel.Submit(msg.Size(), msg.Data());

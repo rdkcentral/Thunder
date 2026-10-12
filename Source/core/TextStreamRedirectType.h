@@ -407,11 +407,22 @@ namespace Core {
                     _copy = ::dup(_index);
                     ::fsync(_index);
                     int flags = ::fcntl(_handle[0], F_GETFL);
-                    ::fcntl(_handle[0], F_SETFL, (flags | O_NONBLOCK));
-                    ::dup2(_handle[1], _index);
-                    ::close(_handle[1]);
-                    _handle[1] = Core::IResource::INVALID;
-                    ResourceMonitor::Instance().Register(*this);
+                    if ((_copy != Core::IResource::INVALID) && (flags != -1)
+                        && (::fcntl(_handle[0], F_SETFL, (flags | O_NONBLOCK)) != -1)
+                        && (::dup2(_handle[1], _index) != -1)) {
+                        ::close(_handle[1]);
+                        _handle[1] = Core::IResource::INVALID;
+                        ResourceMonitor::Instance().Register(*this);
+                    } else {
+                        if (_copy != Core::IResource::INVALID) {
+                            ::close(_copy);
+                            _copy = Core::IResource::INVALID;
+                        }
+                        ::close(_handle[0]);
+                        ::close(_handle[1]);
+                        _handle[0] = Core::IResource::INVALID;
+                        _handle[1] = Core::IResource::INVALID;
+                    }
                 }
                 return (_handle[0] != Core::IResource::INVALID);
             }
