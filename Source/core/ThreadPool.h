@@ -331,6 +331,10 @@ namespace Core {
                 }
                 return (result);
             }
+            // Unconditional handle to the underlying IDispatch, independent of _state;
+            ProxyType<IDispatch> WorkerProxy() {
+                return (ProxyType<IDispatch>(ProxyType<Worker>(_job)));
+            }
             void Revoked() {
                 state expected = REVOKING;
                 VARIABLE_IS_NOT_USED bool result = _state.compare_exchange_strong(expected, IDLE);
