@@ -110,7 +110,9 @@ namespace Core {
                 int optval = 1;
                 const socklen_t optionLength = static_cast<socklen_t>(sizeof(optval));
 
-                ::setsockopt(_receiveSocket, SOL_SOCKET, SO_REUSEADDR, (const char*)&optval, optionLength);
+                if (::setsockopt(_receiveSocket, SOL_SOCKET, SO_REUSEADDR, (const char*)&optval, optionLength) != 0) {
+                    TRACE_L1("Error could not set socket reuse address. Error %d", __ERRORRESULT__);
+                }
             }
 
 #ifdef __WINDOWS__
