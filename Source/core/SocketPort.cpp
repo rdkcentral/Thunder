@@ -912,7 +912,7 @@ namespace Thunder {
             }
             else
 #endif
-                if ((localNode.IsAnyInterface() == true) && (SocketMode() != SOCK_STREAM)) {
+                if ((l_Result != INVALID_SOCKET) && (localNode.IsAnyInterface() == true) && (SocketMode() != SOCK_STREAM)) {
 
                     int optval = 1;
 

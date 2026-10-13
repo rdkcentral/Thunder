@@ -101,7 +101,7 @@ namespace Crypto {
         uint8_t hsb = static_cast<uint8_t>(random() & 0xFF);
         uint8_t lsb = static_cast<uint8_t>(random() & 0xFF);
 #endif // __LINUX__
-        value = (value << 8) | lsb;
+        value = static_cast<uint16_t>((hsb << 8) | lsb);
 #else
 #error "Can not create random functionality"
 #endif
