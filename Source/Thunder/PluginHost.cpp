@@ -779,7 +779,7 @@ int main(int argc, char** argv)
         SYSLOG(Logging::Startup, (_T("Build ref:     " _T(EXPAND_AND_QUOTE(BUILD_REFERENCE)))));
         const Core::Time::microsecondsfromepoch messagingStart = Core::Time::Now().Ticks();
         SYSLOG(Logging::Startup, (_T("Version:       %d:%d:%d"), Versioning::Major, Versioning::Minor, Versioning::Patch));
-        SYSLOG(Logging::Startup, (_T("Messaging latency: %llu microseconds"), (Core::Time::Now().Ticks() - messagingStart)));
+        SYSLOG(Logging::Startup, (_T("Messaging latency: %" PRIu64 " microseconds"), static_cast<uint64_t>(Core::Time::Now().Ticks() - messagingStart)));
 #ifdef __CORE_MESSAGING__
         if (_config->MessagingCategoriesFile() == false) {
             SYSLOG(Logging::Startup, (_T("Messages [INT]:  %s"), options.configFile));
