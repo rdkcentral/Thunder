@@ -255,7 +255,7 @@ namespace Core {
         ::Thunder::Core::JSONRPC::Handler handler(std::vector<uint8_t>{ 1 });
         string receivedIndex;
 
-        handler.RegisterWithError<void, ::Thunder::Core::JSON::String, RichError>("entry", [&receivedIndex](const string& index, ::Thunder::Core::JSON::String&, RichError& details) -> uint32_t {
+        handler.RegisterWithError<void, ::Thunder::Core::JSON::String, RichError, std::function<uint32_t(const string&, ::Thunder::Core::JSON::String&, RichError&)>>("entry", [&receivedIndex](const string& index, ::Thunder::Core::JSON::String&, RichError& details) -> uint32_t {
             receivedIndex = index;
             details.Data.Reason = _T("indexed property unavailable");
             return (::Thunder::Core::ERROR_UNAVAILABLE);
