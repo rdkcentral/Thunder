@@ -1831,22 +1831,26 @@ POP_WARNING()
             template <typename ERROR>
             static bool SerializeError(const uint32_t frameworkError, const ERROR& details, string& result)
             {
-                const bool isSet = details.Code.IsSet() || details.Message.IsSet() || details.Data.IsSet();
+                const bool isSet = details.IsSet();
 
                 if (isSet == true) {
                     Core::JSONRPC::Message::Info error;
                     error.SetError(frameworkError);
+
                     if (details.Code.IsSet() == true) {
                         error.Code = details.Code;
                     }
+                    z
                     if (details.Message.IsSet() == true) {
                         error.Text = details.Message;
                     }
+
                     if (details.Data.IsSet() == true) {
                         string data;
                         details.Data.ToString(data);
                         error.Data = data;
                     }
+
                     error.ToString(result);
                 }
 

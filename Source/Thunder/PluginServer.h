@@ -1113,10 +1113,26 @@ namespace PluginHost {
                         }
                         else {
                             response->Error.SetError(result);
+
                             if (output.empty() == false) {
                                 Core::OptionalType<Core::JSON::Error> report;
-                                response->Error.FromString(output, report);
-                                if (report.IsSet() == true) {
+                                Core::JSONRPC::Message::Info error;
+
+                                error.FromString(output, report);
+
+                                if ((report.IsSet() == false) && (error.IsSet() == true)) {
+                                    if (error.Code.IsSet() == true) {
+                                        response->Error.Code = error.Code;
+                                    }
+                                    if (error.Text.IsSet() == true) {
+                                        response->Error.Text = error.Text;
+                                    }
+                                    if (error.Data.IsSet() == true) {
+                                        response->Error.Data = error.Data;
+                                    }
+                                }
+                                else {
+                                    // Output desn't seem to be rich error details, fallback to legacy text.
                                     response->Error.Text = output;
                                 }
                             }
