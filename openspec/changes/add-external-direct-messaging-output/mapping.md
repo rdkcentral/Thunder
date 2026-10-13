@@ -1,8 +1,8 @@
-# Thunder to RDKLogger Mapping
+# Example: Thunder to RDK Logger Mapping
 
 ## Purpose
 
-This document defines how Thunder Messaging sends messages to RDKLogger when the optional external output route is enabled. It is intended for platform configuration, operational review, and cross-team agreement.
+This document is an adapter-specific example of how Thunder Messaging can map messages for an RDK Logger backend when the optional External Direct route is enabled. It is intended for platform configuration, operational review, and cross-team agreement; External Direct is not specific to this backend.
 
 ## Category Name
 

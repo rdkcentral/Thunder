@@ -15,14 +15,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set(TEST_RUNNER_NAME Thunder_test_messaging_rdklogger)
+set(TEST_RUNNER_NAME Thunder_test_messaging_external_output)
 
 add_executable(${TEST_RUNNER_NAME}
-    test_rdklogger.cpp)
+    test_external_output.cpp)
 
 target_compile_definitions(${TEST_RUNNER_NAME}
     PRIVATE
-        MODULE_NAME=TestMessagingRDKLogger)
+        MODULE_NAME=TestMessagingExternalOutput)
 
 if(APPLE)
     set(GTEST_LIBRARY GTest::gtest GTest::gtest_main)
@@ -35,12 +35,12 @@ target_link_libraries(${TEST_RUNNER_NAME}
         ${GTEST_LIBRARY}
         ${CMAKE_THREAD_LIBS_INIT}
         ${NAMESPACE}Core::${NAMESPACE}Core
-        ${NAMESPACE}MessagingRDKLogger
+        ${NAMESPACE}MessagingExternalOutput
         ${NAMESPACE}Messaging::${NAMESPACE}Messaging)
 
 target_include_directories(${TEST_RUNNER_NAME}
     PRIVATE
-        ${MESSAGING_RDKLOGGER_SOURCE_DIR})
+        ${MESSAGING_EXTERNAL_OUTPUT_SOURCE_DIR})
 
 install(
     TARGETS ${TEST_RUNNER_NAME}

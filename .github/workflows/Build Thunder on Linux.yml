@@ -61,8 +61,8 @@ jobs:
     - name: Run core unit tests
       run: ${{env.path}} ${{env.lib}} Thunder_test_core
 
-    - name: Run messaging RDKLogger unit tests
-      run: ${{env.path}} ${{env.lib}} Thunder_test_messaging_rdklogger
+    - name: Run messaging External Direct unit tests
+      run: ${{env.path}} ${{env.lib}} Thunder_test_messaging_external_output
 
     - name: Run test framework smoke test
       run: ${{env.path}} ${{env.lib}} thunder_test_runtime_smoke

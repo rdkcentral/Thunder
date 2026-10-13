@@ -22,7 +22,7 @@
 #include <core/core.h>
 #include <messaging/messaging.h>
 
-#include "RDKLoggerOutputMock.h"
+#include "ExternalOutputMock.h"
 
 namespace Thunder {
 namespace Tests {
@@ -78,7 +78,7 @@ namespace Messaging {
             OutputMode _routing;
         };
 
-        class RDKLoggerTest : public testing::Test {
+        class ExternalOutputTest : public testing::Test {
         protected:
             void SetUp() override
             {
@@ -108,7 +108,7 @@ namespace Messaging {
             void Open()
             {
                 ::Thunder::Messaging::MessageUnit::Settings::Config configuration;
-                configuration.Path = _T("RDKLoggerTests");
+                configuration.Path = _T("ExternalOutputTests");
                 configuration.Out = false;
                 configuration.Error = false;
 
@@ -140,10 +140,10 @@ namespace Messaging {
             ThunderExternalLogLevel level;
         };
 
-        class RDKLoggerMappingTest : public RDKLoggerTest, public testing::WithParamInterface<MappingCase> {
+        class ExternalOutputMappingTest : public ExternalOutputTest, public testing::WithParamInterface<MappingCase> {
         };
 
-        TEST_P(RDKLoggerMappingTest, MapsThunderTypeAndCategoryToExternalLevel)
+        TEST_P(ExternalOutputMappingTest, MapsThunderTypeAndCategoryToExternalLevel)
         {
             const MappingCase& test = GetParam();
             Open();
@@ -154,7 +154,7 @@ namespace Messaging {
             EXPECT_EQ(test.level, ThunderExternalOutputMock_LastLevel());
         }
 
-        INSTANTIATE_TEST_SUITE_P(AllMessageTypes, RDKLoggerMappingTest, testing::Values(
+        INSTANTIATE_TEST_SUITE_P(AllMessageTypes, ExternalOutputMappingTest, testing::Values(
             MappingCase { Metadata::type::ASSERT, "Assert", THUNDER_EXTERNAL_LOG_LEVEL_FATAL },
             MappingCase { Metadata::type::REPORTING, "Warning", THUNDER_EXTERNAL_LOG_LEVEL_WARN },
             MappingCase { Metadata::type::OPERATIONAL_STREAM, "Operational", THUNDER_EXTERNAL_LOG_LEVEL_TRACE },
@@ -174,7 +174,7 @@ namespace Messaging {
             MappingCase { Metadata::type::LOGGING, "Notice", THUNDER_EXTERNAL_LOG_LEVEL_NOTICE },
             MappingCase { Metadata::type::LOGGING, "Information", THUNDER_EXTERNAL_LOG_LEVEL_INFO }));
 
-        TEST_F(RDKLoggerTest, PrefixesDefaultLoggingAndTracingPayloads)
+        TEST_F(ExternalOutputTest, PrefixesDefaultLoggingAndTracingPayloads)
         {
             Open();
             Submit(Metadata(Metadata::type::LOGGING, _T("Information"), _T("LoggingModule")), _T("log payload"));
@@ -184,14 +184,14 @@ namespace Messaging {
             EXPECT_STREQ("Information: trace payload", ThunderExternalOutputMock_LastPayload());
         }
 
-        TEST_F(RDKLoggerTest, PreservesExplicitSeverityPayload)
+        TEST_F(ExternalOutputTest, PreservesExplicitSeverityPayload)
         {
             Open();
             Submit(Metadata(Metadata::type::LOGGING, _T("Error"), _T("Module")), _T("original payload"));
             EXPECT_STREQ("original payload", ThunderExternalOutputMock_LastPayload());
         }
 
-        TEST_F(RDKLoggerTest, RoutesHandlerAndDirectWithoutExternalOutput)
+        TEST_F(ExternalOutputTest, RoutesHandlerAndDirectWithoutExternalOutput)
         {
             Open();
             const Metadata metadata(Metadata::type::LOGGING, _T("Information"), _T("Module"));
@@ -207,7 +207,7 @@ namespace Messaging {
             EXPECT_FALSE(direct.external);
         }
 
-        TEST_F(RDKLoggerTest, RoutesExternalDirectOnlyWhenExternallyEnabled)
+        TEST_F(ExternalOutputTest, RoutesExternalDirectOnlyWhenExternallyEnabled)
         {
             Open();
             const OutputTargets targets = Targets(
@@ -218,7 +218,7 @@ namespace Messaging {
             EXPECT_TRUE(targets.external);
         }
 
-        TEST_F(RDKLoggerTest, RoutesAllLocalAndExternalDestinations)
+        TEST_F(ExternalOutputTest, RoutesAllLocalAndExternalDestinations)
         {
             Open();
             const OutputTargets targets = Targets(
@@ -229,7 +229,7 @@ namespace Messaging {
             EXPECT_TRUE(targets.external);
         }
 
-        TEST_F(RDKLoggerTest, KeepsLocalRouteWhenExternalOutputIsDisabled)
+        TEST_F(ExternalOutputTest, KeepsLocalRouteWhenExternalOutputIsDisabled)
         {
             ThunderExternalOutputMock_SetEnabled(0);
             Open();
@@ -241,7 +241,7 @@ namespace Messaging {
             EXPECT_FALSE(targets.external);
         }
 
-        TEST_F(RDKLoggerTest, RoutesExternalOutputWhenLocalOutputIsDisabled)
+        TEST_F(ExternalOutputTest, RoutesExternalOutputWhenLocalOutputIsDisabled)
         {
             Open();
             const OutputTargets targets = Targets(
@@ -251,7 +251,7 @@ namespace Messaging {
             EXPECT_TRUE(targets.external);
         }
 
-        TEST_F(RDKLoggerTest, RoutesExternallyEnabledAssertionsWhenLocalAssertionIsDisabled)
+        TEST_F(ExternalOutputTest, RoutesExternallyEnabledAssertionsWhenLocalAssertionIsDisabled)
         {
             Open();
             ::Thunder::Assertion::AssertionUnit::Instance();
@@ -264,7 +264,7 @@ namespace Messaging {
             EXPECT_TRUE(targets.external);
         }
 
-        TEST_F(RDKLoggerTest, ReportsNoInterestWhenBothGatesAreDisabled)
+        TEST_F(ExternalOutputTest, ReportsNoInterestWhenBothGatesAreDisabled)
         {
             ThunderExternalOutputMock_SetEnabled(0);
             Open();
@@ -275,7 +275,7 @@ namespace Messaging {
             EXPECT_EQ(0u, ThunderExternalOutputMock_SubmitCount());
         }
 
-        TEST_F(RDKLoggerTest, DoesNotDuplicateHandlerRoutedTelemetryExternally)
+        TEST_F(ExternalOutputTest, DoesNotDuplicateHandlerRoutedTelemetryExternally)
         {
             Open();
             const Metadata metadata(Metadata::type::TELEMETRY, _T("Metric"), _T("TelemetryModule"));
@@ -288,7 +288,7 @@ namespace Messaging {
             EXPECT_TRUE(external.external);
         }
 
-        TEST_F(RDKLoggerTest, EagerlyPopulatesAndDeduplicatesKnownControlPairs)
+        TEST_F(ExternalOutputTest, EagerlyPopulatesAndDeduplicatesKnownControlPairs)
         {
             Announce(Metadata(Metadata::type::TRACING, _T("Information"), _T("CachedModule")));
             Announce(Metadata(Metadata::type::TRACING, _T("Debug"), _T("CachedModule")));
@@ -298,7 +298,7 @@ namespace Messaging {
             EXPECT_EQ(1u, ThunderExternalOutputMock_QueryCountFor("CachedModule", THUNDER_EXTERNAL_LOG_LEVEL_TRACE));
         }
 
-        TEST_F(RDKLoggerTest, QueriesNewlyAnnouncedControlImmediately)
+        TEST_F(ExternalOutputTest, QueriesNewlyAnnouncedControlImmediately)
         {
             Open();
             EXPECT_EQ(0u, ThunderExternalOutputMock_QueryCountFor("LateModule", THUNDER_EXTERNAL_LOG_LEVEL_WARN));
@@ -308,7 +308,7 @@ namespace Messaging {
             EXPECT_EQ(1u, ThunderExternalOutputMock_QueryCountFor("LateModule", THUNDER_EXTERNAL_LOG_LEVEL_WARN));
         }
 
-        TEST_F(RDKLoggerTest, ReusesCachedEnablementDuringRouting)
+        TEST_F(ExternalOutputTest, ReusesCachedEnablementDuringRouting)
         {
             Open();
             const Metadata metadata(Metadata::type::LOGGING, _T("Notice"), _T("CachedModule"));
@@ -319,7 +319,7 @@ namespace Messaging {
             EXPECT_EQ(1u, ThunderExternalOutputMock_QueryCountFor("CachedModule", THUNDER_EXTERNAL_LOG_LEVEL_NOTICE));
         }
 
-        TEST_F(RDKLoggerTest, InitializesAndDeinitializesWithMessaging)
+        TEST_F(ExternalOutputTest, InitializesAndDeinitializesWithMessaging)
         {
             Open();
             EXPECT_EQ(1u, ThunderExternalOutputMock_InitializeCount());
@@ -328,7 +328,7 @@ namespace Messaging {
             EXPECT_EQ(1u, ThunderExternalOutputMock_DeinitializeCount());
         }
 
-        TEST_F(RDKLoggerTest, DoesNotSubmitAfterExternalOutputDeinitializes)
+        TEST_F(ExternalOutputTest, DoesNotSubmitAfterExternalOutputDeinitializes)
         {
             Open();
             const Metadata metadata(Metadata::type::LOGGING, _T("Information"), _T("Module"));
@@ -341,7 +341,7 @@ namespace Messaging {
             EXPECT_EQ(0u, ThunderExternalOutputMock_SubmitCount());
         }
 
-        TEST_F(RDKLoggerTest, InitializationFailureDisablesOnlyExternalOutput)
+        TEST_F(ExternalOutputTest, InitializationFailureDisablesOnlyExternalOutput)
         {
             ThunderExternalOutputMock_SetInitializeSucceeds(false);
             Open();
@@ -353,7 +353,7 @@ namespace Messaging {
             EXPECT_FALSE(targets.external);
         }
 
-        TEST_F(RDKLoggerTest, AllSubmitsExternallyExactlyOnce)
+        TEST_F(ExternalOutputTest, AllSubmitsExternallyExactlyOnce)
         {
             Open();
             const Metadata metadata(Metadata::type::LOGGING, _T("Error"), _T("Module"));
