@@ -1132,7 +1132,7 @@ namespace PluginHost {
                                     }
                                 }
                                 else {
-                                    // Output desn't seem to be rich error details, fallback to legacy text.
+                                    // Output doesn't seem to be rich error details, fallback to legacy text.
                                     response->Error.Text = output;
                                 }
                             }
