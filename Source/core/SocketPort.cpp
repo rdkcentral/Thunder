@@ -609,11 +609,11 @@ namespace Thunder {
                 }
 
             }
-            else if (nStatus != Core::ERROR_ILLEGAL_STATE) {
+            else if ((nStatus != Core::ERROR_ILLEGAL_STATE) && (m_Socket != INVALID_SOCKET)) {
                 // ERROR_ILLEGAL_STATE is returned when the socket is already open and
                 // registered in the ResourceMonitor — destroying it here would corrupt
-                // the monitor's poll array. All other error paths constructed a new
-                // socket that failed before registration and must be cleaned up.
+                // the monitor's poll array. Any valid socket that failed before
+                // registration must be cleaned up.
                 DestroySocket(m_Socket);
             }
             return (nStatus);
