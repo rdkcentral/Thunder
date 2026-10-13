@@ -20,6 +20,8 @@
 #ifndef __GENERICS_H
 #define __GENERICS_H
 
+#define W3C_TRACE_CONTEXT
+
 #ifndef MODULE_NAME
 #error "Please define a MODULE_NAME that describes the binary/library you are building."
 #endif
@@ -110,6 +112,7 @@
 #include "Number.h"
 #include "ExtraNumberDefinitions.h"
 #include "Errors.h"
+#include "JobContext.h"
 
 #ifdef __WINDOWS__
 #pragma comment(lib, "core.lib")

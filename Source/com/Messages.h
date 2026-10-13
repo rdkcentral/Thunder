@@ -85,13 +85,36 @@ namespace RPC {
             {
                 _data.Clear();
             }
+            // note in case W3C_TRACE_CONTEXT is turned on Set must be called before getting a writer. (but it is smart to do anyway in that order :) )
             void Set(Core::instance_id implementation, const uint32_t interfaceId, const uint8_t methodId)
             {
                 Frame::Writer frameWriter(_data, 0);
                 frameWriter.Number(implementation);
                 frameWriter.Number(interfaceId);
                 frameWriter.Number(methodId);
+#ifdef W3C_TRACE_CONTEXT
+                frameWriter.Number<uint8_t>(0);
+#endif
             }
+#ifdef W3C_TRACE_CONTEXT
+            void Set(Core::instance_id implementation, const uint32_t interfaceId, const uint8_t methodId, const string* const traceParent, const string* const traceState)
+            {
+                Frame::Writer frameWriter(_data, 0);
+                frameWriter.Number(implementation);
+                frameWriter.Number(interfaceId);
+                frameWriter.Number(methodId);
+                uint8_t traceflags = (traceParent == nullptr ? 0x0 : 0x1) | (traceState == nullptr ? 0x0 : 0x2);
+                frameWriter.Number(traceflags);
+                if (traceParent != nullptr) {
+                    ASSERT(traceParent->length() < 256);
+                    frameWriter.Text<uint8_t>(*traceParent);
+                }
+                if (traceState != nullptr) {
+                    ASSERT(traceState->length() < 256);
+                    frameWriter.Text<uint8_t>(*traceState);
+                }
+            }
+#endif
             Core::instance_id Implementation()
             {
                 Core::instance_id result = 0;
@@ -116,17 +139,33 @@ namespace RPC {
 
                 return (result);
             }
+#ifdef W3C_TRACE_CONTEXT
+            void TraceContext(string& traceParent, string& traceState) const {
+                uint32_t size = InitialHeaderSize();
+                uint8_t traceflags = 0;
+                _data.GetNumber<uint8_t>(size, traceflags);
+                size += sizeof(uint8_t);
+                if (traceflags != 0) {
+                    if ((traceflags & 0x1) != 0) {
+                        size += _data.GetText<uint8_t>(size, traceParent);
+                    }
+                    if ((traceflags & 0x2) != 0) {
+                        size += _data.GetText<uint8_t>(size, traceState);
+                    }
+                }
+            }
+#endif
             uint32_t Length() const
             {
                 return (_data.Size());
             }
             inline Frame::Writer Writer()
             {
-                return (Frame::Writer(_data, (sizeof(Core::instance_id) + sizeof(uint32_t) + sizeof(uint8_t))));
+                return (Frame::Writer(_data, HeaderSize()));
             }
             inline const Frame::Reader Reader() const
             {
-                return (Frame::Reader(_data, (sizeof(Core::instance_id) + sizeof(uint32_t) + sizeof(uint8_t))));
+                return (Frame::Reader(_data, HeaderSize()));
             }
             uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, const uint32_t offset) const
             {
@@ -135,6 +174,36 @@ namespace RPC {
             uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, const uint32_t offset)
             {
                 return (_data.Deserialize(offset, stream, maxLength));
+            }
+
+        private:
+            uint32_t InitialHeaderSize() const
+            {
+                return (sizeof(Core::instance_id) + sizeof(uint32_t) + sizeof(uint8_t));
+            }
+            uint32_t HeaderSize() const
+            {
+#ifndef W3C_TRACE_CONTEXT
+                return InitialHeaderSize();
+#else
+                uint32_t size = InitialHeaderSize();
+                uint8_t traceflags = 0;
+                _data.GetNumber<uint8_t>(size, traceflags);
+                size += sizeof(uint8_t);
+                if (traceflags != 0) {
+                    if ((traceflags & 0x1) != 0) {
+                        uint8_t textlength = 0;
+                        _data.GetTextLength<uint8_t>(size, textlength);
+                        size += sizeof(uint8_t) + textlength;
+                    }
+                    if ((traceflags & 0x2) != 0) {
+                        uint8_t textlength = 0;
+                        _data.GetTextLength<uint8_t>(size, textlength);
+                        size += sizeof(uint8_t) + textlength;
+                    }
+                }
+                return size;
+#endif
             }
 
         private:

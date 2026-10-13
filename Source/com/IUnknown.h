@@ -127,7 +127,28 @@ namespace ProxyStub {
 
                 ASSERT(handler != nullptr);
 
+#ifdef W3C_TRACE_CONTEXT
+
+                string traceParent;
+                string traceState;
+
+                message->Parameters().TraceContext(traceParent, traceState);
+
+                if (traceParent.empty() == false) {
+                    Core::JobContext::Instance().TraceParent(std::move(traceParent));   
+                }
+                if (traceState.empty() == false) {
+                    Core::JobContext::Instance().TraceState(std::move(traceState));
+                }
+
+#endif
                 handler(channel, message);
+
+#ifdef W3C_TRACE_CONTEXT
+                Core::JobContext::Instance().ClearTraceContext();
+#endif
+
+
             } else {
                 // if we get here, the message was already checked for validness, so just log the error with the interface id
                 SYSLOG(Logging::Error, (_T("COMRPC received Invoke message with invalid method index , interface ID [%u]"), message->Parameters().InterfaceId()));
@@ -285,9 +306,9 @@ namespace ProxyStub {
         {
             void* result = nullptr;
             Core::ProxyType<RPC::InvokeMessage> message(RPC::Administrator::Instance().Message());
+            message->Parameters().Set(_implementation, _interfaceId, static_cast<uint8_t>(UnknownStub::StubMethodsIndexType::QUERYINTERFACE));
             RPC::Data::Frame::Writer parameters(message->Parameters().Writer());
 
-            message->Parameters().Set(_implementation, _interfaceId, static_cast<uint8_t>(UnknownStub::StubMethodsIndexType::QUERYINTERFACE));
             parameters.Number<uint32_t>(id);
 
             _adminLock.Lock();
@@ -350,8 +371,16 @@ namespace ProxyStub {
         inline Core::ProxyType<RPC::InvokeMessage> Message(const uint8_t methodId) const
         {
             Core::ProxyType<RPC::InvokeMessage> message(RPC::Administrator::Instance().Message());
+#ifndef W3C_TRACE_CONTEXT
 
             message->Parameters().Set(_implementation, _interfaceId, methodId + 3);
+
+#else
+            Core::JobContext& context = Core::JobContext::Instance();
+
+            message->Parameters().Set(_implementation, _interfaceId, methodId + 3, context.HasTraceParent() == true ? &context.TraceParent() : nullptr, context.HasTraceState() == true ? &context.TraceState() : nullptr);
+
+#endif
 
             return (message);
         }
