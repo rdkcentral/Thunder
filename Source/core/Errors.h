@@ -21,9 +21,25 @@
 
 #include "Module.h"
 #include "ExtraNumberDefinitions.h"
+#include "Optional.h"
 
 #define COM_ERROR (0x80000000)
 #define CUSTOM_ERROR (0x1000000)
+
+namespace Thunder {
+namespace Core {
+
+    template<typename DATA>
+    struct ErrorDetails {
+        OptionalType<int32_t> code;
+        OptionalType<string> message;
+        OptionalType<DATA> data;
+    };
+
+} // namespace Core
+}
+
+// @stop
 
 namespace Thunder {
 namespace Core {

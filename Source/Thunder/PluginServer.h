@@ -1114,7 +1114,11 @@ namespace PluginHost {
                         else {
                             response->Error.SetError(result);
                             if (output.empty() == false) {
-                                response->Error.Text = output;
+                                Core::OptionalType<Core::JSON::Error> report;
+                                response->Error.FromString(output, report);
+                                if (report.IsSet() == true) {
+                                    response->Error.Text = output;
+                                }
                             }
                         }
                     }
