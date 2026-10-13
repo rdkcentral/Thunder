@@ -1840,7 +1840,7 @@ POP_WARNING()
                     if (details.Code.IsSet() == true) {
                         error.Code = details.Code;
                     }
-                    z
+
                     if (details.Message.IsSet() == true) {
                         error.Text = details.Message;
                     }
