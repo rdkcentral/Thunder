@@ -25,18 +25,22 @@
 
 #ifdef __cplusplus
     #include "Module.h"
-    #define THUNDER_MESSAGING_API EXTERNAL
+    #if defined(EXTERNAL_OUTPUT_EXPORTS)
+        #define THUNDER_EXTERNAL_OUTPUT_API EXTERNAL_EXPORT
+    #else
+        #define THUNDER_EXTERNAL_OUTPUT_API EXTERNAL
+    #endif
 #else
     #if defined(_WIN32) || defined(__CYGWIN__)
-        #if defined(MESSAGING_EXPORTS)
-            #define THUNDER_MESSAGING_API __declspec(dllexport)
+        #if defined(EXTERNAL_OUTPUT_EXPORTS)
+            #define THUNDER_EXTERNAL_OUTPUT_API __declspec(dllexport)
         #else
-            #define THUNDER_MESSAGING_API __declspec(dllimport)
+            #define THUNDER_EXTERNAL_OUTPUT_API __declspec(dllimport)
         #endif
     #elif defined(__GNUC__)
-        #define THUNDER_MESSAGING_API __attribute__((visibility("default")))
+        #define THUNDER_EXTERNAL_OUTPUT_API __attribute__((visibility("default")))
     #else
-        #define THUNDER_MESSAGING_API
+        #define THUNDER_EXTERNAL_OUTPUT_API
     #endif
 #endif
 
@@ -53,10 +57,10 @@ typedef enum {
     THUNDER_EXTERNAL_MESSAGE_LOGGING            = 5
 } ThunderMessageType;
 
-THUNDER_MESSAGING_API bool ThunderExternalOutput_Initialize(void);
-THUNDER_MESSAGING_API bool ThunderExternalOutput_IsEnabled(const char* module, ThunderMessageType type, const char* category);
-THUNDER_MESSAGING_API void ThunderExternalOutput_Submit(const char* module, ThunderMessageType type, const char* category, const char* payload);
-THUNDER_MESSAGING_API void ThunderExternalOutput_Deinitialize(void);
+THUNDER_EXTERNAL_OUTPUT_API bool ThunderExternalOutput_Initialize(void);
+THUNDER_EXTERNAL_OUTPUT_API bool ThunderExternalOutput_IsEnabled(const char* module, ThunderMessageType type, const char* category);
+THUNDER_EXTERNAL_OUTPUT_API void ThunderExternalOutput_Submit(const char* module, ThunderMessageType type, const char* category, const char* payload);
+THUNDER_EXTERNAL_OUTPUT_API void ThunderExternalOutput_Deinitialize(void);
 
 #ifdef __cplusplus
 }
