@@ -107,6 +107,71 @@ namespace Core {
         ::Thunder::Core::JSON::String Input;
     };
 
+    class RichErrorService {
+    public:
+        RichErrorService()
+            : _invocations(0)
+            , _input()
+            , _index()
+        {
+        }
+
+        uint32_t NoPayload(RichError&)
+        {
+            _invocations |= 0x01;
+            return (::Thunder::Core::ERROR_NONE);
+        }
+
+        uint32_t Inbound(const RichInput& parameters, RichError&)
+        {
+            _invocations |= 0x02;
+            _input = parameters.Input.Value();
+            return (::Thunder::Core::ERROR_NONE);
+        }
+
+        uint32_t Outbound(::Thunder::Core::JSON::String& output, RichError&)
+        {
+            _invocations |= 0x04;
+            output = _T("member output");
+            return (::Thunder::Core::ERROR_NONE);
+        }
+
+        uint32_t Transform(const RichInput& parameters, ::Thunder::Core::JSON::String& output, RichError&)
+        {
+            _invocations |= 0x08;
+            output = parameters.Input.Value() + _T(" member transformed");
+            return (::Thunder::Core::ERROR_NONE);
+        }
+
+        uint32_t IndexedFailure(const string& index, ::Thunder::Core::JSON::String&, RichError& details)
+        {
+            _index = index;
+            details.Data.Subcode = 73;
+            details.Data.Reason = _T("member indexed failure");
+            return (::Thunder::Core::ERROR_UNAVAILABLE);
+        }
+
+        uint8_t Invocations() const
+        {
+            return (_invocations);
+        }
+
+        const string& Input() const
+        {
+            return (_input);
+        }
+
+        const string& Index() const
+        {
+            return (_index);
+        }
+
+    private:
+        uint8_t _invocations;
+        string _input;
+        string _index;
+    };
+
     static ::Thunder::Core::JSONRPC::Context RichErrorContext()
     {
         return (::Thunder::Core::JSONRPC::Context(1, 1, string()));
@@ -271,6 +336,60 @@ namespace Core {
         EXPECT_EQ(error.Code.Value(), expected.Code.Value());
         EXPECT_EQ(error.Text.Value(), expected.Text.Value());
         EXPECT_TRUE(error.Data.IsSet());
+    }
+
+    TEST(Core_JSONRPC_RichError, RealObject_AllInputOutputFormsInvokeTarget)
+    {
+        ::Thunder::Core::JSONRPC::Handler handler(std::vector<uint8_t>{ 1 });
+        RichErrorService service;
+        string response;
+
+        handler.RegisterWithError<void, void, RichError>(_T("memberNone"), &RichErrorService::NoPayload, &service);
+        handler.RegisterWithError<RichInput, void, RichError>(_T("memberInbound"), &RichErrorService::Inbound, &service);
+        handler.RegisterWithError<void, ::Thunder::Core::JSON::String, RichError>(_T("memberOutbound"), &RichErrorService::Outbound, &service);
+        handler.RegisterWithError<RichInput, ::Thunder::Core::JSON::String, RichError>(_T("memberTransform"), &RichErrorService::Transform, &service);
+
+        EXPECT_EQ(handler.Invoke(RichErrorContext(), _T("memberNone"), string(), response), ::Thunder::Core::ERROR_NONE);
+        EXPECT_TRUE(response.empty());
+
+        EXPECT_EQ(handler.Invoke(RichErrorContext(), _T("memberInbound"), _T("{\"input\":\"member input\"}"), response), ::Thunder::Core::ERROR_NONE);
+        EXPECT_TRUE(response.empty());
+        EXPECT_EQ(service.Input(), string("member input"));
+
+        EXPECT_EQ(handler.Invoke(RichErrorContext(), _T("memberOutbound"), string(), response), ::Thunder::Core::ERROR_NONE);
+        ::Thunder::Core::JSON::String output;
+        output.FromString(response);
+        EXPECT_EQ(output.Value(), string("member output"));
+
+        EXPECT_EQ(handler.Invoke(RichErrorContext(), _T("memberTransform"), _T("{\"input\":\"request\"}"), response), ::Thunder::Core::ERROR_NONE);
+        output.Clear();
+        output.FromString(response);
+        EXPECT_EQ(output.Value(), string("request member transformed"));
+        EXPECT_EQ(service.Invocations(), 0x0F);
+    }
+
+    TEST(Core_JSONRPC_RichError, RealObject_IndexedFailureSerializesDetailsAndPreservesDefaults)
+    {
+        ::Thunder::Core::JSONRPC::Handler handler(std::vector<uint8_t>{ 1 });
+        RichErrorService service;
+
+        handler.RegisterWithError<void, ::Thunder::Core::JSON::String, RichError>(_T("memberEntry"), &RichErrorService::IndexedFailure, &service);
+
+        string response;
+        const uint32_t result = handler.Invoke(RichErrorContext(), _T("memberEntry@member-index"), string(), response);
+        const ::Thunder::Core::JSONRPC::Message::Info error(ParseRichError(response));
+        ::Thunder::Core::JSONRPC::Message::Info expected;
+        expected.SetError(result);
+
+        EXPECT_EQ(result, ::Thunder::Core::ERROR_UNAVAILABLE);
+        EXPECT_EQ(service.Index(), string("member-index"));
+        EXPECT_EQ(error.Code.Value(), expected.Code.Value());
+        EXPECT_EQ(error.Text.Value(), expected.Text.Value());
+
+        RichErrorData data;
+        data.FromString(error.Data.Value());
+        EXPECT_EQ(data.Subcode.Value(), 73);
+        EXPECT_EQ(data.Reason.Value(), string("member indexed failure"));
     }
 
 } // namespace Core
