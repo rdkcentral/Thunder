@@ -57,13 +57,6 @@ jobs:
         repository: rdkcentral/Thunder
         ref: ${{steps.thunder.outputs.first_match}}
 
-# ------- RDK Logger Adapter -------
-    - name: Checkout ThunderNanoServicesRDK
-      uses: actions/checkout@v5
-      with:
-        path: ThunderNanoServicesRDK
-        repository: WebPlatformForEmbedded/ThunderNanoServicesRDK
-
 # ------- ThunderTools -------
     - name: Checkout ThunderTools - default
       if: ${{ !contains(github.event.pull_request.body, '[DependsOn=ThunderTools:') }}

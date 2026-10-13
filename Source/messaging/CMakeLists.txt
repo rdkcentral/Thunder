@@ -30,6 +30,8 @@ add_library(${TARGET}
 
 option(MESSAGING_RDKLOGGER "Enable RDKLogger output support." OFF)
 option(MESSAGING_RDKLOGGER_USE_MOCK "Use the console-printing RDKLogger backend." OFF)
+set(MESSAGING_RDKLOGGER_REPOSITORY "https://github.com/WebPlatformForEmbedded/ThunderNanoServicesRDK.git" CACHE STRING "Repository containing the external messaging adapter")
+set(MESSAGING_RDKLOGGER_VERSION "master" CACHE STRING "Version of the external messaging adapter repository")
 
 set(THUNDER_MESSAGING_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 
@@ -37,16 +39,16 @@ if(MESSAGING_RDKLOGGER)
         set(MESSAGING_RDKLOGGER_SOURCE_DIR "" CACHE PATH "Source directory for the optional external messaging adapter")
 
         if(NOT MESSAGING_RDKLOGGER_SOURCE_DIR)
-                set(_MESSAGING_RDKLOGGER_CANDIDATES
-                    "${CMAKE_BINARY_DIR}/../thunder-rdkservices-custom/MessageControl/RDKLogger"
-                    "${CMAKE_SOURCE_DIR}/../ThunderNanoServicesRDK/MessageControl/RDKLogger")
+                include(GetExternalCode)
 
-                foreach(_candidate IN LISTS _MESSAGING_RDKLOGGER_CANDIDATES)
-                        if(EXISTS "${_candidate}/CMakeLists.txt")
-                                set(MESSAGING_RDKLOGGER_SOURCE_DIR "${_candidate}")
-                                break()
-                        endif()
-                endforeach()
+                set(_MESSAGING_RDKSERVICES_SOURCE_DIR "${CMAKE_BINARY_DIR}/ThunderNanoServicesRDK")
+                GetExternalCode(
+                        GIT_REPOSITORY "${MESSAGING_RDKLOGGER_REPOSITORY}"
+                        GIT_VERSION "${MESSAGING_RDKLOGGER_VERSION}"
+                        SOURCE_DIR "${_MESSAGING_RDKSERVICES_SOURCE_DIR}")
+
+                set(MESSAGING_RDKLOGGER_SOURCE_DIR
+                        "${_MESSAGING_RDKSERVICES_SOURCE_DIR}/MessageControl/RDKLogger")
         endif()
 
         if(NOT EXISTS "${MESSAGING_RDKLOGGER_SOURCE_DIR}/CMakeLists.txt")
