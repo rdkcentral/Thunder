@@ -110,9 +110,9 @@ Defined in `ThunderTestRuntime.h` under `Thunder::TestCore`.
 | `PluginConfig` | Type alias for `Plugin::Config`. Key fields: `Callsign`, `Locator`, `ClassName`, `StartupOrder`, `StartMode`, `Configuration`. |
 | `Initialize()` | Boots the embedded server with given plugins, system path, and proxy stub path. |
 | `Deinitialize()` | Stops the server, closes messaging, releases config, cleans up temp directories. |
-| `Invoke(method, params, response)` | Calls a JSON-RPC method synchronously via in-process `IDispatcher::Invoke()`. Method format: `"Callsign.method"`. String variant without authentication token. |
+| `Invoke(method, params, response)` | Calls a JSON-RPC method synchronously via in-process `IDispatcher::Invoke()`. Method format: `"Callsign.method"`. Passes an empty token string. |
 | `Invoke(method, params, token, response)` | Calls a JSON-RPC method with an authentication token. String variant. Token is passed to the plugin's method handler for authorization checks. |
-| `Invoke(method, params, response)` | JsonObject overload — handles serialization/deserialization automatically. |
+| `Invoke(method, params, response)` | JsonObject overload — handles serialization/deserialization automatically and forwards an empty token string. |
 | `CreateJSONRPCLink()` | Returns a callsign-bound `JSONRPCLink` for repeated calls and event subscriptions. Caller must `Release()` when done. |
 | `Exists()` | Checks whether a JSON-RPC method is registered on a plugin, using the framework's built-in `"exists"` endpoint. |
 | `QueryInterfaceByCallsign<T>()` | Template: obtains a COM-RPC interface from a plugin via `QueryInterface<T>()`. Caller must `Release()` when done. |
@@ -126,9 +126,9 @@ Callsign-bound helper for JSON-RPC invocations and event subscriptions. Implemen
 
 | Member | Description |
 |--------|-------------|
-| `Invoke(method, params, response)` | Invoke a method by bare name (for example `"echo"`), without repeating the callsign. String variant without authentication token. |
+| `Invoke(method, params, response)` | Invoke a method by bare name (for example `"echo"`), without repeating the callsign. Passes an empty token string. |
 | `Invoke(method, params, token, response)` | Invoke a method with an authentication token. String variant. Token is passed to the plugin's method handler for authorization checks. |
-| `Invoke(method, params, response)` | JsonObject overload — handles serialization/deserialization automatically. |
+| `Invoke(method, params, response)` | JsonObject overload — handles serialization/deserialization automatically and forwards an empty token string. |
 | `Subscribe(event, handler, index)` | Subscribe to a JSON-RPC event by name with a `std::function<void(const string& designator, const string& index, const string& params)>` callback. Optional `index` parameter for indexed events. |
 | `Unsubscribe(event, index)` | Unsubscribe from a previously subscribed event. Optional `index` parameter for indexed events. |
 | `Callsign()` | Returns the callsign this link is bound to. |
@@ -329,7 +329,7 @@ TEST_F(MyPluginTest, JsonRpcWithAuthToken)
 }
 ```
 
-The token is passed directly to the plugin's method handler, which can use it to validate authorization. Empty or missing tokens (`""`) bypass the token parameter in the `dispatcher->Invoke()` call.
+The token is passed directly to `IDispatcher::Invoke()` and is available to the plugin's token-validation callback. The overload without a token passes an empty string (`""`) as that argument; it does not bypass token validation. Whether an empty token is accepted is determined by the plugin.
 
 #### 4. JSON-RPC via `JSONRPCLink`
 
