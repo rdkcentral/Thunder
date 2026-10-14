@@ -23,25 +23,16 @@
 
 #include <stdbool.h>
 
-#ifdef __cplusplus
-    #include "Module.h"
+#if defined(_WIN32) || defined(__CYGWIN__)
     #if defined(EXTERNAL_OUTPUT_EXPORTS)
-        #define THUNDER_EXTERNAL_OUTPUT_API EXTERNAL_EXPORT
+        #define THUNDER_EXTERNAL_OUTPUT_API __declspec(dllexport)
     #else
-        #define THUNDER_EXTERNAL_OUTPUT_API EXTERNAL
+        #define THUNDER_EXTERNAL_OUTPUT_API __declspec(dllimport)
     #endif
+#elif defined(__GNUC__)
+    #define THUNDER_EXTERNAL_OUTPUT_API __attribute__((visibility("default")))
 #else
-    #if defined(_WIN32) || defined(__CYGWIN__)
-        #if defined(EXTERNAL_OUTPUT_EXPORTS)
-            #define THUNDER_EXTERNAL_OUTPUT_API __declspec(dllexport)
-        #else
-            #define THUNDER_EXTERNAL_OUTPUT_API __declspec(dllimport)
-        #endif
-    #elif defined(__GNUC__)
-        #define THUNDER_EXTERNAL_OUTPUT_API __attribute__((visibility("default")))
-    #else
-        #define THUNDER_EXTERNAL_OUTPUT_API
-    #endif
+    #define THUNDER_EXTERNAL_OUTPUT_API
 #endif
 
 #ifdef __cplusplus
