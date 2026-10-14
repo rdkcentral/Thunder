@@ -4258,7 +4258,7 @@
 </tr>
 <tr>
 <td><code>Invoke(method, params, response)</code></td>
-<td>Calls a JSON-RPC method synchronously via in-process <code>IDispatcher::Invoke()</code>. Method format: <code>"Callsign.method"</code>. String variant without authentication token.</td>
+<td>Calls a JSON-RPC method synchronously via in-process <code>IDispatcher::Invoke()</code>. Method format: <code>"Callsign.method"</code>. Passes an empty token string.</td>
 </tr>
 <tr>
 <td><code>Invoke(method, params, token, response)</code></td>
@@ -4266,7 +4266,7 @@
 </tr>
 <tr>
 <td><code>Invoke(method, params, response)</code></td>
-<td>JsonObject overload — handles serialization/deserialization automatically.</td>
+<td>JsonObject overload — handles serialization/deserialization automatically and forwards an empty token string.</td>
 </tr>
 <tr>
 <td><code>CreateJSONRPCLink()</code></td>
@@ -4306,7 +4306,7 @@
 <tbody>
 <tr>
 <td><code>Invoke(method, params, response)</code></td>
-<td>Invoke a method by bare name (for example <code>"echo"</code>), without repeating the callsign. String variant without authentication token.</td>
+<td>Invoke a method by bare name (for example <code>"echo"</code>), without repeating the callsign. Passes an empty token string.</td>
 </tr>
 <tr>
 <td><code>Invoke(method, params, token, response)</code></td>
@@ -4314,7 +4314,7 @@
 </tr>
 <tr>
 <td><code>Invoke(method, params, response)</code></td>
-<td>JsonObject overload — handles serialization/deserialization automatically.</td>
+<td>JsonObject overload — handles serialization/deserialization automatically and forwards an empty token string.</td>
 </tr>
 <tr>
 <td><code>Subscribe(event, handler, index)</code></td>
@@ -4499,7 +4499,7 @@ cmake<span class="w"> </span>--build<span class="w"> </span>build/Thunder<span c
 <span class="w">    </span><span class="n">EXPECT_NE</span><span class="p">(</span><span class="n">response</span><span class="p">.</span><span class="n">find</span><span class="p">(</span><span class="s">"success"</span><span class="p">),</span><span class="w"> </span><span class="n">string</span><span class="o">::</span><span class="n">npos</span><span class="p">);</span>
 <span class="p">}</span>
 </code></pre></div>
-<p>The token is passed directly to the plugin's method handler, which can use it to validate authorization. Empty or missing tokens (<code>""</code>) bypass the token parameter in the <code>dispatcher-&gt;Invoke()</code> call.</p>
+<p>The token is passed directly to <code>IDispatcher::Invoke()</code> and is available to the plugin's token-validation callback. The overload without a token passes an empty string (<code>""</code>) as that argument; it does not bypass token validation. Whether an empty token is accepted is determined by the plugin.</p>
 <h4 id="4-json-rpc-via-jsonrpclink">4. JSON-RPC via <code>JSONRPCLink</code></h4>
 <div class="highlight"><pre><span></span><code><span class="n">TEST_F</span><span class="p">(</span><span class="n">MyPluginTest</span><span class="p">,</span><span class="w"> </span><span class="n">JsonRpcViaLink</span><span class="p">)</span>
 <span class="p">{</span>
