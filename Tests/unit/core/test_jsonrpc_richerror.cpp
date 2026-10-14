@@ -113,6 +113,7 @@ namespace Core {
             : _invocations(0)
             , _input()
             , _index()
+            , _instanceId()
         {
         }
 
@@ -151,6 +152,13 @@ namespace Core {
             return (::Thunder::Core::ERROR_UNAVAILABLE);
         }
 
+        uint32_t InstanceFailure(const ::Thunder::Core::JSONRPC::instance_id_follows_t&, const string& instanceId, RichError& details)
+        {
+            _instanceId = instanceId;
+            details.Message = _T("member instance failure");
+            return (::Thunder::Core::ERROR_UNAVAILABLE);
+        }
+
         uint8_t Invocations() const
         {
             return (_invocations);
@@ -166,10 +174,16 @@ namespace Core {
             return (_index);
         }
 
+        const string& InstanceId() const
+        {
+            return (_instanceId);
+        }
+
     private:
         uint8_t _invocations;
         string _input;
         string _index;
+        string _instanceId;
     };
 
     static ::Thunder::Core::JSONRPC::Context RichErrorContext()
@@ -390,6 +404,46 @@ namespace Core {
         data.FromString(error.Data.Value());
         EXPECT_EQ(data.Subcode.Value(), 73);
         EXPECT_EQ(data.Reason.Value(), string("member indexed failure"));
+    }
+
+    TEST(Core_JSONRPC_RichError, InstanceIdWithoutIndex_SelectsInstanceOnlyDispatch)
+    {
+        ::Thunder::Core::JSONRPC::Handler handler(std::vector<uint8_t>{ 1 });
+        string receivedInstanceId;
+
+        handler.RegisterWithError<void, void, RichError, std::function<uint32_t(const ::Thunder::Core::JSONRPC::instance_id_follows_t&, const string&, RichError&)>>(_T("scope::instanceOnly"), [&receivedInstanceId](const ::Thunder::Core::JSONRPC::instance_id_follows_t&, const string& instanceId, RichError& details) -> uint32_t {
+            receivedInstanceId = instanceId;
+            details.Message = _T("instance failure");
+            return (::Thunder::Core::ERROR_UNAVAILABLE);
+        });
+
+        string response;
+        const uint32_t result = handler.Invoke(RichErrorContext(), _T("scope#instance-42::instanceOnly"), string(), response);
+        const ::Thunder::Core::JSONRPC::Message::Info error(ParseRichError(response));
+        ::Thunder::Core::JSONRPC::Message::Info expected;
+        expected.SetError(result);
+
+        EXPECT_EQ(receivedInstanceId, string("instance-42"));
+        EXPECT_EQ(error.Code.Value(), expected.Code.Value());
+        EXPECT_EQ(error.Text.Value(), string("instance failure"));
+    }
+
+    TEST(Core_JSONRPC_RichError, RealObject_InstanceIdWithoutIndex_SelectsInstanceOnlyDispatch)
+    {
+        ::Thunder::Core::JSONRPC::Handler handler(std::vector<uint8_t>{ 1 });
+        RichErrorService service;
+
+        handler.RegisterWithError<void, void, RichError>(_T("scope::memberInstanceOnly"), &RichErrorService::InstanceFailure, &service);
+
+        string response;
+        const uint32_t result = handler.Invoke(RichErrorContext(), _T("scope#member-42::memberInstanceOnly"), string(), response);
+        const ::Thunder::Core::JSONRPC::Message::Info error(ParseRichError(response));
+        ::Thunder::Core::JSONRPC::Message::Info expected;
+        expected.SetError(result);
+
+        EXPECT_EQ(service.InstanceId(), string("member-42"));
+        EXPECT_EQ(error.Code.Value(), expected.Code.Value());
+        EXPECT_EQ(error.Text.Value(), string("member instance failure"));
     }
 
 } // namespace Core

@@ -1034,8 +1034,10 @@ POP_WARNING()
                 using ARG = typename std::decay<typename TypeTraits::func_traits<METHOD>::template argument<N>::type>::type;
 
                 static constexpr auto hasContext = std::is_same<ARG<0>, Context>::value;
-                static constexpr auto hasIndex = (std::is_same<ARG<0>, string>::value | std::is_same<ARG<1>, string>::value | std::is_same<ARG<3>, string>::value);
-                static constexpr auto hasInstanceId = (std::is_same<ARG<0>, instance_id_follows_t>::value | std::is_same<ARG<1>, instance_id_follows_t>::value);
+                static constexpr auto instanceIdAt0 = std::is_same<ARG<0>, instance_id_follows_t>::value;
+                static constexpr auto instanceIdAt1 = std::is_same<ARG<1>, instance_id_follows_t>::value;
+                static constexpr auto hasInstanceId = (instanceIdAt0 | instanceIdAt1);
+                static constexpr auto hasIndex = (instanceIdAt0 ? std::is_same<ARG<2>, string>::value : (instanceIdAt1 ? std::is_same<ARG<3>, string>::value : (std::is_same<ARG<0>, string>::value | std::is_same<ARG<1>, string>::value)));
             };
 
         public:
