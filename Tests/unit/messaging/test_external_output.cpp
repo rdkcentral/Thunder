@@ -22,7 +22,7 @@
 #include <core/core.h>
 #include <messaging/messaging.h>
 
-#include "ExternalOutputMock.h"
+#include "mock/ExternalOutputMock.h"
 
 namespace Thunder {
 namespace Tests {
