@@ -110,7 +110,8 @@ Defined in `ThunderTestRuntime.h` under `Thunder::TestCore`.
 | `PluginConfig` | Type alias for `Plugin::Config`. Key fields: `Callsign`, `Locator`, `ClassName`, `StartupOrder`, `StartMode`, `Configuration`. |
 | `Initialize()` | Boots the embedded server with given plugins, system path, and proxy stub path. |
 | `Deinitialize()` | Stops the server, closes messaging, releases config, cleans up temp directories. |
-| `Invoke(method, params, response)` | Calls a JSON-RPC method synchronously via in-process `IDispatcher::Invoke()`. Method format: `"Callsign.method"`. String variant. |
+| `Invoke(method, params, response)` | Calls a JSON-RPC method synchronously via in-process `IDispatcher::Invoke()`. Method format: `"Callsign.method"`. String variant without authentication token. |
+| `Invoke(method, params, token, response)` | Calls a JSON-RPC method with an authentication token. String variant. Token is passed to the plugin's method handler for authorization checks. |
 | `Invoke(method, params, response)` | JsonObject overload — handles serialization/deserialization automatically. |
 | `CreateJSONRPCLink()` | Returns a callsign-bound `JSONRPCLink` for repeated calls and event subscriptions. Caller must `Release()` when done. |
 | `Exists()` | Checks whether a JSON-RPC method is registered on a plugin, using the framework's built-in `"exists"` endpoint. |
@@ -125,21 +126,41 @@ Callsign-bound helper for JSON-RPC invocations and event subscriptions. Implemen
 
 | Member | Description |
 |--------|-------------|
-| `Invoke(method, params, response)` | Invoke a method by bare name (for example `"echo"`), without repeating the callsign. String variant. |
+| `Invoke(method, params, response)` | Invoke a method by bare name (for example `"echo"`), without repeating the callsign. String variant without authentication token. |
+| `Invoke(method, params, token, response)` | Invoke a method with an authentication token. String variant. Token is passed to the plugin's method handler for authorization checks. |
 | `Invoke(method, params, response)` | JsonObject overload — handles serialization/deserialization automatically. |
 | `Subscribe(event, handler, index)` | Subscribe to a JSON-RPC event by name with a `std::function<void(const string& designator, const string& index, const string& params)>` callback. Optional `index` parameter for indexed events. |
 | `Unsubscribe(event, index)` | Unsubscribe from a previously subscribed event. Optional `index` parameter for indexed events. |
 | `Callsign()` | Returns the callsign this link is bound to. |
 
-#### JSON-RPC invocation path
+#### JSON-RPC invocation flow
 
 ```
+Runtime-level Invoke:
 Invoke("Callsign.method", params, response)
-    ├── Core::JSONRPC::Message::Callsign()  → callsign
-    ├── Core::JSONRPC::Message::Method()    → methodName
+    ├── Parse designator → callsign, method
     ├── Services().FromIdentifier()         → IShell proxy
     ├── shell->QueryInterface<IDispatcher>()
     └── dispatcher->Invoke(0, 0, "", method, params, response)
+
+With authentication token:
+Invoke("Callsign.method", params, token, response)
+    ├── Parse designator → callsign, method
+    ├── Services().FromIdentifier()         → IShell proxy
+    ├── shell->QueryInterface<IDispatcher>()
+    └── dispatcher->Invoke(0, 0, token, method, params, response)  ← token passed through
+
+Callsign-bound Invoke:
+link->Invoke("method", params, response)
+    ├── Use pre-bound callsign
+    ├── shell->QueryInterface<IDispatcher>()
+    └── dispatcher->Invoke(0, 0, "", method, params, response)
+
+With authentication token (callsign-bound):
+link->Invoke("method", params, token, response)
+    ├── Use pre-bound callsign
+    ├── shell->QueryInterface<IDispatcher>()
+    └── dispatcher->Invoke(0, 0, token, method, params, response)  ← token passed through
 ```
 
 #### COM-RPC interface access
@@ -289,6 +310,27 @@ TEST_F(MyPluginTest, JsonRpcFullDesignator)
 }
 ```
 
+#### 3a. JSON-RPC via `Invoke()` with authentication token
+
+For methods that require authorization, pass an authentication token to the runtime:
+
+```cpp
+TEST_F(MyPluginTest, JsonRpcWithAuthToken)
+{
+    string response;
+    string authToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...";
+
+    EXPECT_EQ(Core::ERROR_NONE,
+        _runtime.Invoke("MyPlugin.protectedMethod",
+                       R"({"action":"delete"})",
+                       authToken,
+                       response));
+    EXPECT_NE(response.find("success"), string::npos);
+}
+```
+
+The token is passed directly to the plugin's method handler, which can use it to validate authorization. Empty or missing tokens (`""`) bypass the token parameter in the `dispatcher->Invoke()` call.
+
 #### 4. JSON-RPC via `JSONRPCLink`
 
 ```cpp
@@ -300,6 +342,38 @@ TEST_F(MyPluginTest, JsonRpcViaLink)
     string response;
     EXPECT_EQ(Core::ERROR_NONE,
         link->Invoke("echo", R"({"input":"hello"})", response));
+
+    link->Release();
+}
+```
+
+#### 4a. JSON-RPC via `JSONRPCLink` with authentication token
+
+For repeated calls to protected methods, use the token-aware `JSONRPCLink::Invoke()` overload:
+
+```cpp
+TEST_F(MyPluginTest, JsonRpcViaLinkWithAuthToken)
+{
+    auto* link = _runtime.CreateJSONRPCLink("MyPlugin");
+    ASSERT_NE(link, nullptr);
+
+    string response;
+    string authToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...";
+
+    // Call a protected method with the token
+    EXPECT_EQ(Core::ERROR_NONE,
+        link->Invoke("protectedMethod",
+                    R"({"action":"delete"})",
+                    authToken,
+                    response));
+    EXPECT_NE(response.find("success"), string::npos);
+
+    // The token is passed through each invocation on this link
+    EXPECT_EQ(Core::ERROR_NONE,
+        link->Invoke("anotherProtectedMethod",
+                    R"({"data":"test"})",
+                    authToken,
+                    response));
 
     link->Release();
 }
