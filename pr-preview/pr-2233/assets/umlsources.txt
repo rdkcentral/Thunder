@@ -1,0 +1,55 @@
+plantuml
+
+@startuml
+
+skin rose
+
+participant Plugin order 30
+
+Client1 -> Plugin: SetA(10)
+CLient2 -> Plugin: GetA()
+CLient2 -> Plugin: GetB()
+Client1 -> Plugin: SetB(20)
+
+
+@enduml
+
+
+@startuml
+
+skin rose
+
+participant Plugin order 30
+
+Client1 -> Plugin: SetA(10)
+Activate Plugin
+Plugin -> Client3: AChanged()
+Activate Client3
+Client2 -> Plugin: SetA(20)
+Client3 -> Plugin: GetA()
+Deactivate Client3
+Plugin --> Client1
+Deactivate Plugin
+
+@enduml
+
+@startuml
+
+skin rose
+
+participant Plugin order 30
+participant PinProvider order 40
+
+Client -> Plugin: GetPin(Callback)
+Plugin --> Client
+Plugin -> Plugin: GetPin
+Activate Plugin
+Plugin -> PinProvider: RetrievePin
+Activate PinProvider
+PinProvider --> Plugin: pin
+Deactivate PinProvider
+Plugin -> Client: Callback(pin)
+Deactivate Plugin
+
+
+@enduml
