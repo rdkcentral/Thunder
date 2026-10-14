@@ -7,7 +7,7 @@ The build SHALL expose an explicit External Direct integration option that is OF
 - **WHEN** the default Thunder build is configured without the integration option
 - **THEN** it does not require external adapter headers or libraries
 
-#### Scenario: RDK-enabled build links the adapter
+#### Scenario: Target-enabled build links the adapter
 - **WHEN** the integration option is enabled and the target SDK is available
 - **THEN** the Messaging implementation compiles and links its external adapter
 

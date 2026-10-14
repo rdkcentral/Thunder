@@ -21,42 +21,11 @@ The route is selected by Messaging configuration. External adapter enablement st
 
 When neither destination is interested, the producer avoids message construction and submission. This preserves the existing fast path while allowing the external adapter to receive messages when local Thunder output is disabled.
 
-### Example adapter module and level mapping
+### Adapter-specific mapping
 
-The following mapping is an example for an RDK Logger adapter. It documents adapter-specific behavior and does not make External Direct specific to that backend.
+The external adapter owns the mapping from Thunder message metadata to its backend categories, levels, and payload format. The adapter receives the existing `MODULE_NAME` unchanged; Thunder does not introduce a second normalization, truncation, validation, or collision-resolution policy.
 
-The initial module format is:
-
-`LOG.RDK.THUNDER.<MODULE_NAME>`
-
-`MODULE_NAME` is the existing Thunder module identifier and is already unique per plugin. The external adapter receives it unchanged; this change does not introduce a second normalization, truncation, validation, or collision-resolution policy.
-
-The mapping covers all Thunder message types. Telemetry is not duplicated to the external adapter when the same message is routed to the handler, because MessageControl forwards that path to the T2 backend. If telemetry is routed externally without the handler destination, the normal telemetry mapping applies.
-
-Tracing uses the same named severity categories as logging. `Fatal`/`Crash` map to `FATAL`, `Error` to `ERROR`, `Warning`/`Warn` to `WARN`, and `Notice` to `NOTICE`. Other tracing categories map to `TRACE`.
-
-When a logging or tracing message uses the default external level (`INFO` for logging or `TRACE` for tracing), the adapter prefixes the payload with the non-empty category in the form `<CATEGORY>: <PAYLOAD>`. Explicitly classified messages retain the original payload unchanged.
-
-| Thunder type | Example external level |
-| --- | --- |
-| ASSERT / fatal-like | FATAL |
-| REPORTING | WARN |
-| TRACING Fatal/Crash | FATAL |
-| TRACING Error | ERROR |
-| TRACING Warning/Warn | WARN |
-| TRACING Notice | NOTICE |
-| Other TRACING | TRACE |
-| TELEMETRY | NOTICE |
-| OPERATIONAL_STREAM | TRACE |
-| LOGGING crash/fatal | FATAL |
-| LOGGING error | ERROR |
-| LOGGING warning/warn | WARN |
-| LOGGING notice | NOTICE |
-| Other LOGGING | INFO |
-
-The initial payload submitted to the external adapter is the message payload, except for default-level logging and tracing messages, where a non-empty category is prefixed as `<CATEGORY>: <PAYLOAD>`. Thunder metadata is otherwise used only for module and level selection.
-
-No additional normalization is performed by Thunder.
+Adapter-specific mapping, category registration, and deployment configuration belong with the adapter and its platform integration. Thunder only defines the generic External Direct contract and passes the module, message type, category, and payload to the adapter.
 
 ### Enablement cache
 
@@ -73,10 +42,6 @@ External adapter initialization or query failure disables only external routing.
 ### Build boundary
 
 External output support is optional and OFF by default. Adapter headers and libraries are referenced only by the Messaging integration when the feature is enabled. Core primitives and builds without external output must remain free of the dependency and preserve current behavior.
-
-### Deployment category responsibility
-
-The example adapter documents the selected `LOG.RDK.THUNDER.<MODULE_NAME>` category mapping and uses its backend API. The corresponding platform team owns registration of those categories in its logging configuration and owns deployment-time enablement/disablement. Thunder does not generate, install, or maintain that backend configuration in this change.
 
 ### Public adapter contract and mock backend
 
