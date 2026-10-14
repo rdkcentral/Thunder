@@ -110,6 +110,67 @@ cmake -DENABLE_TRACING_MODULES='Plugin_BluetoothControl Plugin_WebServer' \
 
 The resulting module and category entries are added to the tracing settings with `enabled` set to `true`.
 
+#### External Direct output
+
+Messaging can optionally send messages synchronously to an external output adapter in addition to its built-in handler and direct-output paths. Enable this support when configuring Thunder:
+
+```sh
+cmake -DMESSAGING_EXTERNAL_OUTPUT=ON ..
+```
+
+When no source directory is supplied, CMake fetches the adapter repository configured by `MESSAGING_EXTERNAL_OUTPUT_REPOSITORY` and checks out `MESSAGING_EXTERNAL_OUTPUT_VERSION`. Pin the adapter to a known revision for reproducible builds, for example:
+
+```sh
+cmake \
+    -DMESSAGING_EXTERNAL_OUTPUT=ON \
+    -DMESSAGING_EXTERNAL_OUTPUT_VERSION=<adapter-branch-or-tag> \
+    ..
+```
+
+An existing adapter checkout can be used instead of fetching the repository:
+
+```sh
+cmake \
+    -DMESSAGING_EXTERNAL_OUTPUT=ON \
+    -DMESSAGING_EXTERNAL_OUTPUT_SOURCE_DIR=/path/to/MessageControl/<adapter> \
+    ..
+```
+
+The adapter is built as a separate shared library. The default production adapter is selected from the configured external repository. For development or tests, `MESSAGING_EXTERNAL_OUTPUT_USE_MOCK=ON` selects the console-printing mock adapter when that adapter source provides it.
+
+After the feature is compiled in, set `output` to `external_direct` in the messaging configuration. The setting is available globally, per message type, or on an individual module/category entry. For example, this routes all messages to the external adapter:
+
+```json
+{
+    "messaging": {
+        "output": "external_direct"
+    }
+}
+```
+
+To route only selected messages, keep the global default and set `output` on a section or entry:
+
+```json
+{
+    "messaging": {
+        "output": "handler",
+        "logging": {
+            "output": "external_direct",
+            "settings": [
+                {
+                    "module": "Plugin_SamplePlugin",
+                    "category": "Information",
+                    "enabled": true,
+                    "output": "external_direct"
+                }
+            ]
+        }
+    }
+}
+```
+
+The supported routing values are `handler` (the messaging buffer), `direct` (Thunder's built-in direct output), `external_direct` (the external adapter), and `all` (all applicable destinations). An `external_direct` setting has no effect unless Thunder was built with `MESSAGING_EXTERNAL_OUTPUT=ON` and the adapter initializes successfully.
+
 Below is an example of the messaging section in the config:
 
 ```json
@@ -164,7 +225,7 @@ Below is an example of the messaging section in the config:
 }
 ```
 
-The global `output` setting controls the default destination for every message type. It can be overridden by a message-type or entry-level `output` setting. The legacy `flush` setting is still accepted for compatibility but is ignored; use `output: "direct"` instead.
+The global `output` setting controls the default destination for every message type. It can be overridden by a message-type or entry-level `output` setting. Supported values are `handler`, `direct`, `external_direct`, and `all`. The legacy `flush` setting is still accepted for compatibility but is ignored; use `output: "direct"` instead.
 
 1. Routing fallback for all message types. Entry-level `output` overrides the message-type setting, which overrides this global value. The default is `handler` during normal operation and `direct` in DirectOutput mode.
 
