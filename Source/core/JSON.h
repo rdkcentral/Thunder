@@ -3771,7 +3771,8 @@ namespace Core {
             static constexpr uint16_t SKIP_BEFORE_VALUE = 4;
             static constexpr uint16_t SKIP_AFTER = 5;
             static constexpr uint16_t SKIP_AFTER_KEY = 6;
-            static constexpr uint16_t PARSE = 7;
+            static constexpr uint16_t SKIP_BEFORE_FIRST = 7;
+            static constexpr uint16_t PARSE = 8;
 
             typedef std::pair<const TCHAR*, IElement*> JSONLabelValue;
             typedef std::list<JSONLabelValue> JSONElementList;
@@ -4054,13 +4055,13 @@ namespace Core {
                     case ValueValidity::VALID:
                         loaded++;
                         _fieldName.Clear();
-                        offset = SKIP_BEFORE;
+                        offset = SKIP_BEFORE_FIRST;
                         break;
                     }
                 }
 
                 while ((offset != FIND_MARKER) && (loaded < maxLength)) {
-                    if ((offset == SKIP_BEFORE) || (offset == SKIP_AFTER) || offset == SKIP_BEFORE_VALUE || offset == SKIP_AFTER_KEY) {
+                    if ((offset == SKIP_BEFORE_FIRST) || (offset == SKIP_BEFORE) || (offset == SKIP_AFTER) || offset == SKIP_BEFORE_VALUE || offset == SKIP_AFTER_KEY) {
                         // Run till we find a character not a whitespace..
                         while ((loaded < maxLength) && (::isspace(static_cast<uint8_t>(stream[loaded])))) {
                             loaded++;
@@ -4069,7 +4070,7 @@ namespace Core {
                         if (loaded < maxLength) {
                             switch (stream[loaded]) {
                             case '}':
-                                if (offset == SKIP_BEFORE && !_data.empty()) {
+                                if (offset == SKIP_BEFORE) {
                                     _state = ERROR;
                                     error = Error{ "Expected new element, \"}\" found." };
                                 } else if (offset == SKIP_BEFORE_VALUE || offset == SKIP_AFTER_KEY) {
@@ -4081,7 +4082,7 @@ namespace Core {
                                 loaded++;
                                 break;
                             case ',':
-                                if (offset == SKIP_BEFORE) {
+                                if (offset == SKIP_BEFORE_FIRST || offset == SKIP_BEFORE) {
                                     _state = ERROR;
                                     error = Error{ "Expected new element \",\" found." };
                                     offset = FIND_MARKER;
@@ -4095,7 +4096,7 @@ namespace Core {
                                 loaded++;
                                 break;
                             case ':':
-                                if (offset == SKIP_BEFORE || offset == SKIP_BEFORE_VALUE) {
+                                if (offset == SKIP_BEFORE_FIRST || offset == SKIP_BEFORE || offset == SKIP_BEFORE_VALUE) {
                                     _state = ERROR;
                                     error = Error{ "Expected " + std::string{ offset == SKIP_BEFORE_VALUE ? "value" : "new element" } + ", \":\" found." };
                                     offset = FIND_MARKER;
