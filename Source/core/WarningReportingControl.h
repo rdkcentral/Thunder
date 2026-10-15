@@ -72,7 +72,7 @@
 
 #define ANNOUNCE_WARNING(CATEGORY)
 
-#define ANNOUNCE_INVOKE_WARNING(CATEGORY)  \
+#define ANNOUNCE_INVOKE_WARNING(CATEGORY) \
     WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::IsEnabled()
 
 #define ANNOUNCE_WORKERPOOL_WARNING(CATEGORY) \
@@ -88,36 +88,36 @@
 
 #define REPORT_DURATION_WARNING(CODE, CATEGORY, ...)
 
-#define REPORT_INVOKE_DURATION_WARNING(CODE, CATEGORY, ...)                                                                                               \
+#define REPORT_INVOKE_DURATION_WARNING(CODE, CATEGORY, ...) \
     if (WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::IsEnabled() == true) { \
-        uint64_t start = WPEFramework::Core::SystemInfo::Instance().Ticks();                                                                             \
-        CODE                                                                                                                                               \
-        uint64_t duration = (WPEFramework::Core::SystemInfo::Instance().Ticks() - start) / WPEFramework::Core::Time::MicroSecondsPerMilliSecond;         \
-        WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>> __message__;        \
-        if (__message__.Analyze(WPEFramework::Core::System::MODULE_NAME,                                                                                   \
-                WPEFramework::Core::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(),                                     \
-                duration, ##__VA_ARGS__) == true) {                                                                                                        \
-            WPEFramework::WarningReporting::WarningReportingUnitProxy::Instance().ReportWarningEvent(                                                      \
-                WPEFramework::Core::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(),                                     \
-                __message__);                                                                                                                               \
-        }                                                                                                                                                   \
-    } else {                                                                                                                                                \
-        CODE                                                                                                                                               \
+        uint64_t start = WPEFramework::Core::SystemInfo::Instance().Ticks(); \
+        CODE \
+        uint64_t duration = (WPEFramework::Core::SystemInfo::Instance().Ticks() - start) / WPEFramework::Core::Time::MicroSecondsPerMilliSecond; \
+        WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>> __message__; \
+        if (__message__.Analyze(WPEFramework::Core::System::MODULE_NAME, \
+                WPEFramework::Core::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(), \
+                duration, ##__VA_ARGS__) == true) { \
+            WPEFramework::WarningReporting::WarningReportingUnitProxy::Instance().ReportWarningEvent( \
+                WPEFramework::Core::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(), \
+                __message__); \
+        } \
+    } else { \
+        CODE \
     }
 
 #define REPORT_WORKERPOOL_DURATION_WARNING(CODE, CATEGORY, ...) \
     REPORT_INVOKE_DURATION_WARNING(CODE, CATEGORY, ##__VA_ARGS__)
 
-#define REPORT_WORKERPOOL_WARNING(CATEGORY, ACTUALVALUE, ...)                                                                                              \
-    REPORT_WORKERPOOL_WARNING_EX(CATEGORY, WPEFramework::Core::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(),          \
+#define REPORT_WORKERPOOL_WARNING(CATEGORY, ACTUALVALUE, ...) \
+    REPORT_WORKERPOOL_WARNING_EX(CATEGORY, WPEFramework::Core::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(), \
         ACTUALVALUE, ##__VA_ARGS__)
 
-#define REPORT_WORKERPOOL_WARNING_EX(CATEGORY, CALLSIGN, ACTUALVALUE, ...)                                                                                 \
+#define REPORT_WORKERPOOL_WARNING_EX(CATEGORY, CALLSIGN, ACTUALVALUE, ...) \
     if (WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::IsEnabled() == true) { \
-        WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>> __message__;        \
-        if (__message__.Analyze(WPEFramework::Core::System::MODULE_NAME, CALLSIGN, ACTUALVALUE, ##__VA_ARGS__) == true) {                                  \
-            WPEFramework::WarningReporting::WarningReportingUnitProxy::Instance().ReportWarningEvent(CALLSIGN, __message__);                                 \
-        }                                                                                                                                                   \
+        WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>> __message__; \
+        if (__message__.Analyze(WPEFramework::Core::System::MODULE_NAME, CALLSIGN, ACTUALVALUE, ##__VA_ARGS__) == true) { \
+            WPEFramework::WarningReporting::WarningReportingUnitProxy::Instance().ReportWarningEvent(CALLSIGN, __message__); \
+        } \
     }
 
 #else
@@ -142,70 +142,70 @@
 // OutOfBounds warning category:
 //  - BoundsType to indicate type for boubnds values
 
-#define ANNOUNCE_WARNING(CATEGORY)  \
+#define ANNOUNCE_WARNING(CATEGORY) \
     WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::IsEnabled()
 
 #define ANNOUNCE_INVOKE_WARNING(CATEGORY) ANNOUNCE_WARNING(CATEGORY)
 
 #define ANNOUNCE_WORKERPOOL_WARNING(CATEGORY) ANNOUNCE_WARNING(CATEGORY)
 
-#define REPORT_WARNING(CATEGORY, ...)                                                                                  \
-    if (WPEFramework::WarningReporting::WarningReportingType<CATEGORY>::IsEnabled()) {                                 \
-        WPEFramework::WarningReporting::WarningReportingType<CATEGORY> __message__;                                    \
-        if (__message__.Analyze(WPEFramework::Core::System::MODULE_NAME,                                               \
+#define REPORT_WARNING(CATEGORY, ...) \
+    if (WPEFramework::WarningReporting::WarningReportingType<CATEGORY>::IsEnabled()) { \
+        WPEFramework::WarningReporting::WarningReportingType<CATEGORY> __message__; \
+        if (__message__.Analyze(WPEFramework::Core::System::MODULE_NAME, \
                 WPEFramework::Core::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(), \
-                ##__VA_ARGS__)                                                                                         \
-            == true) {                                                                                                 \
-            WPEFramework::WarningReporting::WarningReportingUnitProxy::Instance().ReportWarningEvent(                  \
+                ##__VA_ARGS__) \
+            == true) { \
+            WPEFramework::WarningReporting::WarningReportingUnitProxy::Instance().ReportWarningEvent( \
                 WPEFramework::Core::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(), \
-                __message__);                                                                                          \
-        }                                                                                                              \
+                __message__); \
+        } \
     }
 
-#define REPORT_OUTOFBOUNDS_WARNING(CATEGORY, ACTUALVALUE, ...)                                                                                                                  \
-    if (WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::IsEnabled() == true) {                  \
-        WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>> __message__;                             \
-        if (__message__.Analyze(WPEFramework::Core::System::MODULE_NAME, WPEFramework::Core::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(), \
-                ACTUALVALUE,                                                                                                                                                    \
-                ##__VA_ARGS__)                                                                                                                                                  \
-            == true) {                                                                                                                                                          \
-            WPEFramework::WarningReporting::WarningReportingUnitProxy::Instance().ReportWarningEvent(                                                                           \
-                WPEFramework::Core::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(),                                                          \
-                __message__);                                                                                                                                                   \
-        }                                                                                                                                                                       \
-    }
-
-#define REPORT_OUTOFBOUNDS_WARNING_EX(CATEGORY, CALLSIGN, ACTUALVALUE, ...)                                                                                                     \
-    if (WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::IsEnabled() == true) {                  \
-        WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>> __message__;                             \
-        if (__message__.Analyze(WPEFramework::Core::System::MODULE_NAME, CALLSIGN,                                                                                              \
-                ACTUALVALUE,                                                                                                                                                    \
-                ##__VA_ARGS__)                                                                                                                                                  \
-            == true) {                                                                                                                                                          \
-            WPEFramework::WarningReporting::WarningReportingUnitProxy::Instance().ReportWarningEvent(                                                                           \
-                CALLSIGN,                                                                                                                                                       \
-                __message__);                                                                                                                                                   \
-        }                                                                                                                                                                       \
-    }
-
-
-#define REPORT_DURATION_WARNING(CODE, CATEGORY, ...)                                                                                                           \
+#define REPORT_OUTOFBOUNDS_WARNING(CATEGORY, ACTUALVALUE, ...) \
     if (WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::IsEnabled() == true) { \
-        uint64_t start = WPEFramework::Core::SystemInfo::Instance().Ticks();                                                                                   \
-        CODE                                                                                                                                                   \
-        uint64_t duration = (WPEFramework::Core::SystemInfo::Instance().Ticks() - start) / WPEFramework::Core::Time::MicroSecondsPerMilliSecond;               \
-        WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>> __message__;            \
-        if (__message__.Analyze(WPEFramework::Core::System::MODULE_NAME,                                                                                       \
-                WPEFramework::Core::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(),                                         \
-                duration,                                                                                                                                      \
-                ##__VA_ARGS__)                                                                                                                                 \
-            == true) {                                                                                                                                         \
-            WPEFramework::WarningReporting::WarningReportingUnitProxy::Instance().ReportWarningEvent(                                                          \
-                WPEFramework::Core::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(),                                         \
-                __message__);                                                                                                                                  \
-        }                                                                                                                                                      \
-    } else {                                                                                                                                                   \
-        CODE                                                                                                                                                   \
+        WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>> __message__; \
+        if (__message__.Analyze(WPEFramework::Core::System::MODULE_NAME, WPEFramework::Core::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(), \
+                ACTUALVALUE, \
+                ##__VA_ARGS__) \
+            == true) { \
+            WPEFramework::WarningReporting::WarningReportingUnitProxy::Instance().ReportWarningEvent( \
+                WPEFramework::Core::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(), \
+                __message__); \
+        } \
+    }
+
+#define REPORT_OUTOFBOUNDS_WARNING_EX(CATEGORY, CALLSIGN, ACTUALVALUE, ...) \
+    if (WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::IsEnabled() == true) { \
+        WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>> __message__; \
+        if (__message__.Analyze(WPEFramework::Core::System::MODULE_NAME, CALLSIGN, \
+                ACTUALVALUE, \
+                ##__VA_ARGS__) \
+            == true) { \
+            WPEFramework::WarningReporting::WarningReportingUnitProxy::Instance().ReportWarningEvent( \
+                CALLSIGN, \
+                __message__); \
+        } \
+    }
+
+
+#define REPORT_DURATION_WARNING(CODE, CATEGORY, ...) \
+    if (WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::IsEnabled() == true) { \
+        uint64_t start = WPEFramework::Core::SystemInfo::Instance().Ticks(); \
+        CODE \
+        uint64_t duration = (WPEFramework::Core::SystemInfo::Instance().Ticks() - start) / WPEFramework::Core::Time::MicroSecondsPerMilliSecond; \
+        WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>> __message__; \
+        if (__message__.Analyze(WPEFramework::Core::System::MODULE_NAME, \
+                WPEFramework::Core::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(), \
+                duration, \
+                ##__VA_ARGS__) \
+            == true) { \
+            WPEFramework::WarningReporting::WarningReportingUnitProxy::Instance().ReportWarningEvent( \
+                WPEFramework::Core::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(), \
+                __message__); \
+        } \
+    } else { \
+        CODE \
     }
 
 #define REPORT_INVOKE_DURATION_WARNING(CODE, CATEGORY, ...) \
