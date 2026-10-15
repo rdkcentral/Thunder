@@ -255,7 +255,7 @@ namespace TestCore {
         const string& systemPath,
         const string& proxyStubPath,
         const uint16_t port,
-        const uint8_t channelThrottle) const
+        const std::optional<uint8_t>& channelThrottle) const
     {
         const string communicatorPath = _tempDir + "communicator|0777";
 
@@ -271,8 +271,8 @@ namespace TestCore {
         process["threadpoolcount"] = static_cast<uint32_t>(THREADPOOL_COUNT);
         config["process"] = process;
 
-        if (channelThrottle != 0) {
-            config["channel_throttle"] = channelThrottle;
+        if (channelThrottle.has_value() == true) {
+            config["channel_throttle"] = channelThrottle.value();
         }
         config["persistentpath"] = _tempDir + "persistent/";
         config["volatilepath"] = _tempDir + "volatile/";
@@ -304,12 +304,12 @@ namespace TestCore {
         return json;
     }
 
-    uint32_t ThunderTestRuntime::Initialize(
+    uint32_t ThunderTestRuntime::StartServer(
         const std::vector<PluginConfig>& plugins,
         const string& systemPath,
         const string& proxyStubPath,
         const uint16_t port,
-        const uint8_t channelThrottle)
+        const std::optional<uint8_t>& channelThrottle)
     {
         if (_server != nullptr) {
             return Core::ERROR_ALREADY_CONNECTED;
@@ -397,14 +397,18 @@ namespace TestCore {
 
     uint32_t ThunderTestRuntime::Initialize(const std::vector<PluginConfig>& plugins,
         const string& systemPath,
+        const string& proxyStubPath,
+        const uint16_t port,
+        const uint8_t channelThrottle)
+    {
+        return StartServer(plugins, systemPath, proxyStubPath, port, channelThrottle);
+    }
+
+    uint32_t ThunderTestRuntime::Initialize(const std::vector<PluginConfig>& plugins,
+        const string& systemPath,
         const string& proxyStubPath)
     {
-        return Initialize(
-        plugins,
-        systemPath,
-        proxyStubPath,
-        0,
-        0);
+        return StartServer(plugins, systemPath, proxyStubPath, 0, std::nullopt);
     }
 
     Core::ProxyType<ThunderTestRuntime::JSONRPCLink> ThunderTestRuntime::CreateJSONRPCLink(const string& callsign)
