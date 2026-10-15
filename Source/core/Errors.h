@@ -29,6 +29,7 @@
 namespace Thunder {
 namespace Core {
 
+    // @richerror
     template<typename DATA>
     struct ErrorDetails {
         OptionalType<int32_t> code;
