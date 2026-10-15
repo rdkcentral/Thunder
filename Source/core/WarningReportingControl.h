@@ -222,6 +222,8 @@
 
 #endif
 
+#if defined(__CORE_WARNING_REPORTING__)
+
 namespace WPEFramework {
 
 namespace Core {
@@ -689,3 +691,5 @@ namespace WarningReporting {
     #endif
 }
 }
+
+#endif
