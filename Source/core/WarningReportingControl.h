@@ -86,7 +86,8 @@
 
 #define REPORT_OUTOFBOUNDS_WARNING_EX(CATEGORY, CALLSIGN, ACTUALVALUE, ...)
 
-#define REPORT_DURATION_WARNING(CODE, CATEGORY, ...)
+#define REPORT_DURATION_WARNING(CODE, CATEGORY, ...) \
+    CODE
 
 #define REPORT_INVOKE_DURATION_WARNING(CODE, CATEGORY, ...) \
     if (WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::IsEnabled() == true) { \
