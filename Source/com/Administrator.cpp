@@ -151,7 +151,7 @@ namespace RPC {
 
         if (index != _stubs.end()) {
             uint32_t methodId(message->Parameters().MethodId());
-            REPORT_DURATION_WARNING({ index->second->Handle(methodId, channel, message); },  WarningReporting::TooLongInvokeRPC, interfaceId, methodId);
+            REPORT_INVOKE_DURATION_WARNING({ index->second->Handle(methodId, channel, message); },  WarningReporting::TooLongInvokeRPC, interfaceId, methodId);
         } else {
             // Oops this is an unknown interface, Do not think this could happen.
             TRACE_L1("Unknown interface. %d", interfaceId);

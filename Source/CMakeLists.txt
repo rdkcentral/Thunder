@@ -49,6 +49,12 @@ option(DISABLE_USE_COMPLEMENTARY_CODE_SET
         "Disable the complementary code set" OFF)
 option(ENABLE_CONFIG_OVERRIDE
         "Enable persistent configuration overrides." OFF)
+option(SLIM_WARNING_REPORTING
+    "Only report Invoke durations and WorkerPool warnings." OFF)
+
+if(SLIM_WARNING_REPORTING)
+    set(WARNING_REPORTING ON CACHE BOOL "Include warning reporting in the build." FORCE)
+endif()
 
 if(HIDE_NON_EXTERNAL_SYMBOLS)
     set(CMAKE_CXX_VISIBILITY_PRESET hidden)
