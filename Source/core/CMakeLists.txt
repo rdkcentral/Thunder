@@ -244,8 +244,8 @@ set_target_properties(${TARGET} PROPERTIES
 
 target_include_directories( ${TARGET}
         PUBLIC
-          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
           $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/generated>
+          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../> #core.h
           $<INSTALL_INTERFACE:include/${NAMESPACE}>)
 
