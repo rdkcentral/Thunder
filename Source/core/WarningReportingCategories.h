@@ -20,7 +20,7 @@
 #pragma once
 
 #include "Module.h"
-#include <WarningReportingConfig.h>
+#include <core/WarningReportingConfig.h>
 #include <iostream>
 
 namespace WPEFramework {

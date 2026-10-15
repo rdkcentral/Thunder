@@ -20,7 +20,7 @@ include(CompileSettings)
 
 configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/WarningReportingConfig.h.in"
-    "${CMAKE_CURRENT_BINARY_DIR}/generated/WarningReportingConfig.h"
+    "${CMAKE_CURRENT_BINARY_DIR}/generated/core/WarningReportingConfig.h"
     @ONLY)
 
 find_package(Threads REQUIRED)
@@ -285,7 +285,7 @@ install(
         INCLUDES DESTINATION include/${NAMESPACE}   # default include path
 )
 
-install(FILES "${CMAKE_CURRENT_BINARY_DIR}/generated/WarningReportingConfig.h"
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/generated/core/WarningReportingConfig.h"
     DESTINATION include/${NAMESPACE}/core
     COMPONENT devel)
 
