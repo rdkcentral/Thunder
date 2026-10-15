@@ -11,7 +11,7 @@ find_package(Threads REQUIRED)
 
 set(THUNDER_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../Source/Thunder")
 
-set(TEST_RUNTIME_THREADPOOL_COUNT "8" CACHE STRING "The number of threads in the thread pool for test runtime")
+set(TEST_RUNTIME_THREADPOOL_COUNT "4" CACHE STRING "The number of threads in the thread pool for test runtime")
 
 set(TARGET thunder_test_support)
 

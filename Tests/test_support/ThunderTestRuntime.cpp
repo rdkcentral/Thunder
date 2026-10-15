@@ -233,7 +233,7 @@ namespace TestCore {
 
     static bool PortAvailable(const uint16_t port)
     {
-        bool available = true;
+        bool available = false;
         const int fd = ::socket(AF_INET, SOCK_STREAM, 0);
         if (fd >= 0) {
             const int enable = 1;
