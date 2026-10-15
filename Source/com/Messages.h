@@ -161,10 +161,18 @@ namespace RPC {
             }
             inline Frame::Writer Writer()
             {
+#ifdef W3C_TRACE_CONTEXT
+                // if this fires it means that the Set method was not called before getting a writer. (which is required in case W3C_TRACE_CONTEXT is turned on)
+                ASSERT(_data.Size() > 0);
+#endif
                 return (Frame::Writer(_data, HeaderSize()));
             }
             inline const Frame::Reader Reader() const
             {
+#ifdef W3C_TRACE_CONTEXT
+                // if this fires it means that the header info was not filled before getting a reader (to get the header info one would expect the specific methods like InterfaceId() to be used, not a reader) 
+                ASSERT(_data.Size() > 0);
+#endif
                 return (Frame::Reader(_data, HeaderSize()));
             }
             uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, const uint32_t offset) const
