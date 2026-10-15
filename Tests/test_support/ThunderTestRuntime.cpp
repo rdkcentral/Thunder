@@ -6,6 +6,11 @@
 #include <fstream>
 #include <common/Configuration.h>
 
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <unistd.h>
+
 namespace Thunder {
 namespace TestCore {
 
@@ -226,6 +231,25 @@ namespace TestCore {
         return false;
     }
 
+    static bool PortAvailable(const uint16_t port)
+    {
+        bool available = true;
+        const int fd = ::socket(AF_INET, SOCK_STREAM, 0);
+        if (fd >= 0) {
+            const int enable = 1;
+            ::setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(enable));
+
+            sockaddr_in address {};
+            address.sin_family = AF_INET;
+            address.sin_port = htons(port);
+            address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+
+            available = (::bind(fd, reinterpret_cast<sockaddr*>(&address), sizeof(address)) == 0);
+            ::close(fd);
+        }
+        return available;
+    }
+
     string ThunderTestRuntime::BuildConfigJSON(
         const std::vector<PluginConfig>& plugins,
         const string& systemPath,
@@ -284,6 +308,12 @@ namespace TestCore {
     {
         if (_server != nullptr) {
             return Core::ERROR_ALREADY_CONNECTED;
+        }
+
+        // Server::Open() ignores listener failures, so reject a busy port up front.
+        if ((port != 0) && (PortAvailable(port) == false)) {
+            TRACE_L1("ThunderTestRuntime: Listener port %u is already in use", static_cast<uint32_t>(port));
+            return Core::ERROR_UNAVAILABLE;
         }
 
         if (CreateUniqueTemporaryDirectory(_tempDir) == false) {
