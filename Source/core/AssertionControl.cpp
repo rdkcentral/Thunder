@@ -57,15 +57,28 @@ namespace Assertion {
         return (AssertionUnitProxy);
     }
 
-    void AssertionUnitProxy::AssertionEvent(Core::Messaging::IStore::Assert& metadata, const Core::Messaging::TextMessage& message, Core::Messaging::OutputMode outputMode)
+    Core::Messaging::OutputTargets AssertionUnitProxy::Targets(const Core::Messaging::Metadata& metadata, const Core::Messaging::OutputMode outputMode, const bool localEnabled) const
     {
-        _adminLock->Lock();
+        Core::Messaging::OutputTargets targets = { localEnabled, false, false };
+
+        _adminLock->LockWithoutWarning();
+        if (_handler != nullptr) {
+            targets = _handler->Targets(metadata, outputMode, localEnabled);
+        }
+        _adminLock->Unlock();
+
+        return (targets);
+    }
+
+    void AssertionUnitProxy::AssertionEvent(Core::Messaging::IStore::Assert& metadata, const Core::Messaging::TextMessage& message, const Core::Messaging::OutputTargets& targets)
+    {
+        _adminLock->LockWithoutWarning();
 
         metadata.TimeStamp(Thunder::Core::Time::Now().Ticks());
 
         // print the ASSERT to stderr if handler is not set, possibly due to the messaging engine not being fully initialized yet
         if (_handler != nullptr) {
-            _handler->AssertionEvent(metadata, message, outputMode);
+            _handler->AssertionEvent(metadata, message, targets);
             _adminLock->Unlock();
         }
         else {
@@ -77,7 +90,7 @@ namespace Assertion {
 
     void AssertionUnitProxy::Handle(IAssertionUnit* handler)
     {
-        _adminLock->Lock();
+        _adminLock->LockWithoutWarning();
         _handler = handler;
         _adminLock->Unlock();
     }
