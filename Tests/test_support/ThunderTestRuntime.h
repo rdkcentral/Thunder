@@ -7,7 +7,6 @@
 #include <plugins/IDispatcher.h>
 #include <common/Configuration.h>
 #include <string>
-#include <optional>
 #include <vector>
 #include <functional>
 #include <unordered_map>
@@ -119,13 +118,13 @@ namespace TestCore {
             const string& systemPath,
             const string& proxyStubPath,
             const uint16_t port,
-            const std::optional<uint8_t>& channelThrottle);
+            const Core::OptionalType<uint8_t>& channelThrottle);
         string BuildConfigJSON(
             const std::vector<PluginConfig>& plugins,
             const string& systemPath,
             const string& proxyStubPath,
             const uint16_t port,
-            const std::optional<uint8_t>& channelThrottle) const;
+            const Core::OptionalType<uint8_t>& channelThrottle) const;
         bool CreateDirectories() const;
         void CleanupDirectories() const;
 
