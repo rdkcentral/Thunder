@@ -20,6 +20,7 @@
 #pragma once
 
 #include "Module.h"
+#include "core/WarningReportingConfig.h"
 
 namespace WPEFramework {
 namespace WarningReporting {
@@ -212,8 +213,8 @@ namespace WarningReporting {
             visitor += Core::Format(_T(", value %" PRId64 " [ms], max allowed %" PRId64 " [ms]"), actualValue, maxValue);
         };
 
-        static constexpr uint32_t DefaultWarningBound = { 500 };
-        static constexpr uint32_t DefaultReportBound = { 500 };
+        static constexpr uint32_t DefaultWarningBound = { THUNDER_WARNING_REPORTING_INVOKE_MESSAGE_WARNING_BOUND };
+        static constexpr uint32_t DefaultReportBound = { THUNDER_WARNING_REPORTING_INVOKE_MESSAGE_REPORT_BOUND };
 
     private:
         static string TypeAsString(const Type type)

@@ -18,6 +18,11 @@
 set(TARGET ${NAMESPACE}Core)
 include(CompileSettings)
 
+configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/WarningReportingConfig.h.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/generated/WarningReportingConfig.h"
+    @ONLY)
+
 find_package(Threads REQUIRED)
 find_package(ExecInfo)
 find_package(LIBRT)
@@ -240,6 +245,7 @@ set_target_properties(${TARGET} PROPERTIES
 target_include_directories( ${TARGET}
         PUBLIC
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+          $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/generated>
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../> #core.h
           $<INSTALL_INTERFACE:include/${NAMESPACE}>)
 
@@ -278,6 +284,10 @@ install(
         PUBLIC_HEADER DESTINATION include/${NAMESPACE}/core COMPONENT devel   # for mac 
         INCLUDES DESTINATION include/${NAMESPACE}   # default include path
 )
+
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/generated/WarningReportingConfig.h"
+    DESTINATION include/${NAMESPACE}/core
+    COMPONENT devel)
 
 # ===========================================================================================
 # Install METADATA:
