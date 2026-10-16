@@ -1815,6 +1815,7 @@ namespace Core {
             {
                 _flagsAndCounters = (_flagsAndCounters & QuotedSerializeBit);
                 _value.clear();
+                _value.shrink_to_fit();
             }
 
             inline bool IsQuoted() const
