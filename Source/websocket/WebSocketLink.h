@@ -226,6 +226,7 @@ namespace Web {
             public:
                 bool IsIdle() const
                 {
+                    Core::SafeSyncType<Core::CriticalSection> lock(_adminLock);
                     return (_queue.Count() == 0);
                 }
                 bool Submit(const Core::ProxyType<typename OUTBOUND::BaseElement>& element)
@@ -305,7 +306,7 @@ namespace Web {
 
             private:
                 ThisClass& _parent;
-                Core::CriticalSection _adminLock;
+                mutable Core::CriticalSection _adminLock;
                 Core::ProxyList<typename OUTBOUND::BaseElement> _queue;
             };
             class DeserializerImpl : public INBOUND::Deserializer {

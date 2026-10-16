@@ -262,7 +262,7 @@ namespace Core {
             uint64_t CurrentIdleTime = CpuFields[3]; // 3 is index of idle ticks time
             uint64_t CurrentTickCount = 0L;
 
-            for (int i = 0; i < numFields && i < 10; ++i) {
+            for (int i = 0; i < numFields; ++i) {
                 CurrentTickCount += CpuFields[i];
             }
             uint64_t DeltaTickCount = CurrentTickCount - previousTickCount;
