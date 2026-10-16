@@ -1024,7 +1024,16 @@ namespace PluginHost {
                     result->Message = _T("No Content"); // Core::EnumerateType<Web::WebStatus>(_optionResponse->ErrorCode).Text();
                     result->Allowed = request.AccessControlMethod.Value();
                     result->AccessControlMethod = Request::HTTP_GET | Request::HTTP_POST | Request::HTTP_PUT | Request::HTTP_DELETE;
-                    result->AccessControlOrigin = _T("*");
+                    // Security: Do not use wildcard ACAO — reflect the request
+                    // Origin only if it is a localhost variant; otherwise reject.
+                    if (request.Origin.IsSet() == true) {
+                        const string& origin = request.Origin.Value();
+                        if ((origin.find("://127.0.0.1") != string::npos) ||
+                            (origin.find("://localhost") != string::npos) ||
+                            (origin.find("://[::1]") != string::npos)) {
+                            result->AccessControlOrigin = origin;
+                        }
+                    }
                     result->AccessControlHeaders = _T("Content-Type");
 
                     // This will last for an hour, try again after an hour :-)
@@ -4843,8 +4852,18 @@ namespace PluginHost {
 
                     if (response.IsValid() == true) {
                         // Seems we can handle..
-                        if (response->AccessControlOrigin.IsSet() == false)
-                            response->AccessControlOrigin = _T("*");
+                        // Security: Only set ACAO for localhost origins instead
+                        // of wildcard '*' which enables cross-origin attacks.
+                        if (response->AccessControlOrigin.IsSet() == false) {
+                            if (_request.IsValid() && _request->Origin.IsSet()) {
+                                const string& origin = _request->Origin.Value();
+                                if ((origin.find("://127.0.0.1") != string::npos) ||
+                                    (origin.find("://localhost") != string::npos) ||
+                                    (origin.find("://[::1]") != string::npos)) {
+                                    response->AccessControlOrigin = origin;
+                                }
+                            }
+                        }
 
                         if (response->CacheControl.IsSet() == false)
                             response->CacheControl = _T("no-cache, private, no-store, must-revalidate, max-stale=0, post-check=0, pre-check=0");
@@ -5085,9 +5104,8 @@ namespace PluginHost {
                 if (State() == Channel::ChannelState::WEB) {
                     Core::ProxyType<Web::Response> response = IFactories::Instance().Response();
 
-                    if (response->AccessControlOrigin.IsSet() == false)
-                        response->AccessControlOrigin = _T("*");
-
+                    // Security: Do not set wildcard ACAO on push responses.
+                    // Leave ACAO unset — the browser will enforce same-origin.
                     if (response->CacheControl.IsSet() == false)
                         response->CacheControl = _T("no-cache, private, no-store, must-revalidate, max-stale=0, post-check=0, pre-check=0");
 
