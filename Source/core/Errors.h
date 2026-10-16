@@ -29,12 +29,18 @@
 namespace Thunder {
 namespace Core {
 
-    // @richerror
-    template<typename DATA>
+    /* @richerror */
+    template<typename DATA = void>
     struct ErrorDetails {
         OptionalType<int32_t> code;
         OptionalType<string> message;
         OptionalType<DATA> data;
+    };
+
+    template<>
+    struct ErrorDetails<void> {
+        OptionalType<int32_t> code;
+        OptionalType<string> message;
     };
 
 } // namespace Core
@@ -164,7 +170,6 @@ namespace Core {
 
 #endif
 
-    
 }
 }
 
