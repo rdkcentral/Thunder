@@ -63,11 +63,20 @@ OpenTelemetry& OpenTelemetry::Instance()
     return (instance);
 }
 
-void OpenTelemetry::Initialize(const Config& config)
+void OpenTelemetry::Configure(const Config& config)
+{
+    OpenTelemetry::Instance().InternalConfigure(config);
+}
+
+void OpenTelemetry::InternalConfigure(const OpenTelemetry::Config&)
+{
+    //_shutdownTimeoutMicroseconds = config.Timeout.Value();
+}
+
+void OpenTelemetry::Initialize()
 {
     // it is not an issue if this causes a race condition with Deinitialize() 
     if (_references++ == 0) {
-        _shutdownTimeoutMicroseconds = config.Timeout.Value();
         auto exporter  = ostream_exporter::OStreamSpanExporterFactory::Create();
 /*    auto processor = sdktrace::BatchSpanProcessorFactory::Create(
         std::move(exporter), sdktrace::BatchSpanProcessorOptions{}); */
@@ -89,18 +98,19 @@ void OpenTelemetry::Deinitialize()
 
 OpenTelemetry::Span::~Span()
 {
-    if (_active == true) {
-        if (_span != nullptr) {
-            _span->End();
-        }
-        _scope.reset();
-        _jobContext.ClearTraceContext();
-        if (_hadTraceParent == true) {
-            _jobContext.TraceParent(std::move(_traceParent));
-        }
-        if (_hadTraceState == true) {
-            _jobContext.TraceState(std::move(_traceState));
-        }
+    End();
+}
+
+void OpenTelemetry::Span::End()
+{
+    _span->End();
+    if (_hadTraceParent == true) {
+        Core::JobContext::Instance().TraceParent(std::move(_traceParent));
+        _hadTraceParent = false;
+    }
+    if (_hadTraceState == true) {
+        Core::JobContext::Instance().TraceState(std::move(_traceState));
+        _hadTraceState = false;
     }
 }
 
@@ -139,7 +149,6 @@ std::string OpenTelemetry::ToTraceParent(const trace::SpanContext &span_context)
 
     return {traceparent, sizeof(traceparent)};
 }
-
 
 }
 }

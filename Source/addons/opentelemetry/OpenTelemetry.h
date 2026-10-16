@@ -61,95 +61,78 @@ public:
     };
 
     class EXTERNAL Span {
+
+    friend class OpenTelemetry;
+
     public:
         Span(const Span&) = delete;
         Span& operator=(const Span&) = delete;
+        Span(Span&&) = delete;
         Span& operator=(Span&&) = delete;
 
-        template <typename... Args>
-        Span(OpenTelemetry& owner, Args&&... args)
-            : _jobContext(Core::JobContext::Instance())
-            , _span()
-            , _scope()
-            , _hadTraceParent(_jobContext.HasTraceParent())
-            , _hadTraceState(_jobContext.HasTraceState())
-            , _traceParent(_hadTraceParent ? _jobContext.TraceParent() : Core::string())
-            , _traceState(_hadTraceState ? _jobContext.TraceState() : Core::string())
-            , _active(true)
-        {
-            auto tracer = opentelemetry::trace::Provider::GetTracerProvider()->GetTracer("ThunderOpenTelemetry");
-            if ((_hadTraceParent == true) && (_traceParent.empty() == false)) {
-                const auto parentSpanContext = OpenTelemetry::ToSpanContext(
-                    opentelemetry::nostd::string_view(_traceParent.data(), _traceParent.length()),
-                    opentelemetry::nostd::string_view(_traceState.data(), _traceState.length()));
-                opentelemetry::nostd::shared_ptr<opentelemetry::trace::Span> parentSpan(
-                    new opentelemetry::trace::DefaultSpan(parentSpanContext));
-                auto parentContext = opentelemetry::trace::SetSpan(
-                    opentelemetry::context::Context(), std::move(parentSpan));
-                opentelemetry::trace::StartSpanOptions options;
-                options.parent = &parentContext;
-                _span = tracer->StartSpan(std::forward<Args>(args)..., options);
-            } else {
-                _span = tracer->StartSpan(std::forward<Args>(args)...);
-            }
-
-            _scope = tracer->WithActiveSpan(_span);
-            _jobContext.TraceParent(OpenTelemetry::ToTraceParent(_span->GetContext()));
-            if (_hadTraceState == true) {
-                _jobContext.TraceState(_traceState);
-            }
-        }
-
-        Span(Span&& move) noexcept
-            : _jobContext(move._jobContext)
-            , _span(std::move(move._span))
-            , _scope(std::move(move._scope))
-            , _hadTraceParent(move._hadTraceParent)
-            , _hadTraceState(move._hadTraceState)
-            , _traceParent(std::move(move._traceParent))
-            , _traceState(std::move(move._traceState))
-            , _active(move._active)
-        {
-            move._active = false;
-        }
         ~Span();
 
-        opentelemetry::trace::Span* operator->() const
+    public:
+    void End();
+
+    public: 
+        // note no const versions for a reason (would not make sense and there is no suitable conversion available for a opentelemetry::nostd::shared_ptr)
+        operator opentelemetry::nostd::shared_ptr<opentelemetry::trace::Span>()
         {
-            return (_span.get());
+            return _span;
         }
-        opentelemetry::trace::Span& Get() const
+
+        opentelemetry::nostd::shared_ptr<opentelemetry::trace::Span> operator->()
         {
-            return (*_span);
+            return _span;
         }
 
     private:
-        Core::JobContext& _jobContext;
+        template <typename... Args>
+        OpenTelemetry::Span(Args&&... args)
+            : _span()
+            , _hadTraceParent(Core::JobContext::Instance().HasTraceParent())
+            , _hadTraceState(Core::JobContext::Instance().HasTraceState())
+            , _traceParent(_hadTraceParent ? Core::JobContext::Instance().TraceParent() : Core::string())
+            , _traceState(_hadTraceState ? Core::JobContext::Instance().TraceState() : Core::string())
+        {
+            if (_hadTraceParent == true) {
+                const auto parentSpanContext = OpenTelemetry::ToSpanContext(
+                    opentelemetry::nostd::string_view(_traceParent.data(), _traceParent.length()),
+                    opentelemetry::nostd::string_view(_traceState.data(), _traceState.length()));
+                opentelemetry::trace::StartSpanOptions options;
+                options.parent = parentSpanContext;
+                _span = OpenTelemetry::Instance()._tracer->StartSpan(std::forward<Args>(args)..., options);
+            } else {
+                _span = OpenTelemetry::Instance()._tracer->StartSpan(std::forward<Args>(args)...);
+            }
+            Core::JobContext::Instance().Core::JobContext::Instance().TraceParent(OpenTelemetry::ToTraceParent(_span->GetContext()));
+        }
+
+    private:
         opentelemetry::nostd::shared_ptr<opentelemetry::trace::Span> _span;
-        opentelemetry::nostd::unique_ptr<opentelemetry::trace::Scope> _scope;
         bool _hadTraceParent;
         bool _hadTraceState;
         Core::string _traceParent;
         Core::string _traceState;
-        bool _active;
     };
 
 public:
     static OpenTelemetry& Instance();
+    static void Configure(const Config& config);
 
-    template <typename... Args>
-    Span StartSpan(Args&&... args)
+ template <typename... Args>
+    std::shared_ptr<OpenTelemetry::Span> StartSpan(Args&&... args)
     {
-        return Span(*this, std::forward<Args>(args)...);
+        return std::shared_ptr<OpenTelemetry::Span>(new Span(std::forward<Args>(args)...));
     }
 
-    void Initialize(const Config& config);
+    void Initialize();
     void Deinitialize();
 
 private:
     OpenTelemetry()
         : _references(0)
-        , _shutdownTimeoutMicroseconds(100)
         , _tracer()
     {
     }
@@ -158,9 +141,11 @@ private:
     OpenTelemetry(OpenTelemetry&&) = delete;
     OpenTelemetry& operator=(OpenTelemetry&&) = delete;
 
+private: 
+    void InternalConfigure(const Config& config);
+
 private:
     std::atomic<uint16_t> _references;
-    uint32_t _shutdownTimeoutMicroseconds;
     opentelemetry::nostd::shared_ptr<opentelemetry::trace::Tracer> _tracer;
 };
 

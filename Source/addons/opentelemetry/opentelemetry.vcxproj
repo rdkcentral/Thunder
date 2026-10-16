@@ -71,21 +71,21 @@
       <ConformanceMode>true</ConformanceMode>
       <UseStandardPreprocessor>true</UseStandardPreprocessor>
       <LanguageStandard>stdcpp14</LanguageStandard>
-      <AdditionalIncludeDirectories>$(FrameworkPath);$(WindowsPath);%(AdditionalIncludeDirectories);C:\orlplibcpp\vcpkg_installed\x64-windows-release\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(FrameworkPath);$(WindowsPath);%(AdditionalIncludeDirectories); C:\orlplibcpp\v143_installed\x64-windows-v143\include</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>THUNDEROPENTELEMETRY_EXPORTS;_CRT_SECURE_NO_WARNINGS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(OutDir);%(AdditionalLibraryDirectories); C:\orlplibcpp\vcpkg_installed\x64-windows-release\lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>core.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(OutDir);%(AdditionalLibraryDirectories); C:\orlplibcpp\v143_installed\x64-windows-v143\debug\lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>core.lib;%(AdditionalDependencies);C:\orlplibcpp\v143_installed\x64-windows-v143\debug\lib\*.lib</AdditionalDependencies>
       <ProgramDatabaseFile>$(IntDir)$(TargetName).pdb</ProgramDatabaseFile>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)'=='Debug'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions);THUNDEROPENTELEMETRY_EXPORTS</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)'=='Release'">

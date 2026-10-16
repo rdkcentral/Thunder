@@ -144,11 +144,6 @@ namespace ProxyStub {
 #endif
                 handler(channel, message);
 
-#ifdef W3C_TRACE_CONTEXT
-                Core::JobContext::Instance().ClearTraceContext();
-#endif
-
-
             } else {
                 // if we get here, the message was already checked for validness, so just log the error with the interface id
                 SYSLOG(Logging::Error, (_T("COMRPC received Invoke message with invalid method index , interface ID [%u]"), message->Parameters().InterfaceId()));

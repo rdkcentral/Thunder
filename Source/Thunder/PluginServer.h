@@ -1095,7 +1095,6 @@ namespace PluginHost {
                     string output;
 #ifdef W3C_TRACE_CONTEXT
                     Core::JobContext& jobContext = Core::JobContext::Instance();
-                    jobContext.ClearTraceContext();
                     if (message.traceparent.IsSet() == true) {
                         jobContext.TraceParent(message.traceparent.Value());
                     }
@@ -1128,9 +1127,6 @@ namespace PluginHost {
                             }
                         }
                     }
-#ifdef W3C_TRACE_CONTEXT
-                    jobContext.ClearTraceContext();
-#endif
 
                     Core::InterlockedDecrement(_activity);
                 }
