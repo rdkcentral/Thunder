@@ -109,6 +109,46 @@ namespace Core {
         EXPECT_FALSE(target.HasLabel(_T("c")));
     }
 
+    TEST(JSONFromObject, VariantContainer_MoveConstruction_RebuildsRegistrations)
+    {
+        JsonObject source;
+        source.Set(_T("value"), JsonValue(42));
+
+        JsonObject moved(std::move(source));
+        std::string serialized;
+        moved.ToString(serialized);
+
+        EXPECT_EQ(moved.Get(_T("value")).Number(), 42);
+        EXPECT_TRUE(moved.HasLabel(_T("value")));
+        EXPECT_EQ(serialized, R"({"value":42})");
+
+        source.Set(_T("reused"), JsonValue(7));
+        EXPECT_EQ(source.Get(_T("reused")).Number(), 7);
+        EXPECT_TRUE(source.HasLabel(_T("reused")));
+    }
+
+    TEST(JSONFromObject, VariantContainer_MoveAssignment_ReplacesAndRebuilds)
+    {
+        JsonObject source;
+        source.Set(_T("value"), JsonValue(42));
+
+        JsonObject moved;
+        moved.Set(_T("old"), JsonValue(10));
+        moved = std::move(source);
+
+        std::string serialized;
+        moved.ToString(serialized);
+
+        EXPECT_EQ(moved.Get(_T("value")).Number(), 42);
+        EXPECT_TRUE(moved.HasLabel(_T("value")));
+        EXPECT_FALSE(moved.HasLabel(_T("old")));
+        EXPECT_EQ(serialized, R"({"value":42})");
+
+        source.Set(_T("reused"), JsonValue(7));
+        EXPECT_EQ(source.Get(_T("reused")).Number(), 7);
+        EXPECT_TRUE(source.HasLabel(_T("reused")));
+    }
+
     // 4.2: Typed Container — only registered slots updated
     TEST(JSONFromObject, TypedContainer_OnlyRegisteredSlotsUpdated)
     {
