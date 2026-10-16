@@ -4270,7 +4270,7 @@
 </tr>
 <tr>
 <td><code>CreateJSONRPCLink()</code></td>
-<td>Returns a callsign-bound <code>JSONRPCLink</code> for repeated calls and event subscriptions. Caller must <code>Release()</code> when done.</td>
+<td>Returns a callsign-bound <code>Core::ProxyType&lt;JSONRPCLink&gt;</code> for repeated calls and event subscriptions. The proxy releases its reference when it goes out of scope.</td>
 </tr>
 <tr>
 <td><code>Exists()</code></td>
@@ -4503,22 +4503,21 @@ cmake<span class="w"> </span>--build<span class="w"> </span>build/Thunder<span c
 <h4 id="4-json-rpc-via-jsonrpclink">4. JSON-RPC via <code>JSONRPCLink</code></h4>
 <div class="highlight"><pre><span></span><code><span class="n">TEST_F</span><span class="p">(</span><span class="n">MyPluginTest</span><span class="p">,</span><span class="w"> </span><span class="n">JsonRpcViaLink</span><span class="p">)</span>
 <span class="p">{</span>
-<span class="w">    </span><span class="k">auto</span><span class="o">*</span><span class="w"> </span><span class="n">link</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_runtime</span><span class="p">.</span><span class="n">CreateJSONRPCLink</span><span class="p">(</span><span class="s">"MyPlugin"</span><span class="p">);</span>
-<span class="w">    </span><span class="n">ASSERT_NE</span><span class="p">(</span><span class="n">link</span><span class="p">,</span><span class="w"> </span><span class="nb">nullptr</span><span class="p">);</span>
+<span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">link</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_runtime</span><span class="p">.</span><span class="n">CreateJSONRPCLink</span><span class="p">(</span><span class="s">"MyPlugin"</span><span class="p">);</span>
+<span class="w">    </span><span class="n">ASSERT_TRUE</span><span class="p">(</span><span class="n">link</span><span class="p">.</span><span class="n">IsValid</span><span class="p">());</span>
 
 <span class="w">    </span><span class="n">string</span><span class="w"> </span><span class="n">response</span><span class="p">;</span>
 <span class="w">    </span><span class="n">EXPECT_EQ</span><span class="p">(</span><span class="n">Core</span><span class="o">::</span><span class="n">ERROR_NONE</span><span class="p">,</span>
 <span class="w">        </span><span class="n">link</span><span class="o">-&gt;</span><span class="n">Invoke</span><span class="p">(</span><span class="s">"echo"</span><span class="p">,</span><span class="w"> </span><span class="sa">R</span><span class="s">"</span><span class="dl">(</span><span class="s">{"input":"hello"}</span><span class="dl">)</span><span class="s">"</span><span class="p">,</span><span class="w"> </span><span class="n">response</span><span class="p">));</span>
 
-<span class="w">    </span><span class="n">link</span><span class="o">-&gt;</span><span class="n">Release</span><span class="p">();</span>
 <span class="p">}</span>
 </code></pre></div>
 <h4 id="4a-json-rpc-via-jsonrpclink-with-authentication-token">4a. JSON-RPC via <code>JSONRPCLink</code> with authentication token</h4>
 <p>For repeated calls to protected methods, use the token-aware <code>JSONRPCLink::Invoke()</code> overload:</p>
 <div class="highlight"><pre><span></span><code><span class="n">TEST_F</span><span class="p">(</span><span class="n">MyPluginTest</span><span class="p">,</span><span class="w"> </span><span class="n">JsonRpcViaLinkWithAuthToken</span><span class="p">)</span>
 <span class="p">{</span>
-<span class="w">    </span><span class="k">auto</span><span class="o">*</span><span class="w"> </span><span class="n">link</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_runtime</span><span class="p">.</span><span class="n">CreateJSONRPCLink</span><span class="p">(</span><span class="s">"MyPlugin"</span><span class="p">);</span>
-<span class="w">    </span><span class="n">ASSERT_NE</span><span class="p">(</span><span class="n">link</span><span class="p">,</span><span class="w"> </span><span class="nb">nullptr</span><span class="p">);</span>
+<span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">link</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_runtime</span><span class="p">.</span><span class="n">CreateJSONRPCLink</span><span class="p">(</span><span class="s">"MyPlugin"</span><span class="p">);</span>
+<span class="w">    </span><span class="n">ASSERT_TRUE</span><span class="p">(</span><span class="n">link</span><span class="p">.</span><span class="n">IsValid</span><span class="p">());</span>
 
 <span class="w">    </span><span class="n">string</span><span class="w"> </span><span class="n">response</span><span class="p">;</span>
 <span class="w">    </span><span class="n">string</span><span class="w"> </span><span class="n">authToken</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."</span><span class="p">;</span>
@@ -4538,15 +4537,14 @@ cmake<span class="w"> </span>--build<span class="w"> </span>build/Thunder<span c
 <span class="w">                    </span><span class="n">authToken</span><span class="p">,</span>
 <span class="w">                    </span><span class="n">response</span><span class="p">));</span>
 
-<span class="w">    </span><span class="n">link</span><span class="o">-&gt;</span><span class="n">Release</span><span class="p">();</span>
 <span class="p">}</span>
 </code></pre></div>
 <h4 id="5-json-rpc-event-subscription">5. JSON-RPC event subscription</h4>
 <p>Events do not require a dedicated "trigger" method. Any plugin operation can fire an event internally as a side-effect. Subscribe before calling the operation, then wait for the callback to arrive.</p>
 <div class="highlight"><pre><span></span><code><span class="n">TEST_F</span><span class="p">(</span><span class="n">MyPluginTest</span><span class="p">,</span><span class="w"> </span><span class="n">JSONRPC_OperationTriggersEvent</span><span class="p">)</span>
 <span class="p">{</span>
-<span class="w">    </span><span class="k">auto</span><span class="o">*</span><span class="w"> </span><span class="n">link</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_runtime</span><span class="p">.</span><span class="n">CreateJSONRPCLink</span><span class="p">(</span><span class="s">"MyPlugin"</span><span class="p">);</span>
-<span class="w">    </span><span class="n">ASSERT_NE</span><span class="p">(</span><span class="n">link</span><span class="p">,</span><span class="w"> </span><span class="nb">nullptr</span><span class="p">);</span>
+<span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">link</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_runtime</span><span class="p">.</span><span class="n">CreateJSONRPCLink</span><span class="p">(</span><span class="s">"MyPlugin"</span><span class="p">);</span>
+<span class="w">    </span><span class="n">ASSERT_TRUE</span><span class="p">(</span><span class="n">link</span><span class="p">.</span><span class="n">IsValid</span><span class="p">());</span>
 
 <span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="w"> </span><span class="n">mtx</span><span class="p">;</span>
 <span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">condition_variable</span><span class="w"> </span><span class="n">cv</span><span class="p">;</span>
@@ -4571,7 +4569,6 @@ cmake<span class="w"> </span>--build<span class="w"> </span>build/Thunder<span c
 <span class="w">    </span><span class="p">}</span>
 
 <span class="w">    </span><span class="n">link</span><span class="o">-&gt;</span><span class="n">Unsubscribe</span><span class="p">(</span><span class="s">"onStateChanged"</span><span class="p">);</span>
-<span class="w">    </span><span class="n">link</span><span class="o">-&gt;</span><span class="n">Release</span><span class="p">();</span>
 <span class="p">}</span>
 </code></pre></div>
 <h4 id="6-com-rpc">6. COM-RPC</h4>
