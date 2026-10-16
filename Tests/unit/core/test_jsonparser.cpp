@@ -1564,6 +1564,83 @@ namespace Core {
         });
     }
 
+    TEST(JSONParser, EmptyObjectWithRegisteredFields)
+    {
+        TestData data;
+        data.key = "key";
+        data.keyToPutInJson = "\"" + data.key + "\"";
+
+        for (const std::string value : { "{}", "{ \t\r\n }" }) {
+            SCOPED_TRACE(value);
+            data.valueToPutInJson = value;
+            ExecutePrimitiveJsonTest<PrimitiveJson<::Thunder::Core::JSON::String>>(data, true, [](const PrimitiveJson<::Thunder::Core::JSON::String>& v) {
+                EXPECT_TRUE(v.IsComplete());
+                EXPECT_FALSE(v.Value().IsSet());
+            });
+        }
+    }
+
+    TEST(JSONParser, EmptyObjectWithSiblingFields)
+    {
+        for (const std::string input : { R"({ "in":{}, "val" : "abc" })", R"({ "val" : "abc", "in":{} })" }) {
+            SCOPED_TRACE(input);
+            ::Thunder::Core::JSON::Container outer;
+            ::Thunder::Core::JSON::Container inner;
+            ::Thunder::Core::JSON::String x;
+            ::Thunder::Core::JSON::String val;
+            inner.Add("x", &x);
+            outer.Add("in", &inner);
+            outer.Add("val", &val);
+
+            ::Thunder::Core::OptionalType<::Thunder::Core::JSON::Error> error;
+            EXPECT_TRUE(outer.FromString(input, error));
+            EXPECT_FALSE(error.IsSet());
+            EXPECT_TRUE(inner.IsComplete());
+            EXPECT_FALSE(x.IsSet());
+            EXPECT_EQ(std::string("abc"), val.Value());
+        }
+    }
+
+    TEST(JSONParser, EmptyObjectWithInvalidSeparators)
+    {
+        TestData data;
+        data.key = "key";
+        data.keyToPutInJson = "\"" + data.key + "\"";
+
+        for (const std::string value : { "{ , }", R"({"key":"value", })" }) {
+            SCOPED_TRACE(value);
+            data.valueToPutInJson = value;
+            ExecutePrimitiveJsonTest<PrimitiveJson<::Thunder::Core::JSON::String>>(data, false, [](const PrimitiveJson<::Thunder::Core::JSON::String>& v) {
+                EXPECT_FALSE(v.Value().IsSet());
+            });
+        }
+
+        ::Thunder::Core::JSON::Container container;
+        ::Thunder::Core::OptionalType<::Thunder::Core::JSON::Error> error;
+        EXPECT_FALSE(container.FromString(R"({"key":"value", })", error));
+        EXPECT_TRUE(error.IsSet());
+    }
+
+    TEST(JSONParser, EmptyObjectWithSingleByteBuffers)
+    {
+        ::Thunder::Core::JSON::Tester<1, PrimitiveJson<PrimitiveJson<::Thunder::Core::JSON::String>>> parser;
+        auto output = ::Thunder::Core::ProxyType<PrimitiveJson<PrimitiveJson<::Thunder::Core::JSON::String>>>::Create();
+        const std::string key = "key";
+        output->Init(key);
+
+        for (const std::string input : { R"({"key":{}})", R"({"key":{ }})" }) {
+            SCOPED_TRACE(input);
+            EXPECT_TRUE(parser.FromString(input, output));
+            EXPECT_TRUE(output->Value().IsComplete());
+            EXPECT_FALSE(output->Value().Value().IsSet());
+        }
+        for (const std::string input : { R"({"key":{ , }})", R"({"key":{"key":"value", }})", R"({"key":{}, })" }) {
+            SCOPED_TRACE(input);
+            EXPECT_FALSE(parser.FromString(input, output));
+            EXPECT_FALSE(output->Value().Value().IsSet());
+        }
+    }
+
     TEST(JSONParser, NullObject)
     {
         TestData data;
