@@ -86,6 +86,32 @@ namespace Core {
         RichErrorData Data;
     };
 
+    class RichErrorWithoutData : public ::Thunder::Core::JSON::Container {
+    public:
+        RichErrorWithoutData()
+            : ::Thunder::Core::JSON::Container()
+            , Code(0)
+            , Message()
+        {
+            Add(_T("code"), &Code);
+            Add(_T("message"), &Message);
+        }
+
+        RichErrorWithoutData(const RichErrorWithoutData& copy)
+            : ::Thunder::Core::JSON::Container()
+            , Code(copy.Code)
+            , Message(copy.Message)
+        {
+            Add(_T("code"), &Code);
+            Add(_T("message"), &Message);
+        }
+
+        ~RichErrorWithoutData() override = default;
+
+        ::Thunder::Core::JSON::DecSInt32 Code;
+        ::Thunder::Core::JSON::String Message;
+    };
+
     class RichInput : public ::Thunder::Core::JSON::Container {
     public:
         RichInput()
@@ -254,6 +280,29 @@ namespace Core {
         EXPECT_EQ(response.find("must not be returned"), string::npos);
     }
 
+    TEST(Core_JSONRPC_RichError, ErrorWithoutData_MessageOnlyPreservesThunderCodeAndOmitsData)
+    {
+        ::Thunder::Core::ErrorDetails<> nativeDetails;
+        nativeDetails.message = _T("native message");
+        EXPECT_TRUE(nativeDetails.message.IsSet());
+
+        ::Thunder::Core::JSONRPC::Handler handler(std::vector<uint8_t>{ 1 });
+        handler.RegisterWithError<void, void, RichErrorWithoutData>(_T("withoutData"), [](RichErrorWithoutData& details) -> uint32_t {
+            details.Message = _T("message without data");
+            return (::Thunder::Core::ERROR_UNAVAILABLE);
+        });
+
+        string response;
+        const uint32_t result = handler.Invoke(RichErrorContext(), _T("withoutData"), string(), response);
+        const ::Thunder::Core::JSONRPC::Message::Info error(ParseRichError(response));
+        ::Thunder::Core::JSONRPC::Message::Info expected;
+        expected.SetError(result);
+
+        EXPECT_EQ(error.Code.Value(), expected.Code.Value());
+        EXPECT_EQ(error.Text.Value(), string("message without data"));
+        EXPECT_FALSE(error.Data.IsSet());
+    }
+
     TEST(Core_JSONRPC_RichError, InboundOutbound_SuccessReturnsOutput)
     {
         ::Thunder::Core::JSONRPC::Handler handler(std::vector<uint8_t>{ 1 });
@@ -334,7 +383,7 @@ namespace Core {
         ::Thunder::Core::JSONRPC::Handler handler(std::vector<uint8_t>{ 1 });
         string receivedIndex;
 
-        handler.RegisterWithError<void, ::Thunder::Core::JSON::String, RichError, std::function<uint32_t(const string&, ::Thunder::Core::JSON::String&, RichError&)>>("entry", [&receivedIndex](const string& index, ::Thunder::Core::JSON::String&, RichError& details) -> uint32_t {
+        handler.RegisterWithError<void, ::Thunder::Core::JSON::String, RichError>("entry", [&receivedIndex](const string& index, ::Thunder::Core::JSON::String&, RichError& details) -> uint32_t {
             receivedIndex = index;
             details.Data.Reason = _T("indexed property unavailable");
             return (::Thunder::Core::ERROR_UNAVAILABLE);
@@ -411,7 +460,7 @@ namespace Core {
         ::Thunder::Core::JSONRPC::Handler handler(std::vector<uint8_t>{ 1 });
         string receivedInstanceId;
 
-        handler.RegisterWithError<void, void, RichError, std::function<uint32_t(const ::Thunder::Core::JSONRPC::instance_id_follows_t&, const string&, RichError&)>>(_T("scope::instanceOnly"), [&receivedInstanceId](const ::Thunder::Core::JSONRPC::instance_id_follows_t&, const string& instanceId, RichError& details) -> uint32_t {
+        handler.RegisterWithError<void, void, RichError>(_T("scope::instanceOnly"), [&receivedInstanceId](const ::Thunder::Core::JSONRPC::instance_id_follows_t&, const string& instanceId, RichError& details) -> uint32_t {
             receivedInstanceId = instanceId;
             details.Message = _T("instance failure");
             return (::Thunder::Core::ERROR_UNAVAILABLE);
@@ -444,6 +493,44 @@ namespace Core {
         EXPECT_EQ(service.InstanceId(), string("member-42"));
         EXPECT_EQ(error.Code.Value(), expected.Code.Value());
         EXPECT_EQ(error.Text.Value(), string("member instance failure"));
+    }
+
+    TEST(Core_JSONRPC_RichError, DirectLambda_ContextSelectsContextDispatch)
+    {
+        ::Thunder::Core::JSONRPC::Handler handler(std::vector<uint8_t>{ 1 });
+        uint32_t receivedChannelId = 0;
+
+        handler.RegisterWithError<void, void, RichError>(_T("withContext"), [&receivedChannelId](const ::Thunder::Core::JSONRPC::Context& context, RichError&) -> uint32_t {
+            receivedChannelId = context.ChannelId();
+            return (::Thunder::Core::ERROR_NONE);
+        });
+
+        string response;
+        const ::Thunder::Core::JSONRPC::Context context(47, 1, string());
+        const uint32_t result = handler.Invoke(context, _T("withContext"), string(), response);
+
+        EXPECT_EQ(result, ::Thunder::Core::ERROR_NONE);
+        EXPECT_EQ(receivedChannelId, 47u);
+    }
+
+    TEST(Core_JSONRPC_RichError, DirectLambda_InstanceIdAndIndexSelectCombinedDispatch)
+    {
+        ::Thunder::Core::JSONRPC::Handler handler(std::vector<uint8_t>{ 1 });
+        string receivedInstanceId;
+        string receivedIndex;
+
+        handler.RegisterWithError<void, void, RichError>(_T("scope::instanceAndIndex"), [&receivedInstanceId, &receivedIndex](const ::Thunder::Core::JSONRPC::instance_id_follows_t&, const string& instanceId, const string& index, RichError&) -> uint32_t {
+            receivedInstanceId = instanceId;
+            receivedIndex = index;
+            return (::Thunder::Core::ERROR_NONE);
+        });
+
+        string response;
+        const uint32_t result = handler.Invoke(RichErrorContext(), _T("scope#instance-84::instanceAndIndex@property-index"), string(), response);
+
+        EXPECT_EQ(result, ::Thunder::Core::ERROR_NONE);
+        EXPECT_EQ(receivedInstanceId, string("instance-84"));
+        EXPECT_EQ(receivedIndex, string("property-index"));
     }
 
 } // namespace Core

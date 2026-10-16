@@ -1028,10 +1028,18 @@ POP_WARNING()
                 REALOBJECT* _objectPtr;
             };
 
+            template<typename METHOD, bool USE_LAMBDA_TRAITS = (TypeTraits::func_traits<METHOD>::Arguments == -1)>
+            struct callable_traits : TypeTraits::func_traits<METHOD> {
+            };
+
+            template<typename METHOD>
+            struct callable_traits<METHOD, true> : TypeTraits::lambda_traits<METHOD> {
+            };
+
             template<typename METHOD>
             struct handler_traits {
                 template <int N>
-                using ARG = typename std::decay<typename TypeTraits::func_traits<METHOD>::template argument<N>::type>::type;
+                using ARG = typename std::decay<typename callable_traits<METHOD>::template argument<N>::type>::type;
 
                 static constexpr auto hasContext = std::is_same<ARG<0>, Context>::value;
                 static constexpr auto instanceIdAt0 = std::is_same<ARG<0>, instance_id_follows_t>::value;
@@ -1831,6 +1839,21 @@ POP_WARNING()
 
         private:
             template <typename ERROR>
+            static auto SerializeErrorData(const ERROR& details, Core::JSONRPC::Message::Info& error, int) -> decltype(details.Data.IsSet(), void())
+            {
+                if (details.Data.IsSet() == true) {
+                    string data;
+                    details.Data.ToString(data);
+                    error.Data = data;
+                }
+            }
+
+            template <typename ERROR>
+            static void SerializeErrorData(const ERROR&, Core::JSONRPC::Message::Info&, long)
+            {
+            }
+
+            template <typename ERROR>
             static bool SerializeError(const uint32_t frameworkError, const ERROR& details, string& result)
             {
                 const bool isSet = details.IsSet();
@@ -1847,11 +1870,7 @@ POP_WARNING()
                         error.Text = details.Message;
                     }
 
-                    if (details.Data.IsSet() == true) {
-                        string data;
-                        details.Data.ToString(data);
-                        error.Data = data;
-                    }
+                    SerializeErrorData(details, error, 0);
 
                     error.ToString(result);
                 }
