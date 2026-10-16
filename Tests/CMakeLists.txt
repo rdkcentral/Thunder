@@ -1,6 +1,7 @@
 option(LOADER_TEST "Utility to load a plugin in isolation." OFF)
 option(HTTPSCLIENT_TEST "Example how to do https requests with Thunder." OFF)
 option(WORKERPOOL_TEST "WorkerPool stress test" OFF)
+option(JOBLIFETIME_REPRO_TEST "Job lifetime / revoke-race repro tests" OFF)
 option(FILE_UNLINK_TEST "File unlink test" OFF)
 option(REDIRECT_TEST "Test stream redirection" OFF)
 option(MESSAGEBUFFER_TEST "Test message buffer" OFF)
@@ -31,6 +32,10 @@ endif()
 
 if(WORKERPOOL_TEST)
     add_subdirectory(workerpool-test)
+endif()
+
+if(JOBLIFETIME_REPRO_TEST)
+    add_subdirectory(job-lifetime-repro)
 endif()
 
 if(MESSAGEBUFFER_TEST AND MESSAGING)
