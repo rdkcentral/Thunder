@@ -113,7 +113,7 @@ Defined in `ThunderTestRuntime.h` under `Thunder::TestCore`.
 | `Invoke(method, params, response)` | Calls a JSON-RPC method synchronously via in-process `IDispatcher::Invoke()`. Method format: `"Callsign.method"`. Passes an empty token string. |
 | `Invoke(method, params, token, response)` | Calls a JSON-RPC method with an authentication token. String variant. Token is passed to the plugin's method handler for authorization checks. |
 | `Invoke(method, params, response)` | JsonObject overload — handles serialization/deserialization automatically and forwards an empty token string. |
-| `CreateJSONRPCLink()` | Returns a callsign-bound `JSONRPCLink` for repeated calls and event subscriptions. Caller must `Release()` when done. |
+| `CreateJSONRPCLink()` | Returns a callsign-bound `Core::ProxyType<JSONRPCLink>` for repeated calls and event subscriptions. The proxy releases its reference when it goes out of scope. |
 | `Exists()` | Checks whether a JSON-RPC method is registered on a plugin, using the framework's built-in `"exists"` endpoint. |
 | `QueryInterfaceByCallsign<T>()` | Template: obtains a COM-RPC interface from a plugin via `QueryInterface<T>()`. Caller must `Release()` when done. |
 | `GetShell()` | Returns the `IShell` proxy for a plugin. |
@@ -336,14 +336,13 @@ The token is passed directly to `IDispatcher::Invoke()` and is available to the 
 ```cpp
 TEST_F(MyPluginTest, JsonRpcViaLink)
 {
-    auto* link = _runtime.CreateJSONRPCLink("MyPlugin");
-    ASSERT_NE(link, nullptr);
+    auto link = _runtime.CreateJSONRPCLink("MyPlugin");
+    ASSERT_TRUE(link.IsValid());
 
     string response;
     EXPECT_EQ(Core::ERROR_NONE,
         link->Invoke("echo", R"({"input":"hello"})", response));
 
-    link->Release();
 }
 ```
 
@@ -354,8 +353,8 @@ For repeated calls to protected methods, use the token-aware `JSONRPCLink::Invok
 ```cpp
 TEST_F(MyPluginTest, JsonRpcViaLinkWithAuthToken)
 {
-    auto* link = _runtime.CreateJSONRPCLink("MyPlugin");
-    ASSERT_NE(link, nullptr);
+    auto link = _runtime.CreateJSONRPCLink("MyPlugin");
+    ASSERT_TRUE(link.IsValid());
 
     string response;
     string authToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...";
@@ -375,7 +374,6 @@ TEST_F(MyPluginTest, JsonRpcViaLinkWithAuthToken)
                     authToken,
                     response));
 
-    link->Release();
 }
 ```
 
@@ -386,8 +384,8 @@ Events do not require a dedicated "trigger" method. Any plugin operation can fir
 ```cpp
 TEST_F(MyPluginTest, JSONRPC_OperationTriggersEvent)
 {
-    auto* link = _runtime.CreateJSONRPCLink("MyPlugin");
-    ASSERT_NE(link, nullptr);
+    auto link = _runtime.CreateJSONRPCLink("MyPlugin");
+    ASSERT_TRUE(link.IsValid());
 
     std::mutex mtx;
     std::condition_variable cv;
@@ -412,7 +410,6 @@ TEST_F(MyPluginTest, JSONRPC_OperationTriggersEvent)
     }
 
     link->Unsubscribe("onStateChanged");
-    link->Release();
 }
 ```
 
