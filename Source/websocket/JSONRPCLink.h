@@ -467,50 +467,6 @@ namespace Thunder {
             using PendingMap = std::unordered_map<uint32_t, Entry>;
             using InvokeFunction = Core::JSONRPC::InvokeFunction;
 
-#ifdef W3C_TRACE_CONTEXT
-            class ScopedTraceContext {
-            public:
-                ScopedTraceContext(const ScopedTraceContext&) = delete;
-                ScopedTraceContext& operator=(const ScopedTraceContext&) = delete;
-
-                explicit ScopedTraceContext(const Core::JSONRPC::Message& message)
-                    : _context(Core::JobContext::Instance())
-                    , _hadTraceParent(_context.HasTraceParent())
-                    , _hadTraceState(_context.HasTraceState())
-                    , _traceParent(_hadTraceParent ? _context.TraceParent() : string())
-                    , _traceState(_hadTraceState ? _context.TraceState() : string())
-                {
-                    _context.ClearTraceContext();
-
-                    if (message.traceparent.IsSet() == true) {
-                        _context.TraceParent(message.traceparent.Value());
-                    }
-                    if (message.tracestate.IsSet() == true) {
-                        _context.TraceState(message.tracestate.Value());
-                    }
-                }
-
-                ~ScopedTraceContext()
-                {
-                    _context.ClearTraceContext();
-
-                    if (_hadTraceParent == true) {
-                        _context.TraceParent(std::move(_traceParent));
-                    }
-                    if (_hadTraceState == true) {
-                        _context.TraceState(std::move(_traceState));
-                    }
-                }
-
-            private:
-                Core::JobContext& _context;
-                const bool _hadTraceParent;
-                const bool _hadTraceState;
-                string _traceParent;
-                string _traceState;
-            };
-#endif
-
             class Handler {
                 public:
                 using HandlerMap = std::unordered_map<string, InvokeFunction>;
@@ -654,8 +610,8 @@ namespace Thunder {
             template <typename INBOUND, typename METHOD, typename REALOBJECT>
             void Assign(const string& eventName, const METHOD& method, REALOBJECT* objectPtr)
             {
-                // using INBOUND = typename Core::TypeTraits::func_traits<METHOD>::template argument<0>::type;
-                std::function<void(INBOUND parameters)> actualMethod = std::bind(method, objectPtr, std::placeholders::_1);
+                //using INBOUND = typename Core::TypeTraits::func_traits<METHOD>::template argument<0>::type;
+                std::function<void(const INBOUND& parameters)> actualMethod = std::bind(method, objectPtr, std::placeholders::_1);
                 InvokeFunction implementation = [actualMethod](const Core::JSONRPC::Context&, const string&, const string& parameters, string& result) -> uint32_t {
                     Core::OptionalType<Core::JSON::Error> report;
                     INBOUND inbound;
@@ -1220,7 +1176,13 @@ namespace Thunder {
                         ASSERT(inbound->Id.IsSet() == false);
 
 #ifdef W3C_TRACE_CONTEXT
-                        ScopedTraceContext traceContext(*inbound);
+                        Core::JobContext& jobContext = Core::JobContext::Instance();
+                        if (inbound->traceparent.IsSet() == true) {
+                            jobContext.TraceParent(inbound->traceparent.Value());
+                        }
+                        if (inbound->tracestate.IsSet() == true) {
+                            jobContext.TraceState(inbound->tracestate.Value());
+                        }
 #endif
                         string response;
                         _handler.Invoke(Core::JSONRPC::Context(), inbound->FullMethod(), inbound->Parameters.Value(), response);
