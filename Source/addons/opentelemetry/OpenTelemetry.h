@@ -111,6 +111,7 @@ public:
         ~Span();
 
     public:
+
     void End();
 
     void Activate();
@@ -130,7 +131,7 @@ public:
 
     private:
         template <typename... Args>
-        OpenTelemetry::Span(Args&&... args)
+        Span(Args&&... args)
             : _span()
             , _hadTraceParent(Core::JobContext::Instance().HasTraceParent())
             , _hadTraceState(Core::JobContext::Instance().HasTraceState())
@@ -199,6 +200,7 @@ public:
     void Initialize();
     void Deinitialize();
 
+    // note it is not needed to check this for ani logger usage, when the logger is disabled it is connected to a NOOP logger so all calls to it will work and not fail / crash
     bool LoggerEnabled() const
     {
         return _loggerenabled;
