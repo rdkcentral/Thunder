@@ -30,32 +30,90 @@
 #include <opentelemetry/context/propagation/text_map_propagator.h>
 #include <opentelemetry/exporters/ostream/metric_exporter_factory.h>
 #include <opentelemetry/exporters/ostream/span_exporter_factory.h>
-#include <opentelemetry/exporters/ostream/log_record_exporter_factory.h>
 #include <opentelemetry/sdk/metrics/export/periodic_exporting_metric_reader_factory.h>
 #include <opentelemetry/sdk/metrics/meter_provider_factory.h>
 #include <opentelemetry/sdk/trace/batch_span_processor_factory.h>
 #include <opentelemetry/sdk/trace/simple_processor_factory.h>
 #include <opentelemetry/sdk/trace/tracer_provider_factory.h>
 #include <opentelemetry/trace/propagation/http_trace_context.h>
-#include <opentelemetry/logs/logger.h>
 #include <opentelemetry/logs/provider.h>
 #include <opentelemetry/sdk/logs/logger_provider_factory.h>
-#include <opentelemetry/sdk/logs/simple_log_record_processor_factory.h>
 #include "opentelemetry/sdk/trace/samplers/always_off.h"
+#include "opentelemetry/sdk/trace/samplers/always_off_factory.h"
 #include "opentelemetry/sdk/trace/samplers/always_on.h"
+#include "opentelemetry/sdk/trace/samplers/always_on_factory.h"
+#include "opentelemetry/sdk/trace/samplers/parent.h"
+#include "opentelemetry/sdk/trace/samplers/parent_factory.h"
+#include <opentelemetry/exporters/otlp/otlp_http_exporter.h>
+#include "opentelemetry/exporters/otlp/otlp_http_exporter_factory.h"
+#include "opentelemetry/exporters/otlp/otlp_http_exporter_options.h"
+#include "opentelemetry/sdk/trace/batch_span_processor_options.h"
+#include "opentelemetry/sdk/trace/processor.h"
+#include "opentelemetry/trace/provider.h"
 
-namespace logs             = opentelemetry::logs;
-namespace trace            = opentelemetry::trace;
-namespace metrics          = opentelemetry::metrics;
-namespace sdklogs          = opentelemetry::sdk::logs;
-namespace sdktrace         = opentelemetry::sdk::trace;
-namespace sdkmetrics       = opentelemetry::sdk::metrics;
-namespace propagation      = opentelemetry::context::propagation;
-namespace ostream_exporter = opentelemetry::exporter::trace;
-namespace nostd            = opentelemetry::nostd;
+#include "opentelemetry/exporters/otlp/otlp_http_metric_exporter_factory.h"
+#include "opentelemetry/exporters/otlp/otlp_http_metric_exporter_options.h"
+#include "opentelemetry/metrics/provider.h"
+#include "opentelemetry/sdk/metrics/aggregation/default_aggregation.h"
+#include "opentelemetry/sdk/metrics/export/periodic_exporting_metric_reader.h"
+#include "opentelemetry/sdk/metrics/meter_context_factory.h"
+#include "opentelemetry/sdk/metrics/meter_provider.h"
+
+#include "opentelemetry/exporters/otlp/otlp_http_log_record_exporter_factory.h"
+#include "opentelemetry/exporters/otlp/otlp_http_log_record_exporter_options.h"
+#include "opentelemetry/sdk/logs/processor.h"
+#include <opentelemetry/sdk/logs/logger_provider.h>
+#include <opentelemetry/sdk/logs/simple_log_record_processor.h>
+#include <opentelemetry/sdk/logs/simple_log_record_processor_factory.h>
+#include <opentelemetry/sdk/logs/batch_log_record_processor.h>
+#include <opentelemetry/sdk/logs/batch_log_record_processor_factory.h>
+#include <opentelemetry/exporters/otlp/otlp_http_log_record_exporter.h>
+#include <opentelemetry/exporters/ostream/log_record_exporter.h>
+#include <opentelemetry/exporters/ostream/log_record_exporter_factory.h>
+#include <opentelemetry/logs/noop.h>
+
+
+namespace logs                          = opentelemetry::logs;
+namespace trace                         = opentelemetry::trace;
+namespace metrics                       = opentelemetry::metrics;
+namespace sdklogs                       = opentelemetry::sdk::logs;
+namespace sdktrace                      = opentelemetry::sdk::trace;
+namespace sdkmetrics                    = opentelemetry::sdk::metrics;
+namespace propagation                   = opentelemetry::context::propagation;
+namespace ostream_exporter              = opentelemetry::exporter::trace;
+namespace ostream_logs_exporter         = opentelemetry::exporter::logs;
+namespace nostd                         = opentelemetry::nostd;
+namespace otlp_exporter                 = opentelemetry::exporter::otlp;
+namespace otlp_context                  = opentelemetry::context;
+
 
 namespace Thunder {
-namespace Telemetry {
+
+ENUM_CONVERSION_BEGIN(Telemetry::OpenTelemetry::SamplerType)
+
+    { Telemetry::OpenTelemetry::SamplerType::ALWAY_ON, _TXT("AlwaysOn") },
+    { Telemetry::OpenTelemetry::SamplerType::ALWAY_OFF, _TXT("AlwaysOff") },
+    { Telemetry::OpenTelemetry::SamplerType::PARENT_ON, _TXT("ParentOn") },
+    { Telemetry::OpenTelemetry::SamplerType::PARENT_OFF, _TXT("ParentOff") },
+
+    ENUM_CONVERSION_END(Telemetry::OpenTelemetry::SamplerType)
+
+ENUM_CONVERSION_BEGIN(Telemetry::OpenTelemetry::ProcessorType)
+
+    { Telemetry::OpenTelemetry::ProcessorType::SYMCHRONOUS, _TXT("Synchronous") },
+    { Telemetry::OpenTelemetry::ProcessorType::BATCH, _TXT("Batch") },
+
+ENUM_CONVERSION_END(Telemetry::OpenTelemetry::ProcessorType )
+
+ENUM_CONVERSION_BEGIN(Telemetry::OpenTelemetry::ExporterType)
+
+    { Telemetry::OpenTelemetry::ExporterType::CONSOLE, _TXT("Console") },
+    { Telemetry::OpenTelemetry::ExporterType::HTTP, _TXT("HTTP") },
+
+ENUM_CONVERSION_END(Telemetry::OpenTelemetry::ExporterType) 
+    
+namespace Telemetry
+{
 
 OpenTelemetry& OpenTelemetry::Instance()
 {
@@ -68,32 +126,155 @@ void OpenTelemetry::Configure(const Config& config)
     OpenTelemetry::Instance().InternalConfigure(config);
 }
 
-void OpenTelemetry::InternalConfigure(const OpenTelemetry::Config&)
+void OpenTelemetry::InternalConfigure(const OpenTelemetry::Config& config)
 {
-    //_shutdownTimeoutMicroseconds = config.Timeout.Value();
+    if (config.Sampler.IsSet()) {
+        _samplertype = config.Sampler.Value();
+    }
+    if (config.Processor.IsSet()) {
+        _processortype = config.Processor.Value();
+    }
+    if (config.Exporter.IsSet()) {
+        _exportertype = config.Exporter.Value();
+    }
+    if (config.TracerEndpoint.IsSet()) {
+        _tracerendpoint = config.TracerEndpoint.Value();
+    }
+    if (config.ComponentName.IsSet() == true) {
+        _componentname = config.ComponentName.Value();
+    }
+    if (config.ComponentVersion.IsSet() == true) {
+        _componentversion = config.ComponentVersion.Value();
+    }   
+    if (config.LoggerEnabled.IsSet() == true) {
+        _loggerenabled = config.LoggerEnabled.Value();
+    }
+    if (config.LoggerEndpoint.IsSet()) {
+        _loggerendpoint = config.LoggerEndpoint.Value();
+    }
 }
 
 void OpenTelemetry::Initialize()
 {
     // it is not an issue if this causes a race condition with Deinitialize() 
     if (_references++ == 0) {
-        auto exporter  = ostream_exporter::OStreamSpanExporterFactory::Create();
-/*    auto processor = sdktrace::BatchSpanProcessorFactory::Create(
-        std::move(exporter), sdktrace::BatchSpanProcessorOptions{}); */
-       auto sampler = std::make_unique<sdktrace::AlwaysOnSampler>();
-       auto processor = sdktrace::SimpleSpanProcessorFactory::Create(
-                std::move(exporter)); 
-        auto sdk_provider = sdktrace::TracerProviderFactory::Create(std::move(processor), opentelemetry::sdk::resource::Resource::Create({}), std::move(sampler));
-    nostd::shared_ptr<trace::TracerProvider> provider{
-        std::shared_ptr<trace::TracerProvider>(std::move(sdk_provider))};
-    trace::Provider::SetTracerProvider(provider);
-    _tracer = provider->GetTracer("ThunderOpenTelemetry", "1.0.0"); // toto name and get version from Thunder
+
+        std::unique_ptr<sdktrace::SpanExporter> exporter;
+        std::unique_ptr<sdktrace::SpanProcessor> processor;
+        std::unique_ptr<sdktrace::Sampler> sampler;
+
+        switch (_exportertype)
+        {
+            case ExporterType::CONSOLE:
+                exporter = ostream_exporter::OStreamSpanExporterFactory::Create();
+                break;
+            case ExporterType::HTTP: 
+                {
+                    otlp_exporter::OtlpHttpExporterOptions exporter_opts;
+                    exporter_opts.url = _tracerendpoint;
+                    exporter_opts.content_type = otlp_exporter::HttpRequestContentType::kJson;
+                    exporter = otlp_exporter::OtlpHttpExporterFactory::Create(exporter_opts);
+                }
+                break;  
+            default:
+                ASSERT(true);
+        }
+
+        switch (_processortype)
+        {
+            case ProcessorType::SYMCHRONOUS:
+                processor = sdktrace::SimpleSpanProcessorFactory::Create(std::move(exporter)); 
+                break;
+            case ProcessorType::BATCH:
+                processor = sdktrace::BatchSpanProcessorFactory::Create(std::move(exporter), sdktrace::BatchSpanProcessorOptions{});
+                break;
+            default:
+                ASSERT(true);
+        }
+
+        switch (_samplertype)
+        {
+            case SamplerType::ALWAY_ON:
+                sampler = sdktrace::AlwaysOnSamplerFactory::Create();
+                break;
+            case SamplerType::ALWAY_OFF:
+                sampler = sdktrace::AlwaysOffSamplerFactory::Create();
+                break;
+            case SamplerType::PARENT_ON: 
+                {
+                    auto delegatedsampler = sdktrace::AlwaysOnSamplerFactory::Create();
+                    sampler = sdktrace::ParentBasedSamplerFactory::Create(std::shared_ptr<sdktrace::Sampler>(delegatedsampler.release()));
+                }
+                break;
+            case SamplerType::PARENT_OFF: 
+                {
+                    auto delegatedsampler = sdktrace::AlwaysOffSamplerFactory::Create();
+                    sampler = sdktrace::ParentBasedSamplerFactory::Create(std::shared_ptr<sdktrace::Sampler>(delegatedsampler.release()));
+                } 
+                break;
+            default:
+                ASSERT(true);
+        }
+
+        nostd::shared_ptr<trace::TracerProvider> provider(sdktrace::TracerProviderFactory::Create(std::move(processor), opentelemetry::sdk::resource::Resource::Create({}), std::move(sampler)).release());
+        trace::Provider::SetTracerProvider(provider);
+        _tracer = provider->GetTracer(_componentname, _componentversion); 
+
+        if (_loggerenabled == true) {
+            std::unique_ptr<sdklogs::LogRecordExporter> logexporter;
+            std::unique_ptr<sdklogs::LogRecordProcessor> logprocessor;
+
+            switch (_exportertype) {
+            case ExporterType::CONSOLE:
+                logexporter = ostream_logs_exporter::OStreamLogRecordExporterFactory::Create();
+                break;
+            case ExporterType::HTTP: {
+                otlp_exporter::OtlpHttpLogRecordExporterOptions logexporter_opts;
+                logexporter_opts.url = _loggerendpoint;
+                logexporter_opts.content_type = otlp_exporter::HttpRequestContentType::kJson;
+                logexporter = otlp_exporter::OtlpHttpLogRecordExporterFactory::Create(logexporter_opts);
+            } break;
+            default:
+                ASSERT(true);
+            }
+
+            switch (_processortype) {
+            case ProcessorType::SYMCHRONOUS:
+                logprocessor = sdklogs::SimpleLogRecordProcessorFactory::Create(std::move(logexporter));
+                break;
+            case ProcessorType::BATCH:
+                logprocessor = sdklogs::BatchLogRecordProcessorFactory::Create(std::move(logexporter), sdklogs::BatchLogRecordProcessorOptions{});
+                break;
+            default:
+                ASSERT(true);
+            }
+
+            nostd::shared_ptr<logs::LoggerProvider> loggerprovider(sdklogs::LoggerProviderFactory::Create(std::move(logprocessor)).release());
+            logs::Provider::SetLoggerProvider(loggerprovider);
+            _logger = loggerprovider->GetLogger(_componentname, _componentversion); 
+        } else {
+            _logger = nostd::shared_ptr < logs::Logger>( new logs::NoopLogger());
+        }
     }
 }
 
 void OpenTelemetry::Deinitialize()
 {
     // nothing to do
+}
+
+opentelemetry::nostd::unique_ptr<opentelemetry::logs::LogRecord> OpenTelemetry::CreateTraceFilledLogRecord()
+{
+    auto logrecord = _logger->CreateLogRecord();
+    if (LoggerEnabled() && Core::JobContext::Instance().HasTraceParent() == true) {
+        auto spancontext = OpenTelemetry::ToSpanContext(
+            opentelemetry::nostd::string_view(Core::JobContext::Instance().TraceParent().data(), Core::JobContext::Instance().TraceParent().length()),
+            opentelemetry::nostd::string_view(Core::JobContext::Instance().TraceState().data(), Core::JobContext::Instance().TraceState().length()));
+        logrecord->SetTraceId(spancontext.trace_id());
+        logrecord->SetSpanId(spancontext.span_id());
+        logrecord->SetTraceFlags(spancontext.trace_flags());
+    }
+    return logrecord;
 }
 
 OpenTelemetry::Span::~Span()
@@ -103,6 +284,7 @@ OpenTelemetry::Span::~Span()
 
 void OpenTelemetry::Span::End()
 {
+    Deactivate();
     _span->End();
     if (_hadTraceParent == true) {
         Core::JobContext::Instance().TraceParent(std::move(_traceParent));
@@ -112,6 +294,39 @@ void OpenTelemetry::Span::End()
         Core::JobContext::Instance().TraceState(std::move(_traceState));
         _hadTraceState = false;
     }
+}
+
+void OpenTelemetry::Span::Activate()
+{
+    _token = otlp_context::RuntimeContext::Attach(otlp_context::RuntimeContext::GetCurrent().SetValue(trace::kSpanKey, _span));
+}
+
+void OpenTelemetry::Span::Deactivate()
+{
+    
+    _token.reset();
+}     
+
+
+OpenTelemetry::Scope::Scope()
+    : _token()
+{
+    auto tracecontext = opentelemetry::trace::SpanContext::GetInvalid();
+    if (Core::JobContext::Instance().HasTraceParent() == true) {
+        tracecontext = OpenTelemetry::ToSpanContext(
+            opentelemetry::nostd::string_view(Core::JobContext::Instance().TraceParent().data(), Core::JobContext::Instance().TraceParent().length()),
+            opentelemetry::nostd::string_view(Core::JobContext::Instance().TraceState().data(), Core::JobContext::Instance().TraceState().length()));
+    } else if (Core::JobContext::Instance().HasTraceState() == true) {
+        tracecontext.trace_state()->FromHeader(Core::JobContext::Instance().TraceState());
+    }
+
+    opentelemetry::nostd::shared_ptr<trace::SpanContext> spancontext(new trace::SpanContext(tracecontext));
+    _token = otlp_context::RuntimeContext::Attach(otlp_context::RuntimeContext::GetCurrent().SetValue(trace::kSpanKey, spancontext));
+}
+
+OpenTelemetry::Scope::~Scope()
+{
+    _token.reset();
 }
 
 trace::SpanContext OpenTelemetry::ToSpanContext(

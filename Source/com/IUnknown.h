@@ -133,16 +133,22 @@ namespace ProxyStub {
                 string traceState;
 
                 message->Parameters().TraceContext(traceParent, traceState);
-
+                Core::JobContext& context = Core::JobContext::Instance();
+                context.ClearTraceContext();
                 if (traceParent.empty() == false) {
-                    Core::JobContext::Instance().TraceParent(std::move(traceParent));   
+                    context.TraceParent(std::move(traceParent));   
                 }
                 if (traceState.empty() == false) {
-                    Core::JobContext::Instance().TraceState(std::move(traceState));
+                    context.TraceState(std::move(traceState));
                 }
 
 #endif
                 handler(channel, message);
+
+#ifdef W3C_TRACE_CONTEXT
+
+                context.ClearTraceContext();
+#endif
 
             } else {
                 // if we get here, the message was already checked for validness, so just log the error with the interface id

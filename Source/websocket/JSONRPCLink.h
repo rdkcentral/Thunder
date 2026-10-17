@@ -1177,6 +1177,7 @@ namespace Thunder {
 
 #ifdef W3C_TRACE_CONTEXT
                         Core::JobContext& jobContext = Core::JobContext::Instance();
+                        jobContext.ClearTraceContext();
                         if (inbound->traceparent.IsSet() == true) {
                             jobContext.TraceParent(inbound->traceparent.Value());
                         }
@@ -1186,6 +1187,9 @@ namespace Thunder {
 #endif
                         string response;
                         _handler.Invoke(Core::JSONRPC::Context(), inbound->FullMethod(), inbound->Parameters.Value(), response);
+#ifdef W3C_TRACE_CONTEXT
+                        jobContext.ClearTraceContext();
+#endif
                     }
                 }
 
