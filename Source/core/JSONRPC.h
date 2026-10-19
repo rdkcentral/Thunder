@@ -1028,12 +1028,16 @@ POP_WARNING()
                 REALOBJECT* _objectPtr;
             };
 
-            template<typename METHOD, bool USE_LAMBDA_TRAITS = (TypeTraits::func_traits<METHOD>::Arguments == -1)>
-            struct callable_traits : TypeTraits::func_traits<METHOD> {
+            template<typename METHOD>
+            struct decayed_func_traits : TypeTraits::func_traits<typename std::decay<METHOD>::type> {
+            };
+
+            template<typename METHOD, bool USE_LAMBDA_TRAITS = (decayed_func_traits<METHOD>::Arguments == -1)>
+            struct callable_traits : decayed_func_traits<METHOD> {
             };
 
             template<typename METHOD>
-            struct callable_traits<METHOD, true> : TypeTraits::lambda_traits<METHOD> {
+            struct callable_traits<METHOD, true> : TypeTraits::lambda_traits<typename std::decay<METHOD>::type> {
             };
 
             template<typename METHOD>

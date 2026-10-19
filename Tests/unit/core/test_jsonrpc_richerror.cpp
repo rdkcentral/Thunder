@@ -226,6 +226,23 @@ namespace Core {
         return (error);
     }
 
+    static uint32_t FreeAction()
+    {
+        return (::Thunder::Core::ERROR_NONE);
+    }
+
+    static uint32_t FreeRichAction(RichError& details)
+    {
+        details.Message = _T("free function error");
+        return (::Thunder::Core::ERROR_UNAVAILABLE);
+    }
+
+    static uint32_t FreeContextRichAction(const ::Thunder::Core::JSONRPC::Context& context, RichError& details)
+    {
+        details.Message = (context.ChannelId() == 47 ? _T("free context error") : _T("unexpected context"));
+        return (::Thunder::Core::ERROR_UNAVAILABLE);
+    }
+
     TEST(Core_JSONRPC_RichError, InboundOnly_DataOnlyPreservesThunderCodeAndMessage)
     {
         ::Thunder::Core::JSONRPC::Handler handler(std::vector<uint8_t>{ 1 });
@@ -531,6 +548,48 @@ namespace Core {
         EXPECT_EQ(result, ::Thunder::Core::ERROR_NONE);
         EXPECT_EQ(receivedInstanceId, string("instance-84"));
         EXPECT_EQ(receivedIndex, string("property-index"));
+    }
+
+    TEST(Core_JSONRPC_RichError, FreeFunctionByName_RegularRegistrationUsesFunctionPointerTraits)
+    {
+        ::Thunder::Core::JSONRPC::Handler handler(std::vector<uint8_t>{ 1 });
+        handler.Register<void, void>(_T("freeAction"), FreeAction);
+
+        string response;
+        const uint32_t result = handler.Invoke(RichErrorContext(), _T("freeAction"), string(), response);
+
+        EXPECT_EQ(result, ::Thunder::Core::ERROR_NONE);
+        EXPECT_TRUE(response.empty());
+    }
+
+    TEST(Core_JSONRPC_RichError, FreeFunctionByName_RichErrorRegistrationUsesFunctionPointerTraits)
+    {
+        ::Thunder::Core::JSONRPC::Handler handler(std::vector<uint8_t>{ 1 });
+        handler.RegisterWithError<void, void, RichError>(_T("freeRichAction"), FreeRichAction);
+
+        string response;
+        const uint32_t result = handler.Invoke(RichErrorContext(), _T("freeRichAction"), string(), response);
+        const ::Thunder::Core::JSONRPC::Message::Info error(ParseRichError(response));
+        ::Thunder::Core::JSONRPC::Message::Info expected;
+        expected.SetError(result);
+
+        EXPECT_EQ(result, ::Thunder::Core::ERROR_UNAVAILABLE);
+        EXPECT_EQ(error.Code.Value(), expected.Code.Value());
+        EXPECT_EQ(error.Text.Value(), string("free function error"));
+    }
+
+    TEST(Core_JSONRPC_RichError, FreeFunctionByName_ContextSelectsContextDispatch)
+    {
+        ::Thunder::Core::JSONRPC::Handler handler(std::vector<uint8_t>{ 1 });
+        handler.RegisterWithError<void, void, RichError>(_T("freeContextAction"), FreeContextRichAction);
+
+        string response;
+        const ::Thunder::Core::JSONRPC::Context context(47, 1, string());
+        const uint32_t result = handler.Invoke(context, _T("freeContextAction"), string(), response);
+        const ::Thunder::Core::JSONRPC::Message::Info error(ParseRichError(response));
+
+        EXPECT_EQ(result, ::Thunder::Core::ERROR_UNAVAILABLE);
+        EXPECT_EQ(error.Text.Value(), string("free context error"));
     }
 
 } // namespace Core
