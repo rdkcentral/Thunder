@@ -127,7 +127,7 @@ namespace ProxyStub {
 
                 ASSERT(handler != nullptr);
 
-#ifdef W3C_TRACE_CONTEXT
+#ifdef __W3C_TRACE_CONTEXT__
 
                 string traceParent;
                 string traceState;
@@ -145,7 +145,7 @@ namespace ProxyStub {
 #endif
                 handler(channel, message);
 
-#ifdef W3C_TRACE_CONTEXT
+#ifdef __W3C_TRACE_CONTEXT__
 
                 context.ClearTraceContext();
 #endif
@@ -372,7 +372,7 @@ namespace ProxyStub {
         inline Core::ProxyType<RPC::InvokeMessage> Message(const uint8_t methodId) const
         {
             Core::ProxyType<RPC::InvokeMessage> message(RPC::Administrator::Instance().Message());
-#ifndef W3C_TRACE_CONTEXT
+#ifndef __W3C_TRACE_CONTEXT__
 
             message->Parameters().Set(_implementation, _interfaceId, methodId + 3);
 

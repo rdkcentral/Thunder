@@ -1093,7 +1093,7 @@ namespace PluginHost {
 
                     Core::InterlockedIncrement(_activity);
                     string output;
-#ifdef W3C_TRACE_CONTEXT
+#ifdef __W3C_TRACE_CONTEXT__
                     Core::JobContext& jobContext = Core::JobContext::Instance();
                     jobContext.ClearTraceContext();
                     if (message.traceparent.IsSet() == true) {
@@ -1129,7 +1129,7 @@ namespace PluginHost {
                         }
                     }
 
-#ifdef W3C_TRACE_CONTEXT
+#ifdef __W3C_TRACE_CONTEXT__
                     jobContext.ClearTraceContext();
 #endif
 

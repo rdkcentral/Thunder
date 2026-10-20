@@ -85,18 +85,18 @@ namespace RPC {
             {
                 _data.Clear();
             }
-            // note in case W3C_TRACE_CONTEXT is turned on Set must be called before getting a writer. (but it is smart to do anyway in that order :) )
+            // note in case __W3C_TRACE_CONTEXT__ is turned on Set must be called before getting a writer. (but it is smart to do anyway in that order :) )
             void Set(Core::instance_id implementation, const uint32_t interfaceId, const uint8_t methodId)
             {
                 Frame::Writer frameWriter(_data, 0);
                 frameWriter.Number(implementation);
                 frameWriter.Number(interfaceId);
                 frameWriter.Number(methodId);
-#ifdef W3C_TRACE_CONTEXT
+#ifdef __W3C_TRACE_CONTEXT__
                 frameWriter.Number<uint8_t>(0);
 #endif
             }
-#ifdef W3C_TRACE_CONTEXT
+#ifdef __W3C_TRACE_CONTEXT__
             void Set(Core::instance_id implementation, const uint32_t interfaceId, const uint8_t methodId, const string* const traceParent, const string* const traceState)
             {
                 Frame::Writer frameWriter(_data, 0);
@@ -139,7 +139,7 @@ namespace RPC {
 
                 return (result);
             }
-#ifdef W3C_TRACE_CONTEXT
+#ifdef __W3C_TRACE_CONTEXT__
             void TraceContext(string& traceParent, string& traceState) const {
                 uint32_t size = InitialHeaderSize();
                 uint8_t traceflags = 0;
@@ -161,15 +161,15 @@ namespace RPC {
             }
             inline Frame::Writer Writer()
             {
-#ifdef W3C_TRACE_CONTEXT
-                // if this fires it means that the Set method was not called before getting a writer. (which is required in case W3C_TRACE_CONTEXT is turned on)
+#ifdef __W3C_TRACE_CONTEXT__
+                // if this fires it means that the Set method was not called before getting a writer. (which is required in case __W3C_TRACE_CONTEXT__ is turned on)
                 ASSERT(_data.Size() > 0);
 #endif
                 return (Frame::Writer(_data, HeaderSize()));
             }
             inline const Frame::Reader Reader() const
             {
-#ifdef W3C_TRACE_CONTEXT
+#ifdef __W3C_TRACE_CONTEXT__
                 // if this fires it means that the header info was not filled before getting a reader (to get the header info one would expect the specific methods like InterfaceId() to be used, not a reader) 
                 ASSERT(_data.Size() > 0);
 #endif
@@ -191,7 +191,7 @@ namespace RPC {
             }
             uint32_t HeaderSize() const
             {
-#ifndef W3C_TRACE_CONTEXT
+#ifndef __W3C_TRACE_CONTEXT__
                 return InitialHeaderSize();
 #else
                 uint32_t size = InitialHeaderSize();

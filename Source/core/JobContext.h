@@ -20,7 +20,7 @@
 #pragma once
 
 #include "Module.h"
-#ifdef W3C_TRACE_CONTEXT
+#ifdef __W3C_TRACE_CONTEXT__
 #include <memory>
 #include <utility>
 #endif
@@ -40,7 +40,7 @@ namespace Core {
             static thread_local JobContext instance;
             return (instance);
         }
-#ifdef W3C_TRACE_CONTEXT
+#ifdef __W3C_TRACE_CONTEXT__
         const string& TraceParent() const
         {
             static const string empty;
@@ -86,7 +86,7 @@ namespace Core {
         JobContext() = default;
         ~JobContext() = default;
 
-#ifdef W3C_TRACE_CONTEXT
+#ifdef __W3C_TRACE_CONTEXT__
         std::unique_ptr<string> traceparent;
         std::unique_ptr<string> tracestate;
 #endif

@@ -21,7 +21,7 @@
 
 #include "Module.h"
 #include "WebSocketLink.h"
-#ifdef W3C_TRACE_CONTEXT
+#ifdef __W3C_TRACE_CONTEXT__
 #include <core/JobContext.h>
 #endif
 
@@ -1034,7 +1034,7 @@ namespace Thunder {
                         message->Designator = method;
                     }
                     ToMessage(parameters, message);
-#ifdef W3C_TRACE_CONTEXT
+#ifdef __W3C_TRACE_CONTEXT__
                     ApplyTraceContext(message);
 #endif
 
@@ -1101,7 +1101,7 @@ namespace Thunder {
                         message->Designator = method;
                     }
                     ToMessage(parameters, message);
-#ifdef W3C_TRACE_CONTEXT
+#ifdef __W3C_TRACE_CONTEXT__
                     ApplyTraceContext(message);
 #endif
 
@@ -1175,7 +1175,7 @@ namespace Thunder {
                         // Looks like this is an event.
                         ASSERT(inbound->Id.IsSet() == false);
 
-#ifdef W3C_TRACE_CONTEXT
+#ifdef __W3C_TRACE_CONTEXT__
                         Core::JobContext& jobContext = Core::JobContext::Instance();
                         jobContext.ClearTraceContext();
                         if (inbound->traceparent.IsSet() == true) {
@@ -1187,7 +1187,7 @@ namespace Thunder {
 #endif
                         string response;
                         _handler.Invoke(Core::JSONRPC::Context(), inbound->FullMethod(), inbound->Parameters.Value(), response);
-#ifdef W3C_TRACE_CONTEXT
+#ifdef __W3C_TRACE_CONTEXT__
                         jobContext.ClearTraceContext();
 #endif
                     }
@@ -1197,7 +1197,7 @@ namespace Thunder {
             }
 
         private:
-#ifdef W3C_TRACE_CONTEXT
+#ifdef __W3C_TRACE_CONTEXT__
             void ApplyTraceContext(Core::ProxyType<Core::JSONRPC::Message>& message) const
             {
                 const Core::JobContext& context = Core::JobContext::Instance();

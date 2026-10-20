@@ -25,8 +25,8 @@ option(PROCESSCONTAINERS
         "Include containerization in the build." OFF)
 option(WARNING_REPORTING
         "Include warning reporting in the build." OFF)
-option(OPENTELEMETRY
-        "Include OpenTelemetry support in the build." OFF)
+option(THUNDER_OPENTELEMETRY
+        "Include Thunder OpenTelemetry support in the build." ON)
 
 if(NOT MESSAGING)
     if(LOCALTRACER)
@@ -55,7 +55,7 @@ if(WARNING_REPORTING)
     add_subdirectory(warningreporting)
 endif()
 
-if(OPENTELEMETRY)
+if(THUNDER_OPENTELEMETRY)
     add_subdirectory(opentelemetry)
 endif()
 

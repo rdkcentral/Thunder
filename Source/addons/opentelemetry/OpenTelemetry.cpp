@@ -251,7 +251,7 @@ void OpenTelemetry::Initialize()
 
             nostd::shared_ptr<logs::LoggerProvider> loggerprovider(sdklogs::LoggerProviderFactory::Create(std::move(logprocessor)).release());
             logs::Provider::SetLoggerProvider(loggerprovider);
-            _logger = loggerprovider->GetLogger(_componentname, _componentversion); 
+            _logger = loggerprovider->GetLogger("Thunder Logger", _componentname, _componentversion); 
         } else {
             _logger = nostd::shared_ptr < logs::Logger>( new logs::NoopLogger());
         }
