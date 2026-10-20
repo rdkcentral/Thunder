@@ -4325,7 +4325,7 @@
 <span class="w">    </span>-DMESSAGING_EXTERNAL_OUTPUT_SOURCE_DIR<span class="o">=</span>/path/to/MessageControl/&lt;adapter&gt;<span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>..
 </code></pre></div>
-<p>The adapter is built as a separate shared library. The default production adapter is selected from the configured external repository. For development or tests, <code>MESSAGING_EXTERNAL_OUTPUT_USE_MOCK=ON</code> selects the console-printing mock adapter when that adapter source provides it.</p>
+<p>The adapter is built as a separate shared library. The default production adapter is selected from the configured external repository. For development or tests, <code>MESSAGING_EXTERNAL_OUTPUT_USE_MOCK=ON</code> selects a mock backend library when that adapter source provides it. The RDK Logger adapter still runs its production mapping, formatting, and enablement cache; only the RDK Logger API is mocked. The mock records backend calls and supports configurable initialization and enablement results for tests. It uses an installed <code>rdk_logger.h</code> or downloads a pinned upstream header; set <code>RDKLOGGER_INCLUDE_DIR</code> to an existing header directory for offline builds.</p>
 <p>After the feature is compiled in, set <code>output</code> to <code>external_direct</code> in the messaging configuration. The setting is available globally, per message type, or on an individual module/category entry. For example, this routes all messages to the external adapter:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">    </span><span class="nt">"messaging"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
