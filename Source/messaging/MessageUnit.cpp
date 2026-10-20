@@ -284,7 +284,7 @@ ENUM_CONVERSION_END(Thunder::Core::Messaging::OutputMode)
             bool enabled = false;
 
 #if defined(MESSAGING_EXTERNAL_OUTPUT)
-            _adminLock.LockWithoutWarning();
+            _adminLock.Lock();
             if (_externalInitialized == true) {
                 const string& module = metadata.Module();
                 const string key = module + '#' + Core::NumberType<uint8_t>(static_cast<uint8_t>(ExternalType(metadata))).Text() + '#' + metadata.Category();

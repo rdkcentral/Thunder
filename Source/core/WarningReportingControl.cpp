@@ -90,14 +90,14 @@ namespace WarningReporting {
 
     WarningReportingUnitProxy& WarningReportingUnitProxy::Instance()
     {
-        return (Core::SingletonType<WarningReportingUnitProxy>::InstanceWithoutWarning());
+        return (Core::SingletonType<WarningReportingUnitProxy>::Instance());
     }
 
     OutputTargets WarningReportingUnitProxy::Targets(const char category[], const Core::Messaging::OutputMode routing, const bool enabled) const
     {
         OutputTargets result = { false, false, false };
 
-        _adminLock->LockWithoutWarning();
+        _adminLock->Lock();
         if (_handler != nullptr) {
             result = _handler->Targets(category, routing, enabled);
         }
@@ -108,7 +108,7 @@ namespace WarningReporting {
 
     void WarningReportingUnitProxy::ReportWarningEvent(const char module[], const IWarningEvent& information, const OutputTargets& targets)
     {
-        _adminLock->LockWithoutWarning();
+        _adminLock->Lock();
         ASSERT (_handler != nullptr);
         if (_handler != nullptr) {
             _handler->ReportWarningEvent(module, information, targets);
@@ -118,7 +118,7 @@ namespace WarningReporting {
 
     void WarningReportingUnitProxy::FetchCategoryInformation(const string& category, bool& outIsDefaultCategory, bool& outIsEnabled, string& outExcluded, string& outConfiguration) const
     {
-        _adminLock->LockWithoutWarning();
+        _adminLock->Lock();
         if (_handler != nullptr) {
             _handler->FetchCategoryInformation(category, outIsDefaultCategory, outIsEnabled, outExcluded, outConfiguration);
         }
@@ -127,7 +127,7 @@ namespace WarningReporting {
 
     void WarningReportingUnitProxy::AddToCategoryList(IWarningReportingUnit::IWarningReportingControl& Category)
     {
-        _adminLock->LockWithoutWarning();
+        _adminLock->Lock();
         if (_handler != nullptr) {
             _handler->AddToCategoryList(Category);
         } else {
@@ -139,7 +139,7 @@ namespace WarningReporting {
 
     void WarningReportingUnitProxy::RemoveFromCategoryList(IWarningReportingUnit::IWarningReportingControl& Category)
     {
-        _adminLock->LockWithoutWarning();
+        _adminLock->Lock();
         if (_handler != nullptr) {
             ASSERT(_waitingAnnounces.size() == 0);
             _handler->RemoveFromCategoryList(Category);
@@ -155,7 +155,7 @@ namespace WarningReporting {
     void WarningReportingUnitProxy::Handle(IWarningReportingUnit* handler)
     {
         ASSERT((_handler == nullptr && handler != nullptr) || (_handler != nullptr && handler == nullptr));
-        _adminLock->LockWithoutWarning();
+        _adminLock->Lock();
         _handler = handler;
         if (_handler != nullptr) {
 

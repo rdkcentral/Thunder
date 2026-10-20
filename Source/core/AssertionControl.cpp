@@ -61,7 +61,7 @@ namespace Assertion {
     {
         Core::Messaging::OutputTargets targets = { localEnabled, false, false };
 
-        _adminLock->LockWithoutWarning();
+        _adminLock->Lock();
         if (_handler != nullptr) {
             targets = _handler->Targets(metadata, outputMode, localEnabled);
         }
@@ -72,7 +72,7 @@ namespace Assertion {
 
     void AssertionUnitProxy::AssertionEvent(Core::Messaging::IStore::Assert& metadata, const Core::Messaging::TextMessage& message, const Core::Messaging::OutputTargets& targets)
     {
-        _adminLock->LockWithoutWarning();
+        _adminLock->Lock();
 
         metadata.TimeStamp(Thunder::Core::Time::Now().Ticks());
 
@@ -90,7 +90,7 @@ namespace Assertion {
 
     void AssertionUnitProxy::Handle(IAssertionUnit* handler)
     {
-        _adminLock->LockWithoutWarning();
+        _adminLock->Lock();
         _handler = handler;
         _adminLock->Unlock();
     }
