@@ -1028,17 +1028,27 @@ POP_WARNING()
                 REALOBJECT* _objectPtr;
             };
 
-            template<typename METHOD>
-            struct decayed_func_traits : TypeTraits::func_traits<typename std::decay<METHOD>::type> {
+            // detect operator()
+            template<typename T>
+            struct has_call_operator {
+            private:
+                // SFINAE: matches anything that allows taking the address of its operator()
+                template<typename C> static auto check(int) -> decltype(&C::operator(), std::true_type());
+                template<typename>  static std::false_type check(...);
+            public:
+                static constexpr bool value = decltype(check<T>(0))::value;
             };
 
-            template<typename METHOD, bool USE_LAMBDA_TRAITS = (decayed_func_traits<METHOD>::Arguments == -1)>
-            struct callable_traits : decayed_func_traits<METHOD> {
-            };
-
             template<typename METHOD>
-            struct callable_traits<METHOD, true> : TypeTraits::lambda_traits<typename std::decay<METHOD>::type> {
-            };
+            struct decayed_func_traits : TypeTraits::func_traits<typename std::decay<METHOD>::type> {};
+
+            // primary template (routes normal functions)
+            template<typename METHOD, bool IsLambda = ((decayed_func_traits<METHOD>::Arguments == -1) && (has_call_operator<typename std::decay<METHOD>::type>::value == true))>
+            struct callable_traits : decayed_func_traits<METHOD> {};
+
+            // specialization (routes lambdas/functors)
+            template<typename METHOD>
+            struct callable_traits<METHOD, true> : TypeTraits::lambda_traits<typename std::decay<METHOD>::type> {};
 
             template<typename METHOD>
             struct handler_traits {

@@ -592,6 +592,34 @@ namespace Core {
         EXPECT_EQ(error.Text.Value(), string("free context error"));
     }
 
+    TEST(Core_JSONRPC_RichError, StdBind_RegularRegistrationRetainsNoPrefixDispatch)
+    {
+        ::Thunder::Core::JSONRPC::Handler handler(std::vector<uint8_t>{ 1 });
+        handler.Register<void, void>(_T("boundAction"), std::bind(FreeAction));
+
+        string response;
+        const uint32_t result = handler.Invoke(RichErrorContext(), _T("boundAction"), string(), response);
+
+        EXPECT_EQ(result, ::Thunder::Core::ERROR_NONE);
+        EXPECT_TRUE(response.empty());
+    }
+
+    TEST(Core_JSONRPC_RichError, StdBind_RichErrorRegistrationRetainsNoPrefixDispatch)
+    {
+        ::Thunder::Core::JSONRPC::Handler handler(std::vector<uint8_t>{ 1 });
+        handler.RegisterWithError<void, void, RichError>(_T("boundRichAction"), std::bind(FreeRichAction, std::placeholders::_1));
+
+        string response;
+        const uint32_t result = handler.Invoke(RichErrorContext(), _T("boundRichAction"), string(), response);
+        const ::Thunder::Core::JSONRPC::Message::Info error(ParseRichError(response));
+        ::Thunder::Core::JSONRPC::Message::Info expected;
+        expected.SetError(result);
+
+        EXPECT_EQ(result, ::Thunder::Core::ERROR_UNAVAILABLE);
+        EXPECT_EQ(error.Code.Value(), expected.Code.Value());
+        EXPECT_EQ(error.Text.Value(), string("free function error"));
+    }
+
 } // namespace Core
 } // namespace Tests
 } // namespace Thunder
