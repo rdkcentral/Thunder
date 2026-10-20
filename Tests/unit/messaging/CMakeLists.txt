@@ -38,10 +38,6 @@ target_link_libraries(${TEST_RUNNER_NAME}
         ${NAMESPACE}MessagingExternalOutput
         ${NAMESPACE}Messaging::${NAMESPACE}Messaging)
 
-target_include_directories(${TEST_RUNNER_NAME}
-    PRIVATE
-        ${MESSAGING_EXTERNAL_OUTPUT_SOURCE_DIR})
-
 install(
     TARGETS ${TEST_RUNNER_NAME}
     DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT ${NAMESPACE}_Test)

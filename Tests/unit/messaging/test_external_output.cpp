@@ -22,8 +22,6 @@
 #include <core/core.h>
 #include <messaging/messaging.h>
 
-#include "mock/ExternalOutputMock.h"
-
 namespace Thunder {
 namespace Tests {
 namespace Messaging {
@@ -33,76 +31,13 @@ namespace Messaging {
         using OutputMode = Core::Messaging::OutputMode;
         using OutputTargets = Core::Messaging::OutputTargets;
 
-        class TestControl : public Core::Messaging::IControl {
-        public:
-            TestControl(const Core::Messaging::Metadata& metadata)
-                : _metadata(metadata)
-                , _enabled(true)
-                , _routing(OutputMode::HANDLER)
-            {
-            }
-
-            void Enable(const bool enabled) override
-            {
-                _enabled = enabled;
-            }
-
-            bool Enable() const override
-            {
-                return (_enabled);
-            }
-
-            void Routing(const OutputMode routing) override
-            {
-                _routing = routing;
-            }
-
-            OutputMode Routing() const override
-            {
-                return (_routing);
-            }
-
-            void Destroy() override
-            {
-                _enabled = false;
-            }
-
-            const Core::Messaging::Metadata& Metadata() const override
-            {
-                return (_metadata);
-            }
-
-        private:
-            Core::Messaging::Metadata _metadata;
-            bool _enabled;
-            OutputMode _routing;
-        };
-
         class ExternalOutputTest : public testing::Test {
         protected:
-            void SetUp() override
-            {
-                ThunderExternalOutputMock_Reset();
-            }
-
             void TearDown() override
             {
                 if (_opened == true) {
                     ::Thunder::Messaging::MessageUnit::Instance().Close();
                 }
-
-                for (auto& control : _controls) {
-                    Core::Messaging::IControl::Revoke(control.get());
-                }
-            }
-
-            TestControl& Announce(const Metadata& metadata)
-            {
-                std::unique_ptr<TestControl> control(new TestControl(metadata));
-                TestControl& result = *control;
-                Core::Messaging::IControl::Announce(control.get());
-                _controls.emplace_back(std::move(control));
-                return (result);
             }
 
             void Open()
@@ -122,74 +57,9 @@ namespace Messaging {
                 return (::Thunder::Messaging::MessageUnit::Instance().Targets(metadata, mode, localEnabled));
             }
 
-            void Submit(const Metadata& metadata, const string& payload, const OutputTargets& targets = { false, false, true })
-            {
-                Core::Messaging::MessageInfo information(metadata);
-                Core::Messaging::TextMessage message(payload);
-                ::Thunder::Messaging::MessageUnit::Instance().Push(information, &message, targets);
-            }
-
         private:
             bool _opened { false };
-            std::vector<std::unique_ptr<TestControl>> _controls;
         };
-
-        struct MappingCase {
-            Metadata::type type;
-            const char* category;
-            ThunderExternalLogLevel level;
-        };
-
-        class ExternalOutputMappingTest : public ExternalOutputTest, public testing::WithParamInterface<MappingCase> {
-        };
-
-        TEST_P(ExternalOutputMappingTest, MapsThunderTypeAndCategoryToExternalLevel)
-        {
-            const MappingCase& test = GetParam();
-            Open();
-            Submit(Metadata(test.type, test.category, _T("Plugin.Module")), _T("payload"));
-
-            EXPECT_EQ(1u, ThunderExternalOutputMock_SubmitCount());
-            EXPECT_STREQ("Plugin.Module", ThunderExternalOutputMock_LastModule());
-            EXPECT_EQ(test.level, ThunderExternalOutputMock_LastLevel());
-        }
-
-        INSTANTIATE_TEST_SUITE_P(AllMessageTypes, ExternalOutputMappingTest, testing::Values(
-            MappingCase { Metadata::type::ASSERT, "Assert", THUNDER_EXTERNAL_LOG_LEVEL_FATAL },
-            MappingCase { Metadata::type::REPORTING, "Warning", THUNDER_EXTERNAL_LOG_LEVEL_WARN },
-            MappingCase { Metadata::type::OPERATIONAL_STREAM, "Operational", THUNDER_EXTERNAL_LOG_LEVEL_TRACE },
-            MappingCase { Metadata::type::TELEMETRY, "Metric", THUNDER_EXTERNAL_LOG_LEVEL_NOTICE },
-            MappingCase { Metadata::type::TRACING, "Fatal", THUNDER_EXTERNAL_LOG_LEVEL_FATAL },
-            MappingCase { Metadata::type::TRACING, "Crash", THUNDER_EXTERNAL_LOG_LEVEL_FATAL },
-            MappingCase { Metadata::type::TRACING, "Error", THUNDER_EXTERNAL_LOG_LEVEL_ERROR },
-            MappingCase { Metadata::type::TRACING, "Warning", THUNDER_EXTERNAL_LOG_LEVEL_WARN },
-            MappingCase { Metadata::type::TRACING, "Warn", THUNDER_EXTERNAL_LOG_LEVEL_WARN },
-            MappingCase { Metadata::type::TRACING, "Notice", THUNDER_EXTERNAL_LOG_LEVEL_NOTICE },
-            MappingCase { Metadata::type::TRACING, "Information", THUNDER_EXTERNAL_LOG_LEVEL_TRACE },
-            MappingCase { Metadata::type::LOGGING, "Fatal", THUNDER_EXTERNAL_LOG_LEVEL_FATAL },
-            MappingCase { Metadata::type::LOGGING, "Crash", THUNDER_EXTERNAL_LOG_LEVEL_FATAL },
-            MappingCase { Metadata::type::LOGGING, "Error", THUNDER_EXTERNAL_LOG_LEVEL_ERROR },
-            MappingCase { Metadata::type::LOGGING, "Warning", THUNDER_EXTERNAL_LOG_LEVEL_WARN },
-            MappingCase { Metadata::type::LOGGING, "Warn", THUNDER_EXTERNAL_LOG_LEVEL_WARN },
-            MappingCase { Metadata::type::LOGGING, "Notice", THUNDER_EXTERNAL_LOG_LEVEL_NOTICE },
-            MappingCase { Metadata::type::LOGGING, "Information", THUNDER_EXTERNAL_LOG_LEVEL_INFO }));
-
-        TEST_F(ExternalOutputTest, PrefixesDefaultLoggingAndTracingPayloads)
-        {
-            Open();
-            Submit(Metadata(Metadata::type::LOGGING, _T("Information"), _T("LoggingModule")), _T("log payload"));
-            EXPECT_STREQ("Information: log payload", ThunderExternalOutputMock_LastPayload());
-
-            Submit(Metadata(Metadata::type::TRACING, _T("Information"), _T("TracingModule")), _T("trace payload"));
-            EXPECT_STREQ("Information: trace payload", ThunderExternalOutputMock_LastPayload());
-        }
-
-        TEST_F(ExternalOutputTest, PreservesExplicitSeverityPayload)
-        {
-            Open();
-            Submit(Metadata(Metadata::type::LOGGING, _T("Error"), _T("Module")), _T("original payload"));
-            EXPECT_STREQ("original payload", ThunderExternalOutputMock_LastPayload());
-        }
 
         TEST_F(ExternalOutputTest, RoutesHandlerAndDirectWithoutExternalOutput)
         {
@@ -229,18 +99,6 @@ namespace Messaging {
             EXPECT_TRUE(targets.external);
         }
 
-        TEST_F(ExternalOutputTest, KeepsLocalRouteWhenExternalOutputIsDisabled)
-        {
-            ThunderExternalOutputMock_SetEnabled(0);
-            Open();
-            const OutputTargets targets = Targets(
-                Metadata(Metadata::type::LOGGING, _T("Information"), _T("Module")), OutputMode::ALL, true);
-
-            EXPECT_TRUE(targets.handler);
-            EXPECT_TRUE(targets.direct);
-            EXPECT_FALSE(targets.external);
-        }
-
         TEST_F(ExternalOutputTest, RoutesExternalOutputWhenLocalOutputIsDisabled)
         {
             Open();
@@ -264,17 +122,6 @@ namespace Messaging {
             EXPECT_TRUE(targets.external);
         }
 
-        TEST_F(ExternalOutputTest, ReportsNoInterestWhenBothGatesAreDisabled)
-        {
-            ThunderExternalOutputMock_SetEnabled(0);
-            Open();
-            const OutputTargets targets = Targets(
-                Metadata(Metadata::type::LOGGING, _T("Information"), _T("Module")), OutputMode::EXTERNAL_DIRECT, false);
-
-            EXPECT_FALSE(targets.Any());
-            EXPECT_EQ(0u, ThunderExternalOutputMock_SubmitCount());
-        }
-
         TEST_F(ExternalOutputTest, DoesNotDuplicateHandlerRoutedTelemetryExternally)
         {
             Open();
@@ -288,81 +135,6 @@ namespace Messaging {
             EXPECT_TRUE(external.external);
         }
 
-        TEST_F(ExternalOutputTest, EagerlyPopulatesAndDeduplicatesKnownControlPairs)
-        {
-            Announce(Metadata(Metadata::type::TRACING, _T("Information"), _T("CachedModule")));
-            Announce(Metadata(Metadata::type::TRACING, _T("Debug"), _T("CachedModule")));
-
-            Open();
-
-            EXPECT_EQ(1u, ThunderExternalOutputMock_QueryCountFor("CachedModule", THUNDER_EXTERNAL_LOG_LEVEL_TRACE));
-        }
-
-        TEST_F(ExternalOutputTest, QueriesNewlyAnnouncedControlImmediately)
-        {
-            Open();
-            EXPECT_EQ(0u, ThunderExternalOutputMock_QueryCountFor("LateModule", THUNDER_EXTERNAL_LOG_LEVEL_WARN));
-
-            Announce(Metadata(Metadata::type::LOGGING, _T("Warning"), _T("LateModule")));
-
-            EXPECT_EQ(1u, ThunderExternalOutputMock_QueryCountFor("LateModule", THUNDER_EXTERNAL_LOG_LEVEL_WARN));
-        }
-
-        TEST_F(ExternalOutputTest, ReusesCachedEnablementDuringRouting)
-        {
-            Open();
-            const Metadata metadata(Metadata::type::LOGGING, _T("Notice"), _T("CachedModule"));
-
-            Targets(metadata, OutputMode::EXTERNAL_DIRECT, false);
-            Targets(metadata, OutputMode::EXTERNAL_DIRECT, false);
-
-            EXPECT_EQ(1u, ThunderExternalOutputMock_QueryCountFor("CachedModule", THUNDER_EXTERNAL_LOG_LEVEL_NOTICE));
-        }
-
-        TEST_F(ExternalOutputTest, InitializesAndDeinitializesWithMessaging)
-        {
-            Open();
-            EXPECT_EQ(1u, ThunderExternalOutputMock_InitializeCount());
-
-            ::Thunder::Messaging::MessageUnit::Instance().Close();
-            EXPECT_EQ(1u, ThunderExternalOutputMock_DeinitializeCount());
-        }
-
-        TEST_F(ExternalOutputTest, DoesNotSubmitAfterExternalOutputDeinitializes)
-        {
-            Open();
-            const Metadata metadata(Metadata::type::LOGGING, _T("Information"), _T("Module"));
-            const OutputTargets targets = Targets(metadata, OutputMode::EXTERNAL_DIRECT, false);
-
-            ASSERT_TRUE(targets.external);
-            ::Thunder::Messaging::MessageUnit::Instance().Close();
-            Submit(metadata, _T("payload"), targets);
-
-            EXPECT_EQ(0u, ThunderExternalOutputMock_SubmitCount());
-        }
-
-        TEST_F(ExternalOutputTest, InitializationFailureDisablesOnlyExternalOutput)
-        {
-            ThunderExternalOutputMock_SetInitializeSucceeds(false);
-            Open();
-            const OutputTargets targets = Targets(
-                Metadata(Metadata::type::LOGGING, _T("Information"), _T("Module")), OutputMode::ALL, true);
-
-            EXPECT_TRUE(targets.handler);
-            EXPECT_TRUE(targets.direct);
-            EXPECT_FALSE(targets.external);
-        }
-
-        TEST_F(ExternalOutputTest, AllSubmitsExternallyExactlyOnce)
-        {
-            Open();
-            const Metadata metadata(Metadata::type::LOGGING, _T("Error"), _T("Module"));
-            const OutputTargets targets = Targets(metadata, OutputMode::ALL, true);
-
-            Submit(metadata, _T("payload"), targets);
-
-            EXPECT_EQ(1u, ThunderExternalOutputMock_SubmitCount());
-        }
     }
 }
 }

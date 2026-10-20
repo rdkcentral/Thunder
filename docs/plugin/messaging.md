@@ -136,7 +136,7 @@ cmake \
     ..
 ```
 
-The adapter is built as a separate shared library. The default production adapter is selected from the configured external repository. For development or tests, `MESSAGING_EXTERNAL_OUTPUT_USE_MOCK=ON` selects the console-printing mock adapter when that adapter source provides it.
+The adapter is built as a separate shared library. The default production adapter is selected from the configured external repository. For development or tests, `MESSAGING_EXTERNAL_OUTPUT_USE_MOCK=ON` selects a mock backend library when that adapter source provides it. The RDK Logger adapter still runs its production mapping, formatting, and enablement cache; only the RDK Logger API is mocked. The mock records backend calls and supports configurable initialization and enablement results for tests. It uses an installed `rdk_logger.h` or downloads a pinned upstream header; set `RDKLOGGER_INCLUDE_DIR` to an existing header directory for offline builds.
 
 After the feature is compiled in, set `output` to `external_direct` in the messaging configuration. The setting is available globally, per message type, or on an individual module/category entry. For example, this routes all messages to the external adapter:
 

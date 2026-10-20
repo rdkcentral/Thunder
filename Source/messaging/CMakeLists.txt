@@ -29,7 +29,7 @@ add_library(${TARGET}
         AssertionUnit.cpp)
 
 option(MESSAGING_EXTERNAL_OUTPUT "Enable External Direct output support." OFF)
-option(MESSAGING_EXTERNAL_OUTPUT_USE_MOCK "Use the console-printing external output backend." OFF)
+option(MESSAGING_EXTERNAL_OUTPUT_USE_MOCK "Use a mock backend library for the external output adapter." OFF)
 set(MESSAGING_EXTERNAL_OUTPUT_REPOSITORY "https://github.com/WebPlatformForEmbedded/ThunderNanoServicesRDK.git" CACHE STRING "Repository containing the external messaging adapter")
 set(MESSAGING_EXTERNAL_OUTPUT_VERSION "master" CACHE STRING "Version of the external messaging adapter repository")
 
