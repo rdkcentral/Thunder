@@ -550,6 +550,170 @@ namespace Core {
         EXPECT_EQ(receivedIndex, string("property-index"));
     }
 
+    TEST(Core_JSONRPC_RichError, Context_AllInputOutputFormsSelectContextDispatch)
+    {
+        ::Thunder::Core::JSONRPC::Handler handler(std::vector<uint8_t>{ 1 });
+        uint8_t invocations = 0;
+
+        handler.RegisterWithError<RichInput, void, RichError>(_T("contextInbound"), [&invocations](const ::Thunder::Core::JSONRPC::Context& context, const RichInput& input, RichError&) -> uint32_t {
+            EXPECT_EQ(context.ChannelId(), 47u);
+            EXPECT_EQ(input.Input.Value(), string("inbound"));
+            invocations |= 0x01;
+            return (::Thunder::Core::ERROR_NONE);
+        });
+        handler.RegisterWithError<void, ::Thunder::Core::JSON::String, RichError>(_T("contextOutbound"), [&invocations](const ::Thunder::Core::JSONRPC::Context& context, ::Thunder::Core::JSON::String& output, RichError&) -> uint32_t {
+            EXPECT_EQ(context.ChannelId(), 47u);
+            output = _T("outbound");
+            invocations |= 0x02;
+            return (::Thunder::Core::ERROR_NONE);
+        });
+        handler.RegisterWithError<RichInput, ::Thunder::Core::JSON::String, RichError>(_T("contextTransform"), [&invocations](const ::Thunder::Core::JSONRPC::Context& context, const RichInput& input, ::Thunder::Core::JSON::String& output, RichError&) -> uint32_t {
+            EXPECT_EQ(context.ChannelId(), 47u);
+            output = input.Input.Value() + _T(" transformed");
+            invocations |= 0x04;
+            return (::Thunder::Core::ERROR_NONE);
+        });
+
+        const ::Thunder::Core::JSONRPC::Context context(47, 1, string());
+        string response;
+        EXPECT_EQ(handler.Invoke(context, _T("contextInbound"), _T("{\"input\":\"inbound\"}"), response), ::Thunder::Core::ERROR_NONE);
+        EXPECT_EQ(handler.Invoke(context, _T("contextOutbound"), string(), response), ::Thunder::Core::ERROR_NONE);
+        ::Thunder::Core::JSON::String output;
+        output.FromString(response);
+        EXPECT_EQ(output.Value(), string("outbound"));
+        EXPECT_EQ(handler.Invoke(context, _T("contextTransform"), _T("{\"input\":\"input\"}"), response), ::Thunder::Core::ERROR_NONE);
+        output.Clear();
+        output.FromString(response);
+        EXPECT_EQ(output.Value(), string("input transformed"));
+        EXPECT_EQ(invocations, 0x07);
+    }
+
+    TEST(Core_JSONRPC_RichError, InstanceId_AllInputOutputFormsSelectInstanceDispatch)
+    {
+        ::Thunder::Core::JSONRPC::Handler handler(std::vector<uint8_t>{ 1 });
+        uint8_t invocations = 0;
+
+        handler.RegisterWithError<RichInput, void, RichError>(_T("scope::instanceInbound"), [&invocations](const ::Thunder::Core::JSONRPC::instance_id_follows_t&, const string& instanceId, const RichInput& input, RichError&) -> uint32_t {
+            EXPECT_EQ(instanceId, string("instance-21"));
+            EXPECT_EQ(input.Input.Value(), string("inbound"));
+            invocations |= 0x01;
+            return (::Thunder::Core::ERROR_NONE);
+        });
+        handler.RegisterWithError<void, ::Thunder::Core::JSON::String, RichError>(_T("scope::instanceOutbound"), [&invocations](const ::Thunder::Core::JSONRPC::instance_id_follows_t&, const string& instanceId, ::Thunder::Core::JSON::String& output, RichError&) -> uint32_t {
+            EXPECT_EQ(instanceId, string("instance-21"));
+            output = _T("outbound");
+            invocations |= 0x02;
+            return (::Thunder::Core::ERROR_NONE);
+        });
+        handler.RegisterWithError<RichInput, ::Thunder::Core::JSON::String, RichError>(_T("scope::instanceTransform"), [&invocations](const ::Thunder::Core::JSONRPC::instance_id_follows_t&, const string& instanceId, const RichInput& input, ::Thunder::Core::JSON::String& output, RichError&) -> uint32_t {
+            EXPECT_EQ(instanceId, string("instance-21"));
+            output = input.Input.Value() + _T(" transformed");
+            invocations |= 0x04;
+            return (::Thunder::Core::ERROR_NONE);
+        });
+
+        string response;
+        EXPECT_EQ(handler.Invoke(RichErrorContext(), _T("scope#instance-21::instanceInbound"), _T("{\"input\":\"inbound\"}"), response), ::Thunder::Core::ERROR_NONE);
+        EXPECT_EQ(handler.Invoke(RichErrorContext(), _T("scope#instance-21::instanceOutbound"), string(), response), ::Thunder::Core::ERROR_NONE);
+        ::Thunder::Core::JSON::String output;
+        output.FromString(response);
+        EXPECT_EQ(output.Value(), string("outbound"));
+        EXPECT_EQ(handler.Invoke(RichErrorContext(), _T("scope#instance-21::instanceTransform"), _T("{\"input\":\"input\"}"), response), ::Thunder::Core::ERROR_NONE);
+        output.Clear();
+        output.FromString(response);
+        EXPECT_EQ(output.Value(), string("input transformed"));
+        EXPECT_EQ(invocations, 0x07);
+    }
+
+    TEST(Core_JSONRPC_RichError, ContextAndInstanceId_AllInputOutputFormsSelectCombinedDispatch)
+    {
+        ::Thunder::Core::JSONRPC::Handler handler(std::vector<uint8_t>{ 1 });
+        uint8_t invocations = 0;
+
+        handler.RegisterWithError<void, void, RichError>(_T("scope::combinedNone"), [&invocations](const ::Thunder::Core::JSONRPC::Context& context, const ::Thunder::Core::JSONRPC::instance_id_follows_t&, const string& instanceId, RichError&) -> uint32_t {
+            EXPECT_EQ(context.ChannelId(), 47u);
+            EXPECT_EQ(instanceId, string("instance-63"));
+            invocations |= 0x01;
+            return (::Thunder::Core::ERROR_NONE);
+        });
+        handler.RegisterWithError<RichInput, void, RichError>(_T("scope::combinedInbound"), [&invocations](const ::Thunder::Core::JSONRPC::Context& context, const ::Thunder::Core::JSONRPC::instance_id_follows_t&, const string& instanceId, const RichInput& input, RichError&) -> uint32_t {
+            EXPECT_EQ(context.ChannelId(), 47u);
+            EXPECT_EQ(instanceId, string("instance-63"));
+            EXPECT_EQ(input.Input.Value(), string("inbound"));
+            invocations |= 0x02;
+            return (::Thunder::Core::ERROR_NONE);
+        });
+        handler.RegisterWithError<void, ::Thunder::Core::JSON::String, RichError>(_T("scope::combinedOutbound"), [&invocations](const ::Thunder::Core::JSONRPC::Context& context, const ::Thunder::Core::JSONRPC::instance_id_follows_t&, const string& instanceId, ::Thunder::Core::JSON::String& output, RichError&) -> uint32_t {
+            EXPECT_EQ(context.ChannelId(), 47u);
+            EXPECT_EQ(instanceId, string("instance-63"));
+            output = _T("outbound");
+            invocations |= 0x04;
+            return (::Thunder::Core::ERROR_NONE);
+        });
+        handler.RegisterWithError<RichInput, ::Thunder::Core::JSON::String, RichError>(_T("scope::combinedTransform"), [&invocations](const ::Thunder::Core::JSONRPC::Context& context, const ::Thunder::Core::JSONRPC::instance_id_follows_t&, const string& instanceId, const RichInput& input, ::Thunder::Core::JSON::String& output, RichError&) -> uint32_t {
+            EXPECT_EQ(context.ChannelId(), 47u);
+            EXPECT_EQ(instanceId, string("instance-63"));
+            output = input.Input.Value() + _T(" transformed");
+            invocations |= 0x08;
+            return (::Thunder::Core::ERROR_NONE);
+        });
+
+        const ::Thunder::Core::JSONRPC::Context context(47, 1, string());
+        string response;
+        EXPECT_EQ(handler.Invoke(context, _T("scope#instance-63::combinedNone"), string(), response), ::Thunder::Core::ERROR_NONE);
+        EXPECT_EQ(handler.Invoke(context, _T("scope#instance-63::combinedInbound"), _T("{\"input\":\"inbound\"}"), response), ::Thunder::Core::ERROR_NONE);
+        EXPECT_EQ(handler.Invoke(context, _T("scope#instance-63::combinedOutbound"), string(), response), ::Thunder::Core::ERROR_NONE);
+        ::Thunder::Core::JSON::String output;
+        output.FromString(response);
+        EXPECT_EQ(output.Value(), string("outbound"));
+        EXPECT_EQ(handler.Invoke(context, _T("scope#instance-63::combinedTransform"), _T("{\"input\":\"input\"}"), response), ::Thunder::Core::ERROR_NONE);
+        output.Clear();
+        output.FromString(response);
+        EXPECT_EQ(output.Value(), string("input transformed"));
+        EXPECT_EQ(invocations, 0x0F);
+    }
+
+    TEST(Core_JSONRPC_RichError, PropertySetter_MessageOnlyPreservesThunderCode)
+    {
+        ::Thunder::Core::JSONRPC::Handler handler(std::vector<uint8_t>{ 1 });
+        handler.RegisterWithError<::Thunder::Core::JSON::String, void, RichError>(_T("valueSetter"), [](const ::Thunder::Core::JSON::String& value, RichError& details) -> uint32_t {
+            EXPECT_EQ(value.Value(), string("setter value"));
+            details.Message = _T("property setter failure");
+            return (::Thunder::Core::ERROR_UNAVAILABLE);
+        });
+
+        string response;
+        const uint32_t result = handler.Invoke(RichErrorContext(), _T("valueSetter"), _T("\"setter value\""), response);
+        const ::Thunder::Core::JSONRPC::Message::Info error(ParseRichError(response));
+        ::Thunder::Core::JSONRPC::Message::Info expected;
+        expected.SetError(result);
+
+        EXPECT_EQ(error.Code.Value(), expected.Code.Value());
+        EXPECT_EQ(error.Text.Value(), string("property setter failure"));
+    }
+
+    TEST(Core_JSONRPC_RichError, IndexedPropertySetter_PassesIndexAndPreservesThunderMessage)
+    {
+        ::Thunder::Core::JSONRPC::Handler handler(std::vector<uint8_t>{ 1 });
+        string receivedIndex;
+        handler.RegisterWithError<::Thunder::Core::JSON::String, void, RichError>(_T("entrySetter"), [&receivedIndex](const string& index, const ::Thunder::Core::JSON::String& value, RichError& details) -> uint32_t {
+            receivedIndex = index;
+            EXPECT_EQ(value.Value(), string("setter value"));
+            details.Code = -32168;
+            return (::Thunder::Core::ERROR_BAD_REQUEST);
+        });
+
+        string response;
+        const uint32_t result = handler.Invoke(RichErrorContext(), _T("entrySetter@requested-index"), _T("\"setter value\""), response);
+        const ::Thunder::Core::JSONRPC::Message::Info error(ParseRichError(response));
+        ::Thunder::Core::JSONRPC::Message::Info expected;
+        expected.SetError(result);
+
+        EXPECT_EQ(receivedIndex, string("requested-index"));
+        EXPECT_EQ(error.Code.Value(), -32168);
+        EXPECT_EQ(error.Text.Value(), expected.Text.Value());
+    }
+
     TEST(Core_JSONRPC_RichError, FreeFunctionByName_RegularRegistrationUsesFunctionPointerTraits)
     {
         ::Thunder::Core::JSONRPC::Handler handler(std::vector<uint8_t>{ 1 });
