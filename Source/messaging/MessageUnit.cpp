@@ -287,7 +287,8 @@ ENUM_CONVERSION_END(Thunder::Core::Messaging::OutputMode)
             _adminLock.Lock();
             if (_externalInitialized == true) {
                 const string& module = metadata.Module();
-                const string key = module + '#' + Core::NumberType<uint8_t>(static_cast<uint8_t>(ExternalType(metadata))).Text() + '#' + metadata.Category();
+                const ThunderMessageType type = ExternalType(metadata);
+                const auto key = std::make_tuple(module, static_cast<uint8_t>(type), metadata.Category());
 
                 auto entry = _externalControls.find(key);
 
@@ -295,7 +296,7 @@ ENUM_CONVERSION_END(Thunder::Core::Messaging::OutputMode)
                     enabled = entry->second;
                 }
                 else {
-                    enabled = ThunderExternalOutput_IsEnabled(module.c_str(), ExternalType(metadata), metadata.Category().c_str());
+                    enabled = ThunderExternalOutput_IsEnabled(module.c_str(), type, metadata.Category().c_str());
                     _externalControls.emplace(key, enabled);
                 }
             }

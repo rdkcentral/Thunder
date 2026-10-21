@@ -25,6 +25,7 @@
 #include "DirectOutput.h"
 
 #include <map>
+#include <tuple>
 
 namespace Thunder {
 
@@ -1358,7 +1359,7 @@ namespace Thunder {
             Settings _settings;
             DirectOutput _direct;
             bool _externalInitialized;
-            mutable std::map<string, bool> _externalControls;
+            mutable std::map<std::tuple<string, uint8_t, string>, bool> _externalControls;
         };
 
     } // namespace Messaging
