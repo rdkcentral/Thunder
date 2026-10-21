@@ -24,8 +24,10 @@
 #include "TraceFactory.h"
 #include "DirectOutput.h"
 
-#include <map>
-#include <tuple>
+#ifdef MESSAGING_EXTERNAL_OUTPUT
+    #include <map>
+    #include <tuple>
+#endif
 
 namespace Thunder {
 
@@ -1296,8 +1298,10 @@ namespace Thunder {
                 , _dataBuffer()
                 , _settings()
                 , _direct()
+#ifdef MESSAGING_EXTERNAL_OUTPUT
                 , _externalInitialized(false)
                 , _externalControls()
+#endif
             {
             }
 
@@ -1342,15 +1346,19 @@ namespace Thunder {
             void Push(const Core::Messaging::MessageInfo& messageInfo, const Core::Messaging::IEvent* message, Core::Messaging::OutputMode outputMode) override;
             void Push(const Core::Messaging::MessageInfo& messageInfo, const Core::Messaging::IEvent* message, const OutputTargets& targets);
             OutputTargets Targets(const Core::Messaging::Metadata& metadata, Core::Messaging::OutputMode outputMode, bool localEnabled) const;
+#ifdef MESSAGING_EXTERNAL_OUTPUT
             bool ExternalEnabled(const Core::Messaging::Metadata& metadata) const;
+#endif
 
         private:
             uint16_t Serialize(uint8_t* buffer, const uint16_t length, const string& module);
             uint16_t Serialize(uint8_t* buffer, const uint16_t length);
             void Update(const Core::Messaging::Metadata& control, const bool enable);
             void Update();
+#ifdef MESSAGING_EXTERNAL_OUTPUT
             void InitializeExternal();
             void DeinitializeExternal();
+#endif
 
         private:
             mutable Core::CriticalSection _adminLock;
@@ -1358,8 +1366,10 @@ namespace Thunder {
             std::unique_ptr<MessageDataBuffer> _dataBuffer;
             Settings _settings;
             DirectOutput _direct;
+#ifdef MESSAGING_EXTERNAL_OUTPUT
             bool _externalInitialized;
             mutable std::map<std::tuple<string, uint8_t, string>, bool> _externalControls;
+#endif
         };
 
     } // namespace Messaging

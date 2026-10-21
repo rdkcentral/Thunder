@@ -65,7 +65,7 @@ if(MESSAGING_EXTERNAL_OUTPUT)
         endif()
 
         add_subdirectory("${MESSAGING_EXTERNAL_OUTPUT_SOURCE_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/ExternalOutput")
-        target_compile_definitions(${TARGET} PRIVATE MESSAGING_EXTERNAL_OUTPUT=1)
+        target_compile_definitions(${TARGET} PUBLIC MESSAGING_EXTERNAL_OUTPUT=1)
         target_link_libraries(${TARGET} PRIVATE ${NAMESPACE}MessagingExternalOutput)
 endif()
 

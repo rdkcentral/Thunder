@@ -21,7 +21,7 @@
 #include "ConsoleStreamRedirect.h"
 #include "ExternalOutput.h"
 
-#if defined(MESSAGING_EXTERNAL_OUTPUT)
+#ifdef MESSAGING_EXTERNAL_OUTPUT
 namespace {
     ThunderMessageType ExternalType(const Thunder::Core::Messaging::Metadata& metadata)
     {
@@ -230,16 +230,13 @@ ENUM_CONVERSION_END(Thunder::Core::Messaging::OutputMode)
             Core::Messaging::IControl::Iterate(handler);
         }
 
+#ifdef MESSAGING_EXTERNAL_OUTPUT
         void MessageUnit::InitializeExternal()
         {
-#if defined(MESSAGING_EXTERNAL_OUTPUT)
             _externalInitialized = ThunderExternalOutput_Initialize();
             if (_externalInitialized == false) {
                 TRACE_L1("Unable to initialize external output");
             }
-#else
-            _externalInitialized = false;
-#endif
             _externalControls.clear();
 
             if (_externalInitialized == true) {
@@ -270,11 +267,9 @@ ENUM_CONVERSION_END(Thunder::Core::Messaging::OutputMode)
 
         void MessageUnit::DeinitializeExternal()
         {
-#if defined(MESSAGING_EXTERNAL_OUTPUT)
             if (_externalInitialized == true) {
                 ThunderExternalOutput_Deinitialize();
             }
-#endif
             _externalInitialized = false;
             _externalControls.clear();
         }
@@ -283,7 +278,6 @@ ENUM_CONVERSION_END(Thunder::Core::Messaging::OutputMode)
         {
             bool enabled = false;
 
-#if defined(MESSAGING_EXTERNAL_OUTPUT)
             _adminLock.Lock();
             if (_externalInitialized == true) {
                 const string& module = metadata.Module();
@@ -301,17 +295,17 @@ ENUM_CONVERSION_END(Thunder::Core::Messaging::OutputMode)
                 }
             }
             _adminLock.Unlock();
-#else
-            (void)metadata;
-#endif
 
             return (enabled);
         }
+#endif
 
         MessageUnit::OutputTargets MessageUnit::Targets(const Core::Messaging::Metadata& metadata, const Core::Messaging::OutputMode outputMode, const bool localEnabled) const
         {
             OutputTargets targets = { false, false, false };
+#ifdef MESSAGING_EXTERNAL_OUTPUT
             const bool externalRoute = ((outputMode == Core::Messaging::OutputMode::EXTERNAL_DIRECT) || (outputMode == Core::Messaging::OutputMode::ALL));
+#endif
 
             switch (outputMode) {
             case Core::Messaging::OutputMode::DIRECT:
@@ -324,24 +318,30 @@ ENUM_CONVERSION_END(Thunder::Core::Messaging::OutputMode)
                 targets.direct = localEnabled;
                 targets.handler = localEnabled;
                 break;
-            case Core::Messaging::OutputMode::EXTERNAL_DIRECT:
-                break;
             default:
                 break;
             }
 
+#ifdef MESSAGING_EXTERNAL_OUTPUT
             if ((externalRoute == true) && !((metadata.Type() == Core::Messaging::Metadata::type::TELEMETRY) && (targets.handler == true))) {
                 targets.external = ExternalEnabled(metadata);
             }
+#else
+            (void)metadata;
+#endif
 
             return (targets);
         }
 
         void MessageUnit::Announce(const Core::Messaging::Metadata& metadata)
         {
+#ifdef MESSAGING_EXTERNAL_OUTPUT
             if (_externalInitialized == true) {
                 ExternalEnabled(metadata);
             }
+#else
+            (void)metadata;
+#endif
         }
 
         MessageUnit& MessageUnit::Instance() {
@@ -396,7 +396,9 @@ ENUM_CONVERSION_END(Thunder::Core::Messaging::OutputMode)
 
                 _direct.Mode(_settings.IsBackground(), _settings.IsAbbreviated(), _settings.IsTimeEnabled());
 
+#ifdef MESSAGING_EXTERNAL_OUTPUT
                 InitializeExternal();
+#endif
 
                 Core::Messaging::IStore::Set(this);
 
@@ -459,7 +461,9 @@ ENUM_CONVERSION_END(Thunder::Core::Messaging::OutputMode)
 
                     _direct.Mode(_settings.IsBackground(), _settings.IsAbbreviated(), _settings.IsTimeEnabled());
 
+#ifdef MESSAGING_EXTERNAL_OUTPUT
                     InitializeExternal();
+#endif
 
                     Core::Messaging::IStore::Set(this);
 
@@ -505,7 +509,9 @@ ENUM_CONVERSION_END(Thunder::Core::Messaging::OutputMode)
                 Core::Messaging::IStore::Set(nullptr);
                 Core::Messaging::IControl::Iterate(handler);
 
+#ifdef MESSAGING_EXTERNAL_OUTPUT
                 DeinitializeExternal();
+#endif
 
                 _adminLock.Lock();
                 _dataBuffer.reset(nullptr);
@@ -528,13 +534,13 @@ ENUM_CONVERSION_END(Thunder::Core::Messaging::OutputMode)
                 _direct.Output(messageInfo, message);
             }
 
+#ifdef MESSAGING_EXTERNAL_OUTPUT
             if (targets.external == true) {
-#if defined(MESSAGING_EXTERNAL_OUTPUT)
                 if (_externalInitialized == true) {
                     ThunderExternalOutput_Submit(messageInfo.Module().c_str(), ExternalType(messageInfo), messageInfo.Category().c_str(), message->Data().c_str());
                 }
-#endif
             }
+#endif
 
             if (targets.handler == true) {
                 if (_dataBuffer != nullptr) {
