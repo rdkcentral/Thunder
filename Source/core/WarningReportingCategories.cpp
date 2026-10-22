@@ -37,11 +37,11 @@ namespace WarningReporting {
             {
                 ANNOUNCE_WARNING(TooLongWaitingForLock);
                 ANNOUNCE_WARNING(SinkStillHasReference);
-                ANNOUNCE_INVOKE_WARNING(TooLongInvokeRPC);
-                ANNOUNCE_WORKERPOOL_WARNING(JobTooLongToFinish);
-                ANNOUNCE_WORKERPOOL_WARNING(JobTooLongWaitingInQueue);
+                ANNOUNCE_PRIORITY_WARNING(TooLongInvokeRPC);
+                ANNOUNCE_PRIORITY_WARNING(JobTooLongToFinish);
+                ANNOUNCE_PRIORITY_WARNING(JobTooLongWaitingInQueue);
                 ANNOUNCE_WARNING(TooLongDecrypt);
-                ANNOUNCE_WORKERPOOL_WARNING(JobActiveForTooLong);
+                ANNOUNCE_PRIORITY_WARNING(JobActiveForTooLong);
             }
         } ControlsRegistration;
 

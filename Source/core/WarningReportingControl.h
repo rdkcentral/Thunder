@@ -43,9 +43,7 @@
 
 #define ANNOUNCE_WARNING(CATEGORY)
 
-#define ANNOUNCE_INVOKE_WARNING(CATEGORY)
-
-#define ANNOUNCE_WORKERPOOL_WARNING(CATEGORY)
+#define ANNOUNCE_PRIORITY_WARNING(CATEGORY)
 
 #define REPORT_WARNING(CATEGORY, ...)
 
@@ -58,24 +56,18 @@
 #define REPORT_DURATION_WARNING(CODE, CATEGORY, ...) \
     CODE
 
-#define REPORT_INVOKE_DURATION_WARNING(CODE, CATEGORY, ...) \
+#define REPORT_PRIORITY_DURATION_WARNING(CODE, CATEGORY, ...) \
     CODE
 
-#define REPORT_WORKERPOOL_DURATION_WARNING(CODE, CATEGORY, ...) \
-    CODE
+#define REPORT_PRIORITY_WARNING(CATEGORY, ACTUALVALUE, ...)
 
-#define REPORT_WORKERPOOL_WARNING(CATEGORY, ACTUALVALUE, ...)
-
-#define REPORT_WORKERPOOL_WARNING_EX(CATEGORY, CALLSIGN, ACTUALVALUE, ...)
+#define REPORT_PRIORITY_WARNING_EX(CATEGORY, CALLSIGN, ACTUALVALUE, ...)
 
 #elif defined(__CORE_SLIM_WARNING_REPORTING__)
 
 #define ANNOUNCE_WARNING(CATEGORY)
 
-#define ANNOUNCE_INVOKE_WARNING(CATEGORY) \
-    WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::IsEnabled()
-
-#define ANNOUNCE_WORKERPOOL_WARNING(CATEGORY) \
+#define ANNOUNCE_PRIORITY_WARNING(CATEGORY) \
     WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::IsEnabled()
 
 #define REPORT_WARNING(CATEGORY, ...)
@@ -89,7 +81,7 @@
 #define REPORT_DURATION_WARNING(CODE, CATEGORY, ...) \
     CODE
 
-#define REPORT_INVOKE_DURATION_WARNING(CODE, CATEGORY, ...) \
+#define REPORT_PRIORITY_DURATION_WARNING(CODE, CATEGORY, ...) \
     if (WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::IsEnabled() == true) { \
         uint64_t start = WPEFramework::Core::SystemInfo::Instance().Ticks(); \
         CODE \
@@ -106,14 +98,11 @@
         CODE \
     }
 
-#define REPORT_WORKERPOOL_DURATION_WARNING(CODE, CATEGORY, ...) \
-    REPORT_INVOKE_DURATION_WARNING(CODE, CATEGORY, ##__VA_ARGS__)
-
-#define REPORT_WORKERPOOL_WARNING(CATEGORY, ACTUALVALUE, ...) \
-    REPORT_WORKERPOOL_WARNING_EX(CATEGORY, WPEFramework::Core::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(), \
+#define REPORT_PRIORITY_WARNING(CATEGORY, ACTUALVALUE, ...) \
+    REPORT_PRIORITY_WARNING_EX(CATEGORY, WPEFramework::Core::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(), \
         ACTUALVALUE, ##__VA_ARGS__)
 
-#define REPORT_WORKERPOOL_WARNING_EX(CATEGORY, CALLSIGN, ACTUALVALUE, ...) \
+#define REPORT_PRIORITY_WARNING_EX(CATEGORY, CALLSIGN, ACTUALVALUE, ...) \
     if (WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::IsEnabled() == true) { \
         WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>> __message__; \
         if (__message__.Analyze(WPEFramework::Core::System::MODULE_NAME, CALLSIGN, ACTUALVALUE, ##__VA_ARGS__) == true) { \
@@ -146,9 +135,7 @@
 #define ANNOUNCE_WARNING(CATEGORY) \
     WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::IsEnabled()
 
-#define ANNOUNCE_INVOKE_WARNING(CATEGORY) ANNOUNCE_WARNING(CATEGORY)
-
-#define ANNOUNCE_WORKERPOOL_WARNING(CATEGORY) ANNOUNCE_WARNING(CATEGORY)
+#define ANNOUNCE_PRIORITY_WARNING(CATEGORY) ANNOUNCE_WARNING(CATEGORY)
 
 #define REPORT_WARNING(CATEGORY, ...) \
     if (WPEFramework::WarningReporting::WarningReportingType<CATEGORY>::IsEnabled()) { \
@@ -209,16 +196,13 @@
         CODE \
     }
 
-#define REPORT_INVOKE_DURATION_WARNING(CODE, CATEGORY, ...) \
+#define REPORT_PRIORITY_DURATION_WARNING(CODE, CATEGORY, ...) \
     REPORT_DURATION_WARNING(CODE, CATEGORY, ##__VA_ARGS__)
 
-#define REPORT_WORKERPOOL_DURATION_WARNING(CODE, CATEGORY, ...) \
-    REPORT_DURATION_WARNING(CODE, CATEGORY, ##__VA_ARGS__)
-
-#define REPORT_WORKERPOOL_WARNING(CATEGORY, ACTUALVALUE, ...) \
+#define REPORT_PRIORITY_WARNING(CATEGORY, ACTUALVALUE, ...) \
     REPORT_OUTOFBOUNDS_WARNING(CATEGORY, ACTUALVALUE, ##__VA_ARGS__)
 
-#define REPORT_WORKERPOOL_WARNING_EX(CATEGORY, CALLSIGN, ACTUALVALUE, ...) \
+#define REPORT_PRIORITY_WARNING_EX(CATEGORY, CALLSIGN, ACTUALVALUE, ...) \
     REPORT_OUTOFBOUNDS_WARNING_EX(CATEGORY, CALLSIGN, ACTUALVALUE, ##__VA_ARGS__)
 
 #endif
