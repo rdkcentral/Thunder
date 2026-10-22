@@ -128,7 +128,7 @@ namespace Core {
 
                 IDispatch* request = &(*_job);
 
-                REPORT_PRIORITY_WARNING(WarningReporting::JobTooLongWaitingInQueue, static_cast<uint32_t>((Time::Now().Ticks() - _time) / Time::TicksPerMillisecond));
+                REPORT_PRIORITY_OUTOFBOUNDS_WARNING(WarningReporting::JobTooLongWaitingInQueue, static_cast<uint32_t>((Time::Now().Ticks() - _time) / Time::TicksPerMillisecond));
                 REPORT_PRIORITY_DURATION_WARNING({ dispatcher->Dispatch(request); }, WarningReporting::JobTooLongToFinish);
 
                 return (dynamic_cast<IJob*>(request));
