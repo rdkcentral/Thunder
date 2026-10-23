@@ -111,9 +111,9 @@ namespace Core {
             public:
                 void Clear() override
                 {
-                    Clear(-1);
+                    Clear(static_cast<uint32_t>(-1));
                 }
-                void Clear(const int32_t retainedCapacity)
+                void Clear(const uint32_t retainedCapacity)
                 {
                     Code.Clear();
                     Text.Clear(retainedCapacity);

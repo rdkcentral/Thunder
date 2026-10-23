@@ -1819,15 +1819,15 @@ namespace Core {
 
             void Clear() override
             {
-                Clear(-1);
+                Clear(static_cast<uint32_t>(-1));
             }
 
-            void Clear(const int32_t retainedCapacity)
+            void Clear(const uint32_t retainedCapacity)
             {
                 _flagsAndCounters = (_flagsAndCounters & QuotedSerializeBit);
                 _value.clear();
 
-                if ((retainedCapacity >= 0) && (_value.capacity() > static_cast<size_t>(retainedCapacity))) {
+                if ((retainedCapacity != static_cast<uint32_t>(-1)) && (_value.capacity() > retainedCapacity)) {
                     _value.shrink_to_fit();
                 }
             }
