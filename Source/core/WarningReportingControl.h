@@ -79,63 +79,67 @@
 #define ANNOUNCE_WARNING(CATEGORY)  \
     Thunder::WarningReporting::WarningReportingType<Thunder::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::IsEnabled()
 
-#define REPORT_WARNING(CATEGORY, ...)                                                                                  \
-    if (Thunder::WarningReporting::WarningReportingType<CATEGORY>::IsEnabled()) {                                 \
-        Thunder::WarningReporting::WarningReportingType<CATEGORY> __message__;                                    \
-        if (__message__.Analyze(Thunder::Core::System::MODULE_NAME,                                               \
+#define REPORT_WARNING(CATEGORY, ...) \
+    if (const auto __targets__ = Thunder::WarningReporting::ResolveTargets( \
+        Thunder::WarningReporting::WarningReportingType<CATEGORY>::CategoryName(), \
+        Thunder::WarningReporting::WarningReportingType<CATEGORY>::RoutingMode(), \
+        Thunder::WarningReporting::WarningReportingType<CATEGORY>::IsEnabled()); __targets__.Any() == true) { \
+        Thunder::WarningReporting::WarningReportingType<CATEGORY> __message__; \
+        if (__message__.Analyze(Thunder::Core::System::MODULE_NAME, \
                 Thunder::Core::CallsignTLS::CallsignAccess<&Thunder::Core::System::MODULE_NAME>::Callsign(), \
-                ##__VA_ARGS__)                                                                                         \
-            == true) {                                                                                                 \
-            Thunder::WarningReporting::WarningReportingUnitProxy::Instance().ReportWarningEvent(                  \
+                ##__VA_ARGS__) == true) { \
+            Thunder::WarningReporting::WarningReportingUnitProxy::Instance().ReportWarningEvent( \
                 Thunder::Core::CallsignTLS::CallsignAccess<&Thunder::Core::System::MODULE_NAME>::Callsign(), \
-                __message__);                                                                                          \
-        }                                                                                                              \
+                __message__, __targets__); \
+        } \
     }
 
-#define REPORT_OUTOFBOUNDS_WARNING(CATEGORY, ACTUALVALUE, ...)                                                                                                                  \
-    if (Thunder::WarningReporting::WarningReportingType<Thunder::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::IsEnabled() == true) {                  \
-        Thunder::WarningReporting::WarningReportingType<Thunder::WarningReporting::WarningReportingBoundsCategory<CATEGORY>> __message__;                             \
-        if (__message__.Analyze(Thunder::Core::System::MODULE_NAME, Thunder::Core::CallsignTLS::CallsignAccess<&Thunder::Core::System::MODULE_NAME>::Callsign(), \
-                ACTUALVALUE,                                                                                                                                                    \
-                ##__VA_ARGS__)                                                                                                                                                  \
-            == true) {                                                                                                                                                          \
-            Thunder::WarningReporting::WarningReportingUnitProxy::Instance().ReportWarningEvent(                                                                           \
-                Thunder::Core::CallsignTLS::CallsignAccess<&Thunder::Core::System::MODULE_NAME>::Callsign(),                                                          \
-                __message__);                                                                                                                                                   \
-        }                                                                                                                                                                       \
+#define REPORT_OUTOFBOUNDS_WARNING(CATEGORY, ACTUALVALUE, ...) \
+    if (const auto __targets__ = Thunder::WarningReporting::ResolveTargets( \
+        Thunder::WarningReporting::WarningReportingType<Thunder::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::CategoryName(), \
+        Thunder::WarningReporting::WarningReportingType<Thunder::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::RoutingMode(), \
+        Thunder::WarningReporting::WarningReportingType<Thunder::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::IsEnabled()); __targets__.Any() == true) { \
+        Thunder::WarningReporting::WarningReportingType<Thunder::WarningReporting::WarningReportingBoundsCategory<CATEGORY>> __message__; \
+        if (__message__.Analyze(Thunder::Core::System::MODULE_NAME, \
+                Thunder::Core::CallsignTLS::CallsignAccess<&Thunder::Core::System::MODULE_NAME>::Callsign(), \
+                ACTUALVALUE, ##__VA_ARGS__) == true) { \
+            Thunder::WarningReporting::WarningReportingUnitProxy::Instance().ReportWarningEvent( \
+                Thunder::Core::CallsignTLS::CallsignAccess<&Thunder::Core::System::MODULE_NAME>::Callsign(), \
+                __message__, __targets__); \
+        } \
     }
 
-#define REPORT_OUTOFBOUNDS_WARNING_EX(CATEGORY, CALLSIGN, ACTUALVALUE, ...)                                                                                                     \
-    if (Thunder::WarningReporting::WarningReportingType<Thunder::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::IsEnabled() == true) {                  \
-        Thunder::WarningReporting::WarningReportingType<Thunder::WarningReporting::WarningReportingBoundsCategory<CATEGORY>> __message__;                             \
-        if (__message__.Analyze(Thunder::Core::System::MODULE_NAME, CALLSIGN,                                                                                              \
-                ACTUALVALUE,                                                                                                                                                    \
-                ##__VA_ARGS__)                                                                                                                                                  \
-            == true) {                                                                                                                                                          \
-            Thunder::WarningReporting::WarningReportingUnitProxy::Instance().ReportWarningEvent(                                                                           \
-                CALLSIGN,                                                                                                                                                       \
-                __message__);                                                                                                                                                   \
-        }                                                                                                                                                                       \
+#define REPORT_OUTOFBOUNDS_WARNING_EX(CATEGORY, CALLSIGN, ACTUALVALUE, ...) \
+    if (const auto __targets__ = Thunder::WarningReporting::ResolveTargets( \
+        Thunder::WarningReporting::WarningReportingType<Thunder::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::CategoryName(), \
+        Thunder::WarningReporting::WarningReportingType<Thunder::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::RoutingMode(), \
+        Thunder::WarningReporting::WarningReportingType<Thunder::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::IsEnabled()); __targets__.Any() == true) { \
+        Thunder::WarningReporting::WarningReportingType<Thunder::WarningReporting::WarningReportingBoundsCategory<CATEGORY>> __message__; \
+        if (__message__.Analyze(Thunder::Core::System::MODULE_NAME, CALLSIGN, \
+                ACTUALVALUE, ##__VA_ARGS__) == true) { \
+            Thunder::WarningReporting::WarningReportingUnitProxy::Instance().ReportWarningEvent( \
+                CALLSIGN, __message__, __targets__); \
+        } \
     }
 
-
-#define REPORT_DURATION_WARNING(CODE, CATEGORY, ...)                                                                                                           \
-    if (Thunder::WarningReporting::WarningReportingType<Thunder::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::IsEnabled() == true) { \
-        uint64_t start = Thunder::Core::SystemInfo::Instance().Ticks();                                                                                   \
-        CODE                                                                                                                                                   \
-        uint64_t duration = (Thunder::Core::SystemInfo::Instance().Ticks() - start) / Thunder::Core::Time::MicroSecondsPerMilliSecond;               \
-        Thunder::WarningReporting::WarningReportingType<Thunder::WarningReporting::WarningReportingBoundsCategory<CATEGORY>> __message__;            \
-        if (__message__.Analyze(Thunder::Core::System::MODULE_NAME,                                                                                       \
-                Thunder::Core::CallsignTLS::CallsignAccess<&Thunder::Core::System::MODULE_NAME>::Callsign(),                                         \
-                duration,                                                                                                                                      \
-                ##__VA_ARGS__)                                                                                                                                 \
-            == true) {                                                                                                                                         \
-            Thunder::WarningReporting::WarningReportingUnitProxy::Instance().ReportWarningEvent(                                                          \
-                Thunder::Core::CallsignTLS::CallsignAccess<&Thunder::Core::System::MODULE_NAME>::Callsign(),                                         \
-                __message__);                                                                                                                                  \
-        }                                                                                                                                                      \
-    } else {                                                                                                                                                   \
-        CODE                                                                                                                                                   \
+#define REPORT_DURATION_WARNING(CODE, CATEGORY, ...) \
+    if (const auto __targets__ = Thunder::WarningReporting::ResolveTargets( \
+        Thunder::WarningReporting::WarningReportingType<Thunder::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::CategoryName(), \
+        Thunder::WarningReporting::WarningReportingType<Thunder::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::RoutingMode(), \
+        Thunder::WarningReporting::WarningReportingType<Thunder::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::IsEnabled()); __targets__.Any() == true) { \
+        uint64_t start = Thunder::Core::SystemInfo::Instance().Ticks(); \
+        CODE \
+        uint64_t duration = (Thunder::Core::SystemInfo::Instance().Ticks() - start) / Thunder::Core::Time::MicroSecondsPerMilliSecond; \
+        Thunder::WarningReporting::WarningReportingType<Thunder::WarningReporting::WarningReportingBoundsCategory<CATEGORY>> __message__; \
+        if (__message__.Analyze(Thunder::Core::System::MODULE_NAME, \
+                Thunder::Core::CallsignTLS::CallsignAccess<&Thunder::Core::System::MODULE_NAME>::Callsign(), \
+                duration, ##__VA_ARGS__) == true) { \
+            Thunder::WarningReporting::WarningReportingUnitProxy::Instance().ReportWarningEvent( \
+                Thunder::Core::CallsignTLS::CallsignAccess<&Thunder::Core::System::MODULE_NAME>::Callsign(), \
+                __message__, __targets__); \
+        } \
+    } else { \
+        CODE \
     }
 
 namespace Thunder {
@@ -190,7 +194,8 @@ namespace WarningReporting {
 
         static WarningReportingUnitProxy& Instance();
 
-        void ReportWarningEvent(const char identifier[], const IWarningEvent& information);
+        OutputTargets Targets(const char category[], Core::Messaging::OutputMode routing, bool enabled) const;
+        void ReportWarningEvent(const char identifier[], const IWarningEvent& information, const OutputTargets& targets);
         void FetchCategoryInformation(const string& category, bool& outIsDefaultCategory, bool& outIsEnabled, string& outExcluded, string& outConfiguration) const;
         void AddToCategoryList(IWarningReportingUnit::IWarningReportingControl& Category);
         void RemoveFromCategoryList(IWarningReportingUnit::IWarningReportingControl& Category);
@@ -209,6 +214,28 @@ namespace WarningReporting {
         WaitingAnnounceContainer _waitingAnnounces;
         Core::CriticalSection* _adminLock;
     };
+
+    inline OutputTargets ResolveTargets(const char category[], const Core::Messaging::OutputMode routing, const bool enabled)
+    {
+        OutputTargets targets = { false, false, false };
+
+        if ((routing == Core::Messaging::OutputMode::ALL) || (routing == Core::Messaging::OutputMode::EXTERNAL_DIRECT)) {
+            targets = WarningReportingUnitProxy::Instance().Targets(category, routing, enabled);
+        } else {
+            switch (routing) {
+            case Core::Messaging::OutputMode::DIRECT:
+                targets.direct = enabled;
+                break;
+            case Core::Messaging::OutputMode::HANDLER:
+                targets.handler = enabled;
+                break;
+            default:
+                break;
+            }
+        }
+
+        return (targets);
+    }
 
     template <typename CONTROLCATEGORY>
     class WarningReportingBoundsCategory {
@@ -545,6 +572,16 @@ namespace WarningReporting {
         inline static bool IsEnabled()
         {
             return _sWarningControl.IsEnabled();
+        }
+
+        inline static const char* CategoryName()
+        {
+            return _sWarningControl.Category();
+        }
+
+        inline static Core::Messaging::OutputMode RoutingMode()
+        {
+            return _sWarningControl.Routing();
         }
 
         Core::Messaging::OutputMode Routing() const override
