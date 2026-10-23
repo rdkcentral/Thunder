@@ -715,7 +715,9 @@ POP_WARNING()
             SYSLOG(Logging::Startup, (_T("Process Id:    %d"), Core::ProcessInfo().Id()));
             SYSLOG(Logging::Startup, (_T("Tree ref:      " _T(EXPAND_AND_QUOTE(TREE_REFERENCE)))));
             SYSLOG(Logging::Startup, (_T("Build ref:     " _T(EXPAND_AND_QUOTE(BUILD_REFERENCE)))));
+            const Core::Time::microsecondsfromepoch messagingStart = Core::Time::Now().Ticks();
             SYSLOG(Logging::Startup, (_T("Version:       %d:%d:%d"), PluginHost::Major, PluginHost::Minor, PluginHost::Minor));
+            SYSLOG(Logging::Startup, (_T("Messaging latency: %" PRIu64 " microseconds"), static_cast<uint64_t>(Core::Time::Now().Ticks() - messagingStart)));
             SYSLOG(Logging::Startup, (_T("Messages:        %s"), messagingSettings.c_str()));
 
             // Before we do any translation of IP, make sure we have the right network info...
