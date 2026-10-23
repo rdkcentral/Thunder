@@ -40,3 +40,7 @@ enable_testing()
 add_subdirectory(core)
 add_subdirectory(tests)
 add_subdirectory(workerpool)
+
+if(MESSAGING AND MESSAGING_EXTERNAL_OUTPUT AND MESSAGING_EXTERNAL_OUTPUT_USE_MOCK)
+    add_subdirectory(messaging)
+endif()
