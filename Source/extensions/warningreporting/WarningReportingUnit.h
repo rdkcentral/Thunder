@@ -194,6 +194,7 @@ namespace WarningReporting {
 
         void AddToCategoryList(IWarningReportingUnit::IWarningReportingControl& Category) override;
         void RemoveFromCategoryList(IWarningReportingUnit::IWarningReportingControl& Category) override;
+        OutputTargets Targets(const char category[], Core::Messaging::OutputMode routing, bool enabled) const override;
         std::list<string> GetCategories();
 
         // Default enabled/disabled categories: set via config.json.
@@ -201,7 +202,7 @@ namespace WarningReporting {
         string Defaults() const;
         void Defaults(const string& jsonCategories);
 
-        void ReportWarningEvent(const char identifier[], const IWarningEvent& information) override;
+        void ReportWarningEvent(const char identifier[], const IWarningEvent& information, const OutputTargets& targets) override;
 
     private:
         void UpdateEnabledCategories(const Core::JSON::ArrayType<Setting::JSON>& info);

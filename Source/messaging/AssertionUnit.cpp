@@ -37,9 +37,14 @@ namespace Assertion {
         AssertionUnitProxy::Instance().Handle(nullptr);
     }
 
-    void AssertionUnit::AssertionEvent(Core::Messaging::IStore::Assert& metadata, const Core::Messaging::TextMessage& message, Core::Messaging::OutputMode outputMode)
+    Core::Messaging::OutputTargets AssertionUnit::Targets(const Core::Messaging::Metadata& metadata, const Core::Messaging::OutputMode outputMode, const bool localEnabled) const
     {
-        WPEFramework::Messaging::MessageUnit::Instance().Push(metadata, &message, outputMode);
+        return (WPEFramework::Messaging::MessageUnit::Instance().Targets(metadata, outputMode, localEnabled));
+    }
+
+    void AssertionUnit::AssertionEvent(Core::Messaging::IStore::Assert& metadata, const Core::Messaging::TextMessage& message, const Core::Messaging::OutputTargets& targets)
+    {
+        WPEFramework::Messaging::MessageUnit::Instance().Push(metadata, &message, targets);
     }
 }
 }
