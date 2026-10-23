@@ -271,7 +271,7 @@ namespace Core {
                 if (_dispatchedJobList.size() > 0 && IsActive()) {
                     for (auto &job : _dispatchedJobList) {
                         ++job.ReportRunCount;
-                        REPORT_OUTOFBOUNDS_WARNING_EX(WarningReporting::JobActiveForTooLong, job.CallSign.c_str(),
+                        REPORT_PRIORITY_OUTOFBOUNDS_WARNING_EX(WarningReporting::JobActiveForTooLong, job.CallSign.c_str(),
                         static_cast<uint32_t>((Time::Now().Ticks() - job.DispatchedTime) / Time::TicksPerMillisecond));
                     }
                 }

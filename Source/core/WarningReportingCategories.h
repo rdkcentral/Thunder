@@ -20,6 +20,7 @@
 #pragma once
 
 #include "Module.h"
+#include <core/WarningReportingConfig.h>
 #include <iostream>
 
 namespace WPEFramework {
@@ -133,8 +134,8 @@ namespace WarningReporting {
             visitor += Core::Format(_T(", value %" PRId64 " [ms], max allowed %" PRId64 " [ms]"), actualValue, maxValue);
         };
 
-        static constexpr uint32_t DefaultWarningBound = { 750 };
-        static constexpr uint32_t DefaultReportBound = { 250 };
+        static constexpr uint32_t DefaultWarningBound = { THUNDER_WARNING_REPORTING_INVOKE_RPC_WARNING_BOUND };
+        static constexpr uint32_t DefaultReportBound = { THUNDER_WARNING_REPORTING_INVOKE_RPC_REPORT_BOUND };
 
     private:
         uint32_t _interfaceId;
@@ -165,8 +166,8 @@ namespace WarningReporting {
             visitor += Core::Format(_T(", value %" PRId64 " [ms], max allowed %" PRId64 " [ms]"), actualValue, maxValue);
         };
 
-        static constexpr uint32_t DefaultWarningBound = { 7500 };
-        static constexpr uint32_t DefaultReportBound = { 5000 };
+        static constexpr uint32_t DefaultWarningBound = { THUNDER_WARNING_REPORTING_WORKERPOOL_FINISH_WARNING_BOUND };
+        static constexpr uint32_t DefaultReportBound = { THUNDER_WARNING_REPORTING_WORKERPOOL_FINISH_REPORT_BOUND };
     };
 
     class EXTERNAL JobTooLongWaitingInQueue {
@@ -193,8 +194,8 @@ namespace WarningReporting {
             visitor += Core::Format(_T(", value %" PRId64 " [ms], max allowed %" PRId64 " [ms]"), actualValue, maxValue);
         };
 
-        static constexpr uint32_t DefaultWarningBound = { 400 };
-        static constexpr uint32_t DefaultReportBound = { 200 };
+        static constexpr uint32_t DefaultWarningBound = { THUNDER_WARNING_REPORTING_WORKERPOOL_QUEUE_WARNING_BOUND };
+        static constexpr uint32_t DefaultReportBound = { THUNDER_WARNING_REPORTING_WORKERPOOL_QUEUE_REPORT_BOUND };
     };
 
     class EXTERNAL TooLongDecrypt {
@@ -250,8 +251,8 @@ namespace WarningReporting {
             visitor += Core::Format(_T(", value %" PRId64 " [ms], max allowed %" PRId64 " [ms]"), actualValue, maxValue);
         };
 
-        static constexpr uint32_t DefaultWarningBound = { 20000 };
-        static constexpr uint32_t DefaultReportBound = { 15000 };
+        static constexpr uint32_t DefaultWarningBound = { THUNDER_WARNING_REPORTING_WORKERPOOL_ACTIVE_WARNING_BOUND };
+        static constexpr uint32_t DefaultReportBound = { THUNDER_WARNING_REPORTING_WORKERPOOL_ACTIVE_REPORT_BOUND };
     };
 
     class EXTERNAL SocketOperationTooLong {

@@ -18,6 +18,11 @@
 set(TARGET ${NAMESPACE}Core)
 include(CompileSettings)
 
+configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/WarningReportingConfig.h.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/generated/core/WarningReportingConfig.h"
+    @ONLY)
+
 find_package(Threads REQUIRED)
 find_package(ExecInfo)
 find_package(LIBRT)
@@ -176,6 +181,9 @@ endif()
 if(WARNING_REPORTING)
     target_sources(${TARGET} PRIVATE WarningReportingControl.cpp WarningReportingCategories.cpp)
     target_compile_definitions(${TARGET} PUBLIC __CORE_WARNING_REPORTING__)
+    if(SLIM_WARNING_REPORTING)
+        target_compile_definitions(${TARGET} PUBLIC __CORE_SLIM_WARNING_REPORTING__)
+    endif()
     message(STATUS "Warning reporting enabled")
 endif()
 
@@ -236,6 +244,7 @@ set_target_properties(${TARGET} PROPERTIES
 
 target_include_directories( ${TARGET}
         PUBLIC
+          $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/generated>
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../> #core.h
           $<INSTALL_INTERFACE:include/${NAMESPACE}>)
@@ -275,6 +284,10 @@ install(
         PUBLIC_HEADER DESTINATION include/${NAMESPACE}/core COMPONENT devel   # for mac 
         INCLUDES DESTINATION include/${NAMESPACE}   # default include path
 )
+
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/generated/core/WarningReportingConfig.h"
+    DESTINATION include/${NAMESPACE}/core
+    COMPONENT devel)
 
 # ===========================================================================================
 # Install METADATA:
