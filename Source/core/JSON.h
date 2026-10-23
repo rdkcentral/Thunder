@@ -1819,8 +1819,17 @@ namespace Core {
 
             void Clear() override
             {
+                Clear(-1);
+            }
+
+            void Clear(const int32_t retainedCapacity)
+            {
                 _flagsAndCounters = (_flagsAndCounters & QuotedSerializeBit);
                 _value.clear();
+
+                if ((retainedCapacity >= 0) && (_value.capacity() > static_cast<size_t>(retainedCapacity))) {
+                    _value.shrink_to_fit();
+                }
             }
 
             inline bool IsQuoted() const
