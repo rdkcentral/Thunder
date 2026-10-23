@@ -34,3 +34,7 @@ enable_testing()
 
 add_subdirectory(core)
 add_subdirectory(tests)
+
+if(MESSAGING_EXTERNAL_OUTPUT)
+	add_subdirectory(messaging)
+endif()

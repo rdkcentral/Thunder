@@ -41,7 +41,8 @@ namespace Assertion {
     public:
         static AssertionUnit& Instance();
 
-        void AssertionEvent(Core::Messaging::IStore::Assert& metadata, const Core::Messaging::TextMessage& message, Core::Messaging::OutputMode outputMode) override;
+        Core::Messaging::OutputTargets Targets(const Core::Messaging::Metadata& metadata, Core::Messaging::OutputMode outputMode, bool localEnabled) const override;
+        void AssertionEvent(Core::Messaging::IStore::Assert& metadata, const Core::Messaging::TextMessage& message, const Core::Messaging::OutputTargets& targets) override;
     };
 }
 }
