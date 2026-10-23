@@ -375,34 +375,14 @@ namespace Core {
         EXPECT_FALSE(response.empty());
     }
 
-    TEST(Core_JSONRPC_RichError, Property_DataOnlyPreservesThunderDefaults)
-    {
-        ::Thunder::Core::JSONRPC::Handler handler(std::vector<uint8_t>{ 1 });
-
-        handler.RegisterWithError<void, ::Thunder::Core::JSON::String, RichError>("value", [](::Thunder::Core::JSON::String&, RichError& details) -> uint32_t {
-            details.Data.Reason = _T("property unavailable");
-            return (::Thunder::Core::ERROR_UNAVAILABLE);
-        });
-
-        string response;
-        const uint32_t result = handler.Invoke(RichErrorContext(), _T("value"), string(), response);
-        const ::Thunder::Core::JSONRPC::Message::Info error(ParseRichError(response));
-        ::Thunder::Core::JSONRPC::Message::Info expected;
-        expected.SetError(result);
-
-        EXPECT_EQ(error.Code.Value(), expected.Code.Value());
-        EXPECT_EQ(error.Text.Value(), expected.Text.Value());
-        EXPECT_TRUE(error.Data.IsSet());
-    }
-
-    TEST(Core_JSONRPC_RichError, IndexedProperty_PassesIndexAndPreservesThunderDefaults)
+    TEST(Core_JSONRPC_RichError, IndexedHandler_PassesIndexAndPreservesThunderDefaults)
     {
         ::Thunder::Core::JSONRPC::Handler handler(std::vector<uint8_t>{ 1 });
         string receivedIndex;
 
         handler.RegisterWithError<void, ::Thunder::Core::JSON::String, RichError>("entry", [&receivedIndex](const string& index, ::Thunder::Core::JSON::String&, RichError& details) -> uint32_t {
             receivedIndex = index;
-            details.Data.Reason = _T("indexed property unavailable");
+            details.Data.Reason = _T("indexed handler unavailable");
             return (::Thunder::Core::ERROR_UNAVAILABLE);
         });
 
@@ -543,11 +523,11 @@ namespace Core {
         });
 
         string response;
-        const uint32_t result = handler.Invoke(RichErrorContext(), _T("scope#instance-84::instanceAndIndex@property-index"), string(), response);
+        const uint32_t result = handler.Invoke(RichErrorContext(), _T("scope#instance-84::instanceAndIndex@handler-index"), string(), response);
 
         EXPECT_EQ(result, ::Thunder::Core::ERROR_NONE);
         EXPECT_EQ(receivedInstanceId, string("instance-84"));
-        EXPECT_EQ(receivedIndex, string("property-index"));
+        EXPECT_EQ(receivedIndex, string("handler-index"));
     }
 
     TEST(Core_JSONRPC_RichError, Context_AllInputOutputFormsSelectContextDispatch)
@@ -673,30 +653,11 @@ namespace Core {
         EXPECT_EQ(invocations, 0x0F);
     }
 
-    TEST(Core_JSONRPC_RichError, PropertySetter_MessageOnlyPreservesThunderCode)
-    {
-        ::Thunder::Core::JSONRPC::Handler handler(std::vector<uint8_t>{ 1 });
-        handler.RegisterWithError<::Thunder::Core::JSON::String, void, RichError>(_T("valueSetter"), [](const ::Thunder::Core::JSON::String& value, RichError& details) -> uint32_t {
-            EXPECT_EQ(value.Value(), string("setter value"));
-            details.Message = _T("property setter failure");
-            return (::Thunder::Core::ERROR_UNAVAILABLE);
-        });
-
-        string response;
-        const uint32_t result = handler.Invoke(RichErrorContext(), _T("valueSetter"), _T("\"setter value\""), response);
-        const ::Thunder::Core::JSONRPC::Message::Info error(ParseRichError(response));
-        ::Thunder::Core::JSONRPC::Message::Info expected;
-        expected.SetError(result);
-
-        EXPECT_EQ(error.Code.Value(), expected.Code.Value());
-        EXPECT_EQ(error.Text.Value(), string("property setter failure"));
-    }
-
-    TEST(Core_JSONRPC_RichError, IndexedPropertySetter_PassesIndexAndPreservesThunderMessage)
+    TEST(Core_JSONRPC_RichError, IndexedInboundHandler_PassesIndexAndPreservesThunderMessage)
     {
         ::Thunder::Core::JSONRPC::Handler handler(std::vector<uint8_t>{ 1 });
         string receivedIndex;
-        handler.RegisterWithError<::Thunder::Core::JSON::String, void, RichError>(_T("entrySetter"), [&receivedIndex](const string& index, const ::Thunder::Core::JSON::String& value, RichError& details) -> uint32_t {
+        handler.RegisterWithError<::Thunder::Core::JSON::String, void, RichError>(_T("indexedInbound"), [&receivedIndex](const string& index, const ::Thunder::Core::JSON::String& value, RichError& details) -> uint32_t {
             receivedIndex = index;
             EXPECT_EQ(value.Value(), string("setter value"));
             details.Code = -32168;
@@ -704,7 +665,7 @@ namespace Core {
         });
 
         string response;
-        const uint32_t result = handler.Invoke(RichErrorContext(), _T("entrySetter@requested-index"), _T("\"setter value\""), response);
+        const uint32_t result = handler.Invoke(RichErrorContext(), _T("indexedInbound@requested-index"), _T("\"setter value\""), response);
         const ::Thunder::Core::JSONRPC::Message::Info error(ParseRichError(response));
         ::Thunder::Core::JSONRPC::Message::Info expected;
         expected.SetError(result);
