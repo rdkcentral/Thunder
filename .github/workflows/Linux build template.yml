@@ -167,6 +167,8 @@ jobs:
         -DHIBERNATESUPPORT=ON \
         -DHIBERNATE_CHECKPOINTSERVER=ON \
         -DLOCALTRACER=ON \
+        -DMESSAGING_EXTERNAL_OUTPUT=ON \
+        -DMESSAGING_EXTERNAL_OUTPUT_USE_MOCK=ON \
         -DPERFORMANCE_MONITOR=ON \
         -DPROCESSCONTAINERS=ON \
         -DPROCESSCONTAINERS_RUNC=ON \
@@ -183,4 +185,3 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: Thunder-${{matrix.build_type}}${{matrix.architecture == '32' && '_x86' || ''}}-artifact
-        path: ${{matrix.build_type}}${{matrix.architecture == '32' && '_x86' || ''}}.tar.gz

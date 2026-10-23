@@ -34,12 +34,13 @@
 
 #define TRACE_CONTROL(CATEGORY) WPEFramework::Messaging::LocalLifetimeType<CATEGORY, &WPEFramework::Core::System::MODULE_NAME, WPEFramework::Core::Messaging::Metadata::type::TRACING>
 
-#define TRACE_ENABLED(CATEGORY) TRACE_CONTROL(CATEGORY)::IsEnabled()
+#define TRACE_ENABLED(CATEGORY) (WPEFramework::Messaging::MessageUnit::Instance().Targets(TRACE_CONTROL(CATEGORY)::Metadata(), TRACE_CONTROL(CATEGORY)::Routing(), TRACE_CONTROL(CATEGORY)::IsEnabled()).Any())
 
 #define TRACE(CATEGORY, PARAMETERS)                                                     \
     do {                                                                                \
         using __control__ = TRACE_CONTROL(CATEGORY);                                    \
-        if (__control__::IsEnabled() == true) {                                         \
+        const auto __targets__ = WPEFramework::Messaging::MessageUnit::Instance().Targets(__control__::Metadata(), __control__::Routing(), __control__::IsEnabled()); \
+        if (__targets__.Any() == true) {                                                \
             CATEGORY __data__ PARAMETERS;                                               \
             WPEFramework::Core::Messaging::MessageInfo __info__(                        \
                 __control__::Metadata(),                                                \
@@ -52,14 +53,15 @@
                 WPEFramework::Core::ClassNameOnly(typeid(*this).name()).Text()          \
             );                                                                          \
             WPEFramework::Core::Messaging::TextMessage __message__(__data__.Data());    \
-            WPEFramework::Messaging::MessageUnit::Instance().Push(__trace__, &__message__, __control__::Routing()); \
+            WPEFramework::Messaging::MessageUnit::Instance().Push(__trace__, &__message__, __targets__); \
         }                                                                               \
     } while(false)
 
 #define TRACE_GLOBAL(CATEGORY, PARAMETERS)                                              \
     do {                                                                                \
         using __control__ = TRACE_CONTROL(CATEGORY);                                    \
-        if (__control__::IsEnabled() == true) {                                         \
+        const auto __targets__ = WPEFramework::Messaging::MessageUnit::Instance().Targets(__control__::Metadata(), __control__::Routing(), __control__::IsEnabled()); \
+        if (__targets__.Any() == true) {                                                \
             CATEGORY __data__ PARAMETERS;                                               \
             WPEFramework::Core::Messaging::MessageInfo __info__(                        \
                 __control__::Metadata(),                                                \
@@ -72,7 +74,7 @@
                 __FUNCTION__                                                            \
             );                                                                          \
             WPEFramework::Core::Messaging::TextMessage __message__(__data__.Data());    \
-            WPEFramework::Messaging::MessageUnit::Instance().Push(__trace__, &__message__, __control__::Routing()); \
+            WPEFramework::Messaging::MessageUnit::Instance().Push(__trace__, &__message__, __targets__); \
         }                                                                               \
     } while(false)
 
