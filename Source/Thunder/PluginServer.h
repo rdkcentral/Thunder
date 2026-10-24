@@ -5363,6 +5363,28 @@ namespace PluginHost {
                 }
 
                 if (securityClearance == true) {
+                    // Security: When security clearance was granted based on the
+                    // JSON-RPC designator callsign, verify it matches the URL-path
+                    // service that will actually handle the dispatch.  This prevents
+                    // ACL bypass by sending a designator for an allowed plugin while
+                    // the URL routes to a restricted one.
+                    if ((State() & Channel::JSONRPC) != 0) {
+                        Core::ProxyType<Core::JSONRPC::Message> msg(element);
+                        if (msg.IsValid() && _service.IsValid()) {
+                            const string designator(msg->Designator.Value());
+                            const size_t dot = designator.find('.');
+                            const string targetCallsign(dot != string::npos ? designator.substr(0, dot) : designator);
+                            if ((targetCallsign.empty() == false) && (targetCallsign != _service->Callsign())) {
+                                SYSLOG(Logging::Error, (_T("Security: JSON-RPC designator '%s' does not match URL service '%s'"), targetCallsign.c_str(), _service->Callsign().c_str()));
+                                msg->Error.SetError(Core::ERROR_PRIVILIGED_REQUEST);
+                                Submit(Core::ProxyType<Core::JSON::IElement>(msg));
+                                securityClearance = false;
+                            }
+                        }
+                    }
+                }
+
+                if (securityClearance == true) {
                     // Send the JSON object out to be handled.
                     // By definition, we can issue it on a rental thread..
                     Core::ProxyType<JSONElementJob> job(_jsonJobs.Element());
