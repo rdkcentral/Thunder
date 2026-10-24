@@ -123,6 +123,15 @@ namespace Web
 
             // Extract the header
             string header(token.substr(0, pos));
+
+            // Security: Cap the header size to prevent stack exhaustion via
+            // unbounded alloca on attacker-controlled JWT header segments.
+            // A legitimate JWT header is typically < 256 bytes.
+            static constexpr size_t MAX_JWT_HEADER = 4096;
+            if (header.length() > MAX_JWT_HEADER) {
+                return (~0);
+            }
+
             TCHAR* output = reinterpret_cast<TCHAR*>(ALLOCA(header.length() * sizeof(TCHAR)));
 
             length = Core::URL::Base64Decode(
