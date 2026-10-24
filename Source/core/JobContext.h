@@ -46,9 +46,34 @@ namespace Core {
         class W3CTraceContext
         {
         public:
-            W3CTraceContext(const W3CTraceContext&) = default;
+            W3CTraceContext(const W3CTraceContext& other) 
+            : _traceparent()
+            , _tracestate()
+            {
+                if(other._traceparent) {
+                    _traceparent = std::make_unique<string>(*(other._traceparent));
+                }
+                if(other._tracestate) {
+                    _tracestate = std::make_unique<string>(*(other._tracestate));
+                }
+            }
             W3CTraceContext(W3CTraceContext&&) = default;
-            W3CTraceContext& operator=(const W3CTraceContext&) = default;
+            W3CTraceContext& operator=(const W3CTraceContext& other)
+            {
+                if(&other != this) {
+                    if(other._traceparent) {
+                        _traceparent = std::make_unique<string>(*(other._traceparent));
+                    } else {
+                        _traceparent.reset();
+                    }
+                    if(other._tracestate) {
+                        _tracestate = std::make_unique<string>(*(other._tracestate));
+                    } else {
+                        _tracestate.reset();
+                    }
+                }
+                return *this;
+            }
             W3CTraceContext& operator=(W3CTraceContext&&) = default;
 
             W3CTraceContext() = default;
