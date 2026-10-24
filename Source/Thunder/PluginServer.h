@@ -1095,12 +1095,12 @@ namespace PluginHost {
                     string output;
 #ifdef __W3C_TRACE_CONTEXT__
                     Core::JobContext& jobContext = Core::JobContext::Instance();
-                    jobContext.ClearTraceContext();
+                    jobContext.TraceContextW3C().ClearTraceContext();
                     if (message.traceparent.IsSet() == true) {
-                        jobContext.TraceParent(message.traceparent.Value());
+                        jobContext.TraceContextW3C().TraceParent(message.traceparent.Value());
                     }
                     if (message.tracestate.IsSet() == true) {
-                        jobContext.TraceState(message.tracestate.Value());
+                        jobContext.TraceContextW3C().TraceState(message.tracestate.Value());
                     }
 #endif
                     uint32_t result = _jsonrpc->Invoke(channelId, message.Id.Value(), token, message.Designator.Value(), message.Parameters.Value(), output);
@@ -1130,7 +1130,7 @@ namespace PluginHost {
                     }
 
 #ifdef __W3C_TRACE_CONTEXT__
-                    jobContext.ClearTraceContext();
+                    jobContext.TraceContextW3C().ClearTraceContext();
 #endif
 
                     Core::InterlockedDecrement(_activity);

@@ -30,6 +30,7 @@ namespace Core {
 
     class EXTERNAL JobContext {
     public:
+
         JobContext(const JobContext&) = delete;
         JobContext(JobContext&&) = delete;
         JobContext& operator=(const JobContext&) = delete;
@@ -41,45 +42,81 @@ namespace Core {
             return (instance);
         }
 #ifdef __W3C_TRACE_CONTEXT__
-        const string& TraceParent() const
+
+        class W3CTraceContext
         {
-            static const string empty;
-            return (traceparent ? *traceparent : empty);
-        }
-        void TraceParent(const string& value)
+        public:
+            W3CTraceContext(const W3CTraceContext&) = default;
+            W3CTraceContext(W3CTraceContext&&) = default;
+            W3CTraceContext& operator=(const W3CTraceContext&) = default;
+            W3CTraceContext& operator=(W3CTraceContext&&) = default;
+
+            W3CTraceContext() = default;
+            W3CTraceContext(const string& traceparent, const string& tracestate) 
+            : _traceparent( traceparent.empty() == true ? nullptr : std::make_unique<string>(traceparent) )
+            , _tracestate( tracestate.empty() == true ? nullptr : std::make_unique<string>(tracestate) )
+            {
+            }
+            W3CTraceContext(string&& traceparent, string&& tracestate) 
+            : _traceparent( traceparent.empty() == true ? nullptr : std::make_unique<string>(std::move(traceparent)) )
+            , _tracestate( tracestate.empty() == true ? nullptr : std::make_unique<string>(std::move(tracestate)) )
+            {
+            }
+
+            const string& TraceParent() const
+            {
+                static const string empty;
+                return (_traceparent ? *_traceparent : empty);
+            }
+            void TraceParent(const string& value)
+            {
+                _traceparent = std::make_unique<string>(value);
+            }
+            void TraceParent(string&& value)
+            {
+                _traceparent = std::make_unique<string>(std::move(value));
+            }
+            bool HasTraceParent() const
+            {
+                return (_traceparent != nullptr);
+            }
+            const string& TraceState() const
+            {
+                static const string empty;
+                return (_tracestate ? *_tracestate : empty);
+            }
+            void TraceState(const string& value)
+            {
+                _tracestate = std::make_unique<string>(value);
+            }
+            void TraceState(string&& value)
+            {
+                _tracestate = std::make_unique<string>(std::move(value));
+            }
+            bool HasTraceState() const
+            {
+                return (_tracestate != nullptr);
+            }
+            void ClearTraceContext()
+            {
+                _traceparent.reset();
+                _tracestate.reset();
+            }
+
+        private:
+            std::unique_ptr<string> _traceparent;
+            std::unique_ptr<string> _tracestate;
+        };
+
+        const W3CTraceContext& TraceContextW3C() const
         {
-            traceparent = std::make_unique<string>(value);
+            return _tracecontext;
         }
-        void TraceParent(string&& value)
+        W3CTraceContext& TraceContextW3C()
         {
-            traceparent = std::make_unique<string>(std::move(value));
+            return _tracecontext;
         }
-        bool HasTraceParent() const
-        {
-            return (traceparent != nullptr);
-        }
-        const string& TraceState() const
-        {
-            static const string empty;
-            return (tracestate ? *tracestate : empty);
-        }
-        void TraceState(const string& value)
-        {
-            tracestate = std::make_unique<string>(value);
-        }
-        void TraceState(string&& value)
-        {
-            tracestate = std::make_unique<string>(std::move(value));
-        }
-        bool HasTraceState() const
-        {
-            return (tracestate != nullptr);
-        }
-        void ClearTraceContext()
-        {
-            traceparent.reset();
-            tracestate.reset();
-        }
+
 #endif
 
     private:
@@ -87,8 +124,7 @@ namespace Core {
         ~JobContext() = default;
 
 #ifdef __W3C_TRACE_CONTEXT__
-        std::unique_ptr<string> traceparent;
-        std::unique_ptr<string> tracestate;
+        W3CTraceContext _tracecontext;
 #endif
     };
 

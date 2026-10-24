@@ -134,12 +134,12 @@ namespace ProxyStub {
 
                 message->Parameters().TraceContext(traceParent, traceState);
                 Core::JobContext& context = Core::JobContext::Instance();
-                context.ClearTraceContext();
+                context.TraceContextW3C().ClearTraceContext();
                 if (traceParent.empty() == false) {
-                    context.TraceParent(std::move(traceParent));   
+                    context.TraceContextW3C().TraceParent(std::move(traceParent));   
                 }
                 if (traceState.empty() == false) {
-                    context.TraceState(std::move(traceState));
+                    context.TraceContextW3C().TraceState(std::move(traceState));
                 }
 
 #endif
@@ -147,7 +147,7 @@ namespace ProxyStub {
 
 #ifdef __W3C_TRACE_CONTEXT__
 
-                context.ClearTraceContext();
+                context.TraceContextW3C().ClearTraceContext();
 #endif
 
             } else {
@@ -379,7 +379,7 @@ namespace ProxyStub {
 #else
             Core::JobContext& context = Core::JobContext::Instance();
 
-            message->Parameters().Set(_implementation, _interfaceId, methodId + 3, context.HasTraceParent() == true ? &context.TraceParent() : nullptr, context.HasTraceState() == true ? &context.TraceState() : nullptr);
+            message->Parameters().Set(_implementation, _interfaceId, methodId + 3, context.TraceContextW3C().HasTraceParent() == true ? &context.TraceContextW3C().TraceParent() : nullptr, context.TraceContextW3C().HasTraceState() == true ? &context.TraceContextW3C().TraceState() : nullptr);
 
 #endif
 

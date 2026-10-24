@@ -1177,18 +1177,18 @@ namespace Thunder {
 
 #ifdef __W3C_TRACE_CONTEXT__
                         Core::JobContext& jobContext = Core::JobContext::Instance();
-                        jobContext.ClearTraceContext();
+                        jobContext.TraceContextW3C().ClearTraceContext();
                         if (inbound->traceparent.IsSet() == true) {
-                            jobContext.TraceParent(inbound->traceparent.Value());
+                            jobContext.TraceContextW3C().TraceParent(inbound->traceparent.Value());
                         }
                         if (inbound->tracestate.IsSet() == true) {
-                            jobContext.TraceState(inbound->tracestate.Value());
+                            jobContext.TraceContextW3C().TraceState(inbound->tracestate.Value());
                         }
 #endif
                         string response;
                         _handler.Invoke(Core::JSONRPC::Context(), inbound->FullMethod(), inbound->Parameters.Value(), response);
 #ifdef __W3C_TRACE_CONTEXT__
-                        jobContext.ClearTraceContext();
+                        jobContext.TraceContextW3C().ClearTraceContext();
 #endif
                     }
                 }
@@ -1202,11 +1202,11 @@ namespace Thunder {
             {
                 const Core::JobContext& context = Core::JobContext::Instance();
 
-                if (context.HasTraceParent() == true) {
-                    message->traceparent = context.TraceParent();
+                if (context.TraceContextW3C().HasTraceParent() == true) {
+                    message->traceparent = context.TraceContextW3C().TraceParent();
                 }
-                if (context.HasTraceState() == true) {
-                    message->tracestate = context.TraceState();
+                if (context.TraceContextW3C().HasTraceState() == true) {
+                    message->tracestate = context.TraceContextW3C().TraceState();
                 }
             }
 #endif

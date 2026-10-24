@@ -17,7 +17,7 @@
 
 find_package(opentelemetry-cpp CONFIG REQUIRED)
 
-set(TARGET ThunderOpenTelemetry)
+set(TARGET ${NAMESPACE}OpenTelemetry)
 
 add_library(${TARGET}
     OpenTelemetry.cpp
@@ -26,21 +26,40 @@ add_library(${TARGET}
 set(PUBLIC_HEADERS
     Module.h
     OpenTelemetry.h
+    opentelemetry.h
 )
 
-target_compile_definitions(${TARGET} PRIVATE THUNDEROPENTELEMETRY_EXPORTS)
+target_compile_definitions(${TARGET} PRIVATE OPENTELEMETRY_EXPORTS)
 if(NOT BUILD_SHARED_LIBS)
-    target_compile_definitions(${TARGET} PUBLIC THUNDEROPENTELEMETRY_STATIC)
+    target_compile_definitions(${TARGET} PUBLIC OPENTELEMETRY_STATIC)
 endif()
 
 target_link_libraries(${TARGET}
     PUBLIC
         ${NAMESPACE}Core::${NAMESPACE}Core
         opentelemetry-cpp::trace
+        opentelemetry-cpp::common
+        opentelemetry-cpp::metrics
+        opentelemetry-cpp::resources
+        opentelemetry-cpp::logs
+        opentelemetry-cpp::version
+
     PRIVATE
         CompileSettings::CompileSettings
         CompileSettingsDebug::CompileSettingsDebug
         opentelemetry-cpp::ostream_span_exporter
+        opentelemetry-cpp::ostream_span_exporter_builder
+        opentelemetry-cpp::ostream_log_record_exporter
+        opentelemetry-cpp::otlp_http_exporter
+        opentelemetry-cpp::otlp_http_exporter_builder
+        opentelemetry-cpp::otlp_http_log_record_exporter
+        opentelemetry-cpp::otlp_http_log_record_exporter_builder
+        opentelemetry-cpp::otlp_http_metric_exporter
+        opentelemetry-cpp::otlp_http_metric_exporter_builder
+        opentelemetry-cpp::ostream_metrics_exporter
+        opentelemetry-cpp::ostream_metrics_exporter_builder
+        opentelemetry-cpp::http_client_curl
+        opentelemetry-cpp::http_client
 )
 
 set_target_properties(${TARGET} PROPERTIES
@@ -55,9 +74,24 @@ target_include_directories(${TARGET}
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}/opentelemetry>
 )
 
-install(TARGETS ${TARGET}
+if(HUMAN_VERSIONED_BINARIES)
+set_target_properties(${TARGET} PROPERTIES
+        VERSION ${VERSION}
+        )
+endif()
+
+install(
+    TARGETS ${TARGET}  EXPORT ${TARGET}Targets
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT ${NAMESPACE}_Development
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT ${NAMESPACE}_Runtime NAMELINK_COMPONENT ${NAMESPACE}_Development
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT ${NAMESPACE}_Runtime
     PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}/opentelemetry COMPONENT ${NAMESPACE}_Development
+    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}
 )
+
+InstallCMakeConfig(
+        TARGETS ${TARGET})
+
+InstallPackageConfig(
+        TARGETS ${TARGET}
+        DESCRIPTION "Enable ease of development for Thunder Open Telemetry support." )

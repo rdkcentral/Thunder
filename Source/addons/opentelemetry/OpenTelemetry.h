@@ -133,10 +133,10 @@ public:
         template <typename... Args>
         Span(Args&&... args)
             : _span()
-            , _hadTraceParent(Core::JobContext::Instance().HasTraceParent())
-            , _hadTraceState(Core::JobContext::Instance().HasTraceState())
-            , _traceParent(_hadTraceParent ? Core::JobContext::Instance().TraceParent() : Core::string())
-            , _traceState(_hadTraceState ? Core::JobContext::Instance().TraceState() : Core::string())
+            , _hadTraceParent(Core::JobContext::Instance().TraceContextW3C().HasTraceParent())
+            , _hadTraceState(Core::JobContext::Instance().TraceContextW3C().HasTraceState())
+            , _traceParent(_hadTraceParent ? Core::JobContext::Instance().TraceContextW3C().TraceParent() : Core::string())
+            , _traceState(_hadTraceState ? Core::JobContext::Instance().TraceContextW3C().TraceState() : Core::string())
             , _token()
         {
             auto tracecontext = opentelemetry::trace::SpanContext::GetInvalid();
@@ -150,7 +150,7 @@ public:
             opentelemetry::trace::StartSpanOptions options;
             options.parent = tracecontext;
             _span = OpenTelemetry::Instance()._tracer->StartSpan(std::forward<Args>(args)..., options);
-            Core::JobContext::Instance().TraceParent(OpenTelemetry::ToTraceParent(_span->GetContext()));
+            Core::JobContext::Instance().TraceContextW3C().TraceParent(OpenTelemetry::ToTraceParent(_span->GetContext()));
             // no need to get the tracestate, if will be same as the one we passed in, if any, or empty if none.
         }
 

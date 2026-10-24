@@ -266,10 +266,10 @@ void OpenTelemetry::Deinitialize()
 opentelemetry::nostd::unique_ptr<opentelemetry::logs::LogRecord> OpenTelemetry::CreateTraceFilledLogRecord()
 {
     auto logrecord = _logger->CreateLogRecord();
-    if (LoggerEnabled() && Core::JobContext::Instance().HasTraceParent() == true) {
+    if (LoggerEnabled() && Core::JobContext::Instance().TraceContextW3C().HasTraceParent() == true) {
         auto spancontext = OpenTelemetry::ToSpanContext(
-            opentelemetry::nostd::string_view(Core::JobContext::Instance().TraceParent().data(), Core::JobContext::Instance().TraceParent().length()),
-            opentelemetry::nostd::string_view(Core::JobContext::Instance().TraceState().data(), Core::JobContext::Instance().TraceState().length()));
+            opentelemetry::nostd::string_view(Core::JobContext::Instance().TraceContextW3C().TraceParent().data(), Core::JobContext::Instance().TraceContextW3C().TraceParent().length()),
+            opentelemetry::nostd::string_view(Core::JobContext::Instance().TraceContextW3C().TraceState().data(), Core::JobContext::Instance().TraceContextW3C().TraceState().length()));
         logrecord->SetTraceId(spancontext.trace_id());
         logrecord->SetSpanId(spancontext.span_id());
         logrecord->SetTraceFlags(spancontext.trace_flags());
@@ -287,11 +287,11 @@ void OpenTelemetry::Span::End()
     Deactivate();
     _span->End();
     if (_hadTraceParent == true) {
-        Core::JobContext::Instance().TraceParent(std::move(_traceParent));
+        Core::JobContext::Instance().TraceContextW3C().TraceParent(std::move(_traceParent));
         _hadTraceParent = false;
     }
     if (_hadTraceState == true) {
-        Core::JobContext::Instance().TraceState(std::move(_traceState));
+        Core::JobContext::Instance().TraceContextW3C().TraceState(std::move(_traceState));
         _hadTraceState = false;
     }
 }
@@ -312,12 +312,12 @@ OpenTelemetry::Scope::Scope()
     : _token()
 {
     auto tracecontext = opentelemetry::trace::SpanContext::GetInvalid();
-    if (Core::JobContext::Instance().HasTraceParent() == true) {
+    if (Core::JobContext::Instance().TraceContextW3C().HasTraceParent() == true) {
         tracecontext = OpenTelemetry::ToSpanContext(
-            opentelemetry::nostd::string_view(Core::JobContext::Instance().TraceParent().data(), Core::JobContext::Instance().TraceParent().length()),
-            opentelemetry::nostd::string_view(Core::JobContext::Instance().TraceState().data(), Core::JobContext::Instance().TraceState().length()));
-    } else if (Core::JobContext::Instance().HasTraceState() == true) {
-        tracecontext.trace_state()->FromHeader(Core::JobContext::Instance().TraceState());
+            opentelemetry::nostd::string_view(Core::JobContext::Instance().TraceContextW3C().TraceParent().data(), Core::JobContext::Instance().TraceContextW3C().TraceParent().length()),
+            opentelemetry::nostd::string_view(Core::JobContext::Instance().TraceContextW3C().TraceState().data(), Core::JobContext::Instance().TraceContextW3C().TraceState().length()));
+    } else if (Core::JobContext::Instance().TraceContextW3C().HasTraceState() == true) {
+        tracecontext.trace_state()->FromHeader(Core::JobContext::Instance().TraceContextW3C().TraceState());
     }
 
     opentelemetry::nostd::shared_ptr<trace::SpanContext> spancontext(new trace::SpanContext(tracecontext));
