@@ -373,7 +373,10 @@ namespace Core {
         bool Create(const uint32_t mode, const bool exclusive = false)
         {
 #ifdef __POSIX__
-            _handle = open(_name.c_str(), O_CLOEXEC | O_RDWR | O_CREAT | O_TRUNC | (exclusive ? O_EXCL : 0), mode);
+            // Security: Add O_NOFOLLOW to prevent symlink-following attacks
+            // where an attacker pre-creates a symlink at the predictable
+            // SharedBuffer file path before the privileged process creates it.
+            _handle = open(_name.c_str(), O_CLOEXEC | O_RDWR | O_CREAT | O_TRUNC | O_NOFOLLOW | (exclusive ? O_EXCL : 0), mode);
 #endif
 #ifdef __WINDOWS__
             _handle = ::CreateFile(_name.c_str(), (GENERIC_READ | GENERIC_WRITE), (exclusive ? 0 : (FILE_SHARE_READ | FILE_SHARE_WRITE)), nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
