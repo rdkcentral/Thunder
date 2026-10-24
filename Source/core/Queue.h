@@ -826,6 +826,7 @@ namespace Thunder {
             }
             inline uint32_t Length() const
             {
+                Core::SafeSyncType<Core::CriticalSection> lock(_adminLock);
                 uint32_t length = 0;
                 for (const auto& category : _categories) {
                     length += static_cast<uint32_t>(category.Length());

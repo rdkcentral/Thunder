@@ -1563,6 +1563,7 @@ POP_WARNING()
             }
             inline uint32_t QueuedElements() const
             {
+                Core::SafeSyncType<Core::CriticalSection> lock(_lock);
                 return (static_cast<uint32_t>(_queue.size()));
             }
             void Notify(Core::ProxyType<ContainerElement>& source)

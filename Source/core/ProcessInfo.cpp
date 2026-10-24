@@ -146,11 +146,13 @@ namespace Core {
 
                     snprintf(buffer, sizeof(buffer), "/proc/%d/stat", pid);
                     if ((fd = open(buffer, O_RDONLY)) != -1) {
-                        if (read(fd, buffer, sizeof(buffer) - sizeof(buffer[0])) > 0) {
+                        const ssize_t length = read(fd, buffer, sizeof(buffer) - sizeof(buffer[0]));
+                        if (length > 0) {
+                            buffer[length] = '\0';
                             int ppid = 0;
-                            sscanf(buffer, "%*d (%*[^)]) %*c %d", &ppid);
 
-                            if (acceptfunction(ppid, pid) == true) {
+                            if ((sscanf(buffer, "%*d (%*[^)]) %*c %d", &ppid) == 1)
+                                && (acceptfunction(ppid, pid) == true)) {
                                 children.push_back(pid);
                             }
                         }

@@ -757,7 +757,10 @@ namespace Core {
             message->ifa_flags = IFA_F_PERMANENT;
             message->ifa_scope = RT_SCOPE_UNIVERSE;
 
-            const uint8_t* data = reinterpret_cast<const uint8_t*>(&static_cast<const struct sockaddr*>(_node)->sa_data[2]);
+            const struct sockaddr* address = static_cast<const struct sockaddr*>(_node);
+            const uint8_t* data = (_node.Type() == NodeId::TYPE_IPV6
+                ? reinterpret_cast<const struct sockaddr_in6*>(address)->sin6_addr.s6_addr
+                : reinterpret_cast<const uint8_t*>(&reinterpret_cast<const struct sockaddr_in*>(address)->sin_addr));
 
             struct rtattr* attribs(reinterpret_cast<struct rtattr*>(stream + sizeof(struct ifaddrmsg)));
             attribs->rta_type = IFA_LOCAL;

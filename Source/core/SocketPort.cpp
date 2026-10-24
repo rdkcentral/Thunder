@@ -609,11 +609,11 @@ namespace Thunder {
                 }
 
             }
-            else if (nStatus != Core::ERROR_ILLEGAL_STATE) {
+            else if ((nStatus != Core::ERROR_ILLEGAL_STATE) && (m_Socket != INVALID_SOCKET)) {
                 // ERROR_ILLEGAL_STATE is returned when the socket is already open and
                 // registered in the ResourceMonitor — destroying it here would corrupt
-                // the monitor's poll array. All other error paths constructed a new
-                // socket that failed before registration and must be cleaned up.
+                // the monitor's poll array. Any valid socket that failed before
+                // registration must be cleaned up.
                 DestroySocket(m_Socket);
             }
             return (nStatus);
@@ -711,7 +711,8 @@ namespace Thunder {
 
         void SocketPort::BufferAlignment(SOCKET socket)
         {
-            socklen_t valueLength = sizeof(int);
+            uint32_t bufferSize;
+            socklen_t valueLength = sizeof(bufferSize);
 
             const uint32_t origSocketReceiveBufferSize = m_SocketReceiveBufferSize;
 
@@ -722,9 +723,12 @@ namespace Thunder {
                 }
             }
 
-            ::getsockopt(socket, SOL_SOCKET, SO_RCVBUF, reinterpret_cast<char*>(&m_SocketReceiveBufferSize), &valueLength);
-            // Kernel doubles the buffer size, take that into account.
-            m_SocketReceiveBufferSize /= 2;
+            if (::getsockopt(socket, SOL_SOCKET, SO_RCVBUF, reinterpret_cast<char*>(&bufferSize), &valueLength) == 0) {
+                // Kernel doubles the buffer size, take that into account.
+                m_SocketReceiveBufferSize = bufferSize / 2;
+            } else {
+                TRACE_L1("Error could not get socket receive buffer size. Error %d", __ERRORRESULT__);
+            }
             if (origSocketReceiveBufferSize != m_SocketReceiveBufferSize) {
                 TRACE_L3("Adjusted socket receive buffer size (%u->%u)", origSocketReceiveBufferSize, m_SocketReceiveBufferSize);
             }
@@ -745,8 +749,12 @@ namespace Thunder {
                 }
             }
 
-            ::getsockopt(socket, SOL_SOCKET, SO_SNDBUF, (char*)&m_SocketSendBufferSize, &valueLength);
-            m_SocketSendBufferSize /= 2;
+            valueLength = sizeof(bufferSize);
+            if (::getsockopt(socket, SOL_SOCKET, SO_SNDBUF, reinterpret_cast<char*>(&bufferSize), &valueLength) == 0) {
+                m_SocketSendBufferSize = bufferSize / 2;
+            } else {
+                TRACE_L1("Error could not get socket send buffer size. Error %d", __ERRORRESULT__);
+            }
             if (origSocketSendBufferSize != m_SocketSendBufferSize) {
                 TRACE_L3("Adjusted socket send buffer size (%u->%u)", origSocketSendBufferSize, m_SocketSendBufferSize);
             }
@@ -904,7 +912,7 @@ namespace Thunder {
             }
             else
 #endif
-                if ((localNode.IsAnyInterface() == true) && (SocketMode() != SOCK_STREAM)) {
+                if ((l_Result != INVALID_SOCKET) && (localNode.IsAnyInterface() == true) && (SocketMode() != SOCK_STREAM)) {
 
                     int optval = 1;
 
