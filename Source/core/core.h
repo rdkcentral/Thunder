@@ -20,8 +20,6 @@
 #ifndef __GENERICS_H
 #define __GENERICS_H
 
-#define __W3C_TRACE_CONTEXT__
-
 #ifndef MODULE_NAME
 #error "Please define a MODULE_NAME that describes the binary/library you are building."
 #endif
