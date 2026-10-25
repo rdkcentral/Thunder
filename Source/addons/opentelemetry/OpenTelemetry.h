@@ -141,7 +141,7 @@ public:
         class Metrics : public Core::JSON::Container {
         public:
             Metrics()
-                : Enabled(true)
+                : Enabled(false)
                 , Endpoint()
                 , IntervalMs(10000)
                 , TimeoutMs(5000)
@@ -363,7 +363,7 @@ private:
         , _componentversion("1.0.0")
         , _loggerenabled(true)
         , _loggerendpoint("http://127.0.0.1:4318/v1/logs")
-        , _metricsenabled(true)
+        , _metricsenabled(false)
         , _metricsendpoint("http://127.0.0.1:4318/v1/metrics")
         , _metricsIntervalMs(10000)
         , _metricsTimeoutMs(5000)
