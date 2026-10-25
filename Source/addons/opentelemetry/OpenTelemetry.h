@@ -37,9 +37,16 @@
 #include <opentelemetry/trace/tracer.h>
 #include <opentelemetry/trace/trace_state.h>
 #include <opentelemetry/logs/logger.h>
+#include <opentelemetry/sdk/resource/resource.h>
+#include <opentelemetry/metrics/provider.h>
+
 
 namespace Thunder {
 namespace Telemetry {
+
+//***************************************************** */
+//   OpenTelemetry class 
+//***************************************************** */
 
 class EXTERNAL OpenTelemetry {
 private:
@@ -47,6 +54,10 @@ private:
     static std::string ToTraceParent(const opentelemetry::trace::SpanContext& spanContext);
 
 public:
+
+//***************************************************** */
+//   Configuration
+//***************************************************** */
 
     enum class SamplerType : uint8_t {
         ALWAY_ON,
@@ -67,36 +78,127 @@ public:
 
     class Config : public Core::JSON::Container {
     public:
+
+        class Resources : public Core::JSON::Container {
+        public:
+            class Attribute : public Core::JSON::Container {
+            public:
+                Attribute()
+                : Key()
+                , Value()
+                {
+                    Add(_T("key"), &Key);
+                    Add(_T("value"), &Value);
+                }
+
+                Attribute(const Attribute& copy)
+                    : Key(copy.Key)
+                    , Value(copy.Value)
+                {
+                    Add(_T("key"), &Key);
+                    Add(_T("value"), &Value);
+                }
+
+                Attribute& operator=(const Attribute& rhs)
+                {
+                    if(this != &rhs) {
+                        Key = rhs.Key;
+                        Value = rhs.Value;
+                    }
+                    return (*this);
+                }
+
+                Core::JSON::String Key;
+                Core::JSON::String Value;
+            };
+
+            Resources() 
+            : SchemaURL()
+            , Attributes()
+            {
+                Add(_T("schemaURL"), &SchemaURL);
+                Add(_T("attributes"), &Attributes);
+            }
+
+            Core::JSON::String SchemaURL;
+            Core::JSON::ArrayType<Attribute> Attributes;
+        };
+
+        class Logger : public Core::JSON::Container {
+        public:
+            Logger()
+                : Enabled(true)
+                , Endpoint()
+            {
+                Add(_T("enabled"), &Enabled);
+                Add(_T("endpoint"), &Endpoint);
+            }
+
+            Core::JSON::Boolean Enabled;
+            Core::JSON::String Endpoint;
+        };
+
+        class Metrics : public Core::JSON::Container {
+        public:
+            Metrics()
+                : Enabled(true)
+                , Endpoint()
+                , IntervalMs(10000)
+                , TimeoutMs(5000)
+            {
+                Add(_T("enabled"), &Enabled);
+                Add(_T("endpoint"), &Endpoint);
+                Add(_T("intervalMs"), &IntervalMs);
+                Add(_T("timeoutMs"), &TimeoutMs);
+            }
+
+            Core::JSON::Boolean Enabled;
+            Core::JSON::String Endpoint;
+            Core::JSON::DecUInt16 IntervalMs;
+            Core::JSON::DecUInt16 TimeoutMs;
+        };
+
         Config()
             : Core::JSON::Container()
             , Sampler(SamplerType::PARENT_ON)
             , Processor(ProcessorType::SYMCHRONOUS)
             , Exporter(ExporterType::CONSOLE)
+            , Resources()
             , TracerEndpoint()
             , ComponentName()
             , ComponentVersion()
-            , LoggerEnabled(true)
-            , LoggerEndpoint()
+            , Logger()
+            , Metrics()
         {
             Add(_T("sampler"), &Sampler);
             Add(_T("processor"), &Processor);
             Add(_T("exporter"), &Exporter);
+            Add(_T("resources"), &Resources);
             Add(_T("tracerendpoint"), &TracerEndpoint);
             Add(_T("componentname"), &ComponentName);
             Add(_T("componentversion"), &ComponentVersion);
-            Add(_T("loggerenabled"), &LoggerEnabled);
-            Add(_T("loggerendpoint"), &LoggerEndpoint);
+            Add(_T("logger"), &Logger);
+            Add(_T("metrics"), &Metrics);
         }
 
         Core::JSON::EnumType<SamplerType> Sampler;
         Core::JSON::EnumType<ProcessorType> Processor;
         Core::JSON::EnumType<ExporterType> Exporter;
+        Resources Resources;
         Core::JSON::String TracerEndpoint;
         Core::JSON::String ComponentName;
         Core::JSON::String ComponentVersion;
-        Core::JSON::Boolean LoggerEnabled;
-        Core::JSON::String LoggerEndpoint;
+        Logger Logger;
+        Metrics Metrics;
     };
+
+//***************************************************** */
+//   Configuration End
+//***************************************************** */
+
+//***************************************************** */
+//   Span class
+//***************************************************** */
 
     class EXTERNAL Span {
 
@@ -112,12 +214,16 @@ public:
 
     public:
 
-    void End();
+        //***************************************************** */
+        //   Span class public interface
+        //***************************************************** */
 
-    void Activate();
-    void Deactivate();
 
-    public: 
+        void End();
+
+        void Activate();
+        void Deactivate();
+
         // note no const versions for a reason (would not make sense and there is no suitable conversion available for a opentelemetry::nostd::shared_ptr)
         operator opentelemetry::nostd::shared_ptr<opentelemetry::trace::Span>()
         {
@@ -128,6 +234,10 @@ public:
         {
             return _span;
         }
+
+        //***************************************************** */
+        //   Span class public interface End
+        //***************************************************** */
 
     private:
         template <typename... Args>
@@ -163,6 +273,10 @@ public:
         opentelemetry::nostd::unique_ptr<opentelemetry::context::Token> _token;
     };
 
+//***************************************************** */
+//   Scope class 
+//***************************************************** */
+
     class EXTERNAL Scope {
 
     friend class OpenTelemetry;
@@ -182,6 +296,15 @@ public:
         opentelemetry::nostd::unique_ptr<opentelemetry::context::Token> _token;
     };
 
+//***************************************************** */
+//   Scope class End
+//***************************************************** */
+
+//***************************************************** */
+//   OpenTelemetry class public interface
+//***************************************************** */
+
+
 public:
     static OpenTelemetry& Instance();
     static void Configure(const Config& config);
@@ -200,7 +323,7 @@ public:
     void Initialize();
     void Deinitialize();
 
-    // note it is not needed to check this for ani logger usage, when the logger is disabled it is connected to a NOOP logger so all calls to it will work and not fail / crash
+    // note it is not needed to check this for any logger usage, when the logger is disabled it is connected to a NOOP logger so all calls to it will work and not fail / crash
     bool LoggerEnabled() const
     {
         return _loggerenabled;
@@ -213,6 +336,22 @@ public:
         return _logger;
     }
 
+    // note it is not needed to check this for any metrics usage, when the logger is disabled it is connected to a NOOP logger so all calls to it will work and not fail / crash
+    bool MeterEnabled() const
+    {
+        return _metricsenabled;
+    }
+
+    opentelemetry::nostd::shared_ptr<opentelemetry::metrics::Meter> Meter() 
+    {
+        return _meter;
+    }
+
+
+//***************************************************** */
+//   OpenTelemetry class public Interface End
+//***************************************************** */
+
 private:
     OpenTelemetry()
         : _references(0)
@@ -224,8 +363,14 @@ private:
         , _componentversion("1.0.0")
         , _loggerenabled(true)
         , _loggerendpoint("http://127.0.0.1:4318/v1/logs")
+        , _metricsenabled(true)
+        , _metricsendpoint("http://127.0.0.1:4318/v1/metrics")
+        , _metricsIntervalMs(10000)
+        , _metricsTimeoutMs(5000)
         , _tracer()
         , _logger()
+        , _meter()
+        , _resource()
     {
     }
 
@@ -247,9 +392,20 @@ private:
     string _componentversion;   
     bool _loggerenabled;
     string _loggerendpoint;
+    bool _metricsenabled;
+    string _metricsendpoint;
+    uint16_t _metricsIntervalMs;
+    uint16_t _metricsTimeoutMs;
     opentelemetry::nostd::shared_ptr<opentelemetry::trace::Tracer> _tracer;
     opentelemetry::nostd::shared_ptr<opentelemetry::logs::Logger> _logger;
+    opentelemetry::nostd::shared_ptr<opentelemetry::metrics::Meter> _meter;
+    opentelemetry::sdk::resource::Resource _resource;
+
 };
+
+//***************************************************** */
+//   OpenTelemetry class End
+//***************************************************** */
 
 }
 }

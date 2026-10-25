@@ -30,8 +30,6 @@
 #include <opentelemetry/context/propagation/text_map_propagator.h>
 #include <opentelemetry/exporters/ostream/metric_exporter_factory.h>
 #include <opentelemetry/exporters/ostream/span_exporter_factory.h>
-#include <opentelemetry/sdk/metrics/export/periodic_exporting_metric_reader_factory.h>
-#include <opentelemetry/sdk/metrics/meter_provider_factory.h>
 #include <opentelemetry/sdk/trace/batch_span_processor_factory.h>
 #include <opentelemetry/sdk/trace/simple_processor_factory.h>
 #include <opentelemetry/sdk/trace/tracer_provider_factory.h>
@@ -51,13 +49,8 @@
 #include "opentelemetry/sdk/trace/processor.h"
 #include "opentelemetry/trace/provider.h"
 
-#include "opentelemetry/exporters/otlp/otlp_http_metric_exporter_factory.h"
-#include "opentelemetry/exporters/otlp/otlp_http_metric_exporter_options.h"
-#include "opentelemetry/metrics/provider.h"
 #include "opentelemetry/sdk/metrics/aggregation/default_aggregation.h"
 #include "opentelemetry/sdk/metrics/export/periodic_exporting_metric_reader.h"
-#include "opentelemetry/sdk/metrics/meter_context_factory.h"
-#include "opentelemetry/sdk/metrics/meter_provider.h"
 
 #include "opentelemetry/exporters/otlp/otlp_http_log_record_exporter_factory.h"
 #include "opentelemetry/exporters/otlp/otlp_http_log_record_exporter_options.h"
@@ -72,19 +65,32 @@
 #include <opentelemetry/exporters/ostream/log_record_exporter_factory.h>
 #include <opentelemetry/logs/noop.h>
 
+#include <opentelemetry/exporters/otlp/otlp_http_metric_exporter_factory.h>
+#include <opentelemetry/exporters/otlp/otlp_http_metric_exporter_options.h>
+#include <opentelemetry/sdk/metrics/export/periodic_exporting_metric_reader_factory.h>
+#include <opentelemetry/sdk/metrics/export/periodic_exporting_metric_reader_options.h>
+#include <opentelemetry/sdk/metrics/meter_context_factory.h>
+#include <opentelemetry/sdk/metrics/meter_provider.h>
+#include <opentelemetry/sdk/metrics/meter_provider_factory.h>
+#include "opentelemetry/sdk/metrics/provider.h"
+
 
 namespace logs                          = opentelemetry::logs;
 namespace trace                         = opentelemetry::trace;
-namespace metrics                       = opentelemetry::metrics;
 namespace sdklogs                       = opentelemetry::sdk::logs;
 namespace sdktrace                      = opentelemetry::sdk::trace;
 namespace sdkmetrics                    = opentelemetry::sdk::metrics;
 namespace propagation                   = opentelemetry::context::propagation;
 namespace ostream_exporter              = opentelemetry::exporter::trace;
 namespace ostream_logs_exporter         = opentelemetry::exporter::logs;
+namespace ostream_metrics_exporter      = opentelemetry::exporter::metrics;
 namespace nostd                         = opentelemetry::nostd;
 namespace otlp_exporter                 = opentelemetry::exporter::otlp;
 namespace otlp_context                  = opentelemetry::context;
+namespace resource                      = opentelemetry::sdk::resource;
+namespace metrics                       = opentelemetry::metrics;
+namespace metrics_api                   = opentelemetry::metrics;
+namespace metrics_sdk                   = opentelemetry::sdk::metrics;
 
 
 namespace Thunder {
@@ -146,11 +152,38 @@ void OpenTelemetry::InternalConfigure(const OpenTelemetry::Config& config)
     if (config.ComponentVersion.IsSet() == true) {
         _componentversion = config.ComponentVersion.Value();
     }   
-    if (config.LoggerEnabled.IsSet() == true) {
-        _loggerenabled = config.LoggerEnabled.Value();
+    if (config.Logger.Enabled.IsSet() == true) {
+        _loggerenabled = config.Logger.Enabled.Value();
     }
-    if (config.LoggerEndpoint.IsSet()) {
-        _loggerendpoint = config.LoggerEndpoint.Value();
+    if (config.Logger.Endpoint.IsSet()) {
+        _loggerendpoint = config.Logger.Endpoint.Value();
+    }
+    if (config.Metrics.Enabled.IsSet() == true) {
+        _metricsenabled = config.Metrics.Enabled.Value();
+    }
+    if (config.Metrics.Endpoint.IsSet()) {
+        _metricsendpoint = config.Metrics.Endpoint.Value();
+    }
+    if (config.Metrics.IntervalMs.IsSet() == true) {
+        _metricsIntervalMs = config.Metrics.IntervalMs.Value();
+    }
+    if (config.Metrics.TimeoutMs.IsSet()) {
+        _metricsTimeoutMs = config.Metrics.TimeoutMs.Value();
+    }
+    if(config.Resources.IsSet()) {
+        resource::ResourceAttributes attributes;
+        Core::JSON::ArrayType<Config::Resources::Attribute>::ConstIterator index(config.Resources.Attributes.Elements());
+        while (index.Next() == true) {
+            const Config::Resources::Attribute& element(index.Current());
+            if((element.Key.IsSet() == true) && (element.Value.IsSet()) ) {
+                attributes.SetAttribute(static_cast<string>(element.Key.Value()), element.Value.Value());
+            } 
+        }
+        if(config.Resources.SchemaURL.IsSet() == true) {
+            _resource = resource::Resource::Create(attributes, config.Resources.SchemaURL.Value());
+        } else {
+            _resource = resource::Resource::Create(attributes);
+        }
     }
 }
 
@@ -186,7 +219,13 @@ void OpenTelemetry::Initialize()
                 processor = sdktrace::SimpleSpanProcessorFactory::Create(std::move(exporter)); 
                 break;
             case ProcessorType::BATCH:
-                processor = sdktrace::BatchSpanProcessorFactory::Create(std::move(exporter), sdktrace::BatchSpanProcessorOptions{});
+                {
+                    opentelemetry::sdk::trace::BatchSpanProcessorOptions batch_opts;
+                    batch_opts.max_queue_size = 2048; 
+                    batch_opts.max_export_batch_size = 512; 
+                    batch_opts.schedule_delay_millis = std::chrono::milliseconds(1000); 
+                    processor = sdktrace::BatchSpanProcessorFactory::Create(std::move(exporter), batch_opts);
+                }
                 break;
             default:
                 ASSERT(true);
@@ -216,7 +255,7 @@ void OpenTelemetry::Initialize()
                 ASSERT(true);
         }
 
-        nostd::shared_ptr<trace::TracerProvider> provider(sdktrace::TracerProviderFactory::Create(std::move(processor), opentelemetry::sdk::resource::Resource::Create({}), std::move(sampler)).release());
+        nostd::shared_ptr<trace::TracerProvider> provider(sdktrace::TracerProviderFactory::Create(std::move(processor), _resource, std::move(sampler)).release());
         trace::Provider::SetTracerProvider(provider);
         _tracer = provider->GetTracer(_componentname, _componentversion); 
 
@@ -243,24 +282,68 @@ void OpenTelemetry::Initialize()
                 logprocessor = sdklogs::SimpleLogRecordProcessorFactory::Create(std::move(logexporter));
                 break;
             case ProcessorType::BATCH:
-                logprocessor = sdklogs::BatchLogRecordProcessorFactory::Create(std::move(logexporter), sdklogs::BatchLogRecordProcessorOptions{});
+                {
+                    opentelemetry::sdk::logs::BatchLogRecordProcessorOptions batch_opts;
+                    batch_opts.max_queue_size = 2048;
+                    batch_opts.max_export_batch_size = 512;
+                    batch_opts.schedule_delay_millis = std::chrono::milliseconds(1000);
+                    logprocessor = sdklogs::BatchLogRecordProcessorFactory::Create(std::move(logexporter), batch_opts);
+                }
                 break;
+
             default:
                 ASSERT(true);
             }
 
-            nostd::shared_ptr<logs::LoggerProvider> loggerprovider(sdklogs::LoggerProviderFactory::Create(std::move(logprocessor)).release());
+            nostd::shared_ptr<logs::LoggerProvider> loggerprovider(sdklogs::LoggerProviderFactory::Create(std::move(logprocessor), _resource).release());
             logs::Provider::SetLoggerProvider(loggerprovider);
             _logger = loggerprovider->GetLogger("Thunder Logger", _componentname, _componentversion); 
         } else {
             _logger = nostd::shared_ptr < logs::Logger>( new logs::NoopLogger());
+        }
+
+        if (_metricsenabled == true) {
+            std::unique_ptr<metrics_sdk::PushMetricExporter> metricsexporter;
+
+            switch (_exportertype) {
+            case ExporterType::CONSOLE:
+                metricsexporter = ostream_metrics_exporter::OStreamMetricExporterFactory::Create();
+                break;
+            case ExporterType::HTTP: {
+                otlp_exporter::OtlpHttpMetricExporterOptions metricsexporter_opts;
+                metricsexporter_opts.url = _metricsendpoint;
+                metricsexporter_opts.content_type = otlp_exporter::HttpRequestContentType::kJson;
+                metricsexporter = otlp_exporter::OtlpHttpMetricExporterFactory::Create(metricsexporter_opts);
+            } break;
+            default:
+                ASSERT(true);
+            }
+
+            // for now only one exporter supported (are there more?)
+            metrics_sdk::PeriodicExportingMetricReaderOptions reader_opts;
+            reader_opts.export_interval_millis = std::chrono::milliseconds(_metricsIntervalMs);
+            reader_opts.export_timeout_millis = std::chrono::milliseconds(_metricsTimeoutMs);
+            auto reader = metrics_sdk::PeriodicExportingMetricReaderFactory::Create(std::move(metricsexporter), reader_opts);
+
+            // The default MeterContext resource merges OTEL_SERVICE_NAME and
+            // OTEL_RESOURCE_ATTRIBUTES from the environment.
+            auto context = metrics_sdk::MeterContextFactory::Create();
+            context->AddMetricReader(std::move(reader));
+
+            auto provider = metrics_sdk::MeterProviderFactory::Create(std::move(context));
+            std::shared_ptr<metrics_api::MeterProvider> api_provider(std::move(provider));
+            metrics_sdk::Provider::SetMeterProvider(api_provider);
+
+            _meter = metrics_api::Provider::GetMeterProvider()->GetMeter(_componentname, _componentversion);
+
+        } else {
+            _meter = nostd::shared_ptr<metrics::Meter>(new metrics::NoopMeter());
         }
     }
 }
 
 void OpenTelemetry::Deinitialize()
 {
-    // nothing to do
 }
 
 opentelemetry::nostd::unique_ptr<opentelemetry::logs::LogRecord> OpenTelemetry::CreateTraceFilledLogRecord()
