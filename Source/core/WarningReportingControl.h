@@ -602,6 +602,10 @@ namespace WarningReporting {
             {
                 return (_metadata);
             }
+            const char* Category() const
+            {
+                return (_categoryName.c_str());
+            }
 
         protected:
             const string _categoryName;
