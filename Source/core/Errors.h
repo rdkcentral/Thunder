@@ -32,15 +32,15 @@ namespace Core {
     /* @richerror */
     template<typename DATA = void>
     struct ErrorDetails {
-        OptionalType<int32_t> code /* @text:code */;
-        OptionalType<string> message /* @text:message */;
-        OptionalType<DATA> data /* @text:data */;
+        OptionalType<int32_t> code /* @text:code @brief Type of the error */;
+        OptionalType<string> message /* @text:message @brief A short message describing the error */;
+        OptionalType<DATA> data /* @text:data @brief additional information about the error */;
     };
 
     template<>
     struct ErrorDetails<void> {
-        OptionalType<int32_t> code /* @text:code */;
-        OptionalType<string> message /* @text:message */;
+        OptionalType<int32_t> code /* @text:code @brief Type of the error */;
+        OptionalType<string> message /* @text:message @brief A short message describing the error */;
     };
 
 } // namespace Core
