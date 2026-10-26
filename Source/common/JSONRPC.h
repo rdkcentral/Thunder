@@ -677,6 +677,16 @@ namespace PluginHost {
         {
             _handlers.front().Register<INBOUND, METHOD>(methodName, method);
         }
+        template <typename INBOUND, typename OUTBOUND, typename ERROR, typename METHOD>
+        void RegisterWithError(const string& methodName, const METHOD& method)
+        {
+            _handlers.front().RegisterWithError<INBOUND, OUTBOUND, ERROR, METHOD>(methodName, method);
+        }
+        template <typename INBOUND, typename OUTBOUND, typename ERROR, typename METHOD, typename REALOBJECT>
+        void RegisterWithError(const string& methodName, const METHOD& method, REALOBJECT* objectPtr)
+        {
+            _handlers.front().RegisterWithError<INBOUND, OUTBOUND, ERROR, METHOD, REALOBJECT>(methodName, method, objectPtr);
+        }
         void Register(const string& methodName, const Core::JSONRPC::InvokeFunction& lambda)
         {
             _handlers.front().Register(methodName, lambda);
