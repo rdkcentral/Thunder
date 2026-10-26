@@ -53,7 +53,7 @@ add_library(${TARGET} SHARED ${SOURCES})
 
 option(MESSAGING_EXTERNAL_OUTPUT "Enable External Direct output support." OFF)
 option(MESSAGING_EXTERNAL_OUTPUT_USE_MOCK "Use a mock backend library for the external output adapter." OFF)
-set(MESSAGING_EXTERNAL_OUTPUT_REPOSITORY "https://github.com/WebPlatformForEmbedded/ThunderExtensions.git" CACHE STRING "Repository containing the external messaging adapter")
+set(MESSAGING_EXTERNAL_OUTPUT_REPOSITORY "https://github.com/rdkcentral/ThunderExtensions.git" CACHE STRING "Repository containing the external messaging adapter")
 set(MESSAGING_EXTERNAL_OUTPUT_VERSION "R4_4" CACHE STRING "Version of the external messaging adapter repository")
 
 set(THUNDER_MESSAGING_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
