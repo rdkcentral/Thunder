@@ -79,8 +79,8 @@ jobs:
       uses: actions/checkout@v4
       with:
         path: Thunder
-        repository: rdkcentral/Thunder
-        ref: ${{ inputs.thunder_ref }}
+        repository: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name || 'rdkcentral/Thunder' }}
+        ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || inputs.thunder_ref }}
 
     - name: Regex Thunder
       if: contains(github.event.pull_request.body, '[DependsOn=Thunder:')
