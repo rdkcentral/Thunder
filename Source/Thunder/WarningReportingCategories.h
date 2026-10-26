@@ -93,8 +93,8 @@ namespace WarningReporting {
             visitor += Core::Format(_T(", value %" PRId64 " [ms], max allowed %" PRId64 " [ms]"), actualValue, maxValue);
         };
 
-        static constexpr uint32_t DefaultWarningBound = { 5000 };
-        static constexpr uint32_t DefaultReportBound = { 5000 };
+        static constexpr uint32_t DefaultWarningBound = { THUNDER_WARNING_REPORTING_PLUGIN_STATE_WARNING_BOUND };
+        static constexpr uint32_t DefaultReportBound = { THUNDER_WARNING_REPORTING_PLUGIN_STATE_REPORT_BOUND };
 
     private:
         static string StateAsString(const StateChange state)
