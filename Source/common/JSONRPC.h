@@ -1941,7 +1941,7 @@ namespace PluginHost {
     }
 
     template<typename JSONRPCERRORASSESSORTYPE>
-    class EXTERNAL JSONRPCErrorAssessor : public JSONRPC {
+    class EXTERNAL DEPRECATED JSONRPCErrorAssessor : public JSONRPC {
     public:
         JSONRPCErrorAssessor(JSONRPCERRORASSESSORTYPE errorhandler)
             : JSONRPC()
@@ -1966,7 +1966,7 @@ namespace PluginHost {
     };
 
     template<>
-    class EXTERNAL JSONRPCErrorAssessor<JSONRPCErrorAssessorTypes::StdFunctionCallbackType> : public JSONRPC {
+    class EXTERNAL DEPRECATED JSONRPCErrorAssessor<JSONRPCErrorAssessorTypes::StdFunctionCallbackType> : public JSONRPC {
     public:
         JSONRPCErrorAssessor(const JSONRPCErrorAssessorTypes::StdFunctionCallbackType& errorhandler)
             : JSONRPC()
