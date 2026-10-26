@@ -28,6 +28,47 @@ add_library(${TARGET}
         OperationalCategories.cpp
         AssertionUnit.cpp)
 
+option(MESSAGING_EXTERNAL_OUTPUT "Enable External Direct output support." OFF)
+option(MESSAGING_EXTERNAL_OUTPUT_USE_MOCK "Use a mock backend library for the external output adapter." OFF)
+set(MESSAGING_EXTERNAL_OUTPUT_REPOSITORY "https://github.com/WebPlatformForEmbedded/ThunderNanoServicesRDK.git" CACHE STRING "Repository containing the external messaging adapter")
+set(MESSAGING_EXTERNAL_OUTPUT_VERSION "master" CACHE STRING "Version of the external messaging adapter repository")
+
+set(THUNDER_MESSAGING_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
+
+if(MESSAGING_EXTERNAL_OUTPUT)
+        set(MESSAGING_EXTERNAL_OUTPUT_SOURCE_DIR "" CACHE PATH "Source directory for the optional external messaging adapter")
+
+        if(NOT MESSAGING_EXTERNAL_OUTPUT_SOURCE_DIR)
+                include(GetExternalCode)
+
+                set(_MESSAGING_EXTERNAL_REPOSITORY_SOURCE_DIR "${CMAKE_BINARY_DIR}/ThunderExternalOutputRepository")
+                GetExternalCode(
+                        GIT_REPOSITORY "${MESSAGING_EXTERNAL_OUTPUT_REPOSITORY}"
+                        GIT_VERSION "${MESSAGING_EXTERNAL_OUTPUT_VERSION}"
+                        SOURCE_DIR "${_MESSAGING_EXTERNAL_REPOSITORY_SOURCE_DIR}")
+
+                file(GLOB _MESSAGING_EXTERNAL_OUTPUT_CANDIDATES
+                        "${_MESSAGING_EXTERNAL_REPOSITORY_SOURCE_DIR}/MessageControl/*/CMakeLists.txt")
+
+                foreach(_candidate IN LISTS _MESSAGING_EXTERNAL_OUTPUT_CANDIDATES)
+                        file(READ "${_candidate}" _candidate_contents)
+                        if(_candidate_contents MATCHES "MessagingExternalOutput")
+                                get_filename_component(MESSAGING_EXTERNAL_OUTPUT_SOURCE_DIR
+                                        "${_candidate}" DIRECTORY)
+                                break()
+                        endif()
+                endforeach()
+        endif()
+
+        if(NOT EXISTS "${MESSAGING_EXTERNAL_OUTPUT_SOURCE_DIR}/CMakeLists.txt")
+                message(FATAL_ERROR "Could not locate the external messaging adapter sources; set MESSAGING_EXTERNAL_OUTPUT_SOURCE_DIR explicitly")
+        endif()
+
+        add_subdirectory("${MESSAGING_EXTERNAL_OUTPUT_SOURCE_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/ExternalOutput")
+        target_compile_definitions(${TARGET} PUBLIC MESSAGING_EXTERNAL_OUTPUT=1)
+        target_link_libraries(${TARGET} PRIVATE ${NAMESPACE}MessagingExternalOutput)
+endif()
+
 set(PUBLIC_HEADERS
         Module.h
         MessageClient.h
