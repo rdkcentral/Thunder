@@ -111,9 +111,13 @@ namespace Core {
             public:
                 void Clear() override
                 {
+                    Clear(static_cast<uint32_t>(-1));
+                }
+                void Clear(const uint32_t retainedCapacity)
+                {
                     Code.Clear();
-                    Text.Clear();
-                    Data.Clear();
+                    Text.Clear(retainedCapacity);
+                    Data.Clear(retainedCapacity);
                 }
                 void SetError(const uint32_t frameworkError)
                 {
@@ -576,9 +580,9 @@ POP_WARNING()
                 JSONRPC = DefaultVersion;
                 Id.Clear();
                 Designator.Clear();
-                Parameters.Clear();
-                Result.Clear();
-                Error.Clear();
+                Parameters.Clear(512);
+                Result.Clear(512);
+                Error.Clear(0);
                 _implicitCallsign.erase();
             }
             string Callsign() const

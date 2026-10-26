@@ -61,16 +61,15 @@ jobs:
     - name: Run core unit tests
       run: ${{env.path}} ${{env.lib}} Thunder_test_core
 
+    - name: Run messaging External Direct unit tests
+      run: ${{env.path}} ${{env.lib}} Thunder_test_messaging_external_output
+
     - name: Run test framework smoke test
       run: ${{env.path}} ${{env.lib}} thunder_test_runtime_smoke
 
   ThunderInterfaces:
     needs: Thunder
     uses: rdkcentral/ThunderInterfaces/.github/workflows/Linux build template.yml@master
-
-  ThunderExtensions:
-    needs: Thunder
-    uses: rdkcentral/ThunderExtensions/.github/workflows/Linux build template.yml@main
 
   ThunderLibraries:
     needs: Thunder
@@ -79,6 +78,10 @@ jobs:
   ThunderClientLibraries:
     needs: ThunderInterfaces
     uses: rdkcentral/ThunderClientLibraries/.github/workflows/Linux build template.yml@master
+
+  ThunderExtensions:
+    needs: ThunderInterfaces
+    uses: rdkcentral/ThunderExtensions/.github/workflows/Linux build template.yml@main
 
   ThunderNanoServices:
     needs: ThunderInterfaces
