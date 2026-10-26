@@ -54,7 +54,7 @@ option(ACCEPT_VERSION_IN_CALLSIGN
 option(W3C_TRACE_CONTEXT_ENABLED
         "allow propagation of W3C trace context" OFF)
 option(CUSTOM_ERROR_CODES_ENABLED
-        "enable custom error codes (obsolete)" ON)
+        "enable custom error codes (obsolete)" OFF)
 
 if(HIDE_NON_EXTERNAL_SYMBOLS)
     set(CMAKE_CXX_VISIBILITY_PRESET hidden)
