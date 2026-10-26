@@ -1965,6 +1965,8 @@ namespace PluginHost {
         JSONRPCERRORASSESSORTYPE _errorhandler;
     };
 
+    PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE)
+
     template<>
     class EXTERNAL DEPRECATED JSONRPCErrorAssessor<JSONRPCErrorAssessorTypes::StdFunctionCallbackType> : public JSONRPC {
     public:
@@ -1995,6 +1997,8 @@ namespace PluginHost {
     private:
         JSONRPCErrorAssessorTypes::StdFunctionCallbackType _errorhandler;
     };
+
+    POP_WARNING()
 
 #endif // __DISABLE_USE_COMPLEMENTARY_CODE_SET__
 
