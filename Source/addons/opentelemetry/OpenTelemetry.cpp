@@ -387,6 +387,7 @@ void OpenTelemetry::Span::End()
 {
     Deactivate();
     _span->End();
+    Core::JobContext::Instance().TraceContextW3C().ClearTraceContext();
     if (_hadTraceParent == true) {
         Core::JobContext::Instance().TraceContextW3C().TraceParent(std::move(_traceParent));
         _hadTraceParent = false;

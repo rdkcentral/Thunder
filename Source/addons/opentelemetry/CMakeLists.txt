@@ -21,6 +21,7 @@ set(TARGET ${NAMESPACE}OpenTelemetry)
 
 add_library(${TARGET}
     OpenTelemetry.cpp
+    Module.cpp
 )
 
 set(PUBLIC_HEADERS
