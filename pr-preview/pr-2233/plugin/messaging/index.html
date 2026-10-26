@@ -21,7 +21,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
     
     
       
@@ -29,10 +29,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -1578,6 +1578,23 @@
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#external-direct-output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        External Direct output
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
         
@@ -3756,6 +3773,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#external-direct-output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        External Direct output
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
           <li class="md-nav__item">
@@ -4275,6 +4309,49 @@
 <span class="w">    </span>-DENABLE_TRACING_CATEGORIES<span class="o">=</span><span class="s1">'Information Warning'</span><span class="w"> </span>..
 </code></pre></div>
 <p>The resulting module and category entries are added to the tracing settings with <code>enabled</code> set to <code>true</code>.</p>
+<h4 id="external-direct-output">External Direct output</h4>
+<p>Messaging can optionally send messages synchronously to an external output adapter in addition to its built-in handler and direct-output paths. Enable this support when configuring Thunder:</p>
+<div class="highlight"><pre><span></span><code>cmake<span class="w"> </span>-DMESSAGING_EXTERNAL_OUTPUT<span class="o">=</span>ON<span class="w"> </span>..
+</code></pre></div>
+<p>When no source directory is supplied, CMake fetches the adapter repository configured by <code>MESSAGING_EXTERNAL_OUTPUT_REPOSITORY</code> and checks out <code>MESSAGING_EXTERNAL_OUTPUT_VERSION</code>. Pin the adapter to a known revision for reproducible builds, for example:</p>
+<div class="highlight"><pre><span></span><code>cmake<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-DMESSAGING_EXTERNAL_OUTPUT<span class="o">=</span>ON<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-DMESSAGING_EXTERNAL_OUTPUT_VERSION<span class="o">=</span>&lt;adapter-branch-or-tag&gt;<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>..
+</code></pre></div>
+<p>An existing adapter checkout can be used instead of fetching the repository:</p>
+<div class="highlight"><pre><span></span><code>cmake<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-DMESSAGING_EXTERNAL_OUTPUT<span class="o">=</span>ON<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-DMESSAGING_EXTERNAL_OUTPUT_SOURCE_DIR<span class="o">=</span>/path/to/MessageControl/&lt;adapter&gt;<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>..
+</code></pre></div>
+<p>The adapter is built as a separate shared library. The default production adapter is selected from the configured external repository. For development or tests, <code>MESSAGING_EXTERNAL_OUTPUT_USE_MOCK=ON</code> selects a mock backend library when that adapter source provides it. The RDK Logger adapter still runs its production mapping, formatting, and enablement cache; only the RDK Logger API is mocked. The mock records backend calls and supports configurable initialization and enablement results for tests. It uses an installed <code>rdk_logger.h</code> or downloads a pinned upstream header; set <code>RDKLOGGER_INCLUDE_DIR</code> to an existing header directory for offline builds.</p>
+<p>After the feature is compiled in, set <code>output</code> to <code>external_direct</code> in the messaging configuration. The setting is available globally, per message type, or on an individual module/category entry. For example, this routes all messages to the external adapter:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">"messaging"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">"output"</span><span class="p">:</span><span class="w"> </span><span class="s2">"external_direct"</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>To route only selected messages, keep the global default and set <code>output</code> on a section or entry:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">"messaging"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">"output"</span><span class="p">:</span><span class="w"> </span><span class="s2">"handler"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"logging"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">"output"</span><span class="p">:</span><span class="w"> </span><span class="s2">"external_direct"</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">"settings"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">                </span><span class="p">{</span>
+<span class="w">                    </span><span class="nt">"module"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Plugin_SamplePlugin"</span><span class="p">,</span>
+<span class="w">                    </span><span class="nt">"category"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Information"</span><span class="p">,</span>
+<span class="w">                    </span><span class="nt">"enabled"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">                    </span><span class="nt">"output"</span><span class="p">:</span><span class="w"> </span><span class="s2">"external_direct"</span>
+<span class="w">                </span><span class="p">}</span>
+<span class="w">            </span><span class="p">]</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>The supported routing values are <code>handler</code> (the messaging buffer), <code>direct</code> (Thunder's built-in direct output), <code>external_direct</code> (the external adapter), and <code>all</code> (all applicable destinations). An <code>external_direct</code> setting has no effect unless Thunder was built with <code>MESSAGING_EXTERNAL_OUTPUT=ON</code> and the adapter initializes successfully.</p>
 <p>Below is an example of the messaging section in the config:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">    </span><span class="nt">"messaging"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
@@ -4326,7 +4403,7 @@
 <span class="w">    </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
-<p>The global <code>output</code> setting controls the default destination for every message type. It can be overridden by a message-type or entry-level <code>output</code> setting. The legacy <code>flush</code> setting is still accepted for compatibility but is ignored; use <code>output: "direct"</code> instead.</p>
+<p>The global <code>output</code> setting controls the default destination for every message type. It can be overridden by a message-type or entry-level <code>output</code> setting. Supported values are <code>handler</code>, <code>direct</code>, <code>external_direct</code>, and <code>all</code>. The legacy <code>flush</code> setting is still accepted for compatibility but is ignored; use <code>output: "direct"</code> instead.</p>
 <ol>
 <li>
 <p>Routing fallback for all message types. Entry-level <code>output</code> overrides the message-type setting, which overrides this global value. The default is <code>handler</code> during normal operation and <code>direct</code> in DirectOutput mode.</p>
@@ -5311,10 +5388,10 @@ Enable the category (e.g. via MessageControl configuration / JSON-RPC) before ex
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.footer", "navigation.sections", "toc.follow", "navigation.top", "content.code.copy", "content.code.annotate"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.footer", "navigation.sections", "toc.follow", "navigation.top", "content.code.copy", "content.code.annotate"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.c21346df.min.js"></script>
       
     
   </body>
