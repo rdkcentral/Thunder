@@ -110,8 +110,8 @@ namespace RPC {
                     frameWriter.Text<uint8_t>(*traceParent);
                 }
                 if (traceState != nullptr) {
-                    ASSERT(traceState->length() < 256);
-                    frameWriter.Text<uint8_t>(*traceState);
+                    ASSERT(traceState->length() < std::numeric_limits<decltype(uint16_t)>::max());
+                    frameWriter.Text<uint16_t>(*traceState);
                 }
             }
 #endif
@@ -150,7 +150,7 @@ namespace RPC {
                         size += _data.GetText<uint8_t>(size, traceParent);
                     }
                     if ((traceflags & 0x2) != 0) {
-                        size += _data.GetText<uint8_t>(size, traceState);
+                        size += _data.GetText<uint16_t>(size, traceState);
                     }
                 }
             }
@@ -205,9 +205,9 @@ namespace RPC {
                         size += sizeof(uint8_t) + textlength;
                     }
                     if ((traceflags & 0x2) != 0) {
-                        uint8_t textlength = 0;
-                        _data.GetTextLength<uint8_t>(size, textlength);
-                        size += sizeof(uint8_t) + textlength;
+                        uint16_t textlength = 0;
+                        _data.GetTextLength<uint16_t>(size, textlength);
+                        size += sizeof(uint16_t) + textlength;
                     }
                 }
                 return size;
