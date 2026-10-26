@@ -1011,14 +1011,59 @@ POP_WARNING()
             }
 
         private:
+            // C++11-compatible member binding used to reuse the error-aware dispatch helpers (keeps perfect forwarding without using C++14 generic lambdas).
+            template <typename METHOD, typename REALOBJECT>
+            class BoundMethod {
+            public:
+                BoundMethod(const METHOD& method, REALOBJECT* objectPtr)
+                    : _method(method)
+                    , _objectPtr(objectPtr)
+                {
+                }
+
+                template <typename... Args>
+                uint32_t operator()(Args&&... args) const
+                {
+                    return ((_objectPtr->*_method)(std::forward<Args>(args)...));
+                }
+
+            private:
+                METHOD _method;
+                REALOBJECT* _objectPtr;
+            };
+
+            // detect operator()
+            template<typename T>
+            struct has_call_operator {
+            private:
+                // SFINAE: matches anything that allows taking the address of its operator()
+                template<typename C> static auto check(int) -> decltype(&C::operator(), std::true_type());
+                template<typename>  static std::false_type check(...);
+            public:
+                static constexpr bool value = decltype(check<T>(0))::value;
+            };
+
+            template<typename METHOD>
+            struct decayed_func_traits : TypeTraits::func_traits<typename std::decay<METHOD>::type> {};
+
+            // primary template (routes normal functions)
+            template<typename METHOD, bool IsLambda = ((decayed_func_traits<METHOD>::Arguments == -1) && (has_call_operator<typename std::decay<METHOD>::type>::value == true))>
+            struct callable_traits : decayed_func_traits<METHOD> {};
+
+            // specialization (routes lambdas/functors)
+            template<typename METHOD>
+            struct callable_traits<METHOD, true> : TypeTraits::lambda_traits<typename std::decay<METHOD>::type> {};
+
             template<typename METHOD>
             struct handler_traits {
                 template <int N>
-                using ARG = typename std::decay<typename TypeTraits::func_traits<METHOD>::template argument<N>::type>::type;
+                using ARG = typename std::decay<typename callable_traits<METHOD>::template argument<N>::type>::type;
 
                 static constexpr auto hasContext = std::is_same<ARG<0>, Context>::value;
-                static constexpr auto hasIndex = (std::is_same<ARG<0>, string>::value | std::is_same<ARG<1>, string>::value | std::is_same<ARG<3>, string>::value);
-                static constexpr auto hasInstanceId = (std::is_same<ARG<0>, instance_id_follows_t>::value | std::is_same<ARG<1>, instance_id_follows_t>::value);
+                static constexpr auto instanceIdAt0 = std::is_same<ARG<0>, instance_id_follows_t>::value;
+                static constexpr auto instanceIdAt1 = std::is_same<ARG<1>, instance_id_follows_t>::value;
+                static constexpr auto hasInstanceId = (instanceIdAt0 | instanceIdAt1);
+                static constexpr auto hasIndex = (instanceIdAt0 ? std::is_same<ARG<2>, string>::value : (instanceIdAt1 ? std::is_same<ARG<3>, string>::value : (std::is_same<ARG<0>, string>::value | std::is_same<ARG<1>, string>::value)));
             };
 
         public:
@@ -1056,6 +1101,27 @@ POP_WARNING()
             {
                 InternalAnnounce<INBOUND, METHOD, REALOBJECT>(
                     ::TemplateIntToType<std::is_same<INBOUND, void>::value>(),
+                    methodName,
+                    method,
+                    objectPtr);
+            }
+            template <typename INBOUND, typename OUTBOUND, typename ERROR, typename METHOD>
+            void RegisterWithError(const string& methodName, const METHOD& method)
+            {
+                InternalRegisterWithError<INBOUND, OUTBOUND, ERROR, METHOD>(
+                    ::TemplateIntToType<handler_traits<METHOD>::hasContext | (handler_traits<METHOD>::hasIndex << 1) | (handler_traits<METHOD>::hasInstanceId << 2)>(),
+                    ::TemplateIntToType<std::is_same<INBOUND, void>::value>(),
+                    ::TemplateIntToType<std::is_same<OUTBOUND, void>::value>(),
+                    methodName,
+                    method);
+            }
+            template <typename INBOUND, typename OUTBOUND, typename ERROR, typename METHOD, typename REALOBJECT>
+            void RegisterWithError(const string& methodName, const METHOD& method, REALOBJECT* objectPtr)
+            {
+                InternalRegisterWithError<INBOUND, OUTBOUND, ERROR, METHOD, REALOBJECT>(
+                    ::TemplateIntToType<handler_traits<METHOD>::hasContext | (handler_traits<METHOD>::hasIndex << 1) | (handler_traits<METHOD>::hasInstanceId << 2)>(),
+                    ::TemplateIntToType<std::is_same<INBOUND, void>::value>(),
+                    ::TemplateIntToType<std::is_same<OUTBOUND, void>::value>(),
                     methodName,
                     method,
                     objectPtr);
@@ -1285,7 +1351,7 @@ POP_WARNING()
             //  - context, instance id, property index, json parameters, json result (all optional).
             // If index is used then either parameters or result must be present.
 
-         private:
+        private:
             template <typename INBOUND, typename OUTBOUND, typename METHOD>
             void InternalRegister(const ::TemplateIntToType<0>&, const ::TemplateIntToType<1>&, const ::TemplateIntToType<1>&, const string& methodName, const METHOD& method)
             {
@@ -1656,6 +1722,71 @@ POP_WARNING()
                 });
             }
 
+         private:
+             template <typename INBOUND, typename OUTBOUND, typename ERROR, typename METHOD, typename INPUT, typename OUTPUT>
+             void InternalRegisterWithError(const ::TemplateIntToType<0>&, const INPUT& input, const OUTPUT& output, const string& methodName, const METHOD& method)
+             {
+                 Register(methodName, [method, input, output](const Context&, const string&, const string& parameters, string& result) -> uint32_t {
+                     return (InternalRegisterImplError<INBOUND, OUTBOUND, ERROR>(input, output, parameters, result, method));
+                 });
+             }
+             template <typename INBOUND, typename OUTBOUND, typename ERROR, typename METHOD, typename INPUT, typename OUTPUT> // with context
+             void InternalRegisterWithError(const ::TemplateIntToType<1>&, const INPUT& input, const OUTPUT& output, const string& methodName, const METHOD& method)
+             {
+                 Register(methodName, [method, input, output](const Context& context, const string&, const string& parameters, string& result) -> uint32_t {
+                     return (InternalRegisterImplError<INBOUND, OUTBOUND, ERROR>(input, output, parameters, result, method, context));
+                 });
+             }
+             template <typename INBOUND, typename OUTBOUND, typename ERROR, typename METHOD, typename INPUT, typename OUTPUT> // with index
+             void InternalRegisterWithError(const ::TemplateIntToType<2>&, const INPUT& input, const OUTPUT& output, const string& methodName, const METHOD& method)
+             {
+                 Register(methodName, [method, input, output](const Context&, const string& methodName, const string& parameters, string& result) -> uint32_t {
+                     return (InternalRegisterImplError<INBOUND, OUTBOUND, ERROR>(input, output, parameters, result, method, Message::Index(methodName)));
+                 });
+             }
+             template <typename INBOUND, typename OUTBOUND, typename ERROR, typename METHOD, typename INPUT, typename OUTPUT> // with context+index
+             void InternalRegisterWithError(const ::TemplateIntToType<3>&, const INPUT& input, const OUTPUT& output, const string& methodName, const METHOD& method)
+             {
+                 Register(methodName, [method, input, output](const Context& context, const string& methodName, const string& parameters, string& result) -> uint32_t {
+                     return (InternalRegisterImplError<INBOUND, OUTBOUND, ERROR>(input, output, parameters, result, method, context, Message::Index(methodName)));
+                 });
+             }
+             template <typename INBOUND, typename OUTBOUND, typename ERROR, typename METHOD, typename INPUT, typename OUTPUT> // with instance_id
+             void InternalRegisterWithError(const ::TemplateIntToType<4>&, const INPUT& input, const OUTPUT& output, const string& methodName, const METHOD& method)
+             {
+                 Register(methodName, [method, input, output](const Context&, const string& methodName, const string& parameters, string& result) -> uint32_t {
+                     return (InternalRegisterImplError<INBOUND, OUTBOUND, ERROR>(input, output, parameters, result, method, instance_id_follows, Message::InstanceId(methodName)));
+                 });
+             }
+             template <typename INBOUND, typename OUTBOUND, typename ERROR, typename METHOD, typename INPUT, typename OUTPUT> // with context+instance_id
+             void InternalRegisterWithError(const ::TemplateIntToType<5>&, const INPUT& input, const OUTPUT& output, const string& methodName, const METHOD& method)
+             {
+                 Register(methodName, [method, input, output](const Context& context, const string& methodName, const string& parameters, string& result) -> uint32_t {
+                     return (InternalRegisterImplError<INBOUND, OUTBOUND, ERROR>(input, output, parameters, result, method, context, instance_id_follows, Message::InstanceId(methodName)));
+                 });
+             }
+             template <typename INBOUND, typename OUTBOUND, typename ERROR, typename METHOD, typename INPUT, typename OUTPUT> // with instance_id+index
+             void InternalRegisterWithError(const ::TemplateIntToType<6>&, const INPUT& input, const OUTPUT& output, const string& methodName, const METHOD& method)
+             {
+                 Register(methodName, [method, input, output](const Context&, const string& methodName, const string& parameters, string& result) -> uint32_t {
+                     return (InternalRegisterImplError<INBOUND, OUTBOUND, ERROR>(input, output, parameters, result, method, instance_id_follows, Message::InstanceId(methodName), Message::Index(methodName)));
+                 });
+             }
+             template <typename INBOUND, typename OUTBOUND, typename ERROR, typename METHOD, typename INPUT, typename OUTPUT> // with context+instance_id+index
+             void InternalRegisterWithError(const ::TemplateIntToType<7>&, const INPUT& input, const OUTPUT& output, const string& methodName, const METHOD& method)
+             {
+                 Register(methodName, [method, input, output](const Context& context, const string& methodName, const string& parameters, string& result) -> uint32_t {
+                     return (InternalRegisterImplError<INBOUND, OUTBOUND, ERROR>(input, output, parameters, result, method, context, instance_id_follows, Message::InstanceId(methodName), Message::Index(methodName)));
+                 });
+             }
+             template <typename INBOUND, typename OUTBOUND, typename ERROR, typename METHOD, typename REALOBJECT, typename TYPE, typename INPUT, typename OUTPUT>
+             void InternalRegisterWithError(const TYPE& type, const INPUT& input, const OUTPUT& output, const string& methodName, const METHOD& method, REALOBJECT* objectPtr)
+             {
+                 ASSERT(objectPtr != nullptr);
+                 const BoundMethod<METHOD, REALOBJECT> boundMethod(method, objectPtr);
+                 InternalRegisterWithError<INBOUND, OUTBOUND, ERROR>(type, input, output, methodName, boundMethod);
+             }
+
         private:
             template <typename METHOD, typename... Args>
             static uint32_t InternalRegisterImpl(const METHOD& method, Args&&... args)
@@ -1719,6 +1850,129 @@ POP_WARNING()
                 }
                 else {
                     result.clear();
+                }
+
+                return (code);
+            }
+
+        private:
+            template <typename ERROR>
+            static auto SerializeErrorData(const ERROR& details, Core::JSONRPC::Message::Info& error, int) -> decltype(details.Data.IsSet(), void())
+            {
+                if (details.Data.IsSet() == true) {
+                    string data;
+                    details.Data.ToString(data);
+                    error.Data = data;
+                }
+            }
+
+            template <typename ERROR>
+            static void SerializeErrorData(const ERROR&, Core::JSONRPC::Message::Info&, long)
+            {
+            }
+
+            template <typename ERROR>
+            static bool SerializeError(const uint32_t frameworkError, const ERROR& details, string& result)
+            {
+                const bool isSet = details.IsSet();
+
+                if (isSet == true) {
+                    Core::JSONRPC::Message::Info error;
+                    error.SetError(frameworkError);
+
+                    if (details.Code.IsSet() == true) {
+                        error.Code = details.Code;
+                    }
+
+                    if (details.Message.IsSet() == true) {
+                        error.Text = details.Message;
+                    }
+
+                    SerializeErrorData(details, error, 0);
+
+                    error.ToString(result);
+                }
+
+                return (isSet);
+            }
+
+            template <typename INBOUND, typename OUTBOUND, typename ERROR, typename METHOD, typename... Args>
+            static uint32_t InternalRegisterImplError(const ::TemplateIntToType<1>&, const ::TemplateIntToType<1>&, const string&, string& result, const METHOD& method, Args&&... args)
+            {
+                ERROR details;
+                const uint32_t code = method(std::forward<Args>(args)..., details);
+
+                if ((code == Core::ERROR_NONE) || (SerializeError(code, details, result) == false)) {
+                    result.clear();
+                }
+
+                return (code);
+            }
+
+            template <typename INBOUND, typename OUTBOUND, typename ERROR, typename METHOD, typename... Args>
+            static uint32_t InternalRegisterImplError(const ::TemplateIntToType<0>&, const ::TemplateIntToType<1>&, const string& parameters, string& result, const METHOD& method, Args&&... args)
+            {
+                uint32_t code;
+                INBOUND inbound;
+                Core::OptionalType<Core::JSON::Error> report;
+                inbound.FromString(parameters, report);
+
+                if (report.IsSet() == false) {
+                    ERROR details;
+                    code = method(std::forward<Args>(args)..., inbound, details);
+
+                    if ((code == Core::ERROR_NONE) || (SerializeError(code, details, result) == false)) {
+                        result.clear();
+                    }
+                }
+                else {
+                    code = Core::ERROR_PARSE_FAILURE;
+                    result = report.Value().Message();
+                }
+
+                return (code);
+            }
+
+            template <typename INBOUND, typename OUTBOUND, typename ERROR, typename METHOD, typename... Args>
+            static uint32_t InternalRegisterImplError(const ::TemplateIntToType<1>&, const ::TemplateIntToType<0>&, const string&, string& result, const METHOD& method, Args&&... args)
+            {
+                OUTBOUND outbound;
+                ERROR details;
+                const uint32_t code = method(std::forward<Args>(args)..., outbound, details);
+
+                if ((code == Core::ERROR_NONE) && (outbound.IsSet() == true)) {
+                    outbound.ToString(result);
+                }
+                else if ((code == Core::ERROR_NONE) || (SerializeError(code, details, result) == false)) {
+                    result.clear();
+                }
+
+                return (code);
+            }
+
+            template <typename INBOUND, typename OUTBOUND, typename ERROR, typename METHOD, typename... Args>
+            static uint32_t InternalRegisterImplError(const ::TemplateIntToType<0>&, const ::TemplateIntToType<0>&, const string& parameters, string& result, const METHOD& method, Args&&... args)
+            {
+                uint32_t code;
+                INBOUND inbound;
+                OUTBOUND outbound;
+                Core::OptionalType<Core::JSON::Error> report;
+                inbound.FromString(parameters, report);
+
+                if (report.IsSet() == false) {
+                    ERROR details;
+                    code = method(std::forward<Args>(args)..., inbound, outbound, details);
+
+                    if ((code == Core::ERROR_NONE) && (outbound.IsSet() == true)) {
+                        outbound.ToString(result);
+                    }
+                    else if ((code == Core::ERROR_NONE) || (SerializeError(code, details, result) == false)) {
+                        result.clear();
+                    }
+                }
+                else {
+                    code = Core::ERROR_PARSE_FAILURE;
+                    result = report.Value().Message();
                 }
 
                 return (code);
