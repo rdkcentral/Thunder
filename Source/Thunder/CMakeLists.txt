@@ -21,6 +21,8 @@ get_filename_component(TARGET ${CMAKE_CURRENT_SOURCE_DIR} NAME)
 
 set(THREADPOOL_COUNT "4" CACHE STRING "The number of threads in the thread pool")
 set(ENABLE_TRACING_MODULES ""  CACHE STRING "A space separated list of specific tracing modules to be enabled at start.")
+set(ENABLE_TRACING_CATEGORIES "" CACHE STRING "A space separated list of specific tracing categories to be enabled at start.")
+set(MESSAGING_TYPE_DEFAULTS "" CACHE STRING "A semicolon separated list of message type defaults (TYPE=ON or TYPE=OFF).")
 set(HIBERNATE_WAKEUP_TIMEOUT 10000 CACHE STRING "Maximum time allowed for wakeup from hibernation in milliseconds")
 
 macro(thunder_postmortem_sink_value VAR_IN VAR_OUT)
