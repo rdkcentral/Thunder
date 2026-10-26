@@ -207,6 +207,12 @@ if(NOT WCHAR_SUPPORT)
     message(STATUS "Disabled WCHAR support.")
 endif()
 
+if(W3C_TRACE_CONTEXT_ENABLED)
+   target_compile_definitions(${TARGET} PUBLIC __W3C_TRACE_CONTEXT__)
+   message(STATUS "support for W3C trace context propagation")
+endif()
+
+
 if (INSTANCE_ID_BITS)
     target_compile_definitions(${TARGET} PUBLIC __CORE_INSTANCE_BITS__=${INSTANCE_ID_BITS})
     message(STATUS "COMRPC instanceid defined as ${INSTANCE_ID_BITS} bits.")
