@@ -25,7 +25,7 @@ namespace Thunder {
 
 namespace Core {
 
-#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+#ifdef __CUSTOM_ERROR_CODES__
 
 namespace {
 
@@ -99,29 +99,32 @@ namespace {
         return result;
     }
 
-#endif
+#endif // __CUSTOM_ERROR_CODES__
+
 
     const TCHAR* ErrorToString(const Core::hresult code)
     {
-#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+#ifdef __CUSTOM_ERROR_CODES__
         int24_t customcode = IsCustomCode(code);
 
         if (customcode != 0) {
             return HandleCustomErrorCodeToString(customcode);
         }
-#endif
+#endif // __CUSTOM_ERROR_CODES__
+
         return _bogus_ErrorToString<>(code & (~COM_ERROR));
     }
 
     string ErrorToStringExtended(const Core::hresult code)
     {
-#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+#ifdef __CUSTOM_ERROR_CODES__
         int24_t customcode = IsCustomCode(code);
 
         if (customcode != 0) {
             return HandleCustomErrorCodeToStringExtended(customcode);
         }
-#endif
+#endif // __CUSTOM_ERROR_CODES__
+
         string result = _bogus_ErrorToString<>(code & (~COM_ERROR));
 
         if (result.empty() == true) {
