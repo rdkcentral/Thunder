@@ -51,7 +51,7 @@ option(ENABLE_JSONRPC_FORGIVING_METHOD_CASE_HANDLING
         "Enable json rpc forgiving camel and pascal case method handling" OFF)
 option(ACCEPT_VERSION_IN_CALLSIGN
         "Accept version in callsign syntax (version is ignored)" OFF)
-option(W3C_TRACE_CONTEXT_SUPPORT_ENABLED
+option(W3C_TRACE_CONTEXT_ENABLED
         "allow propagation of W3C trace context" OFF)
 
 if(HIDE_NON_EXTERNAL_SYMBOLS)

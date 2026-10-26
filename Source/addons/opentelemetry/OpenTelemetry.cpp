@@ -23,6 +23,7 @@
 #include <iostream>
 #include <memory>
 #include <utility>
+#include <limits>
 
 #include <opentelemetry/exporters/ostream/span_exporter.h>
 #include <opentelemetry/sdk/trace/simple_processor.h>
@@ -134,6 +135,8 @@ void OpenTelemetry::Configure(const Config& config)
 
 void OpenTelemetry::InternalConfigure(const OpenTelemetry::Config& config)
 {
+    _adminLock.Lock();
+
     if (config.Sampler.IsSet()) {
         _samplertype = config.Sampler.Value();
     }
@@ -185,12 +188,18 @@ void OpenTelemetry::InternalConfigure(const OpenTelemetry::Config& config)
             _resource = resource::Resource::Create(attributes);
         }
     }
+
+    _adminLock.Unlock();
+
 }
 
 void OpenTelemetry::Initialize()
 {
-    // it is not an issue if this causes a race condition with Deinitialize() 
-    if (_references++ == 0) {
+    _adminLock.Lock();
+
+    ASSERT(_references < std::numeric_limits<decltype(_references)>::max());
+
+    if (++_references == 1) {
 
         std::unique_ptr<sdktrace::SpanExporter> exporter;
         std::unique_ptr<sdktrace::SpanProcessor> processor;
@@ -340,10 +349,19 @@ void OpenTelemetry::Initialize()
             _meter = nostd::shared_ptr<metrics::Meter>(new metrics::NoopMeter());
         }
     }
+
+    _adminLock.Unlock();
+
 }
 
 void OpenTelemetry::Deinitialize()
 {
+    _adminLock.Lock();
+
+    ASSERT(_references > 0);
+    --_references;
+
+    _adminLock.Unlock();
 }
 
 opentelemetry::nostd::unique_ptr<opentelemetry::logs::LogRecord> OpenTelemetry::CreateTraceFilledLogRecord()

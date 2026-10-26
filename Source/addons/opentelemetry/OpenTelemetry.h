@@ -19,6 +19,10 @@
 
 #pragma once
 
+#ifndef __W3C_TRACE_CONTEXT__
+#error Thunder needs to be build with W3C Trace Context support for Thunder Open Telemetry support to be available
+#endif
+
 #include "Module.h"
 
 #include <atomic>
@@ -39,7 +43,6 @@
 #include <opentelemetry/logs/logger.h>
 #include <opentelemetry/sdk/resource/resource.h>
 #include <opentelemetry/metrics/provider.h>
-
 
 namespace Thunder {
 namespace Telemetry {
@@ -355,6 +358,7 @@ public:
 private:
     OpenTelemetry()
         : _references(0)
+        , _adminLock()
         , _samplertype(SamplerType::PARENT_ON)
         , _processortype(ProcessorType::SYMCHRONOUS)
         , _exportertype(ExporterType::CONSOLE)
@@ -383,7 +387,8 @@ private:
     void InternalConfigure(const Config& config);
 
 private:
-    std::atomic<uint16_t> _references;
+    uint16_t _references;
+    mutable Core::CriticalSection _adminLock;
     SamplerType _samplertype;
     ProcessorType _processortype;
     ExporterType _exportertype;  

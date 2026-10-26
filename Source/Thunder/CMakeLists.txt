@@ -80,8 +80,9 @@ if(ACCEPT_VERSION_IN_CALLSIGN)
    message(STATUS "accept version in callsign syntax")
 endif()
 
-if(W3C_TRACE_CONTEXT_SUPPORT_ENABLED)
+if(W3C_TRACE_CONTEXT_ENABLED)
    target_compile_definitions(${TARGET} PRIVATE __W3C_TRACE_CONTEXT__=${W3C_TRACE_CONTEXT_SUPPORT_ENABLED})
+   add_definitions(-D__W3C_TRACE_CONTEXT__)
    message(STATUS "support for W3C trace context propagation")
 endif()
 
