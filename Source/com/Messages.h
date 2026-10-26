@@ -110,7 +110,7 @@ namespace RPC {
                     frameWriter.Text<uint8_t>(*traceParent);
                 }
                 if (traceState != nullptr) {
-                    ASSERT(traceState->length() < std::numeric_limits<decltype(uint16_t)>::max());
+                    ASSERT(traceState->length() < std::numeric_limits<uint16_t>::max());
                     frameWriter.Text<uint16_t>(*traceState);
                 }
             }

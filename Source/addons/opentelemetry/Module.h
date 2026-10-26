@@ -26,7 +26,7 @@
 #include <core/core.h>
 
 #if defined(__WINDOWS__)
-#if defined(THUNDEROPENTELEMETRY_EXPORTS)
+#if defined(OPENTELEMETRY_EXPORTS)
 #undef EXTERNAL
 #define EXTERNAL EXTERNAL_EXPORT
 #else
