@@ -98,8 +98,8 @@ namespace Thunder {
 
 ENUM_CONVERSION_BEGIN(Telemetry::OpenTelemetry::SamplerType)
 
-    { Telemetry::OpenTelemetry::SamplerType::ALWAY_ON, _TXT("AlwaysOn") },
-    { Telemetry::OpenTelemetry::SamplerType::ALWAY_OFF, _TXT("AlwaysOff") },
+    { Telemetry::OpenTelemetry::SamplerType::ALWAYS_ON, _TXT("AlwaysOn") },
+    { Telemetry::OpenTelemetry::SamplerType::ALWAYS_OFF, _TXT("AlwaysOff") },
     { Telemetry::OpenTelemetry::SamplerType::PARENT_ON, _TXT("ParentOn") },
     { Telemetry::OpenTelemetry::SamplerType::PARENT_OFF, _TXT("ParentOff") },
 
@@ -242,10 +242,10 @@ void OpenTelemetry::Initialize()
 
         switch (_samplertype)
         {
-            case SamplerType::ALWAY_ON:
+            case SamplerType::ALWAYS_ON:
                 sampler = sdktrace::AlwaysOnSamplerFactory::Create();
                 break;
-            case SamplerType::ALWAY_OFF:
+            case SamplerType::ALWAYS_OFF:
                 sampler = sdktrace::AlwaysOffSamplerFactory::Create();
                 break;
             case SamplerType::PARENT_ON: 

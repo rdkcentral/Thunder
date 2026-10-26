@@ -63,14 +63,14 @@ public:
 //***************************************************** */
 
     enum class SamplerType : uint8_t {
-        ALWAY_ON,
-        ALWAY_OFF,
+        ALWAYS_ON,
+        ALWAYS_OFF,
         PARENT_ON, // if no parent the always on sampler is used, otherwise the parent sampler is used (if this needs more combinations must be solved differently)
         PARENT_OFF,
     };
 
     enum class ProcessorType  : uint8_t {
-        SYMCHRONOUS,
+        SYNCHRONOUS,
         BATCH
     };
 
@@ -151,8 +151,8 @@ public:
             {
                 Add(_T("enabled"), &Enabled);
                 Add(_T("endpoint"), &Endpoint);
-                Add(_T("intervalMs"), &IntervalMs);
-                Add(_T("timeoutMs"), &TimeoutMs);
+                Add(_T("intervalms"), &IntervalMs);
+                Add(_T("timeoutms"), &TimeoutMs);
             }
 
             Core::JSON::Boolean Enabled;
@@ -164,7 +164,7 @@ public:
         Config()
             : Core::JSON::Container()
             , Sampler(SamplerType::PARENT_ON)
-            , Processor(ProcessorType::SYMCHRONOUS)
+            , Processor(ProcessorType::SYNCHRONOUS)
             , Exporter(ExporterType::CONSOLE)
             , Resources()
             , TracerEndpoint()
@@ -360,7 +360,7 @@ private:
         : _references(0)
         , _adminLock()
         , _samplertype(SamplerType::PARENT_ON)
-        , _processortype(ProcessorType::SYMCHRONOUS)
+        , _processortype(ProcessorType::SYNCHRONOUS)
         , _exportertype(ExporterType::CONSOLE)
         , _tracerendpoint("http://127.0.0.1:4318/v1/traces")
         , _componentname("Thunder")
