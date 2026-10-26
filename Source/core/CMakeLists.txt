@@ -35,6 +35,7 @@ add_library(${TARGET}
         ISO639.cpp
         JSON.cpp
         JSONRPC.cpp
+        JobContext.cpp
         Library.cpp
         Netlink.cpp
         NetworkInfo.cpp
@@ -90,6 +91,7 @@ set(PUBLIC_HEADERS
         IWarningReportingControl.h
         JSON.h
         JSONRPC.h
+        JobContext.h
         KeyValue.h
         Library.h
         Link.h
@@ -204,6 +206,12 @@ if(NOT WCHAR_SUPPORT)
     target_compile_definitions(${TARGET} PUBLIC __CORE_NO_WCHAR_SUPPORT__)
     message(STATUS "Disabled WCHAR support.")
 endif()
+
+if(W3C_TRACE_CONTEXT_ENABLED)
+   target_compile_definitions(${TARGET} PUBLIC __W3C_TRACE_CONTEXT__)
+   message(STATUS "support for W3C trace context propagation")
+endif()
+
 
 if (INSTANCE_ID_BITS)
     target_compile_definitions(${TARGET} PUBLIC __CORE_INSTANCE_BITS__=${INSTANCE_ID_BITS})

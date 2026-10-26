@@ -31,6 +31,10 @@ namespace Core {
         /* static */ constexpr TCHAR Message::KeyMethod[];
         /* static */ constexpr TCHAR Message::KeyResult[];
         /* static */ constexpr TCHAR Message::KeyError[];
+#ifdef __W3C_TRACE_CONTEXT__
+        /* static */ constexpr TCHAR Message::KeyTraceParent[];
+        /* static */ constexpr TCHAR Message::KeyTraceState[];
+#endif
 
     }
 }
