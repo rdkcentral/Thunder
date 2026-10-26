@@ -492,7 +492,7 @@ namespace PluginHost
 
                 Unlock();
 
-                REPORT_DURATION_WARNING( { ErrorMessage(_handler->Initialize(this)); }, WarningReporting::TooLongPluginState, WarningReporting::TooLongPluginState::StateChange::ACTIVATION, callSign.c_str());
+                REPORT_PRIORITY_DURATION_WARNING( { ErrorMessage(_handler->Initialize(this)); }, WarningReporting::TooLongPluginState, WarningReporting::TooLongPluginState::StateChange::ACTIVATION, callSign.c_str());
 
                 if (HasError() == true) {
                     result = Core::ERROR_GENERAL;
