@@ -24,7 +24,10 @@
 #include "Optional.h"
 
 #define COM_ERROR (0x80000000)
+
+#ifdef __CUSTOM_ERROR_CODES__
 #define CUSTOM_ERROR (0x1000000)
+#endif
 
 namespace Thunder {
 namespace Core {
@@ -51,14 +54,15 @@ namespace Core {
 namespace Thunder {
 namespace Core {
 
-#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+#ifdef __CUSTOM_ERROR_CODES__
 
     // transform a custum code into an hresult
-    EXTERNAL Core::hresult CustomCode(const int24_t customCode);
+    EXTERNAL DEPRECATED Core::hresult CustomCode(const int24_t customCode);
     // query if the hresult is a custom code and if so extract the value, returns 0 if the hresult was not a custom code
-    EXTERNAL int24_t IsCustomCode(const Core::hresult code);
+    EXTERNAL DEPRECATED int24_t IsCustomCode(const Core::hresult code);
 
-#endif
+#endif // __CUSTOM_ERROR_CODES__
+
 
     #define ERROR_CODES \
         ERROR_CODE(ERROR_NONE, 0) \
@@ -161,14 +165,15 @@ namespace Core {
     EXTERNAL const TCHAR* ErrorToString(const Core::hresult code);
     EXTERNAL string ErrorToStringExtended(const Core::hresult code);
 
-#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+
+#ifdef __CUSTOM_ERROR_CODES__
 
     using CustomCodeToStringHandler = const TCHAR* (*)(const int32_t code);
 
     // can only set one, not multithreaded safe
     EXTERNAL void SetCustomCodeToStringHandler(CustomCodeToStringHandler handler);
 
-#endif
+#endif // __CUSTOM_ERROR_CODES__
 
 }
 }

@@ -194,14 +194,16 @@ namespace Core {
                         if ((frameworkError & COM_ERROR) != 0) {
                             Code = ApplicationErrorCodeBase - static_cast<int32_t>(frameworkError & 0x7FFFFFFF) - 500;
                         } else {
-#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+
+#ifdef __CUSTOM_ERROR_CODES__
                             int24_t customcode = IsCustomCode(frameworkError);
                             if (customcode != 0) {
                                 Code = (Core::Overflowed(customcode) == true ? 0 : static_cast<int32_t>(customcode));
                             } else {
 #endif
                                 Code = ApplicationErrorCodeBase - static_cast<int32_t>(frameworkError);
-#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+
+#ifdef __CUSTOM_ERROR_CODES__
                             }
 #endif
                         }
