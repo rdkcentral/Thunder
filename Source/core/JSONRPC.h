@@ -161,7 +161,7 @@ namespace Core {
                         break;
                     }
                 }
-                void SetNormalizedError(frameworkError)
+                void SetNormalizedError(const uint32_t frameworkError)
                 {
                     switch (frameworkError) {
                     case Core::ERROR_INVALID_RANGE:
