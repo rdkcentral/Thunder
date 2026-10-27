@@ -615,15 +615,15 @@ namespace Core {
         template <typename TYPENAME = uint16_t>
         void GetTextLength(const SIZE_CONTEXT offset, TYPENAME& result) const
         {
-            ASSERT((offset + Core::RealSize<TYPENAME>()) <= _size);
-            static_assert(Core::RealSize<TYPENAME>() <= sizeof(SIZE_CONTEXT), "Make sure the logic can handle the size (enlarge the SIZE_CONTEXT)");
+            ASSERT((offset + Frame::RealSize<TYPENAME>()) <= _size);
+            static_assert(Frame::RealSize<TYPENAME>() <= sizeof(SIZE_CONTEXT), "Make sure the logic can handle the size (enlarge the SIZE_CONTEXT)");
 
             GetNumber<TYPENAME>(offset, result);
 
-            ASSERT((result + offset + Core::RealSize<TYPENAME>()) <= _size);
+            ASSERT((result + offset + Frame::RealSize<TYPENAME>()) <= _size);
 
-            if (result + offset + Core::RealSize<TYPENAME>() > _size) {
-                result = static_cast<TYPENAME>(_size - (offset + Core::RealSize<TYPENAME>()));
+            if (result + offset + Frame::RealSize<TYPENAME>() > _size) {
+                result = static_cast<TYPENAME>(_size - (offset + Frame::RealSize<TYPENAME>()));
             }
         }
 
