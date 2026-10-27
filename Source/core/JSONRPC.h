@@ -914,15 +914,8 @@ public:
                     PARAMETER parameter;
                     uint32_t code;
                     if (inbound.empty() == false) {
-                        Core::OptionalType<Core::JSON::Error> report;
-                        parameter.FromString(inbound, report);
-                        if (report.IsSet() == false) {
-                            code = setter(*objectPtr, parameter);
-                        }
-                        else {
-                            outbound = report.Value().Message();
-                            code = Core::ERROR_PARSE_FAILURE;
-                        }
+                        parameter.FromString(inbound);
+                        code = setter(*objectPtr, parameter);
                     } else {
                         code = Core::ERROR_UNAVAILABLE;
                     }
@@ -940,15 +933,8 @@ public:
                     PARAMETER parameter;
                     uint32_t code;
                     if (inbound.empty() == false) {
-                        Core::OptionalType<Core::JSON::Error> report;
-                        parameter.FromString(inbound, report);
-                        if (report.IsSet() == false) {
-                            code = setter(*objectPtr, parameter);
-                        }
-                        else {
-                            code = Core::ERROR_PARSE_FAILURE;
-                            outbound = report.Value().Message();
-                        }
+                        parameter.FromString(inbound);
+                        code = setter(*objectPtr, parameter);
                     } else {
                         code = getter(*objectPtr, parameter);
                         parameter.ToString(outbound);
@@ -986,15 +972,8 @@ public:
                     uint32_t code;
                     if (inbound.empty() == false) {
                         const string index = Message::Index(method);
-                        Core::OptionalType<Core::JSON::Error> report;
-                        parameter.FromString(inbound, report);
-                        if (report.IsSet() == false) {
-                            code = setter(*objectPtr, index, parameter);
-                        }
-                        else {
-                            outbound = report.Value().Message();
-                            code = Core::ERROR_PARSE_FAILURE;
-                        }
+                        parameter.FromString(inbound);
+                        code = setter(*objectPtr, index, parameter);
                     } else {
                         code = Core::ERROR_UNAVAILABLE;
                     }
@@ -1013,15 +992,8 @@ public:
                     uint32_t code;
                     const string index = Message::Index(method);
                     if (inbound.empty() == false) {
-                        Core::OptionalType<Core::JSON::Error> report;
-                        parameter.FromString(inbound, report);
-                        if (report.IsSet() == false) {
-                            code = setter(*objectPtr, index, parameter);
-                        }
-                        else {
-                            outbound = report.Value().Message();
-                            code = Core::ERROR_PARSE_FAILURE;
-                        }
+                        parameter.FromString(inbound);
+                        code = setter(*objectPtr, index, parameter);
                     } else {
                         code = getter(*objectPtr, index, parameter);
                         parameter.ToString(outbound);
@@ -1295,17 +1267,10 @@ public:
             {
                 uint32_t code;
                 INBOUND inbound;
-                Core::OptionalType<Core::JSON::Error> report;
 
-                inbound.FromString(parameters, report);
-
-                if (report.IsSet() == false) {
-                    code = method(std::forward<Args>(args)..., inbound);
-                }
-                else {
-                    code = Core::ERROR_PARSE_FAILURE;
-                    result = report.Value().Message();
-                }
+                inbound.FromString(parameters);
+                code = method(std::forward<Args>(args)..., inbound);
+                result.clear();
 
                 return(code);
             }
@@ -1315,22 +1280,15 @@ public:
                 uint32_t code;
                 INBOUND inbound;
                 OUTBOUND outbound;
-                Core::OptionalType<Core::JSON::Error> report;
 
-                inbound.FromString(parameters, report);
+                inbound.FromString(parameters);
 
-                if (report.IsSet() == false) {
-                    code = method(std::forward<Args>(args)..., inbound, outbound);
-                    if ((code == Core::ERROR_NONE) && (outbound.IsSet() == true)) {
-                        outbound.ToString(result);
-                    }
-                    else {
-                        result.clear();
-                    }
+                code = method(std::forward<Args>(args)..., inbound, outbound);
+                if (code == Core::ERROR_NONE) {
+                    outbound.ToString(result);
                 }
                 else {
-                    result = report.Value().Message();
-                    code = Core::ERROR_PARSE_FAILURE;
+                    result.clear();
                 }
 
                 return (code);
@@ -1342,7 +1300,7 @@ public:
 
                 uint32_t code = method(std::forward<Args>(args)..., outbound);
 
-                if ((code == Core::ERROR_NONE) && (outbound.IsSet() == true)) {
+                if (code == Core::ERROR_NONE) {
                     outbound.ToString(result);
                 }
                 else {
@@ -1411,20 +1369,14 @@ public:
             {
                 uint32_t code;
                 INBOUND inbound;
-                Core::OptionalType<Core::JSON::Error> report;
-                inbound.FromString(parameters, report);
 
-                if (report.IsSet() == false) {
-                    ERROR details;
-                    code = method(std::forward<Args>(args)..., inbound, details);
+                inbound.FromString(parameters);
 
-                    if ((code == Core::ERROR_NONE) || (SerializeError(code, details, result) == false)) {
-                        result.clear();
-                    }
-                }
-                else {
-                    code = Core::ERROR_PARSE_FAILURE;
-                    result = report.Value().Message();
+                ERROR details;
+                code = method(std::forward<Args>(args)..., inbound, details);
+
+                if ((code == Core::ERROR_NONE) || (SerializeError(code, details, result) == false)) {
+                    result.clear();
                 }
 
                 return (code);
@@ -1437,10 +1389,10 @@ public:
                 ERROR details;
                 const uint32_t code = method(std::forward<Args>(args)..., outbound, details);
 
-                if ((code == Core::ERROR_NONE) && (outbound.IsSet() == true)) {
+                if (code == Core::ERROR_NONE) {
                     outbound.ToString(result);
                 }
-                else if ((code == Core::ERROR_NONE) || (SerializeError(code, details, result) == false)) {
+                else if (SerializeError(code, details, result) == false) {
                     result.clear();
                 }
 
@@ -1453,23 +1405,17 @@ public:
                 uint32_t code;
                 INBOUND inbound;
                 OUTBOUND outbound;
-                Core::OptionalType<Core::JSON::Error> report;
-                inbound.FromString(parameters, report);
 
-                if (report.IsSet() == false) {
-                    ERROR details;
-                    code = method(std::forward<Args>(args)..., inbound, outbound, details);
+                inbound.FromString(parameters);
 
-                    if ((code == Core::ERROR_NONE) && (outbound.IsSet() == true)) {
-                        outbound.ToString(result);
-                    }
-                    else if ((code == Core::ERROR_NONE) || (SerializeError(code, details, result) == false)) {
-                        result.clear();
-                    }
+                ERROR details;
+                code = method(std::forward<Args>(args)..., inbound, outbound, details);
+
+                if (code == Core::ERROR_NONE) {
+                    outbound.ToString(result);
                 }
-                else {
-                    code = Core::ERROR_PARSE_FAILURE;
-                    result = report.Value().Message();
+                else if (SerializeError(code, details, result) == false) {
+                    result.clear();
                 }
 
                 return (code);
