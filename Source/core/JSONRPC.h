@@ -168,6 +168,11 @@ namespace Core {
 
         public:
             static constexpr TCHAR DefaultVersion[] = _T("2.0");
+#ifdef __W3C_TRACE_CONTEXT__
+            static constexpr TCHAR KeyTraceParent[] = _T("traceparent");
+            static constexpr TCHAR KeyTraceState[] = _T("tracestate");
+#endif
+
 
             Message& operator=(const Message&) = delete;
 
@@ -179,6 +184,10 @@ namespace Core {
                 , Parameters(false)
                 , Result(false)
                 , Error()
+#ifdef __W3C_TRACE_CONTEXT__
+                , traceparent()
+                , tracestate()
+#endif
                 , _implicitCallsign()
             {
                 Add(_T("jsonrpc"), &JSONRPC);
@@ -187,7 +196,10 @@ namespace Core {
                 Add(_T("params"), &Parameters);
                 Add(_T("result"), &Result);
                 Add(_T("error"), &Error);
-
+#ifdef __W3C_TRACE_CONTEXT__
+                Add(KeyTraceParent, &traceparent);
+                Add(KeyTraceState, &tracestate);
+#endif
                 Clear();
             }
             Message(const Message& copy)
@@ -198,6 +210,10 @@ namespace Core {
                 , Parameters(copy.Parameters)
                 , Result(copy.Result)
                 , Error(copy.Error)
+#ifdef __W3C_TRACE_CONTEXT__
+                , traceparent(copy.traceparent)
+                , tracestate(copy.tracestate)
+#endif
                 , _implicitCallsign(copy._implicitCallsign)
             {
                 Add(_T("jsonrpc"), &JSONRPC);
@@ -206,6 +222,10 @@ namespace Core {
                 Add(_T("params"), &Parameters);
                 Add(_T("result"), &Result);
                 Add(_T("error"), &Error);
+#ifdef __W3C_TRACE_CONTEXT__
+                Add(KeyTraceParent, &traceparent);
+                Add(KeyTraceState, &tracestate);
+#endif
             }
             ~Message() override = default;
 
@@ -330,6 +350,10 @@ namespace Core {
                 Parameters.Clear(512);
                 Result.Clear(512);
                 Error.Clear(0);
+#ifdef __W3C_TRACE_CONTEXT__
+                traceparent.Clear(0);
+                tracestate.Clear(0);
+#endif
                 _implicitCallsign.erase();
             }
             string Callsign() const
@@ -372,6 +396,10 @@ namespace Core {
             Core::JSON::String Parameters;
             Core::JSON::String Result;
             Info Error;
+#ifdef __W3C_TRACE_CONTEXT__
+            Core::JSON::String traceparent;
+            Core::JSON::String tracestate;
+#endif
 
         private:
             string _implicitCallsign;

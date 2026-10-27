@@ -26,6 +26,11 @@ namespace Core {
     namespace JSONRPC {
 
         /* static */ constexpr TCHAR Message::DefaultVersion[];
+#ifdef __W3C_TRACE_CONTEXT__
+        /* static */ constexpr TCHAR Message::KeyTraceParent[];
+        /* static */ constexpr TCHAR Message::KeyTraceState[];
+#endif
+
     }
 }
 } // namespace WPEramework::Core::JSONRPC
