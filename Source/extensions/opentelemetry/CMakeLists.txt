@@ -64,7 +64,7 @@ target_link_libraries(${TARGET}
 )
 
 set_target_properties(${TARGET} PROPERTIES
-    CXX_STANDARD ${CXX_STD}
+    CXX_STANDARD 14
     CXX_STANDARD_REQUIRED YES
     PUBLIC_HEADER "${PUBLIC_HEADERS}"
 )
