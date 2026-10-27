@@ -161,6 +161,25 @@ namespace Core {
                         break;
                     }
                 }
+                void SetNormalizedError(frameworkError)
+                {
+                    switch (result) {
+                    case Core::ERROR_INVALID_RANGE:
+                        response->Error.SetError(Core::ERROR_INVALID_SIGNATURE);
+                        break;
+                    case Core::ERROR_FAILED_REGISTERED:
+                        response->Error.SetError(Core::ERROR_UNKNOWN_KEY);
+                        response->Error.Text = _T("Registration already done!!!.");
+                        break;
+                    case Core::ERROR_FAILED_UNREGISTERED:
+                        response->Error.SetError(Core::ERROR_UNKNOWN_KEY);
+                        response->Error.Text = _T("Unregister was already done!!!.");
+                        break;
+                    default:
+                        response->Error.SetError(result);
+                        break;
+                    }
+                }
                 Core::JSON::DecSInt32 Code;
                 Core::JSON::String Text;
                 Core::JSON::String Data;
@@ -1356,7 +1375,7 @@ public:
 
                 if (isSet == true) {
                     Core::JSONRPC::Message::Info error;
-                    error.SetError(frameworkError);
+                    error.SetNormalizedError(frameworkError);
 
                     if (details.Code.IsSet() == true) {
                         error.Code = details.Code;
