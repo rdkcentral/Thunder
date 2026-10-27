@@ -163,7 +163,7 @@ namespace Core {
                 }
                 void SetNormalizedError(frameworkError)
                 {
-                    switch (result) {
+                    switch (frameworkError) {
                     case Core::ERROR_INVALID_RANGE:
                         response->Error.SetError(Core::ERROR_INVALID_SIGNATURE);
                         break;
@@ -176,7 +176,7 @@ namespace Core {
                         response->Error.Text = _T("Unregister was already done!!!.");
                         break;
                     default:
-                        response->Error.SetError(result);
+                        response->Error.SetError(frameworkError);
                         break;
                     }
                 }
