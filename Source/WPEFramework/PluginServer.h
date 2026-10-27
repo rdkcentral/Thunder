@@ -3776,25 +3776,25 @@ POP_WARNING()
                 string Process(const string& message)
                 {
                     string result;
-                    REPORT_DURATION_WARNING( { result = _service->Inbound(_ID, message); }, WarningReporting::TooLongInvokeMessage, message);  
+                    REPORT_PRIORITY_DURATION_WARNING( { result = _service->Inbound(_ID, message); }, WarningReporting::TooLongInvokeMessage, message);
                     return result;
                 }
                 Core::ProxyType<Core::JSONRPC::Message> Process(const string& token, const Core::ProxyType<Core::JSONRPC::Message>& message)
                 {
                     Core::ProxyType<Core::JSONRPC::Message> result;
-                    REPORT_DURATION_WARNING( { result = _service->Invoke(_ID, token, *message); }, WarningReporting::TooLongInvokeMessage, *message);  
+                    REPORT_PRIORITY_DURATION_WARNING( { result = _service->Invoke(_ID, token, *message); }, WarningReporting::TooLongInvokeMessage, *message);
                     return result;
                 }
                 Core::ProxyType<Web::Response> Process(const Core::ProxyType<Web::Request>& message)
                 {
                     Core::ProxyType<Web::Response> result;
-                    REPORT_DURATION_WARNING( { result = _service->Process(*message); }, WarningReporting::TooLongInvokeMessage, *message);  
+                    REPORT_PRIORITY_DURATION_WARNING( { result = _service->Process(*message); }, WarningReporting::TooLongInvokeMessage, *message);
                     return result;
                 }
                 Core::ProxyType<Core::JSON::IElement> Process(const Core::ProxyType<Core::JSON::IElement>& message)
                 {
                     Core::ProxyType<Core::JSON::IElement> result;
-                    REPORT_DURATION_WARNING( { result = _service->Inbound(_ID, message); }, WarningReporting::TooLongInvokeMessage, *message);  
+                    REPORT_PRIORITY_DURATION_WARNING( { result = _service->Inbound(_ID, message); }, WarningReporting::TooLongInvokeMessage, *message);
                     return result;
                 }
                 template <typename PACKAGE>
