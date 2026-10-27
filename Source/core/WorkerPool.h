@@ -186,7 +186,7 @@ namespace Core {
             Core::TimerType<Timer>& _timer;
         };
 
-        #ifdef __CORE_WARNING_REPORTING__
+        #ifdef __CORE_ACTIVE_JOB_MONITORING__
         class DispatchedJobMonitor : public ThreadPool::IDispatchedJobMonitor {
         /**
         * @brief DispatchedJobMonitor monitor/maintains a list of Dispatched Jobs for analysis.
@@ -278,7 +278,7 @@ namespace Core {
                 if (_dispatchedJobList.size() > 0 && IsActive()) {
                     for (auto &job : _dispatchedJobList) {
                         ++job.ReportRunCount;
-                        REPORT_PRIORITY_OUTOFBOUNDS_WARNING_EX(WarningReporting::JobActiveForTooLong, job.CallSign.c_str(),
+                        REPORT_OUTOFBOUNDS_WARNING_EX(WarningReporting::JobActiveForTooLong, job.CallSign.c_str(),
                         static_cast<uint32_t>((Time::Now().Ticks() - job.DispatchedTime) / Time::TicksPerMillisecond));
                     }
                 }
@@ -327,7 +327,7 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
             , _timer(1024 * 1024, _T("WorkerPoolType::Timer"))
             , _metadata()
             , _joined(0)
-            #ifdef __CORE_WARNING_REPORTING__
+            #ifdef __CORE_ACTIVE_JOB_MONITORING__
             , _dispatchedJobMonitor(*this, static_cast<uint32_t>(DispatchedJobMonitor::DefaultScheduleIntervalInMilliSeconds))
             #endif 
         {
@@ -432,14 +432,14 @@ POP_WARNING()
         void Run()
         {
             _threadPool.Run();
-            #ifdef __CORE_WARNING_REPORTING__
+            #ifdef __CORE_ACTIVE_JOB_MONITORING__
             _threadPool.SetDispatchedJobMonitor(&_dispatchedJobMonitor);
             _dispatchedJobMonitor.Start();
             #endif
         }
         void Stop()
         {
-            #ifdef __CORE_WARNING_REPORTING__
+            #ifdef __CORE_ACTIVE_JOB_MONITORING__
             _dispatchedJobMonitor.Stop();
             _threadPool.ResetDispatchedJobMonitor();
             #endif
@@ -456,7 +456,7 @@ POP_WARNING()
         Core::TimerType<Timer> _timer;
         mutable Metadata _metadata;
         thread_id _joined;
-        #ifdef __CORE_WARNING_REPORTING__
+        #ifdef __CORE_ACTIVE_JOB_MONITORING__
         DispatchedJobMonitor _dispatchedJobMonitor;
         #endif
     };
