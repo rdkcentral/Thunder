@@ -830,14 +830,15 @@ namespace Core {
     }
 
     #define COM_ERROR (0x80000000)
+
+#ifdef __CUSTOM_ERROR_CODES__
+
     #define CUSTOM_ERROR (0x1000000)
 
-#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
-
     // transform a custum code into an hresult
-    EXTERNAL Core::hresult CustomCode(const int32_t customCode);
+    EXTERNAL DEPRECATED Core::hresult CustomCode(const int32_t customCode);
     // query if the hresult is a custom code and if so extract the value, returns 0 if the hresult was not a custom code
-    EXTERNAL int24_t IsCustomCode(const Core::hresult code);
+    EXTERNAL DEPRECATED int24_t IsCustomCode(const Core::hresult code);
 
 #endif
 
@@ -934,7 +935,7 @@ namespace Core {
     EXTERNAL const TCHAR* ErrorToString(const Core::hresult code);
     EXTERNAL string ErrorToStringExtended(const Core::hresult code);
 
-#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+#ifdef __CUSTOM_ERROR_CODES__
 
     using CustomCodeToStringHandler = const TCHAR* (*)(const int32_t code);
 
@@ -942,6 +943,7 @@ namespace Core {
     EXTERNAL void SetCustomCodeToStringHandler(CustomCodeToStringHandler handler);
 
 #endif
+
     #undef ERROR_CODE
 
     class TextFragment;

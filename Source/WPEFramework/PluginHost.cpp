@@ -134,8 +134,8 @@ POP_WARNING()
         string _interface;
         Core::AdapterObserver _observer;
     };
-    
-#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+
+#ifdef __CUSTOM_ERROR_CODES__
 
     class CustomCodeLibrary {
     public:
@@ -193,7 +193,7 @@ POP_WARNING()
         Core::CustomCodeToStringHandler _customCodeToStringHandler;
     };
 
-#endif
+#endif // __CUSTOM_ERROR_CODES__
 
     class ExitHandler : public Core::Thread {
     private:
@@ -574,8 +574,8 @@ POP_WARNING()
                 fprintf(stdout, "Config file [%s] could not be opened.\n", options.configFile);
             }
         }
-        
-#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+
+#ifdef __CUSTOM_ERROR_CODES__
         CustomCodeLibrary customcodelibraryhandler;
 #endif
 
@@ -640,13 +640,11 @@ POP_WARNING()
                 postMortemPath.CreatePath();
             }
 
-            
-#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+#ifdef __CUSTOM_ERROR_CODES__
             if (_config->CustomCodeLibrary().empty() == false) {
                 customcodelibraryhandler.Load(_config->CustomCodeLibrary());
             }
 #endif
-
 
             if (_config->MessagingCategoriesFile()) {
 
@@ -1102,8 +1100,8 @@ POP_WARNING()
             fprintf(stderr, EXPAND_AND_QUOTE(APPLICATION_NAME) " shutting down due to a 'Q' press in the terminal. Regular shutdown\n");
             fflush(stderr);
         }
-        
-#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+
+#ifdef __CUSTOM_ERROR_CODES__
          customcodelibraryhandler.Release();
 #endif
  
