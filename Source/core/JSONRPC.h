@@ -149,7 +149,7 @@ namespace Core {
                             // one hand keep the current Thunder error codes used in 4.4 backwards compatible (so the numbers as reported in
                             // json rpc will not change) while at the same time making sure that code used in dynamic json rpc override will behave
                             // as in Thunder 5 (so if the error code is changed to 1000 there it will result in a -32000 error code reported for json rpc)
-#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+#ifdef __CUSTOM_ERROR_CODES__
                             int32_t customcode = IsCustomCode(frameworkError);
                             if (customcode != 0) {
                                 Code = (customcode == std::numeric_limits<int32_t>::max() ? 0 : customcode);

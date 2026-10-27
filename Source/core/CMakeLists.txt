@@ -156,7 +156,6 @@ set(PUBLIC_HEADERS
         Module.h
         CallsignTLS.h
         TokenizedStringList.h
-        ICustomErrorCode.h
         )
 
 target_compile_options (${TARGET} PRIVATE -Wno-psabi)
@@ -215,6 +214,11 @@ if(W3C_TRACE_CONTEXT_ENABLED)
    message(STATUS "support for W3C trace context propagation")
 endif()
 
+if(CUSTOM_ERROR_CODES_ENABLED)
+    target_compile_definitions(${TARGET} PUBLIC __CUSTOM_ERROR_CODES__)
+    message(WARNING "Enabled support for custom error codes (obsolete!)")
+    list(APPEND PUBLIC_HEADERS "ICustomErrorCode.h")
+endif()
 
 if (INSTANCE_ID_BITS)
     target_compile_definitions(${TARGET} PUBLIC __CORE_INSTANCE_BITS__=${INSTANCE_ID_BITS})
