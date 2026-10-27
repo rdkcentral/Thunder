@@ -35,6 +35,7 @@ add_library(${TARGET}
         ISO639.cpp
         JSON.cpp
         JSONRPC.cpp
+        JobContext.cpp
         Library.cpp
         Netlink.cpp
         NetworkInfo.cpp
@@ -90,6 +91,7 @@ set(PUBLIC_HEADERS
         IWarningReportingControl.h
         JSON.h
         JSONRPC.h
+        JobContext.h
         KeyValue.h
         Library.h
         Link.h
@@ -151,7 +153,6 @@ set(PUBLIC_HEADERS
         CallsignTLS.h
         TokenizedStringList.h
         MessageStore.h
-        ICustomErrorCode.h
         Errors.h
         ExtraNumberDefinitions.h
         ${CMAKE_CURRENT_BINARY_DIR}/generated/core/Version.h
@@ -205,6 +206,17 @@ if(NOT WCHAR_SUPPORT)
     message(STATUS "Disabled WCHAR support.")
 endif()
 
+if(W3C_TRACE_CONTEXT_ENABLED)
+   target_compile_definitions(${TARGET} PUBLIC __W3C_TRACE_CONTEXT__)
+   message(STATUS "support for W3C trace context propagation")
+endif()
+
+if(CUSTOM_ERROR_CODES_ENABLED)
+    target_compile_definitions(${TARGET} PUBLIC __CUSTOM_ERROR_CODES__)
+    message(WARNING "Enabled support for custom error codes (obsolete!)")
+    list(APPEND PUBLIC_HEADERS "ICustomErrorCode.h")
+endif()
+
 if (INSTANCE_ID_BITS)
     target_compile_definitions(${TARGET} PUBLIC __CORE_INSTANCE_BITS__=${INSTANCE_ID_BITS})
     message(STATUS "COMRPC instanceid defined as ${INSTANCE_ID_BITS} bits.")
@@ -230,11 +242,11 @@ if(BLUETOOTH_SUPPORT)
     foreach(path ${Bluez5IncludeDirs})
     target_include_directories(${TARGET}
         PUBLIC
-            $<BUILD_INTERFACE:${path}>)        
+            $<BUILD_INTERFACE:${path}>)
     endforeach()
 
     CheckBluez5InclusiveLanguage(INCLUSIVE_LANGUAGE)
-    
+
     if(NOT ${INCLUSIVE_LANGUAGE})
         #TODO: Remove NO_INCLUSIVE_LANGUAGE define when the plugins are synced to BLUEZ_HAS_NO_INCLUSIVE_LANGUAGE
         target_compile_definitions(${TARGET} PUBLIC INTERFACE NO_INCLUSIVE_LANGUAGE BLUEZ_HAS_NO_INCLUSIVE_LANGUAGE)

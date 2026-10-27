@@ -21,6 +21,9 @@
 
 #include "Module.h"
 #include "WebSocketLink.h"
+#ifdef __W3C_TRACE_CONTEXT__
+#include <core/JobContext.h>
+#endif
 
 #ifndef JSONRPC_OPEN_TIMEOUT
 #define JSONRPC_OPEN_TIMEOUT 2000
@@ -607,8 +610,8 @@ namespace Thunder {
             template <typename INBOUND, typename METHOD, typename REALOBJECT>
             void Assign(const string& eventName, const METHOD& method, REALOBJECT* objectPtr)
             {
-                // using INBOUND = typename Core::TypeTraits::func_traits<METHOD>::template argument<0>::type;
-                std::function<void(INBOUND parameters)> actualMethod = std::bind(method, objectPtr, std::placeholders::_1);
+                //using INBOUND = typename Core::TypeTraits::func_traits<METHOD>::template argument<0>::type;
+                std::function<void(const INBOUND& parameters)> actualMethod = std::bind(method, objectPtr, std::placeholders::_1);
                 InvokeFunction implementation = [actualMethod](const Core::JSONRPC::Context&, const string&, const string& parameters, string& result) -> uint32_t {
                     Core::OptionalType<Core::JSON::Error> report;
                     INBOUND inbound;
@@ -1031,6 +1034,9 @@ namespace Thunder {
                         message->Designator = method;
                     }
                     ToMessage(parameters, message);
+#ifdef __W3C_TRACE_CONTEXT__
+                    ApplyTraceContext(message);
+#endif
 
                     _adminLock.Lock();
 
@@ -1095,6 +1101,9 @@ namespace Thunder {
                         message->Designator = method;
                     }
                     ToMessage(parameters, message);
+#ifdef __W3C_TRACE_CONTEXT__
+                    ApplyTraceContext(message);
+#endif
 
                     _adminLock.Lock();
 
@@ -1129,7 +1138,6 @@ namespace Thunder {
                 uint32_t result = Core::ERROR_INVALID_SIGNATURE;
 
                 ASSERT(inbound.IsValid() == true);
-
 
                 if ((inbound->Id.IsSet() == true) && (inbound->Result.IsSet() || inbound->Error.IsSet())) {
                     // Looks like this is a response..
@@ -1167,8 +1175,21 @@ namespace Thunder {
                         // Looks like this is an event.
                         ASSERT(inbound->Id.IsSet() == false);
 
+#ifdef __W3C_TRACE_CONTEXT__
+                        Core::JobContext& jobContext = Core::JobContext::Instance();
+                        jobContext.TraceContextW3C().ClearTraceContext();
+                        if (inbound->traceparent.IsSet() == true) {
+                            jobContext.TraceContextW3C().TraceParent(inbound->traceparent.Value());
+                        }
+                        if (inbound->tracestate.IsSet() == true) {
+                            jobContext.TraceContextW3C().TraceState(inbound->tracestate.Value());
+                        }
+#endif
                         string response;
                         _handler.Invoke(Core::JSONRPC::Context(), inbound->FullMethod(), inbound->Parameters.Value(), response);
+#ifdef __W3C_TRACE_CONTEXT__
+                        jobContext.TraceContextW3C().ClearTraceContext();
+#endif
                     }
                 }
 
@@ -1176,6 +1197,19 @@ namespace Thunder {
             }
 
         private:
+#ifdef __W3C_TRACE_CONTEXT__
+            void ApplyTraceContext(Core::ProxyType<Core::JSONRPC::Message>& message) const
+            {
+                const Core::JobContext& context = Core::JobContext::Instance();
+
+                if (context.TraceContextW3C().HasTraceParent() == true) {
+                    message->traceparent = context.TraceContextW3C().TraceParent();
+                }
+                if (context.TraceContextW3C().HasTraceState() == true) {
+                    message->tracestate = context.TraceContextW3C().TraceState();
+                }
+            }
+#endif
             void ToMessage(const string& parameters, Core::ProxyType<Core::JSONRPC::Message>& message) const
             {
                 if (parameters.empty() != true) {
