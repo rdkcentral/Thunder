@@ -64,6 +64,7 @@ set(WARNING_REPORTING_WORKERPOOL_ACTIVE_REPORT_BOUND 15000 CACHE STRING "Active 
 set(WARNING_REPORTING_WORKERPOOL_ACTIVE_WARNING_BOUND 20000 CACHE STRING "Active WorkerPool job warning threshold in milliseconds")
 set(WARNING_REPORTING_PLUGIN_STATE_REPORT_BOUND 5000 CACHE STRING "Plugin state change reporting threshold in milliseconds")
 set(WARNING_REPORTING_PLUGIN_STATE_WARNING_BOUND 5000 CACHE STRING "Plugin state change warning threshold in milliseconds")
+option(W3C_TRACE_CONTEXT_ENABLED "allow propagation of W3C trace context" OFF)
 
 if(SLIM_WARNING_REPORTING)
     set(WARNING_REPORTING ON CACHE BOOL "Include warning reporting in the build." FORCE)
@@ -79,6 +80,7 @@ if(WARNING_REPORTING)
         message(FATAL_ERROR "Warning bounds must be greater than or equal to their report bounds")
     endif()
 endif()
+
 
 if(HIDE_NON_EXTERNAL_SYMBOLS)
     set(CMAKE_CXX_VISIBILITY_PRESET hidden)

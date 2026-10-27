@@ -612,6 +612,21 @@ namespace Core {
             return (static_cast<SIZE_CONTEXT>(Frame::RealSize<TYPENAME>() + textLength));
         }
 
+        template <typename TYPENAME = uint16_t>
+        void GetTextLength(const SIZE_CONTEXT offset, TYPENAME& result) const
+        {
+            ASSERT((offset + Frame::RealSize<TYPENAME>()) <= _size);
+            static_assert(Frame::RealSize<TYPENAME>() <= sizeof(SIZE_CONTEXT), "Make sure the logic can handle the size (enlarge the SIZE_CONTEXT)");
+
+            GetNumber<TYPENAME>(offset, result);
+
+            ASSERT((result + offset + Frame::RealSize<TYPENAME>()) <= _size);
+
+            if (result + offset + Frame::RealSize<TYPENAME>() > _size) {
+                result = static_cast<TYPENAME>(_size - (offset + Frame::RealSize<TYPENAME>()));
+            }
+        }
+
         SIZE_CONTEXT GetNullTerminatedText(const SIZE_CONTEXT offset, string& result) const
         {
             const char* text = reinterpret_cast<const char*>(&(_data[offset]));

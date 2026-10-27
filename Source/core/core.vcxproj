@@ -43,6 +43,7 @@
     <ClInclude Include="ISO639.h" />
     <ClInclude Include="IAssertionControl.h" />
     <ClInclude Include="IWarningReportingControl.h" />
+    <ClInclude Include="JobContext.h" />
     <ClInclude Include="JSON.h" />
     <ClInclude Include="JSONRPC.h" />
     <ClInclude Include="KeyValue.h" />
@@ -113,6 +114,7 @@
     <ClCompile Include="DoorBell.cpp" />
     <ClCompile Include="FileSystem.cpp" />
     <ClCompile Include="ISO639.cpp" />
+    <ClCompile Include="JobContext.cpp" />
     <ClCompile Include="JSON.cpp" />
     <ClCompile Include="JSONRPC.cpp" />
     <ClCompile Include="Library.cpp" />
@@ -242,7 +244,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>CORE_EXPORTS;_CRT_SECURE_NO_WARNINGS;_WINSOCK_DEPRECATED_NO_WARNINGS;DEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>CORE_EXPORTS;_CRT_SECURE_NO_WARNINGS;_WINSOCK_DEPRECATED_NO_WARNINGS;DEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions); __W3C_TRACE_CONTEXT__</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(WarningReportingGeneratedIncludePath);$(ProjectDir)..;$(WindowsPath);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <UseStandardPreprocessor>true</UseStandardPreprocessor>
