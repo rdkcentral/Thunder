@@ -62,7 +62,7 @@ endif()
 # target_compile_definitions(CompileSettings INTERFACE "THUNDER_PLATFORM=${THUNDER_PLATFORM}")
 # message(STATUS "Selected platform ${THUNDER_PLATFORM}")
 
-target_compile_options(CompileSettings INTERFACE -std=c++11 -Wno-psabi)
+target_compile_options(CompileSettings INTERFACE -Wno-psabi)
 
 #
 # Build type specific options
