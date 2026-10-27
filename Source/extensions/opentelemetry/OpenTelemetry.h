@@ -44,7 +44,7 @@
 #include <opentelemetry/sdk/resource/resource.h>
 #include <opentelemetry/metrics/provider.h>
 
-namespace Thunder {
+namespace WPEFramework {
 namespace Telemetry {
 
 //***************************************************** */

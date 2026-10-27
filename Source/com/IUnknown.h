@@ -288,7 +288,7 @@ namespace ProxyStub {
         {
             void* result = nullptr;
             Core::ProxyType<RPC::InvokeMessage> message(RPC::Administrator::Instance().Message());
-            message->Parameters().Set(_implementation, _interfaceId, 2));
+            message->Parameters().Set(_implementation, _interfaceId, 2);
             RPC::Data::Frame::Writer parameters(message->Parameters().Writer());
 
             parameters.Number<uint32_t>(id);

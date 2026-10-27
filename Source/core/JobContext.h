@@ -25,7 +25,7 @@
 #include <utility>
 #endif
 
-namespace Thunder {
+namespace WPEFramework {
 namespace Core {
 
     class EXTERNAL JobContext {

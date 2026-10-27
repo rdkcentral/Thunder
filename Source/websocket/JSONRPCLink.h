@@ -26,7 +26,6 @@
 #include <core/JobContext.h>
 #endif
 
-
 namespace WPEFramework {
 
 	namespace JSONRPC {
@@ -592,30 +591,23 @@ namespace WPEFramework {
                 _handler.Register(eventName, implementation);
             }
             template <typename INBOUND, typename METHOD, typename REALOBJECT>
-            void Assign(const string& eventName, const METHOD& method, REALOBJECT* objectPtr)
-            {
-                // using INBOUND = typename Core::TypeTraits::func_traits<METHOD>::template argument<0>::type;
-                std::function<void(const INBOUND& parameters)> actualMethod = std::bind(method, objectPtr, std::placeholders::_1);
-                InvokeFunction implementation = [actualMethod](const Core::JSONRPC::Context&, const string&, const string& parameters, string& result) -> uint32_t {
-                    Core::OptionalType<Core::JSON::Error> report;
-                    INBOUND inbound;
-                    uint32_t resultCode = Core::ERROR_PARSE_FAILURE;
-                    inbound.FromString(parameters, report);
-
-                    if (report.IsSet() == false) {
-                        actualMethod(inbound);
-                        resultCode = Core::ERROR_NONE;
-                    }
-                    result.clear();
-                    return (resultCode);
-                };
-                _handler.Register(eventName, implementation);
-            }
-            void Revoke(const string& eventName)
-            {
-                _handler.Unregister(eventName);
-            }
-            template <typename INBOUND, typename METHOD>
+			void Assign(const string& eventName, const METHOD& method, REALOBJECT* objectPtr)
+			{
+				// using INBOUND = typename Core::TypeTraits::func_traits<METHOD>::template argument<0>::type;
+				std::function<void(const INBOUND& parameters)> actualMethod = std::bind(method, objectPtr, std::placeholders::_1);
+				InvokeFunction implementation = [actualMethod](const Core::JSONRPC::Context&, const string&, const string& parameters, string& result) -> uint32_t {
+					INBOUND inbound;
+					inbound.FromString(parameters);
+					actualMethod(inbound);
+					result.clear();
+					return (Core::ERROR_NONE);
+				};
+				_handler.Register(eventName, implementation);
+			}            
+			void Revoke(const string& eventName)
+			{
+				_handler.Unregister(eventName);
+			}            template <typename INBOUND, typename METHOD>
             uint32_t Subscribe(const uint32_t waitTime, const string& eventName, const METHOD& method)
             {
                 Assign<INBOUND, METHOD>(eventName, method);

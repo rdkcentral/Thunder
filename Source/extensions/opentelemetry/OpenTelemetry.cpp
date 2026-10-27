@@ -94,7 +94,7 @@ namespace metrics_api                   = opentelemetry::metrics;
 namespace metrics_sdk                   = opentelemetry::sdk::metrics;
 
 
-namespace Thunder {
+namespace WPEFramework {
 
 ENUM_CONVERSION_BEGIN(Telemetry::OpenTelemetry::SamplerType)
 
