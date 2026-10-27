@@ -51,10 +51,10 @@ namespace Core {
             , _tracestate()
             {
                 if(other._traceparent) {
-                    _traceparent = std::make_unique<string>(*(other._traceparent));
+                    _traceparent =  std::unique_ptr<string>(new string(*(other._traceparent)));
                 }
                 if(other._tracestate) {
-                    _tracestate = std::make_unique<string>(*(other._tracestate));
+                    _tracestate = std::unique_ptr<string>(new string(*(other._tracestate)));
                 }
             }
             W3CTraceContext(W3CTraceContext&&) = default;
@@ -62,12 +62,12 @@ namespace Core {
             {
                 if(&other != this) {
                     if(other._traceparent) {
-                        _traceparent = std::make_unique<string>(*(other._traceparent));
+                        _traceparent = std::unique_ptr<string>(new string(*(other._traceparent)));
                     } else {
                         _traceparent.reset();
                     }
                     if(other._tracestate) {
-                        _tracestate = std::make_unique<string>(*(other._tracestate));
+                        _tracestate = std::unique_ptr<string>(new string(*(other._tracestate)));
                     } else {
                         _tracestate.reset();
                     }
@@ -78,13 +78,13 @@ namespace Core {
 
             W3CTraceContext() = default;
             W3CTraceContext(const string& traceparent, const string& tracestate) 
-            : _traceparent( traceparent.empty() == true ? nullptr : std::make_unique<string>(traceparent) )
-            , _tracestate( tracestate.empty() == true ? nullptr : std::make_unique<string>(tracestate) )
+            : _traceparent( traceparent.empty() == true ? nullptr : std::unique_ptr<string>(new string(traceparent)) )
+            , _tracestate( tracestate.empty() == true ? nullptr : new string(tracestate) )
             {
             }
             W3CTraceContext(string&& traceparent, string&& tracestate) 
-            : _traceparent( traceparent.empty() == true ? nullptr : std::make_unique<string>(std::move(traceparent)) )
-            , _tracestate( tracestate.empty() == true ? nullptr : std::make_unique<string>(std::move(tracestate)) )
+            : _traceparent( traceparent.empty() == true ? nullptr : std::unique_ptr<string>(new string(std::move(traceparent))) )
+            , _tracestate( tracestate.empty() == true ? nullptr : std::unique_ptr<string>(new string(std::move(tracestate))) )
             {
             }
 
@@ -95,11 +95,11 @@ namespace Core {
             }
             void TraceParent(const string& value)
             {
-                _traceparent = std::make_unique<string>(value);
+                _traceparent = std::unique_ptr<string>(new string(value));
             }
             void TraceParent(string&& value)
             {
-                _traceparent = std::make_unique<string>(std::move(value));
+                _traceparent = std::unique_ptr<string>(new string(std::move(value)));
             }
             bool HasTraceParent() const
             {
@@ -112,11 +112,11 @@ namespace Core {
             }
             void TraceState(const string& value)
             {
-                _tracestate = std::make_unique<string>(value);
+                _tracestate = std::unique_ptr<string>(new string(value));
             }
             void TraceState(string&& value)
             {
-                _tracestate = std::make_unique<string>(std::move(value));
+                _tracestate = std::unique_ptr<string>(new string(std::move(value)));
             }
             bool HasTraceState() const
             {
