@@ -1093,6 +1093,16 @@ namespace PluginHost {
 
                     Core::InterlockedIncrement(_activity);
                     string output;
+#ifdef __W3C_TRACE_CONTEXT__
+                    Core::JobContext& jobContext = Core::JobContext::Instance();
+                    jobContext.TraceContextW3C().ClearTraceContext();
+                    if (message.traceparent.IsSet() == true) {
+                        jobContext.TraceContextW3C().TraceParent(message.traceparent.Value());
+                    }
+                    if (message.tracestate.IsSet() == true) {
+                        jobContext.TraceContextW3C().TraceState(message.tracestate.Value());
+                    }
+#endif
                     uint32_t result = _jsonrpc->Invoke(channelId, message.Id.Value(), token, message.Designator.Value(), message.Parameters.Value(), output);
 
                     if ( (result != static_cast<uint32_t>(~0)) && ( (message.Id.IsSet()) || (result != Core::ERROR_NONE) ) )  {
@@ -1113,11 +1123,35 @@ namespace PluginHost {
                         }
                         else {
                             response->Error.SetError(result);
+
                             if (output.empty() == false) {
-                                response->Error.Text = output;
+                                Core::OptionalType<Core::JSON::Error> report;
+                                Core::JSONRPC::Message::Info error;
+
+                                error.FromString(output, report);
+
+                                if ((report.IsSet() == false) && (error.IsSet() == true)) {
+                                    if (error.Code.IsSet() == true) {
+                                        response->Error.Code = error.Code;
+                                    }
+                                    if (error.Text.IsSet() == true) {
+                                        response->Error.Text = error.Text;
+                                    }
+                                    if (error.Data.IsSet() == true) {
+                                        response->Error.Data = error.Data;
+                                    }
+                                }
+                                else {
+                                    // Output doesn't seem to be rich error details, fallback to legacy text.
+                                    response->Error.Text = output;
+                                }
                             }
                         }
                     }
+
+#ifdef __W3C_TRACE_CONTEXT__
+                    jobContext.TraceContextW3C().ClearTraceContext();
+#endif
 
                     Core::InterlockedDecrement(_activity);
                 }

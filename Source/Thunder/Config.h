@@ -456,7 +456,7 @@ namespace PluginHost {
 #ifdef HIBERNATE_SUPPORT_ENABLED
                 , Hibernate()
 #endif
-#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+#ifdef __CUSTOM_ERROR_CODES__
                 , CustomCodeLibrary()
 #endif
             {
@@ -510,7 +510,7 @@ namespace PluginHost {
 #ifdef HIBERNATE_SUPPORT_ENABLED
                 Add(_T("hibernate"), &Hibernate);
 #endif
-#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+#ifdef __CUSTOM_ERROR_CODES__
                 Add(_T("customcodelibrary"), &CustomCodeLibrary);
 #endif
             }
@@ -568,7 +568,7 @@ namespace PluginHost {
 #ifdef HIBERNATE_SUPPORT_ENABLED
             HibernateConfig Hibernate;
 #endif
-#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+#ifdef __CUSTOM_ERROR_CODES__
             Core::JSON::String CustomCodeLibrary;
 #endif
         };
@@ -757,7 +757,7 @@ namespace PluginHost {
 #ifdef HIBERNATE_SUPPORT_ENABLED
             , _hibernateLocator()
 #endif
-#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+#ifdef __CUSTOM_ERROR_CODES__
             , _customCodeLibrary()
 #endif
         {
@@ -775,7 +775,7 @@ namespace PluginHost {
 #ifdef HIBERNATE_SUPPORT_ENABLED
                 _hibernateLocator = config.Hibernate.Locator.Value();
 #endif
-#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+#ifdef __CUSTOM_ERROR_CODES__
                 _customCodeLibrary = config.CustomCodeLibrary.Value();
 #endif
                 _volatilePath = Core::Directory::Normalize(config.VolatilePath.Value());
@@ -977,7 +977,7 @@ namespace PluginHost {
             return (_hibernateLocator);
         }
 #endif
-#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+#ifdef __CUSTOM_ERROR_CODES__
         inline const string& CustomCodeLibrary() const
         {
             return (_customCodeLibrary);
@@ -1425,7 +1425,7 @@ namespace PluginHost {
 #ifdef HIBERNATE_SUPPORT_ENABLED
         string _hibernateLocator;
 #endif
-#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+#ifdef __CUSTOM_ERROR_CODES__
         string _customCodeLibrary;
 #endif
     };

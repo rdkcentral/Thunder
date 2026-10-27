@@ -148,7 +148,7 @@ namespace PluginHost {
         Core::AdapterObserver _observer;
     };
 
-#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+#ifdef __CUSTOM_ERROR_CODES__
 
     class CustomCodeLibrary {
     public:
@@ -206,7 +206,8 @@ namespace PluginHost {
         Core::CustomCodeToStringHandler _customCodeToStringHandler;
     };
 
-#endif
+#endif // __CUSTOM_ERROR_CODES__
+
 
     class ExitHandler : public Core::Thread {
     private:
@@ -692,7 +693,7 @@ int main(int argc, char** argv)
         }
     }
 
-#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+#ifdef __CUSTOM_ERROR_CODES__
     CustomCodeLibrary customcodelibraryhandler;
 #endif
 
@@ -762,7 +763,7 @@ int main(int argc, char** argv)
             postMortemPath.CreatePath();
         }
 
-#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+#ifdef __CUSTOM_ERROR_CODES__
         if (_config->CustomCodeLibrary().empty() == false) {
             customcodelibraryhandler.Load(_config->CustomCodeLibrary());
         }
@@ -1161,7 +1162,7 @@ int main(int argc, char** argv)
         fflush(stderr);
     }
 
-#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+#ifdef __CUSTOM_ERROR_CODES__
     customcodelibraryhandler.Release();
 #endif
 

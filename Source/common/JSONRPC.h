@@ -677,6 +677,16 @@ namespace PluginHost {
         {
             _handlers.front().Register<INBOUND, METHOD>(methodName, method);
         }
+        template <typename INBOUND, typename OUTBOUND, typename ERROR, typename METHOD>
+        void RegisterWithError(const string& methodName, const METHOD& method)
+        {
+            _handlers.front().RegisterWithError<INBOUND, OUTBOUND, ERROR, METHOD>(methodName, method);
+        }
+        template <typename INBOUND, typename OUTBOUND, typename ERROR, typename METHOD, typename REALOBJECT>
+        void RegisterWithError(const string& methodName, const METHOD& method, REALOBJECT* objectPtr)
+        {
+            _handlers.front().RegisterWithError<INBOUND, OUTBOUND, ERROR, METHOD, REALOBJECT>(methodName, method, objectPtr);
+        }
         void Register(const string& methodName, const Core::JSONRPC::InvokeFunction& lambda)
         {
             _handlers.front().Register(methodName, lambda);
@@ -1193,6 +1203,15 @@ namespace PluginHost {
 
             message->Designator = designator;
             message->JSONRPC = Core::JSONRPC::Message::DefaultVersion;
+#ifdef __W3C_TRACE_CONTEXT__
+            Core::JobContext& jobContext = Core::JobContext::Instance();
+            if (jobContext.TraceContextW3C().HasTraceParent() == true) {
+                message->traceparent = jobContext.TraceContextW3C().TraceParent();
+            }
+            if (jobContext.TraceContextW3C().HasTraceState() == true) {
+                message->tracestate = jobContext.TraceContextW3C().TraceState();
+            }
+#endif
 
             _service->Submit(channelId, Core::ProxyType<Core::JSON::IElement>(message));
         }
@@ -1922,7 +1941,7 @@ namespace PluginHost {
     }
 
     template<typename JSONRPCERRORASSESSORTYPE>
-    class EXTERNAL JSONRPCErrorAssessor : public JSONRPC {
+    class EXTERNAL DEPRECATED JSONRPCErrorAssessor : public JSONRPC {
     public:
         JSONRPCErrorAssessor(JSONRPCERRORASSESSORTYPE errorhandler)
             : JSONRPC()
@@ -1946,8 +1965,10 @@ namespace PluginHost {
         JSONRPCERRORASSESSORTYPE _errorhandler;
     };
 
+    PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE)
+
     template<>
-    class EXTERNAL JSONRPCErrorAssessor<JSONRPCErrorAssessorTypes::StdFunctionCallbackType> : public JSONRPC {
+    class EXTERNAL DEPRECATED JSONRPCErrorAssessor<JSONRPCErrorAssessorTypes::StdFunctionCallbackType> : public JSONRPC {
     public:
         JSONRPCErrorAssessor(const JSONRPCErrorAssessorTypes::StdFunctionCallbackType& errorhandler)
             : JSONRPC()
@@ -1976,6 +1997,8 @@ namespace PluginHost {
     private:
         JSONRPCErrorAssessorTypes::StdFunctionCallbackType _errorhandler;
     };
+
+    POP_WARNING()
 
 #endif // __DISABLE_USE_COMPLEMENTARY_CODE_SET__
 
