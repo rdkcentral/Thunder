@@ -22,6 +22,10 @@
 #include "Module.h"
 #include "WebSocketLink.h"
 
+#ifdef __W3C_TRACE_CONTEXT__
+#include <core/JobContext.h>
+#endif
+
 namespace WPEFramework {
 
 	namespace JSONRPC {
@@ -584,13 +588,13 @@ namespace WPEFramework {
 					return (Core::ERROR_NONE);
 				};
 
-				_handler.Register(eventName, implementation);
-			}
-			template <typename INBOUND, typename METHOD, typename REALOBJECT>
+                _handler.Register(eventName, implementation);
+            }
+            template <typename INBOUND, typename METHOD, typename REALOBJECT>
 			void Assign(const string& eventName, const METHOD& method, REALOBJECT* objectPtr)
 			{
 				// using INBOUND = typename Core::TypeTraits::func_traits<METHOD>::template argument<0>::type;
-				std::function<void(INBOUND parameters)> actualMethod = std::bind(method, objectPtr, std::placeholders::_1);
+				std::function<void(const INBOUND& parameters)> actualMethod = std::bind(method, objectPtr, std::placeholders::_1);
 				InvokeFunction implementation = [actualMethod](const Core::JSONRPC::Context&, const string&, const string& parameters, string& result) -> uint32_t {
 					INBOUND inbound;
 					inbound.FromString(parameters);
@@ -599,15 +603,14 @@ namespace WPEFramework {
 					return (Core::ERROR_NONE);
 				};
 				_handler.Register(eventName, implementation);
-			}
+			}            
 			void Revoke(const string& eventName)
 			{
 				_handler.Unregister(eventName);
-			}
-			template <typename INBOUND, typename METHOD>
-			uint32_t Subscribe(const uint32_t waitTime, const string& eventName, const METHOD& method)
-			{
-				Assign<INBOUND, METHOD>(eventName, method);
+			}            template <typename INBOUND, typename METHOD>
+            uint32_t Subscribe(const uint32_t waitTime, const string& eventName, const METHOD& method)
+            {
+                Assign<INBOUND, METHOD>(eventName, method);
 
 				const string parameters("{ \"event\": \"" + eventName + "\", \"id\": \"" + _localSpace + "\"}");
 				Core::ProxyType<Core::JSONRPC::Message> response;
@@ -993,16 +996,20 @@ namespace WPEFramework {
 
 					result = Core::ERROR_ASYNC_FAILED;
 
-					Core::ProxyType<Core::JSONRPC::Message> message(CommunicationChannel::Message());
-					uint32_t id = _channel->Sequence();
-					message->Id = id;
-					if (_callsign.empty() == false) {
-						message->Designator = _callsign + _versionstring + '.' + method;
-					}
-					else {
-						message->Designator = method;
-					}
-					ToMessage(parameters, message);
+                    Core::ProxyType<Core::JSONRPC::Message> message(CommunicationChannel::Message());
+                    uint32_t id = _channel->Sequence();
+                    message->Id = id;
+                    if (_callsign.empty() == false) {
+                        message->Designator = _callsign + _versionstring + '.' + method;
+                    }
+                    else {
+                        message->Designator = method;
+                    }
+                    ToMessage(parameters, message);
+
+#ifdef __W3C_TRACE_CONTEXT__
+                    ApplyTraceContext(message);
+#endif
 
 					_adminLock.Lock();
 
@@ -1057,16 +1064,20 @@ namespace WPEFramework {
 
 					result = Core::ERROR_ASYNC_FAILED;
 
-					Core::ProxyType<Core::JSONRPC::Message> message(CommunicationChannel::Message());
-					uint32_t id = _channel->Sequence();
-					message->Id = id;
-					if (_callsign.empty() == false) {
-						message->Designator = _callsign + _versionstring + '.' + method;
-					}
-					else {
-						message->Designator = method;
-					}
-					ToMessage(parameters, message);
+                    Core::ProxyType<Core::JSONRPC::Message> message(CommunicationChannel::Message());
+                    uint32_t id = _channel->Sequence();
+                    message->Id = id;
+                    if (_callsign.empty() == false) {
+                        message->Designator = _callsign + _versionstring + '.' + method;
+                    }
+                    else {
+                        message->Designator = method;
+                    }
+                    ToMessage(parameters, message);
+
+#ifdef __W3C_TRACE_CONTEXT__
+                    ApplyTraceContext(message);
+#endif
 
 					_adminLock.Lock();
 
@@ -1100,7 +1111,8 @@ namespace WPEFramework {
 			{
 				uint32_t result = Core::ERROR_INVALID_SIGNATURE;
 
-				ASSERT(inbound.IsValid() == true);
+                ASSERT(inbound.IsValid() == true);
+
 
 				if ((inbound->Id.IsSet() == true) && (inbound->Result.IsSet() || inbound->Error.IsSet())) {
 					// Looks like this is a response..
@@ -1137,57 +1149,84 @@ namespace WPEFramework {
 					if (callsign == _localSpace) {
 						// Looks like this is an event.
 						ASSERT(inbound->Id.IsSet() == false);
+#ifdef __W3C_TRACE_CONTEXT__
+                        Core::JobContext& jobContext = Core::JobContext::Instance();
+                        jobContext.TraceContextW3C().ClearTraceContext();
+                        if (inbound->traceparent.IsSet() == true) {
+                            jobContext.TraceContextW3C().TraceParent(inbound->traceparent.Value());
+                        }
+                        if (inbound->tracestate.IsSet() == true) {
+                            jobContext.TraceContextW3C().TraceState(inbound->tracestate.Value());
+                        }
+#endif
 
-						string response;
-						_handler.Invoke(Core::JSONRPC::Context(), inbound->FullMethod(), inbound->Parameters.Value(), response);
-					}
-				}
+                        string response;
+                        _handler.Invoke(Core::JSONRPC::Context(), inbound->FullMethod(), inbound->Parameters.Value(), response);
+#ifdef __W3C_TRACE_CONTEXT__
+                        jobContext.TraceContextW3C().ClearTraceContext();
+#endif
+
+                    }
+                }
 
 				return (result);
 			}
 
-		private:
-			void ToMessage(const string& parameters, Core::ProxyType<Core::JSONRPC::Message>& message) const
-			{
-				if (parameters.empty() != true) {
-					message->Parameters = parameters;
-				}
-			}
-			template <typename PARAMETERS>
-			void ToMessage(PARAMETERS& parameters, Core::ProxyType<Core::JSONRPC::Message>& message) const
-			{
-				ToMessage((INTERFACE*)(&parameters), message);
-				return;
-			}
-			void ToMessage(Core::JSON::IMessagePack* parameters, Core::ProxyType<Core::JSONRPC::Message>& message) const
-			{
-				std::vector<uint8_t> values;
-				parameters->ToBuffer(values);
-				if (values.empty() != true) {
-					string strValues(values.begin(), values.end());
-					message->Parameters = strValues;
-				}
-				return;
-			}
-			void ToMessage(Core::JSON::IElement* parameters, Core::ProxyType<Core::JSONRPC::Message>& message) const
-			{
-				string values;
-				parameters->ToString(values);
-				if (values.empty() != true) {
-					message->Parameters = values;
-				}
-				return;
-			}
-			void FromMessage(Core::JSON::IElement* response, const Core::JSONRPC::Message& message)
-			{
-				response->FromString(message.Result.Value());
-			}
-			void FromMessage(Core::JSON::IMessagePack* response, const Core::JSONRPC::Message& message)
-			{
-				string value = message.Result.Value();
-				std::vector<uint8_t> result(value.begin(), value.end());
-				response->FromBuffer(result);
-			}
+        private:
+#ifdef __W3C_TRACE_CONTEXT__
+            void ApplyTraceContext(Core::ProxyType<Core::JSONRPC::Message>& message) const
+            {
+                const Core::JobContext& context = Core::JobContext::Instance();
+
+                if (context.TraceContextW3C().HasTraceParent() == true) {
+                    message->traceparent = context.TraceContextW3C().TraceParent();
+                }
+                if (context.TraceContextW3C().HasTraceState() == true) {
+                    message->tracestate = context.TraceContextW3C().TraceState();
+                }
+            }
+#endif
+            void ToMessage(const string& parameters, Core::ProxyType<Core::JSONRPC::Message>& message) const
+            {
+                if (parameters.empty() != true) {
+                    message->Parameters = parameters;
+                }
+            }
+            template <typename PARAMETERS>
+            void ToMessage(PARAMETERS& parameters, Core::ProxyType<Core::JSONRPC::Message>& message) const
+            {
+                ToMessage((INTERFACE*)(&parameters), message);
+                return;
+            }
+            void ToMessage(Core::JSON::IMessagePack* parameters, Core::ProxyType<Core::JSONRPC::Message>& message) const
+            {
+                std::vector<uint8_t> values;
+                parameters->ToBuffer(values);
+                if (values.empty() != true) {
+                    string strValues(values.begin(), values.end());
+                    message->Parameters = strValues;
+                }
+                return;
+            }
+            void ToMessage(Core::JSON::IElement* parameters, Core::ProxyType<Core::JSONRPC::Message>& message) const
+            {
+                string values;
+                parameters->ToString(values);
+                if (values.empty() != true) {
+                    message->Parameters = values;
+                }
+                return;
+            }
+            void FromMessage(Core::JSON::IElement* response, const Core::JSONRPC::Message& message)
+            {
+                response->FromString(message.Result.Value());
+            }
+            void FromMessage(Core::JSON::IMessagePack* response, const Core::JSONRPC::Message& message)
+            {
+                string value = message.Result.Value();
+                std::vector<uint8_t> result(value.begin(), value.end());
+                response->FromBuffer(result);
+            }
 
 		private:
 			Core::CriticalSection _adminLock;

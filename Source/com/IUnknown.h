@@ -105,7 +105,29 @@ namespace ProxyStub {
 
                 ASSERT(handler != nullptr);
 
+#ifdef __W3C_TRACE_CONTEXT__
+
+                string traceParent;
+                string traceState;
+
+                message->Parameters().TraceContext(traceParent, traceState);
+                Core::JobContext& context = Core::JobContext::Instance();
+                context.TraceContextW3C().ClearTraceContext();
+                if (traceParent.empty() == false) {
+                    context.TraceContextW3C().TraceParent(std::move(traceParent));   
+                }
+                if (traceState.empty() == false) {
+                    context.TraceContextW3C().TraceState(std::move(traceState));
+                }
+
+#endif
                 handler(channel, message);
+
+#ifdef __W3C_TRACE_CONTEXT__
+
+                context.TraceContextW3C().ClearTraceContext();
+#endif
+
             }
         }
 
@@ -266,9 +288,9 @@ namespace ProxyStub {
         {
             void* result = nullptr;
             Core::ProxyType<RPC::InvokeMessage> message(RPC::Administrator::Instance().Message());
+            message->Parameters().Set(_implementation, _interfaceId, 2);
             RPC::Data::Frame::Writer parameters(message->Parameters().Writer());
 
-            message->Parameters().Set(_implementation, _interfaceId, 2);
             parameters.Number<uint32_t>(id);
 
             _adminLock.Lock();
@@ -328,8 +350,16 @@ namespace ProxyStub {
         inline Core::ProxyType<RPC::InvokeMessage> Message(const uint8_t methodId) const
         {
             Core::ProxyType<RPC::InvokeMessage> message(RPC::Administrator::Instance().Message());
+#ifndef __W3C_TRACE_CONTEXT__
 
             message->Parameters().Set(_implementation, _interfaceId, methodId + 3);
+
+#else
+            Core::JobContext& context = Core::JobContext::Instance();
+
+            message->Parameters().Set(_implementation, _interfaceId, methodId + 3, context.TraceContextW3C().HasTraceParent() == true ? &context.TraceContextW3C().TraceParent() : nullptr, context.TraceContextW3C().HasTraceState() == true ? &context.TraceContextW3C().TraceState() : nullptr);
+
+#endif
 
             return (message);
         }
