@@ -1139,7 +1139,7 @@ namespace PluginHost {
     }
 
     template<typename JSONRPCERRORASSESSORTYPE>
-    class EXTERNAL JSONRPCErrorAssessor : public JSONRPC {
+    class EXTERNAL DEPRECATED JSONRPCErrorAssessor : public JSONRPC {
     public:
         JSONRPCErrorAssessor(JSONRPCERRORASSESSORTYPE errorhandler) 
             : JSONRPC()
@@ -1158,8 +1158,11 @@ namespace PluginHost {
         private:
             JSONRPCERRORASSESSORTYPE _errorhandler;
     };
+
+    PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE)
+
     template<>
-    class EXTERNAL JSONRPCErrorAssessor<JSONRPCErrorAssessorTypes::StdFunctionCallbackType> : public JSONRPC {
+    class EXTERNAL DEPRECATED JSONRPCErrorAssessor<JSONRPCErrorAssessorTypes::StdFunctionCallbackType> : public JSONRPC {
     public:
         JSONRPCErrorAssessor(const JSONRPCErrorAssessorTypes::StdFunctionCallbackType& errorhandler) 
             : JSONRPC()
@@ -1183,6 +1186,8 @@ namespace PluginHost {
         private:
             JSONRPCErrorAssessorTypes::StdFunctionCallbackType _errorhandler;
     };
+
+    POP_WARNING()
 
 } // namespace WPEFramework::PluginHost
 }
