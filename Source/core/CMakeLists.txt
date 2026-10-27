@@ -153,7 +153,6 @@ set(PUBLIC_HEADERS
         CallsignTLS.h
         TokenizedStringList.h
         MessageStore.h
-        ICustomErrorCode.h
         Errors.h
         ExtraNumberDefinitions.h
         ${CMAKE_CURRENT_BINARY_DIR}/generated/core/Version.h
@@ -212,6 +211,11 @@ if(W3C_TRACE_CONTEXT_ENABLED)
    message(STATUS "support for W3C trace context propagation")
 endif()
 
+if(CUSTOM_ERROR_CODES_ENABLED)
+    target_compile_definitions(${TARGET} PUBLIC __CUSTOM_ERROR_CODES__)
+    message(WARNING "Enabled support for custom error codes (obsolete!)")
+    list(APPEND PUBLIC_HEADERS "ICustomErrorCode.h")
+endif()
 
 if (INSTANCE_ID_BITS)
     target_compile_definitions(${TARGET} PUBLIC __CORE_INSTANCE_BITS__=${INSTANCE_ID_BITS})
@@ -238,11 +242,11 @@ if(BLUETOOTH_SUPPORT)
     foreach(path ${Bluez5IncludeDirs})
     target_include_directories(${TARGET}
         PUBLIC
-            $<BUILD_INTERFACE:${path}>)        
+            $<BUILD_INTERFACE:${path}>)
     endforeach()
 
     CheckBluez5InclusiveLanguage(INCLUSIVE_LANGUAGE)
-    
+
     if(NOT ${INCLUSIVE_LANGUAGE})
         #TODO: Remove NO_INCLUSIVE_LANGUAGE define when the plugins are synced to BLUEZ_HAS_NO_INCLUSIVE_LANGUAGE
         target_compile_definitions(${TARGET} PUBLIC INTERFACE NO_INCLUSIVE_LANGUAGE BLUEZ_HAS_NO_INCLUSIVE_LANGUAGE)
