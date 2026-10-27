@@ -165,18 +165,18 @@ namespace Core {
                 {
                     switch (frameworkError) {
                     case Core::ERROR_INVALID_RANGE:
-                        response->Error.SetError(Core::ERROR_INVALID_SIGNATURE);
+                        SetError(Core::ERROR_INVALID_SIGNATURE);
                         break;
                     case Core::ERROR_FAILED_REGISTERED:
-                        response->Error.SetError(Core::ERROR_UNKNOWN_KEY);
-                        response->Error.Text = _T("Registration already done!!!.");
+                        SetError(Core::ERROR_UNKNOWN_KEY);
+                        Text = _T("Registration already done!!!.");
                         break;
                     case Core::ERROR_FAILED_UNREGISTERED:
-                        response->Error.SetError(Core::ERROR_UNKNOWN_KEY);
-                        response->Error.Text = _T("Unregister was already done!!!.");
+                        SetError(Core::ERROR_UNKNOWN_KEY);
+                        Text = _T("Unregister was already done!!!.");
                         break;
                     default:
-                        response->Error.SetError(frameworkError);
+                        SetError(frameworkError);
                         break;
                     }
                 }
