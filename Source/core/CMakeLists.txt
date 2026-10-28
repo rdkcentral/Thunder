@@ -76,6 +76,7 @@ set(PUBLIC_HEADERS
         DataElementFile.h
         DataElement.h
         Enumerate.h
+        Errors.h
         Factory.h
         FileSystem.h
         FileObserver.h

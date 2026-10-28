@@ -126,6 +126,10 @@ namespace Core {
             enum { Arguments = sizeof...(TArgs) };
         };
 
+        template<typename F>
+        using lambda_traits = func_traits<decltype(&F::operator())>;
+ 
+
         template< bool B, class T = void>
         using enable_if = std::enable_if<B, T>;
 
