@@ -1539,45 +1539,29 @@ namespace PluginHost {
                                 }
 
                             } else {
-                                switch (result) {
-                                case Core::ERROR_INVALID_RANGE:
-                                    response->Error.SetError(Core::ERROR_INVALID_SIGNATURE);
-                                    break;
-                                case Core::ERROR_FAILED_REGISTERED:
-                                    response->Error.SetError(Core::ERROR_UNKNOWN_KEY);
-                                    response->Error.Text = _T("Registration already done!!!.");
-                                    break;
-                                case Core::ERROR_FAILED_UNREGISTERED:
-                                    response->Error.SetError(Core::ERROR_UNKNOWN_KEY);
-                                    response->Error.Text = _T("Unregister was already done!!!.");
-                                    break;
-                                case Core::ERROR_INVALID_PARAMETER:
-                                    response->Error.SetError(Core::ERROR_INVALID_SIGNATURE);
-                                    response->Error.Text = _T("Invalid Parameter");
-                                    break;
-                                case Core::ERROR_INVALID_DEVICENAME:
-                                    response->Error.SetError(Core::ERROR_INVALID_DEVICENAME);
-                                    response->Error.Text = _T("Invalid device name");
-                                    break;
-                                case Core::ERROR_INVALID_MOUNTPOINT:
-                                    response->Error.SetError(Core::ERROR_INVALID_MOUNTPOINT);
-                                    response->Error.Text = _T("Invalid mount path");
-                                    break;
-                                case Core::ERROR_FIRMWAREUPDATE_INPROGRESS:
-                                    response->Error.SetError(Core::ERROR_FIRMWAREUPDATE_INPROGRESS);
-                                    response->Error.Text = _T("Firmware update already in progress");
-                                    break;
-                                case Core::ERROR_FIRMWAREUPDATE_UPTODATE:
-                                    response->Error.SetError(Core::ERROR_FIRMWAREUPDATE_UPTODATE);
-                                    response->Error.Text = _T("Firmware is already upto date");
-                                    break;
-                                default:
-                                    response->Error.SetError(result);
-                                    break;
-                                }
+                                response->Error.SetNormalizedError(result);
 
                                 if (output.empty() == false) {
-                                    response->Error.Text = output;
+                                    Core::OptionalType<Core::JSON::Error> report;
+                                    Core::JSONRPC::Message::Info error;
+
+                                    error.FromString(output, report);
+
+                                    if ((report.IsSet() == false) && (error.IsSet() == true)) {
+                                        if (error.Code.IsSet() == true) {
+                                            response->Error.Code = error.Code;
+                                        }
+                                        if (error.Text.IsSet() == true) {
+                                            response->Error.Text = error.Text;
+                                        }
+                                        if (error.Data.IsSet() == true) {
+                                            response->Error.Data = error.Data;
+                                        }
+                                    }
+                                    else {
+                                        // Output doesn't seem to be rich error details, fallback to legacy text.
+                                        response->Error.Text = output;
+                                    }
                                 }
                             }
                         }
