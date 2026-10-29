@@ -100,9 +100,10 @@ namespace Controller {
         virtual Core::hresult Persist(const Core::OptionalType<string>& callsign = {}) = 0;
 
         // @brief Restores configuration back to default
-        // @details If callsign is not provided, configuration for all plugins is restored to default.
-        //          If callsign is provided but empty, only the Controller configuration is restored.
-        //          If callsign is provided with a specific value, only that plugin's configuration is restored.
+        // @details If callsign is not provided, persisted configuration overrides for all plugins are removed.
+        //          If callsign is provided but empty, only the Controller's overrides are removed.
+        //          If callsign is provided with a specific value, only that plugin's overrides are removed.
+        //          Running configuration is unchanged; restart Thunder to load the default configuration.
         // @param callsign: Plugin callsign to restore (omit for all plugins, empty string for Controller only)
         virtual Core::hresult Restore(const Core::OptionalType<string>& callsign = {}) = 0;
 
