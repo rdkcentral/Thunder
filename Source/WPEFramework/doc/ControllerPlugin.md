@@ -98,7 +98,7 @@ This plugin implements the following interfaces:
 - Controller::IMetadata ([IController.h](https://github.com/rdkcentral/Thunder/tree/R4_4/Source/plugins/IController.h)) (version 1.0.0) (compliant format)
 > This interface uses legacy ```lowercase``` naming convention. With the next major release the naming convention will change to ```camelCase```.
 
-- [Controller.json](https://github.com/rdkcentral/Thunder/tree/R4_4/Source/plugins/Controller.json) (version 1.0.0) (legacy)
+- [Controller.json](https://github.com/rdkcentral/Thunder/tree/R4_4/Source/WPEFramework/Controller.json) (version 1.0.0) (legacy)
 
 <a id="head_Methods"></a>
 # Methods
