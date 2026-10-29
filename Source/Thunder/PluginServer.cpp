@@ -1303,11 +1303,13 @@ namespace PluginHost {
     {
         IFactories::Assign(&_factoriesImplementation);
 
+#ifdef __LINUX__
         if (_config.ResourceMonitorWatchdogTimeout() != 0) {
             Core::ResourceMonitor::Instance().EnableWatchDog(
                 _config.ResourceMonitorWatchdogTimeout(),
                 _config.ResourceMonitorWatchdogAbort());
         }
+#endif
 
         // See if the persistent path for our-selves exist, if not we will create it :-)
         Core::File persistentPath(_config.PersistentPath() + PluginOverrideDirectory);

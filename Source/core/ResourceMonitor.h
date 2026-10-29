@@ -451,15 +451,24 @@ POP_WARNING()
 
                 uint16_t events;
 
-                if ((entry == nullptr) || ((events = entry->Events()) == 0)) {
+                if (entry == nullptr) {
                     index = _resources.erase(index);
                 }
                 else {
-                    _descriptorArray[filledFileDescriptors].fd = entry->Descriptor();
-                    _descriptorArray[filledFileDescriptors].events = events;
-                    _descriptorArray[filledFileDescriptors].revents = 0;
-                    filledFileDescriptors++;
-                    index++;
+                    Arm();
+                    events = entry->Events();
+                    Reset();
+
+                    if (events == 0) {
+                        index = _resources.erase(index);
+                    }
+                    else {
+                        _descriptorArray[filledFileDescriptors].fd = entry->Descriptor();
+                        _descriptorArray[filledFileDescriptors].events = events;
+                        _descriptorArray[filledFileDescriptors].revents = 0;
+                        filledFileDescriptors++;
+                        index++;
+                    }
                 }
             }
 
@@ -670,7 +679,7 @@ POP_WARNING()
         {
         }
 
-        ResourceMonitorHandler(ResourceMonitorHandler&& rhs) = delete;
+        ResourceMonitorHandler(ResourceMonitorHandler&&) = default;
         ResourceMonitorHandler(const ResourceMonitorHandler& rhs) = default;
         ResourceMonitorHandler& operator=(ResourceMonitorHandler&& rhs) = delete;
         ResourceMonitorHandler& operator=(const ResourceMonitorHandler& rhs) = delete;
@@ -680,7 +689,7 @@ POP_WARNING()
     public:
         uint32_t Expired()
         {
-            TRACE_L1("Resource monitor thread exceeded watchdog timeout of %u ms", _timeout);
+            CC_SYSLOG("Resource monitor thread exceeded watchdog timeout of %u ms", _timeout);
             if (_abortOnExpiry == true) {
                 std::abort();
             }

@@ -173,8 +173,9 @@ namespace Core {
 
     class BlockingResource : public ::Thunder::Core::IResource {
     public:
-        explicit BlockingResource(const handle descriptor)
+        BlockingResource(const handle descriptor, const bool blockInEvents)
             : _descriptor(descriptor)
+            , _blockInEvents(blockInEvents)
         {
         }
 
@@ -185,19 +186,25 @@ namespace Core {
 
         uint16_t Events() override
         {
+            if (_blockInEvents == true) {
+                ::SleepMs(500);
+            }
             return (POLLIN);
         }
 
         void Handle(const uint16_t VARIABLE_IS_NOT_USED events) override
         {
-            ::SleepMs(500);
+            if (_blockInEvents == false) {
+                ::SleepMs(500);
+            }
         }
 
     private:
         const handle _descriptor;
+        const bool _blockInEvents;
     };
 
-    TEST(Core_ResourceMonitor, ExpiryAbortsTheProcessWhenConfigured)
+    void ExpectResourceMonitorWatchDogAbort(const bool blockInEvents)
     {
         int descriptors[2];
         ASSERT_EQ(::pipe(descriptors), 0);
@@ -209,7 +216,7 @@ namespace Core {
             TestResourceMonitor monitor;
             monitor.EnableWatchDog(50, true);
 
-            BlockingResource resource(descriptors[0]);
+            BlockingResource resource(descriptors[0], blockInEvents);
             monitor.Register(resource);
 
             const char event = 'x';
@@ -225,6 +232,16 @@ namespace Core {
         ASSERT_EQ(::waitpid(pid, &status, 0), pid);
         ASSERT_TRUE(WIFSIGNALED(status));
         EXPECT_EQ(WTERMSIG(status), SIGABRT);
+    }
+
+    TEST(Core_ResourceMonitor, ExpiryAbortsTheProcessWhenHandleBlocks)
+    {
+        ExpectResourceMonitorWatchDogAbort(false);
+    }
+
+    TEST(Core_ResourceMonitor, ExpiryAbortsTheProcessWhenEventsBlocks)
+    {
+        ExpectResourceMonitorWatchDogAbort(true);
     }
 #endif
 }
