@@ -124,7 +124,6 @@ namespace Controller {
         // @param callsign: Callsign of plugin to be hibernated
         // @param timeout: Allowed time in ms (e.g. 10000)
         // @retval ERROR_INPROC The plugin is running in-process and thus cannot be hibernated
-        // @retval ERROR_HIBERNATED The plugin is already hibernated
         virtual Core::hresult Hibernate(const string& callsign, const uint32_t timeout) = 0;
 
         // @brief Suspend a plugin

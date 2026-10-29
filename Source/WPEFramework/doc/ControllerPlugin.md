@@ -502,7 +502,6 @@ Set a plugin in Hibernate state.
 | Message | Description |
 | :-------- | :-------- |
 | ```ERROR_INPROC``` | The plugin is running in-process and thus cannot be hibernated |
-| ```ERROR_HIBERNATED``` | The plugin is already hibernated |
 
 ### Example
 
@@ -725,7 +724,7 @@ Provides access to the SSDP network discovery results.
 {
   "jsonrpc": "2.0",
   "id": 42,
-  "result": {}
+  "result": []
 }
 ```
 
@@ -826,7 +825,7 @@ Provides access to the currently running proxies list.
 {
   "jsonrpc": "2.0",
   "id": 42,
-  "result": {}
+  "result": []
 }
 ```
 
@@ -908,7 +907,7 @@ Provides access to the active connection details.
 {
   "jsonrpc": "2.0",
   "id": 42,
-  "result": {}
+  "result": []
 }
 ```
 
@@ -978,7 +977,7 @@ Provides access to the currently active subsystem details.
 {
   "jsonrpc": "2.0",
   "id": 42,
-  "result": {}
+  "result": []
 }
 ```
 
