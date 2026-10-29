@@ -19,6 +19,7 @@
 
 #include "PluginServer.h"
 #include "Controller.h"
+#include <core/ResourceMonitor.h>
 
 #ifndef __WINDOWS__
 #include <syslog.h>
@@ -1301,6 +1302,12 @@ namespace PluginHost {
         , _factoriesImplementation()
     {
         IFactories::Assign(&_factoriesImplementation);
+
+        if (_config.ResourceMonitorWatchdogTimeout() != 0) {
+            Core::ResourceMonitor::Instance().EnableWatchDog(
+                _config.ResourceMonitorWatchdogTimeout(),
+                _config.ResourceMonitorWatchdogAbort());
+        }
 
         // See if the persistent path for our-selves exist, if not we will create it :-)
         Core::File persistentPath(_config.PersistentPath() + PluginOverrideDirectory);

@@ -661,8 +661,9 @@ namespace Core {
             ASSERT(_queue.HasEntry(job) == false);
 
             thread_id threadId = Thread::ThreadId();
+            ResourceMonitor& resourceMonitor = ResourceMonitor::Instance();
 
-            if (threadId == ResourceMonitor::Instance().Id() || HasThreadID(threadId)) {
+            if (((threadId == resourceMonitor.Id()) && (resourceMonitor.WatchDogEnabled() == false)) || HasThreadID(threadId)) {
                 _queue.Post(job);
             }
             else {
@@ -708,8 +709,9 @@ namespace Core {
             }
 
             thread_id threadId = Thread::ThreadId();
+            ResourceMonitor& resourceMonitor = ResourceMonitor::Instance();
 
-            if (threadId == ResourceMonitor::Instance().Id() || HasThreadID(threadId)) {
+            if (((threadId == resourceMonitor.Id()) && (resourceMonitor.WatchDogEnabled() == false)) || HasThreadID(threadId)) {
                 _queue.Post(job, cat);
             } else {
                 _queue.Insert(job, waitTime, cat);

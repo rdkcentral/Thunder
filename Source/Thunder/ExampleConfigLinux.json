@@ -2,6 +2,8 @@
   "port":9999,
   "binding":"0.0.0.0",
   "idletime":180,
+  "resourcemonitorwatchdogtimeout":0,
+  "resourcemonitorwatchdogabort":false,
   "persistentpath":"/tmp",
   "datapath":"/usr/share/thunder/",
   "systempath":"/usr/lib/thunder/",
