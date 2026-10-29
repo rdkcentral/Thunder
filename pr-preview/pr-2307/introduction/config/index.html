@@ -3356,17 +3356,17 @@
 </tr>
 <tr>
 <td>resourcemonitorwatchdogtimeout</td>
-<td>ResourceMonitor callback watchdog timeout in milliseconds. <code>0</code> disables the watchdog. Enabled only in the Thunder daemon.</td>
+<td>ResourceMonitor callback watchdog timeout in milliseconds. <code>0</code> disables the watchdog. Enabled only in the Linux Thunder daemon.</td>
 <td>integer</td>
 <td>0</td>
 <td>30000</td>
 </tr>
 <tr>
 <td>resourcemonitorwatchdogabort</td>
-<td>Abort Thunder when the ResourceMonitor watchdog expires. When false, log the expiry without aborting; a process supervisor may be configured to reboot on abort.</td>
+<td>Abort Thunder when the ResourceMonitor watchdog expires. When false, log the expiry only; when true, a process supervisor can reboot Thunder after the abort.</td>
 <td>bool</td>
-<td>true</td>
-<td>true</td>
+<td>false</td>
+<td>false</td>
 </tr>
 <tr>
 <td>communicator</td>
