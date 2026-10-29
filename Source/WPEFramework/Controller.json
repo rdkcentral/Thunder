@@ -1,0 +1,64 @@
+{
+  "$schema": "interface.schema.json",
+  "jsonrpc": "2.0",
+  "info": {
+    "title": "Controller legacy API",
+    "class": "Controller",
+    "description": "Controller JSON-RPC legacy interface"
+  },
+  "definitions": {
+    "subsystemstatus": {
+      "type": "object",
+      "properties": {
+        "subsystem": {
+          "description": "Subsystem name",
+          "type": "string",
+          "example": "Platform"
+        },
+        "active": {
+          "description": "Denotes whether the subsystem is active (true)",
+          "type": "boolean",
+          "example": true
+        }
+      },
+      "required": [
+        "subsystem",
+        "active"
+      ]
+    }
+  },
+  "events": {
+    "all": {
+      "summary": "Signals each and every event in the system. The Controller plugin is an aggregator of all the events triggered by a specific plugin. All notifications send by any plugin are forwarded over the Controller socket as an event.",
+      "params": {
+        "type": "object",
+        "properties": {
+          "callsign": {
+            "type": "string",
+            "description": "Callsign of the originator plugin of the event",
+            "example": "WebKitBrowser"
+          },
+          "data": {
+            "type": "object",
+            "description": "Object that was broadcasted as an event by the originator plugin",
+            "properties": {},
+            "required": []
+          }
+        },
+        "required": [
+          "callsign",
+          "data"
+        ]
+      }
+    },
+    "subsystemchange": {
+      "summary": "Signals a subsystem state change",
+      "params": {
+        "type": "array",
+        "items": {
+          "$ref": "#/definitions/subsystemstatus"
+        }
+      }
+    }
+  }
+}
