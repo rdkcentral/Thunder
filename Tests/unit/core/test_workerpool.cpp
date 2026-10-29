@@ -2056,6 +2056,85 @@ namespace Core {
         job.Release();
     }
 
+    class EmbeddedJobWorkerPool : public ::Thunder::Core::WorkerPool {
+    private:
+        class Dispatcher : public ::Thunder::Core::ThreadPool::IDispatcher {
+        private:
+            void Initialize() override { }
+            void Deinitialize() override { }
+            void Dispatch(::Thunder::Core::IDispatch* job) override
+            {
+                job->Dispatch();
+            }
+        };
+
+        class Sink {
+        public:
+            explicit Sink(EmbeddedJobWorkerPool& parent)
+                : _parent(parent)
+                , _job(*this)
+            {
+            }
+
+            void Submit()
+            {
+                ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch> job(_job.Submit());
+
+                ASSERT(job.IsValid());
+                _parent.Submit(job);
+            }
+
+            void Revoke()
+            {
+                ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch> job(_job.Revoke());
+
+                if (job.IsValid()) {
+                    _parent.Revoke(job);
+                    _job.Revoked();
+                }
+            }
+
+            void Dispatch() { }
+
+        private:
+            EmbeddedJobWorkerPool& _parent;
+            ::Thunder::Core::ThreadPool::JobType<Sink&> _job;
+        };
+
+    public:
+        EmbeddedJobWorkerPool()
+            : ::Thunder::Core::WorkerPool(1, 0, 4, &_dispatcher)
+            , _dispatcher()
+            , _sink(*this)
+        {
+        }
+
+        ~EmbeddedJobWorkerPool()
+        {
+            Stop();
+            _sink.Revoke();
+            WaitForStop();
+        }
+
+        void SubmitSinkJob()
+        {
+            _sink.Submit();
+        }
+
+    private:
+        Dispatcher _dispatcher;
+        Sink _sink;
+    };
+
+    TEST(Core_WorkerPool, RevokeEmbeddedJobFromStoppedPoolBeforeOwnerDestruction)
+    {
+        auto pool = ::Thunder::Core::ProxyType<EmbeddedJobWorkerPool>::Create();
+
+        // Do not run the pool: keep the embedded job queued, then disable the queue.
+        pool->SubmitSinkJob();
+        pool.Release();
+    }
+
 } // Core
 } // Tests
 } // Thunder

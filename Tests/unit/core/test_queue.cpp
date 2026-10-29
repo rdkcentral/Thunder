@@ -44,6 +44,23 @@ TEST(test_queue, simple_queue)
     obj1.Flush();
 }
 
+TEST(test_queue, remove_while_disabled)
+{
+    ::Thunder::Core::QueueType<int> queue(2);
+    int result = 0;
+
+    EXPECT_TRUE(queue.Post(20));
+    EXPECT_TRUE(queue.Post(30));
+
+    queue.Disable();
+
+    EXPECT_TRUE(queue.Remove(20));
+    EXPECT_EQ(queue.Length(), 1u);
+    EXPECT_FALSE(queue.Extract(result, 0));
+
+    queue.Flush();
+}
+
 } // Core
 } // Tests
 } // Thunder
