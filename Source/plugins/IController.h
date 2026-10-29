@@ -38,7 +38,7 @@ namespace Controller {
 
         // @alt harakiri
         // @brief Reboots the device
-        // @details Depending on the device this call may not generate a response.
+        // @details Depending on the device this call may not generate a response
         virtual Core::hresult Reboot() = 0;
 
         // @brief Removes contents of a directory from the persistent storage
@@ -60,7 +60,7 @@ namespace Controller {
         enum { ID = RPC::ID_CONTROLLER_DISCOVERY };
         ~IDiscovery() override = default;
 
-        // @brief Starts the network discovery. Use this method to initiate SSDP network discovery process.
+        // @brief Starts the SSDP network discovery
         // @param TTL (time to live) parameter for SSDP discovery
         virtual Core::hresult StartDiscovery(const uint8_t& ttl /* @optional @default:1 */) = 0;
 
@@ -109,14 +109,14 @@ namespace Controller {
         virtual Core::hresult Unregister(INotification* sink) = 0;
 
         // @brief Activate a plugin, i.e. move from Deactivated, via Activating to Activated state
-         // @param callsign: Callsign of plugin to be activated
+        // @param callsign: Callsign of plugin to be activated
         virtual Core::hresult Activate(const string& callsign) = 0;
 
         // @brief Deactivate a plugin, i.e. move from Activated, via Deactivating to Deactivated state
         // @param callsign: Callsign of plugin to be deactivated
         virtual Core::hresult Deactivate(const string& callsign) = 0;
 
-        // @brief Set a plugin unavailable for interaction.
+        // @brief Set a plugin unavailable for interaction
         // @param callsign: Callsign of plugin to be set as unavailable
         virtual Core::hresult Unavailable(const string& callsign) = 0;
 
@@ -146,7 +146,7 @@ namespace Controller {
 
         // @property
         // @brief Services metadata
-        // @details If callsign is omitted, metadata of all services is returned.
+        // @details If callsign is omitted, metadata of all services is returned
         virtual Core::hresult Status(const string& index /* @index @optional */, string& response /* @out @opaque */) const = 0;
 
         // @property
