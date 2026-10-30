@@ -75,6 +75,10 @@ jobs:
     needs: Thunder
     uses: WebPlatformForEmbedded/ThunderLibraries/.github/workflows/Linux build template.yml@main
 
+  ThunderPluginActivator:
+    needs: Thunder
+    uses: rdkcentral/ThunderPluginActivator/.github/workflows/Linux build template.yml@main
+
   ThunderClientLibraries:
     needs: ThunderInterfaces
     uses: rdkcentral/ThunderClientLibraries/.github/workflows/Linux build template.yml@master
