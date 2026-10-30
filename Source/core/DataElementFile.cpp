@@ -113,10 +113,14 @@ namespace Core {
             DWORD flags = ((m_Flags & File::USER_WRITE) != 0 ? PAGE_READWRITE : PAGE_READONLY);
             SYSTEM_INFO systemInfo;
             ::GetSystemInfo(&systemInfo);
-            uint32_t mapSize = ((((requiredSize - 1) / systemInfo.dwPageSize) + 1) * systemInfo.dwPageSize);
+            const uint64_t mapSize = ((((static_cast<uint64_t>(requiredSize) - 1) / systemInfo.dwPageSize) + 1) * systemInfo.dwPageSize);
+            if (mapSize > NUMBER_MAX_UNSIGNED(size_t)) {
+                m_File.Close();
+                return;
+            }
 
             // Open the file in MM mode as one element.
-            m_MemoryMappedFile = ::CreateFileMapping(m_File, nullptr, flags, 0, mapSize, nullptr);
+            m_MemoryMappedFile = ::CreateFileMapping(m_File, nullptr, flags, static_cast<DWORD>(mapSize >> 32), static_cast<DWORD>(mapSize), nullptr);
 
             if (m_MemoryMappedFile == nullptr) {
                 DWORD value = GetLastError();
@@ -124,7 +128,7 @@ namespace Core {
             } else {
                 flags = ((m_Flags & File::USER_READ) != 0 ? FILE_MAP_READ : 0) | ((m_Flags & File::USER_WRITE) != 0 ? FILE_MAP_WRITE : 0);
 
-                void* newBuffer = (::MapViewOfFile(m_MemoryMappedFile, flags, 0, 0, mapSize));
+                void* newBuffer = (::MapViewOfFile(m_MemoryMappedFile, flags, 0, 0, static_cast<SIZE_T>(mapSize)));
 
                 if (newBuffer != nullptr) {
                     UpdateCache(0, static_cast<uint8_t*>(newBuffer), requiredSize, mapSize);
@@ -205,11 +209,15 @@ namespace Core {
     {
         if (requiredSize > 0) {
             int pageSize = getpagesize();
-            uint64_t mapSize = ((((requiredSize - 1) / pageSize) + 1) * pageSize);
+            const uint64_t mapSize = ((((static_cast<uint64_t>(requiredSize) - 1) / pageSize) + 1) * pageSize);
+            if (mapSize > NUMBER_MAX_UNSIGNED(size_t)) {
+                m_File.Close();
+                return;
+            }
             int flags = (((m_Flags & File::USER_READ) != 0 ? PROT_READ : 0) | ((m_Flags & File::USER_WRITE) != 0 ? PROT_WRITE : 0));
 
             // Open the file in MM mode as one element.
-            m_MemoryMappedFile = mmap(nullptr, mapSize, flags, ((m_Flags & File::SHAREABLE) != 0 ? MAP_SHARED : MAP_PRIVATE), m_File, 0);
+            m_MemoryMappedFile = mmap(nullptr, static_cast<size_t>(mapSize), flags, ((m_Flags & File::SHAREABLE) != 0 ? MAP_SHARED : MAP_PRIVATE), m_File, 0);
 
             if (m_MemoryMappedFile == MAP_FAILED) {
                 m_File.Close();
