@@ -293,7 +293,7 @@ namespace Core {
             }
 
             // Store last update time value
-            time(&m_lastUpdateCpuStats);s
+            time(&m_lastUpdateCpuStats);
         }
 #endif
     }
