@@ -71,6 +71,14 @@ POP_WARNING()
             ~Sink() override = default;
 
         public:
+            void Revoke() {
+                Core::ProxyType<Core::IDispatch> job(_job.Revoke());
+
+                if (job.IsValid()) {
+                    _parent.Revoke(job);
+                    _job.Revoked();
+                }
+            }
             void Dispatch() {
 
                 uint32_t instances = Core::ServiceAdministrator::Instance().Instances();
@@ -137,6 +145,8 @@ POP_WARNING()
 
             // Disable the queue so the minions can stop, even if they are processing and waiting for work..
             Core::WorkerPool::Stop();
+            _sink.Revoke();
+            Core::WorkerPool::WaitForStop();
         }
         void Run()
         {
