@@ -26,6 +26,8 @@
 #include "Trace.h"
 #include "Timer.h"
 #include "NodeId.h"
+#include <atomic>
+#include <cstdlib>
 
 #ifdef __WINDOWS__
 #include <winsock2.h>
@@ -121,7 +123,8 @@ namespace Core {
             , _resources()
             , _monitorRuns(0)
             , _name(_T("Monitor::") + ClassNameOnly(typeid(RESOURCE).name()).Text())
-            , _watchDog(1024 * 512, _name.c_str())
+            , _watchDog(nullptr)
+            , _watchDogEnabled(false)
             #ifdef __WINDOWS__
             , _action(WSACreateEvent())
             #else
@@ -157,6 +160,8 @@ namespace Core {
                 delete _monitor;
             }
 
+            delete _watchDog;
+
             #ifdef __LINUX__
             ::free(_descriptorArray);
             if (_signalDescriptor != -1) {
@@ -169,6 +174,22 @@ namespace Core {
         }
 
     public:
+        // The first non-zero timeout enables callback monitoring; timeout is in milliseconds.
+        void EnableWatchDog(const uint32_t timeout, const bool abortOnExpiry)
+        {
+            if (timeout != 0) {
+                _adminLock.Lock();
+                if (_watchDog == nullptr) {
+                    _watchDog = new WATCHDOG(1024 * 512, _name.c_str(), timeout, abortOnExpiry);
+                    _watchDogEnabled.store(true);
+                }
+                _adminLock.Unlock();
+            }
+        }
+        bool WatchDogEnabled() const
+        {
+            return (_watchDogEnabled.load());
+        }
         const TCHAR* Name() const
         {
             return (_name.c_str());
@@ -284,7 +305,9 @@ namespace Core {
         inline typename Core::TypeTraits::enable_if<hasArm<TYPE, void>::value, void>::type
         Arm()
         {
-            _watchDog.Arm();
+            if (_watchDog != nullptr) {
+                _watchDog->Arm();
+            }
         }
 
         template <typename TYPE=WATCHDOG>
@@ -299,7 +322,9 @@ namespace Core {
         inline typename Core::TypeTraits::enable_if<hasReset<TYPE, void>::value, void>::type
         Reset()
         {
-            _watchDog.Reset();
+            if (_watchDog != nullptr) {
+                _watchDog->Reset();
+            }
         }
 
         template <typename TYPE=WATCHDOG>
@@ -424,15 +449,24 @@ POP_WARNING()
 
                 uint16_t events;
 
-                if ((entry == nullptr) || ((events = entry->Events()) == 0)) {
+                if (entry == nullptr) {
                     index = _resources.erase(index);
                 }
                 else {
-                    _descriptorArray[filledFileDescriptors].fd = entry->Descriptor();
-                    _descriptorArray[filledFileDescriptors].events = events;
-                    _descriptorArray[filledFileDescriptors].revents = 0;
-                    filledFileDescriptors++;
-                    index++;
+                    Arm();
+                    events = entry->Events();
+                    Reset();
+
+                    if (events == 0) {
+                        index = _resources.erase(index);
+                    }
+                    else {
+                        _descriptorArray[filledFileDescriptors].fd = entry->Descriptor();
+                        _descriptorArray[filledFileDescriptors].events = events;
+                        _descriptorArray[filledFileDescriptors].revents = 0;
+                        filledFileDescriptors++;
+                        index++;
+                    }
                 }
             }
 
@@ -617,7 +651,8 @@ POP_WARNING()
         Resources _resources;
         uint32_t _monitorRuns;
         string _name;
-        WATCHDOG _watchDog;
+        WATCHDOG* _watchDog;
+        std::atomic<bool> _watchDogEnabled;
 
         #ifdef __LINUX__
         uint32_t _descriptorArrayLength;
@@ -634,29 +669,54 @@ POP_WARNING()
         #endif
     };
 
-    #ifdef WATCHDOG_ENABLED
     class ResourceMonitorHandler {
     public:
-        ResourceMonitorHandler(ResourceMonitorHandler&& rhs) = delete;
-        ResourceMonitorHandler(const ResourceMonitorHandler& rhs) = delete;
+        ResourceMonitorHandler(const uint32_t timeout, const bool abortOnExpiry)
+            : _timeout(timeout)
+            , _abortOnExpiry(abortOnExpiry)
+        {
+        }
+
+        ResourceMonitorHandler(ResourceMonitorHandler&&) = default;
+        ResourceMonitorHandler(const ResourceMonitorHandler& rhs) = default;
         ResourceMonitorHandler& operator=(ResourceMonitorHandler&& rhs) = delete;
         ResourceMonitorHandler& operator=(const ResourceMonitorHandler& rhs) = delete;
 
-        ResourceMonitorHandler() = default;
         ~ResourceMonitorHandler() = default;
 
     public:
         uint32_t Expired()
         {
-            fprintf(stderr, "===> Resource monitor thread is taking too long.");
+            CC_SYSLOG("Resource monitor thread exceeded watchdog timeout of %u ms", _timeout);
+            if (_abortOnExpiry == true) {
+                std::abort();
+            }
             return Core::infinite;
         }
+
+    private:
+        const uint32_t _timeout;
+        const bool _abortOnExpiry;
     };
 
-    using ResourceMonitorBase = ResourceMonitorType<IResource, WatchDogType<ResourceMonitorHandler>, 0, 32> ;
-    #else
-    using ResourceMonitorBase = ResourceMonitorType<IResource, Void, 0, 32>;
-    #endif
+    class ResourceMonitorWatchDog : public WatchDogType<ResourceMonitorHandler> {
+    public:
+        ResourceMonitorWatchDog(const uint32_t stackSize, const TCHAR* threadName, const uint32_t timeout, const bool abortOnExpiry)
+            : WatchDogType<ResourceMonitorHandler>(stackSize, threadName, ResourceMonitorHandler(timeout, abortOnExpiry))
+            , _timeout(timeout)
+        {
+        }
+
+        void Arm()
+        {
+            WatchDogType<ResourceMonitorHandler>::Arm(_timeout);
+        }
+
+    private:
+        const uint32_t _timeout;
+    };
+
+    using ResourceMonitorBase = ResourceMonitorType<IResource, ResourceMonitorWatchDog, 0, 32>;
 
     class EXTERNAL ResourceMonitor : public ResourceMonitorBase {
     private:

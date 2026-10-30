@@ -2,6 +2,8 @@
   "port": 25555,
   "binding": "127.0.0.1",
   "idletime": 60,
+  "resourcemonitorwatchdogtimeout": 0,
+  "resourcemonitorwatchdogabort": false,
   "ipv6": false,
   "persistentpath": "C:/ThunderWin/artifacts/Persistent",
   "volatilepath": "C:/ThunderWin/artifacts/temp",

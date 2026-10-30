@@ -418,6 +418,8 @@ namespace PluginHost {
 #endif
                 , ProxyStubPath()
                 , PostMortemPath(_T("/opt/minidumps"))
+                , ResourceMonitorWatchdogTimeout(0)
+                , ResourceMonitorWatchdogAbort(false)
 #ifdef __WINDOWS__
                 , Communicator(_T("127.0.0.1:7889"))
 #else
@@ -473,6 +475,8 @@ namespace PluginHost {
                 Add(_T("volatilepath"), &VolatilePath);
                 Add(_T("proxystubpath"), &ProxyStubPath);
                 Add(_T("postmortempath"), &PostMortemPath);
+                Add(_T("resourcemonitorwatchdogtimeout"), &ResourceMonitorWatchdogTimeout);
+                Add(_T("resourcemonitorwatchdogabort"), &ResourceMonitorWatchdogAbort);
                 Add(_T("postmortemworkerpoolsink"), &PostMortemWorkerPoolSink);
                 Add(_T("postmortemcallstacksink"), &PostMortemCallstackSink);
                 Add(_T("communicator"), &Communicator);
@@ -531,6 +535,8 @@ namespace PluginHost {
             Core::JSON::String VolatilePath;
             Core::JSON::String ProxyStubPath;
             Core::JSON::String PostMortemPath;
+            Core::JSON::DecUInt32 ResourceMonitorWatchdogTimeout;
+            Core::JSON::Boolean ResourceMonitorWatchdogAbort;
             Core::JSON::EnumType<PostMortemDataSink> PostMortemWorkerPoolSink;
             Core::JSON::EnumType<PostMortemDataSink> PostMortemCallstackSink;
             Core::JSON::String Communicator;
@@ -714,6 +720,8 @@ namespace PluginHost {
             , _proxyStubPath()
             , _observableProxyStubPath()
             , _postMortemPath()
+            , _resourceMonitorWatchdogTimeout(0)
+            , _resourceMonitorWatchdogAbort(false)
             , _workerPoolSink(static_cast<PostMortemDataSink>(THUNDER_POSTMORTEM_WORKERPOOL_SINK_DEFAULT))
             , _callstackSink(static_cast<PostMortemDataSink>(THUNDER_POSTMORTEM_CALLSTACK_SINK_DEFAULT))
             , _pluginConfigPath()
@@ -828,6 +836,8 @@ namespace PluginHost {
                     _pluginConfigPath = Core::Directory::Normalize(config.Observe.PluginConfigPath.Value());
                 }
                 _postMortemPath = Core::Directory::Normalize(config.PostMortemPath.Value());
+                _resourceMonitorWatchdogTimeout = config.ResourceMonitorWatchdogTimeout.Value();
+                _resourceMonitorWatchdogAbort = config.ResourceMonitorWatchdogAbort.Value();
                 _workerPoolSink = config.PostMortemWorkerPoolSink.IsSet()
                     ? config.PostMortemWorkerPoolSink.Value()
                     : static_cast<PostMortemDataSink>(THUNDER_POSTMORTEM_WORKERPOOL_SINK_DEFAULT);
@@ -1065,6 +1075,14 @@ namespace PluginHost {
         inline const string& PostMortemPath() const
         {
             return (_postMortemPath);
+        }
+        inline uint32_t ResourceMonitorWatchdogTimeout() const
+        {
+            return (_resourceMonitorWatchdogTimeout);
+        }
+        inline bool ResourceMonitorWatchdogAbort() const
+        {
+            return (_resourceMonitorWatchdogAbort);
         }
         inline PostMortemDataSink PostMortemWorkerPoolSink() const
         {
@@ -1381,6 +1399,8 @@ namespace PluginHost {
         string _proxyStubPath;
         string _observableProxyStubPath;
         string _postMortemPath;
+        uint32_t _resourceMonitorWatchdogTimeout;
+        bool _resourceMonitorWatchdogAbort;
         PostMortemDataSink _workerPoolSink;
         PostMortemDataSink _callstackSink;
         string _pluginConfigPath;
