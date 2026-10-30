@@ -238,6 +238,7 @@ namespace Core {
         m_prevCpuIdleTicks = temoTotalIdleTime;
 
         m_cpuload = ((totalSystemTime + totalUserTime) * 100) / (totalSystemTime + totalUserTime + totalIdleTime);
+
 #elif defined(__LINUX__)
 
         static uint64_t previousTickCount, previousIdleTime;
@@ -246,41 +247,54 @@ namespace Core {
         if (difftime(time(nullptr), m_lastUpdateCpuStats) >= RefreshInterval) {
             FILE* input = fopen(_T("/proc/stat"), _T("r"));
 
-            ASSERT(input && "ERROR: Unable to open /proc/stat");
+            if (input != nullptr) {
+                // First line of /proc/stat contains the overall CPU information
+                uint64_t CpuFields[4] = { 0 };
+                int numFields = 0;
 
-            // First line of /proc/stat contains the overall CPU information
-            uint64_t CpuFields[4];
+                numFields = fscanf(input, _T("cpu %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64),
+                    &CpuFields[0], &CpuFields[1],
+                    &CpuFields[2], &CpuFields[3]);
 
-            int numFields = fscanf(input, _T("cpu %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64),
-                &CpuFields[0], &CpuFields[1],
-                &CpuFields[2], &CpuFields[3]);
+                fclose(input);
 
-            fclose(input);
+                if (numFields == 4) {
+                    uint64_t CurrentIdleTime = CpuFields[3]; // 3 is index of idle ticks time
+                    uint64_t CurrentTickCount{};
 
-            ASSERT((numFields >= 4) && "ERROR: Read invalid CPU information.");
+                    for (int i = 0; i < 4; ++i) {
+                        CurrentTickCount += CpuFields[i];
+                    }
 
-            uint64_t CurrentIdleTime = CpuFields[3]; // 3 is index of idle ticks time
-            uint64_t CurrentTickCount = 0L;
+                    DeltaTickCount = (CurrentTickCount - previousTickCount);
 
-            for (int i = 0; i < numFields && i < 10; ++i) {
-                CurrentTickCount += CpuFields[i];
+                    if (DeltaTickCount != 0) { 
+                        uint64_t DeltaIdleTime = (CurrentIdleTime - previousIdleTime);
+                        uint64_t ActiveTicks = (DeltaTickCount > DeltaIdleTime) ? (DeltaTickCount - DeltaIdleTime) : 0;
+                        SystemInfo::m_cpuload = (ActiveTicks * 100) / DeltaTickCount;
+                    }
+                    else {
+                        TRACE_L1("WARNING: CPU metrics sampled too quickly, skipping interval");
+                        SystemInfo::m_cpuload = 0;
+                    }
+
+                    // Store current tick statistics for next cycle
+                    previousTickCount = CurrentTickCount;
+                    previousIdleTime = CurrentIdleTime;
+
+                    // Store last update time value
+                    time(&m_lastUpdateCpuStats);
+                }
+                else {
+                    TRACE_L1("ERROR: Read invalid CPU information");
+                    SystemInfo::m_cpuload = 0;
+                }
             }
-            uint64_t DeltaTickCount = CurrentTickCount - previousTickCount;
-            uint64_t DeltaIdleTime = CurrentIdleTime - previousIdleTime;
-
-            if (DeltaTickCount == 0)
+            else {
+                TRACE_L1("ERROR: Unable to open /proc/stat");
                 SystemInfo::m_cpuload = 0;
-            else
-                SystemInfo::m_cpuload = ((DeltaTickCount - DeltaIdleTime) * 100) / DeltaTickCount;
-
-            // Store current tick statistics for next cycle
-            previousTickCount = CurrentTickCount;
-            previousIdleTime = CurrentIdleTime;
-
-            // Store last update time value
-            time(&m_lastUpdateCpuStats);
+            }
         }
-
 #endif
     }
 
