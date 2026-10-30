@@ -266,7 +266,7 @@ namespace Core {
                         CurrentTickCount += CpuFields[i];
                     }
 
-                    DeltaTickCount = (CurrentTickCount - previousTickCount);
+                    uint64_t DeltaTickCount = (CurrentTickCount - previousTickCount);
 
                     if (DeltaTickCount != 0) { 
                         uint64_t DeltaIdleTime = (CurrentIdleTime - previousIdleTime);
