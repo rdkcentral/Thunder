@@ -281,9 +281,6 @@ namespace Core {
                     // Store current tick statistics for next cycle
                     previousTickCount = CurrentTickCount;
                     previousIdleTime = CurrentIdleTime;
-
-                    // Store last update time value
-                    time(&m_lastUpdateCpuStats);
                 }
                 else {
                     TRACE_L1("ERROR: Read invalid CPU information");
@@ -294,6 +291,9 @@ namespace Core {
                 TRACE_L1("ERROR: Unable to open /proc/stat");
                 SystemInfo::m_cpuload = 0;
             }
+
+            // Store last update time value
+            time(&m_lastUpdateCpuStats);s
         }
 #endif
     }
