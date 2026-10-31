@@ -328,7 +328,14 @@ POP_WARNING()
     int Thread::PriorityMin() const
     {
 #ifdef __POSIX__
-        return (sched_get_priority_min(SCHED_OTHER));
+        int policy;
+        struct sched_param param;
+
+        if (pthread_getschedparam(m_hThreadInstance, &policy, &param) == 0) {
+            return (sched_get_priority_min(policy));
+        }
+
+        return (0);
 #else
         return (0);
 #endif
@@ -337,7 +344,14 @@ POP_WARNING()
     int Thread::PriorityMax() const
     {
 #ifdef __POSIX__
-        return (sched_get_priority_max(SCHED_OTHER));
+        int policy;
+        struct sched_param param;
+
+        if (pthread_getschedparam(m_hThreadInstance, &policy, &param) == 0) {
+            return (sched_get_priority_max(policy));
+        }
+
+        return (0);
 #else
         return (255);
 #endif
@@ -348,10 +362,15 @@ POP_WARNING()
         bool result = false;
 
 #ifdef __POSIX__
+        int policy;
         struct sched_param p;
+
         p.sched_priority = priority;
-        pthread_setschedparam(m_hThreadInstance, SCHED_OTHER, &p);
-        result = (0 == pthread_setschedparam(m_hThreadInstance, SCHED_OTHER, &p));
+
+        if (pthread_getschedparam(m_hThreadInstance, &policy, &p) == 0) {
+            p.sched_priority = priority;
+            result = (0 == pthread_setschedparam(m_hThreadInstance, policy, &p));
+        }
 #endif
 
         return (result);
