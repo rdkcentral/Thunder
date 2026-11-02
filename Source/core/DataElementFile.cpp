@@ -204,8 +204,11 @@ namespace Core {
     void DataElementFile::OpenMemoryMappedFile(uint32_t requiredSize)
     {
         if (requiredSize > 0) {
-            int pageSize = getpagesize();
-            uint64_t mapSize = ((((requiredSize - 1) / pageSize) + 1) * pageSize);
+            const long pageSize = sysconf(_SC_PAGESIZE);
+            ASSERT(pageSize > 0);
+
+            const uint64_t ullPageSize = static_cast<uint64_t>(pageSize);
+            uint64_t mapSize = ((static_cast<uint64_t>(requiredSize) + ullPageSize - 1) / ullPageSize) * ullPageSize;
             int flags = (((m_Flags & File::USER_READ) != 0 ? PROT_READ : 0) | ((m_Flags & File::USER_WRITE) != 0 ? PROT_WRITE : 0));
 
             // Open the file in MM mode as one element.
