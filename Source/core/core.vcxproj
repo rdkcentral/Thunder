@@ -139,6 +139,7 @@
     <ClCompile Include="SystemInfo.cpp" />
     <ClCompile Include="TextReader.cpp" />
     <ClCompile Include="Thread.cpp" />
+    <ClCompile Include="ThreadPool.cpp" />
     <ClCompile Include="Time.cpp" />
     <ClCompile Include="Trace.cpp" />
     <ClCompile Include="WarningReportingControl.cpp" />

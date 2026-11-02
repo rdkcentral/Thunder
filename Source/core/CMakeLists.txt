@@ -56,6 +56,7 @@ add_library(${TARGET} SHARED
         SystemInfo.cpp
         TextReader.cpp
         Thread.cpp
+        ThreadPool.cpp
         Time.cpp
         Trace.cpp
         WorkerPool.cpp

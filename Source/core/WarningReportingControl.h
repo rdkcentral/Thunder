@@ -28,6 +28,7 @@
 #include "TypeTraits.h"
 #include "CallsignTLS.h"
 #include "IWarningReportingControl.h"
+#include "WarningReportingCategories.h"
 
 #include <inttypes.h>
 #include <unordered_set>
@@ -63,6 +64,13 @@
 
 #define REPORT_PRIORITY_OUTOFBOUNDS_WARNING_EX(CATEGORY, CALLSIGN, ACTUALVALUE, ...)
 
+#define REPORT_PRIORITY_DURATION_WARNING_CONTEXT(CODE, CATEGORY, MODULE, CALLSIGN, ...) \
+    CODE
+
+#define REPORT_PRIORITY_OUTOFBOUNDS_WARNING_CONTEXT(CATEGORY, MODULE, CALLSIGN, ACTUALVALUE, ...)
+
+#define REPORT_OUTOFBOUNDS_WARNING_CONTEXT(CATEGORY, MODULE, CALLSIGN, ACTUALVALUE, ...)
+
 #elif defined(__CORE_SLIM_WARNING_REPORTING__)
 
 #define ANNOUNCE_WARNING(CATEGORY)
@@ -82,6 +90,18 @@
     CODE
 
 #define REPORT_PRIORITY_DURATION_WARNING(CODE, CATEGORY, ...) \
+    REPORT_PRIORITY_DURATION_WARNING_CONTEXT(CODE, CATEGORY, WPEFramework::Core::System::MODULE_NAME, \
+        WPEFramework::Core::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(), ##__VA_ARGS__)
+
+#define REPORT_PRIORITY_DURATION_WARNING_CONTEXT(CODE, CATEGORY, MODULE, CALLSIGN, ...) \
+    REPORT_DURATION_WARNING_CONTEXT_IMPL(CODE, CATEGORY, MODULE, CALLSIGN, ##__VA_ARGS__)
+
+#define REPORT_PRIORITY_OUTOFBOUNDS_WARNING_CONTEXT(CATEGORY, MODULE, CALLSIGN, ACTUALVALUE, ...) \
+    REPORT_OUTOFBOUNDS_WARNING_CONTEXT_IMPL(CATEGORY, MODULE, CALLSIGN, ACTUALVALUE, ##__VA_ARGS__)
+
+#define REPORT_OUTOFBOUNDS_WARNING_CONTEXT(CATEGORY, MODULE, CALLSIGN, ACTUALVALUE, ...)
+
+#define REPORT_DURATION_WARNING_CONTEXT_IMPL(CODE, CATEGORY, MODULE, CALLSIGN, ...) \
     { \
         const WPEFramework::WarningReporting::OutputTargets __targets__ = WPEFramework::WarningReporting::ResolveTargets( \
             WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::CategoryName(), \
@@ -92,11 +112,10 @@
             CODE \
             uint64_t duration = (WPEFramework::Core::SystemInfo::Instance().Ticks() - start) / WPEFramework::Core::Time::MicroSecondsPerMilliSecond; \
             WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>> __message__; \
-            if (__message__.Analyze(WPEFramework::Core::System::MODULE_NAME, \
-                    WPEFramework::Core::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(), \
+            if (__message__.Analyze(MODULE, CALLSIGN, \
                     duration, ##__VA_ARGS__) == true) { \
                 WPEFramework::WarningReporting::WarningReportingUnitProxy::Instance().ReportWarningEvent( \
-                    WPEFramework::Core::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(), \
+                    CALLSIGN, \
                     __message__, __targets__); \
             } \
         } else { \
@@ -109,6 +128,9 @@
         ACTUALVALUE, ##__VA_ARGS__)
 
 #define REPORT_PRIORITY_OUTOFBOUNDS_WARNING_EX(CATEGORY, CALLSIGN, ACTUALVALUE, ...) \
+    REPORT_PRIORITY_OUTOFBOUNDS_WARNING_CONTEXT(CATEGORY, WPEFramework::Core::System::MODULE_NAME, CALLSIGN, ACTUALVALUE, ##__VA_ARGS__)
+
+#define REPORT_OUTOFBOUNDS_WARNING_CONTEXT_IMPL(CATEGORY, MODULE, CALLSIGN, ACTUALVALUE, ...) \
     { \
         const WPEFramework::WarningReporting::OutputTargets __targets__ = WPEFramework::WarningReporting::ResolveTargets( \
             WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::CategoryName(), \
@@ -116,7 +138,7 @@
             WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::IsEnabled()); \
         if (__targets__.Any() == true) { \
             WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>> __message__; \
-            if (__message__.Analyze(WPEFramework::Core::System::MODULE_NAME, CALLSIGN, ACTUALVALUE, ##__VA_ARGS__) == true) { \
+            if (__message__.Analyze(MODULE, CALLSIGN, ACTUALVALUE, ##__VA_ARGS__) == true) { \
                 WPEFramework::WarningReporting::WarningReportingUnitProxy::Instance().ReportWarningEvent(CALLSIGN, __message__, __targets__); \
             } \
         } \
@@ -185,6 +207,12 @@
     }
 
 #define REPORT_OUTOFBOUNDS_WARNING_EX(CATEGORY, CALLSIGN, ACTUALVALUE, ...) \
+    REPORT_OUTOFBOUNDS_WARNING_CONTEXT(CATEGORY, WPEFramework::Core::System::MODULE_NAME, CALLSIGN, ACTUALVALUE, ##__VA_ARGS__)
+
+#define REPORT_OUTOFBOUNDS_WARNING_CONTEXT(CATEGORY, MODULE, CALLSIGN, ACTUALVALUE, ...) \
+    REPORT_OUTOFBOUNDS_WARNING_CONTEXT_IMPL(CATEGORY, MODULE, CALLSIGN, ACTUALVALUE, ##__VA_ARGS__)
+
+#define REPORT_OUTOFBOUNDS_WARNING_CONTEXT_IMPL(CATEGORY, MODULE, CALLSIGN, ACTUALVALUE, ...) \
     { \
         const WPEFramework::WarningReporting::OutputTargets __targets__ = WPEFramework::WarningReporting::ResolveTargets( \
             WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::CategoryName(), \
@@ -192,7 +220,7 @@
             WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::IsEnabled()); \
         if (__targets__.Any() == true) { \
             WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>> __message__; \
-            if (__message__.Analyze(WPEFramework::Core::System::MODULE_NAME, CALLSIGN, ACTUALVALUE, ##__VA_ARGS__) == true) { \
+            if (__message__.Analyze(MODULE, CALLSIGN, ACTUALVALUE, ##__VA_ARGS__) == true) { \
                 WPEFramework::WarningReporting::WarningReportingUnitProxy::Instance().ReportWarningEvent(CALLSIGN, __message__, __targets__); \
             } \
         } \
@@ -200,6 +228,10 @@
 
 
 #define REPORT_DURATION_WARNING(CODE, CATEGORY, ...) \
+    REPORT_DURATION_WARNING_CONTEXT_IMPL(CODE, CATEGORY, WPEFramework::Core::System::MODULE_NAME, \
+        WPEFramework::Core::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(), ##__VA_ARGS__)
+
+#define REPORT_DURATION_WARNING_CONTEXT_IMPL(CODE, CATEGORY, MODULE, CALLSIGN, ...) \
     { \
         const WPEFramework::WarningReporting::OutputTargets __targets__ = WPEFramework::WarningReporting::ResolveTargets( \
             WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::CategoryName(), \
@@ -210,11 +242,10 @@
             CODE \
             uint64_t duration = (WPEFramework::Core::SystemInfo::Instance().Ticks() - start) / WPEFramework::Core::Time::MicroSecondsPerMilliSecond; \
             WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>> __message__; \
-            if (__message__.Analyze(WPEFramework::Core::System::MODULE_NAME, \
-                    WPEFramework::Core::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(), \
+            if (__message__.Analyze(MODULE, CALLSIGN, \
                     duration, ##__VA_ARGS__) == true) { \
                 WPEFramework::WarningReporting::WarningReportingUnitProxy::Instance().ReportWarningEvent( \
-                    WPEFramework::Core::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(), \
+                    CALLSIGN, \
                     __message__, __targets__); \
             } \
         } else { \
@@ -230,6 +261,12 @@
 
 #define REPORT_PRIORITY_OUTOFBOUNDS_WARNING_EX(CATEGORY, CALLSIGN, ACTUALVALUE, ...) \
     REPORT_OUTOFBOUNDS_WARNING_EX(CATEGORY, CALLSIGN, ACTUALVALUE, ##__VA_ARGS__)
+
+#define REPORT_PRIORITY_DURATION_WARNING_CONTEXT(CODE, CATEGORY, MODULE, CALLSIGN, ...) \
+    REPORT_DURATION_WARNING_CONTEXT_IMPL(CODE, CATEGORY, MODULE, CALLSIGN, ##__VA_ARGS__)
+
+#define REPORT_PRIORITY_OUTOFBOUNDS_WARNING_CONTEXT(CATEGORY, MODULE, CALLSIGN, ACTUALVALUE, ...) \
+    REPORT_OUTOFBOUNDS_WARNING_CONTEXT(CATEGORY, MODULE, CALLSIGN, ACTUALVALUE, ##__VA_ARGS__)
 
 #endif
 
@@ -677,7 +714,7 @@ namespace WarningReporting {
 
         inline static void Enable(const bool status)
         {
-            _sWarningControl.Enabled(status);
+            _sWarningControl.Enable(status);
         }
 
         const char* Category() const override
@@ -707,12 +744,12 @@ namespace WarningReporting {
 
         bool Enabled() const
         {
-            return _sWarningControl.Enabled();
+            return _sWarningControl.Enable();
         }
 
         void Enabled(const bool enabled)
         {
-            _sWarningControl.Enabled(enabled);
+            _sWarningControl.Enable(enabled);
         }
 
         void Destroy()
@@ -740,6 +777,11 @@ namespace WarningReporting {
     template <typename CONTROLCATEGORY>
     EXTERNAL std::atomic<uint32_t> WarningReportingBoundsCategory<CONTROLCATEGORY>::_warningBound(CONTROLCATEGORY::DefaultWarningBound);
     #endif
+
+#if defined(__LINUX__) && !defined(__CORE_SLIM_WARNING_REPORTING__) && !defined(__CORE_CRITICAL_SECTION_LOG__)
+    // Keep the inline lock path without instantiating its control in consumers.
+    extern template class EXTERNAL WarningReportingType<WarningReportingBoundsCategory<TooLongWaitingForLock>>;
+#endif
 }
 }
 
