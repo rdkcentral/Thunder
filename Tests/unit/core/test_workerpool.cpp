@@ -1433,13 +1433,13 @@ TEST(Core_WorkerPool, Check_ReschduledTimedJob_MultiplePool)
     CheckWorkerPool_ReschduledTimedJob(3, 5, 5, 10, 5);
 }
 
-class EmbeddedJobWorkerPool : public ::Thunder::Core::WorkerPool {
+class EmbeddedJobWorkerPool : public ::WPEFramework::Core::WorkerPool {
 private:
-    class Dispatcher : public ::Thunder::Core::ThreadPool::IDispatcher {
+    class Dispatcher : public ::WPEFramework::Core::ThreadPool::IDispatcher {
     private:
         void Initialize() override { }
         void Deinitialize() override { }
-        void Dispatch(::Thunder::Core::IDispatch* job) override
+        void Dispatch(::WPEFramework::Core::IDispatch* job) override
         {
             job->Dispatch();
         }
@@ -1455,7 +1455,7 @@ private:
 
         void Submit()
         {
-            ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch> job(_job.Submit());
+            ::WPEFramework::Core::ProxyType<::WPEFramework::Core::IDispatch> job(_job.Submit());
 
             ASSERT(job.IsValid());
             _parent.Submit(job);
@@ -1463,7 +1463,7 @@ private:
 
         void Revoke()
         {
-            ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch> job(_job.Revoke());
+            ::WPEFramework::Core::ProxyType<::WPEFramework::Core::IDispatch> job(_job.Revoke());
 
             if (job.IsValid()) {
                 _parent.Revoke(job);
@@ -1475,12 +1475,12 @@ private:
 
     private:
         EmbeddedJobWorkerPool& _parent;
-        ::Thunder::Core::ThreadPool::JobType<Sink&> _job;
+        ::WPEFramework::Core::ThreadPool::JobType<Sink&> _job;
     };
 
 public:
     EmbeddedJobWorkerPool()
-        : ::Thunder::Core::WorkerPool(1, 0, 4, &_dispatcher)
+        : ::WPEFramework::Core::WorkerPool(1, 0, 4, &_dispatcher)
         , _dispatcher()
         , _sink(*this)
     {
@@ -1505,7 +1505,7 @@ private:
 
 TEST(Core_WorkerPool, RevokeEmbeddedJobFromStoppedPoolBeforeOwnerDestruction)
 {
-    auto pool = ::Thunder::Core::ProxyType<EmbeddedJobWorkerPool>::Create();
+    auto pool = ::WPEFramework::Core::ProxyType<EmbeddedJobWorkerPool>::Create();
 
     // Do not run the pool: keep the embedded job queued, then disable the queue.
     pool->SubmitSinkJob();

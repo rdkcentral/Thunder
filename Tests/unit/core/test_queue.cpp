@@ -42,7 +42,7 @@ TEST(test_queue, simple_queue)
 
 TEST(test_queue, remove_while_disabled)
 {
-    ::Thunder::Core::QueueType<int> queue(2);
+    ::WPEFramework::Core::QueueType<int> queue(2);
     int result = 0;
 
     EXPECT_TRUE(queue.Post(20));
