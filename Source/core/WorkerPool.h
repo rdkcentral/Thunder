@@ -423,6 +423,10 @@ POP_WARNING()
             #endif
             _threadPool.Stop();
         }
+        bool WaitForStop(uint32_t timeout = Core::infinite)
+        {
+            return _threadPool.WaitForStop(timeout);
+        }
 
     private:
         Scheduler _scheduler;

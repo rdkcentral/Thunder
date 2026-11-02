@@ -677,7 +677,20 @@ POP_WARNING()
                 index++;
             }
         }
+        bool WaitForStop(uint32_t timeout = Core::infinite)
+        {
+            std::list<Executor>::iterator index = _units.begin();
+            bool allStopped = true;
 
+            while (index != _units.end()) {
+                if (!index->Wait(Thread::STOPPED, timeout)) {
+                    allStopped = false;
+                }
+                index++;
+            }
+
+            return allStopped;
+        }
         #ifdef __CORE_ACTIVE_JOB_MONITORING__
         void SetDispatchedJobMonitor(IDispatchedJobMonitor* dispatchedJobMonitor)
         {
