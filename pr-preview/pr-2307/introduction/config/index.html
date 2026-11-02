@@ -3356,14 +3356,28 @@
 </tr>
 <tr>
 <td>resourcemonitorwatchdogtimeout</td>
-<td>ResourceMonitor callback watchdog timeout in milliseconds. <code>0</code> disables the watchdog. Enabled only in the Linux Thunder daemon.</td>
+<td>ResourceMonitor callback watchdog timeout in milliseconds. <code>0</code> disables the watchdog. Enabled only in the Linux Thunder daemon. Set the generated config default with CMake cache variable <code>RESOURCE_MONITOR_WATCHDOG_TIMEOUT</code>.</td>
 <td>integer</td>
 <td>0</td>
 <td>30000</td>
 </tr>
 <tr>
 <td>resourcemonitorwatchdogabort</td>
-<td>Abort Thunder when the ResourceMonitor watchdog expires. When false, log the expiry only; when true, a process supervisor can reboot Thunder after the abort.</td>
+<td>Abort Thunder when the ResourceMonitor watchdog expires. When false, log the expiry only; when true, a process supervisor can reboot Thunder after the abort. Set the generated config default with CMake option <code>RESOURCE_MONITOR_WATCHDOG_ABORT</code>.</td>
+<td>bool</td>
+<td>false</td>
+<td>false</td>
+</tr>
+<tr>
+<td>workerpoolwatchdogtimeout</td>
+<td>WorkerPool no-progress timeout in milliseconds when all workers are occupied without extracting another job. <code>0</code> disables the watchdog. Enabled only in the Linux Thunder daemon. Set the generated config default with CMake cache variable <code>WORKERPOOL_WATCHDOG_TIMEOUT</code>.</td>
+<td>integer</td>
+<td>0</td>
+<td>30000</td>
+</tr>
+<tr>
+<td>workerpoolwatchdogabort</td>
+<td>Abort Thunder when the WorkerPool watchdog expires. When false, log the stall only. Set the generated config default with CMake option <code>WORKERPOOL_WATCHDOG_ABORT</code>.</td>
 <td>bool</td>
 <td>false</td>
 <td>false</td>
