@@ -19,9 +19,14 @@
  
 #pragma once
 
+#include <algorithm>
+#include <atomic>
+#include <cstdlib>
+
 #include "Thread.h"
 #include "ThreadPool.h"
 #include "Timer.h"
+#include "Trace.h"
 
 namespace Thunder {
 
@@ -110,6 +115,7 @@ namespace Core {
         virtual void Schedule(const Core::Time& time, const Core::ProxyType<IDispatch>& job) = 0;
         virtual bool Reschedule(const Core::Time& time, const Core::ProxyType<IDispatch>& job) = 0;
         virtual uint32_t Revoke(const Core::ProxyType<IDispatch>& job, const uint32_t waitTime = Core::infinite) = 0;
+        // Runs the single external worker loop; only one caller may Join at a time.
         virtual void Join() = 0;
         virtual const Metadata& Snapshot() const = 0;
     };
@@ -385,7 +391,7 @@ POP_WARNING()
             uint32_t report = _threadPool.Revoke(job, waitTime);
 
             if (report == Core::ERROR_UNKNOWN_KEY) {
-               if (_joined == Thread::ThreadId()) {
+               if (_joined.load(Core::memory_order::memory_order_relaxed) == Thread::ThreadId()) {
                     result = Core::ERROR_NONE;
                 } else {
                     report = _external.Completed(job, waitTime);
@@ -399,11 +405,12 @@ POP_WARNING()
         }
         void Join() override
         {
-            _joined = Thread::ThreadId();
-            _threadPool.Announce(_joined);
+            const thread_id joined = Thread::ThreadId();
+            _joined.store(joined, Core::memory_order::memory_order_relaxed);
+            _threadPool.Announce(joined);
             _external.Process();
-            _threadPool.Revoke(_joined);
-            _joined = 0;
+            _threadPool.Revoke(joined);
+            _joined.store(0, Core::memory_order::memory_order_relaxed);
         }
         thread_id Id(const uint8_t index) const override
         {
@@ -412,7 +419,7 @@ POP_WARNING()
             if (index == 0) {
                 result = _timer.ThreadId();
             } else if (index == 1) {
-                result = _joined;
+                result = _joined.load(Core::memory_order::memory_order_relaxed);
             } else if ((index - 2) < _threadPool.Count()) {
                 result = _threadPool.Id(index - 2);
             }
@@ -426,8 +433,29 @@ POP_WARNING()
             _metadata.Slot[0].Job = string(_T("WorkerPool::Timer"));
             _external.Info(_metadata.Slot[1]);
             _threadPool.Snapshot(_threadPool.Count(), &(_metadata.Slot[2]), _metadata.Pending);
-            _metadata.Slot[1].WorkerId = _joined;
+            _metadata.Slot[1].WorkerId = _joined.load(Core::memory_order::memory_order_relaxed);
             return (_metadata);
+        }
+        // Aggregate number of jobs extracted by pool workers, including Join().
+        uint64_t Progress() const
+        {
+            return (_threadPool.Progress() + _external.Runs());
+        }
+        // Enable before Run() when a watchdog needs worker occupancy data.
+        void EnableActiveJobTracking()
+        {
+            _threadPool.EnableActiveJobTracking();
+        }
+        // Number of pool workers currently executing jobs.
+        uint32_t ActiveJobs() const
+        {
+            return (_threadPool.ActiveJobs());
+        }
+        // Number of pool workers, including an active Join() worker.
+        uint32_t Count() const
+        {
+            return (static_cast<uint32_t>(_threadPool.Count())
+                + (_joined.load(Core::memory_order::memory_order_relaxed) != 0 ? 1 : 0));
         }
         void Run()
         {
@@ -455,10 +483,86 @@ POP_WARNING()
         ThreadPool::Minion _external;
         Core::TimerType<Timer> _timer;
         mutable Metadata _metadata;
-        thread_id _joined;
+        std::atomic<thread_id> _joined;
         #ifdef __CORE_WARNING_REPORTING__
         DispatchedJobMonitor _dispatchedJobMonitor;
         #endif
+    };
+
+    // Construct before Run() to detect a saturated pool whose workers stop extracting jobs.
+    class EXTERNAL WorkerPoolWatchDog : public Thread {
+    public:
+        WorkerPoolWatchDog(WorkerPoolWatchDog&&) = delete;
+        WorkerPoolWatchDog(const WorkerPoolWatchDog&) = delete;
+        WorkerPoolWatchDog& operator=(WorkerPoolWatchDog&&) = delete;
+        WorkerPoolWatchDog& operator=(const WorkerPoolWatchDog&) = delete;
+
+        WorkerPoolWatchDog(WorkerPool& pool, const uint32_t timeout, const bool abortOnExpiry)
+            : Thread(Thread::DefaultStackSize(), _T("WorkerPool::Watchdog"))
+            , _pool(pool)
+            , _timeoutTicks(static_cast<uint64_t>(timeout) * Time::TicksPerMillisecond)
+            , _interval(std::min(timeout, 250u))
+            , _lastProgress(pool.Progress())
+            , _stalledSince(0)
+            , _abortOnExpiry(abortOnExpiry)
+            , _reported(false)
+        {
+            ASSERT(timeout != 0);
+            _pool.EnableActiveJobTracking();
+            Thread::Init();
+        }
+        ~WorkerPoolWatchDog() override
+        {
+            Terminate();
+        }
+
+    public:
+        void Start()
+        {
+            Thread::Run();
+        }
+
+    private:
+        uint32_t Worker() override
+        {
+            const uint64_t now = Time::Now().Ticks();
+            const uint64_t progress = _pool.Progress();
+            const uint32_t active = _pool.ActiveJobs();
+            const uint32_t workers = _pool.Count();
+            const bool allWorkersBusy = ((workers != 0) && (active >= workers));
+
+            if (progress != _lastProgress) {
+                _lastProgress = progress;
+                _stalledSince = now;
+                _reported = false;
+            }
+
+            if (allWorkersBusy == false) {
+                _stalledSince = 0;
+                _reported = false;
+            } else if (_stalledSince == 0) {
+                _stalledSince = now;
+            } else if ((_reported == false) && ((now - _stalledSince) >= _timeoutTicks)) {
+                CC_SYSLOG("WorkerPool stalled: all %u worker(s) active without an extraction for %u ms",
+                    workers,
+                    static_cast<uint32_t>(_timeoutTicks / Time::TicksPerMillisecond));
+                if (_abortOnExpiry == true) {
+                    std::abort();
+                }
+                _reported = true;
+            }
+
+            return (_interval);
+        }
+
+    private:
+        WorkerPool& _pool;
+        const uint64_t _timeoutTicks;
+        const uint32_t _interval;
+        uint64_t _lastProgress;
+        uint64_t _stalledSince;
+        const bool _abortOnExpiry;
+        bool _reported;
     };
 }
 }

@@ -19,6 +19,7 @@
  
 #pragma once
 
+#include <atomic>
 #include <unordered_set>
 #include "Thread.h"
 #include "ResourceMonitor.h"
@@ -440,7 +441,7 @@ namespace Core {
                 return (_currentRequest.IsValid());
             }
             void Info(Metadata& info) const {
-                info.Runs = _runs;
+                info.Runs = _runs.load(Core::memory_order::memory_order_relaxed);
 
                 _adminLock.Lock();
                 if (_currentRequest.IsValid() == false) {
@@ -469,6 +470,11 @@ namespace Core {
 
                 return(result);
             }
+            // Number of jobs extracted by this worker.
+            uint32_t Runs() const
+            {
+                return (_runs.load(Core::memory_order::memory_order_relaxed));
+            }
             void Process()
             {
                 _dispatcher->Initialize();
@@ -477,7 +483,11 @@ namespace Core {
 
                     ASSERT(_currentRequest.IsValid() == true);
 
-                    _runs++;
+                    _runs.fetch_add(1, Core::memory_order::memory_order_relaxed);
+                    const bool trackActive = _parent._activeJobTracking;
+                    if (trackActive == true) {
+                        _parent._activeJobs.fetch_add(1, Core::memory_order::memory_order_relaxed);
+                    }
 
                     #ifdef __CORE_WARNING_REPORTING__
                     // Add an entry into the JobMonitor list
@@ -519,6 +529,9 @@ namespace Core {
                     _adminLock.Unlock();
 
                     _parent.Idle();
+                    if (trackActive == true) {
+                        _parent._activeJobs.fetch_sub(1, Core::memory_order::memory_order_relaxed);
+                    }
                 }
 
                 _dispatcher->Deinitialize();
@@ -531,7 +544,7 @@ namespace Core {
             Event _signal;
             std::atomic<uint32_t> _interestCount;
             QueueElement _currentRequest;
-            uint32_t _runs;
+            std::atomic<uint32_t> _runs;
         };
 
     private:
@@ -557,6 +570,10 @@ namespace Core {
         public:
             bool IsActive() const {
                 return (_minion.IsActive());
+            }
+            // Number of jobs extracted by this executor's worker.
+            uint32_t Runs() const {
+                return (_minion.Runs());
             }
             void Info(Metadata& info) const {
                 _minion.Info(info);
@@ -603,6 +620,8 @@ namespace Core {
             , _external(external)
             , _callback(callback)
             , _unitsSet()
+            , _activeJobs(0)
+            , _activeJobTracking(false)
         {
             DEBUG_VARIABLE(additionalThreads);
             ASSERT(((lowPriorityThreadCount <= (count + additionalThreads)) && (mediumPriorityThreadCount <= (count + additionalThreads))));
@@ -625,6 +644,27 @@ namespace Core {
         }
         uint32_t Pending() const {
             return (_queue.Length());
+        }
+        // Number of worker jobs currently executing.
+        uint32_t ActiveJobs() const
+        {
+            return (_activeJobs.load(Core::memory_order::memory_order_relaxed));
+        }
+        // Enable before Run() when a watchdog needs worker occupancy data.
+        void EnableActiveJobTracking()
+        {
+            _activeJobTracking = true;
+        }
+        // Aggregate number of jobs extracted by this pool's workers.
+        uint64_t Progress() const
+        {
+            uint64_t progress = 0;
+            std::list<Executor>::const_iterator index = _units.cbegin();
+            while (index != _units.cend()) {
+                progress += index->Runs();
+                ++index;
+            }
+            return (progress);
         }
         void Snapshot(const uint8_t length, Metadata* entries, std::vector<string>& jobs) const
         {
@@ -663,7 +703,7 @@ namespace Core {
             thread_id threadId = Thread::ThreadId();
             ResourceMonitor& resourceMonitor = ResourceMonitor::Instance();
 
-            if (((threadId == resourceMonitor.Id()) && (resourceMonitor.WatchDogEnabled() == false)) || HasThreadID(threadId)) {
+            if ((threadId == resourceMonitor.Id()) || HasThreadID(threadId)) {
                 _queue.Post(job);
             }
             else {
@@ -711,7 +751,7 @@ namespace Core {
             thread_id threadId = Thread::ThreadId();
             ResourceMonitor& resourceMonitor = ResourceMonitor::Instance();
 
-            if (((threadId == resourceMonitor.Id()) && (resourceMonitor.WatchDogEnabled() == false)) || HasThreadID(threadId)) {
+            if ((threadId == resourceMonitor.Id()) || HasThreadID(threadId)) {
                 _queue.Post(job, cat);
             } else {
                 _queue.Insert(job, waitTime, cat);
@@ -898,6 +938,8 @@ namespace Core {
         Minion* _external;
         ICallback* _callback;
         std::unordered_set<thread_id> _unitsSet;
+        std::atomic<uint32_t> _activeJobs;
+        bool _activeJobTracking;
     };
 
 }

@@ -164,9 +164,17 @@ namespace PluginHost {
             WorkerPoolImplementation& operator=(WorkerPoolImplementation&&) = delete;
             WorkerPoolImplementation& operator=(const WorkerPoolImplementation&) = delete;
 
-            WorkerPoolImplementation(const uint8_t threadCount, const uint32_t stackSize, const uint32_t queueSize, const uint8_t lowPriorityThreadCount, const uint8_t mediumPriorityThreadCount)
+            WorkerPoolImplementation(
+                const uint8_t threadCount,
+                const uint32_t stackSize,
+                const uint32_t queueSize,
+                const uint8_t lowPriorityThreadCount,
+                const uint8_t mediumPriorityThreadCount,
+                const uint32_t VARIABLE_IS_NOT_USED watchdogTimeout,
+                const bool VARIABLE_IS_NOT_USED watchdogAbort)
                 : Core::WorkerPool(threadCount, stackSize, queueSize, &_dispatch, this, lowPriorityThreadCount, mediumPriorityThreadCount)
                 , _dispatch()
+                , _watchdog(nullptr)
             {
                 SYSLOG(Logging::Startup, (_T("<PID:%d>: WorkerPool config: created threads=%d, queue size=%u, stack size=%u, low priority limit=%d, medium priority limit=%d"),
                     Core::ProcessInfo().Id(),
@@ -175,9 +183,22 @@ namespace PluginHost {
                     stackSize,
                     lowPriorityThreadCount,
                     mediumPriorityThreadCount));
+#ifdef __LINUX__
+                if (watchdogTimeout != 0) {
+                    _watchdog = new Core::WorkerPoolWatchDog(*this, watchdogTimeout, watchdogAbort);
+                }
+#endif
                 Run();
+#ifdef __LINUX__
+                if (_watchdog != nullptr) {
+                    _watchdog->Start();
+                }
+#endif
             }
-            ~WorkerPoolImplementation() override = default;
+            ~WorkerPoolImplementation() override
+            {
+                delete _watchdog;
+            }
 
         public:
             void Idle() override
@@ -202,6 +223,7 @@ namespace PluginHost {
 
         private:
             Dispatcher _dispatch;
+            Core::WorkerPoolWatchDog* _watchdog;
         };
 
         class FactoriesImplementation : public IFactories {

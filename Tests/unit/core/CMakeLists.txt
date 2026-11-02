@@ -82,6 +82,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_textreader.cpp
    test_thread.cpp
    test_threadpool.cpp
+   test_workerpoolwatchdog.cpp
    test_time.cpp
    test_time_arithmetic.cpp
    test_timer.cpp
@@ -162,6 +163,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_textreader.cpp
    test_thread.cpp
    test_threadpool.cpp
+   test_workerpoolwatchdog.cpp
    test_time.cpp
    test_timer.cpp
    #test_valuerecorder.cpp

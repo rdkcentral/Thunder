@@ -4,6 +4,8 @@
   "idletime":180,
   "resourcemonitorwatchdogtimeout":0,
   "resourcemonitorwatchdogabort":false,
+  "workerpoolwatchdogtimeout":0,
+  "workerpoolwatchdogabort":false,
   "persistentpath":"/tmp",
   "datapath":"/usr/share/thunder/",
   "systempath":"/usr/lib/thunder/",

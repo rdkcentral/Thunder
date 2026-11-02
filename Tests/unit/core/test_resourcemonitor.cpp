@@ -23,7 +23,7 @@
 #include "../Module.h"
 #endif
 
-#include <core/core.h>
+#include <core/WorkerPool.h>
 
 #ifdef __POSIX__
 #include <csignal>
@@ -166,9 +166,9 @@ namespace Core {
         EXPECT_EQ(PendingAfterResourceMonitorSubmit(false), 2u);
     }
 
-    TEST(Core_ResourceMonitor, QueueLimitAppliesWhenWatchDogEnabled)
+    TEST(Core_ResourceMonitor, QueueAdmissionRemainsUnboundedWhenWatchDogEnabled)
     {
-        EXPECT_EQ(PendingAfterResourceMonitorSubmit(true), 1u);
+        EXPECT_EQ(PendingAfterResourceMonitorSubmit(true), 2u);
     }
 
     class BlockingResource : public ::Thunder::Core::IResource {

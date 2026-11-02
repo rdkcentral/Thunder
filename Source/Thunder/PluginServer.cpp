@@ -1294,7 +1294,14 @@ namespace PluginHost {
     // -----------------------------------------------------------------------------------------------------------------------------------
     PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
     Server::Server(Config& configuration, const bool background)
-        : _dispatcher(configuration.ThreadPoolCount(), configuration.StackSize(), configuration.QueueSize(), configuration.LowPriorityThreadCount(), configuration.MediumPriorityThreadCount())
+        : _dispatcher(
+            configuration.ThreadPoolCount(),
+            configuration.StackSize(),
+            configuration.QueueSize(),
+            configuration.LowPriorityThreadCount(),
+            configuration.MediumPriorityThreadCount(),
+            configuration.WorkerPoolWatchdogTimeout(),
+            configuration.WorkerPoolWatchdogAbort())
         , _config(configuration)
         , _connections(*this, configuration.Binder())
         , _services(*this)
