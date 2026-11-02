@@ -264,21 +264,7 @@ namespace Core {
                 _dispatchedJobList.remove(data);
                 _lock.Unlock();
             }
-            void AnalyseAndReportDispatchedJobs()
-            {
-                _lock.Lock();
-
-                if (_dispatchedJobList.size() > 0 && IsActive()) {
-                    for (auto &job : _dispatchedJobList) {
-                        ++job.ReportRunCount;
-                        REPORT_OUTOFBOUNDS_WARNING_EX(WarningReporting::JobActiveForTooLong, job.CallSign.c_str(),
-                        static_cast<uint32_t>((Time::Now().Ticks() - job.DispatchedTime) / Time::TicksPerMillisecond));
-                    }
-                }
-
-                _lock.Unlock();
-
-            }
+            EXTERNAL void AnalyseAndReportDispatchedJobs(const char moduleName[] = System::MODULE_NAME);
             void ScheduleMonitorJob()
             {
                 // Submit the monitor job to the scheduler.

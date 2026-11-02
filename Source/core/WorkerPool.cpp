@@ -23,6 +23,21 @@ namespace WPEFramework {
 
     namespace Core {
 
+#ifdef __CORE_ACTIVE_JOB_MONITORING__
+        void WorkerPool::DispatchedJobMonitor::AnalyseAndReportDispatchedJobs(const char moduleName[])
+        {
+            _lock.Lock();
+            if (_dispatchedJobList.size() > 0 && IsActive()) {
+                for (auto& job : _dispatchedJobList) {
+                    ++job.ReportRunCount;
+                    REPORT_OUTOFBOUNDS_WARNING_CONTEXT(WarningReporting::JobActiveForTooLong, moduleName, job.CallSign.c_str(),
+                        static_cast<uint32_t>((Time::Now().Ticks() - job.DispatchedTime) / Time::TicksPerMillisecond));
+                }
+            }
+            _lock.Unlock();
+        }
+#endif
+
 	IWorkerPool* _workerPoolInstance = nullptr;
 
         /* static */ void IWorkerPool::Assign(IWorkerPool* instance) {

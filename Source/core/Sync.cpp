@@ -64,6 +64,12 @@ __gnu_cxx::recursive_init_error::~recursive_init_error()
 #endif
 
 namespace WPEFramework {
+#if defined(__LINUX__) && defined(__CORE_WARNING_REPORTING__) && !defined(__CORE_SLIM_WARNING_REPORTING__) && !defined(__CORE_CRITICAL_SECTION_LOG__)
+namespace WarningReporting {
+    template class WarningReportingType<WarningReportingBoundsCategory<TooLongWaitingForLock>>;
+}
+#endif
+
 namespace Core {
 
 #ifdef __WINDOWS__

@@ -125,19 +125,7 @@ namespace Core {
             {
                 return _job != other._job;
             }
-            IJob* Process(IDispatcher* dispatcher)
-            {
-                ASSERT(dispatcher != nullptr);
-                ASSERT(_job.IsValid());
-                ASSERT(_time != NumberType<uint64_t>::Max());
-
-                IDispatch* request = &(*_job);
-
-                REPORT_PRIORITY_OUTOFBOUNDS_WARNING(WarningReporting::JobTooLongWaitingInQueue, static_cast<uint32_t>((Time::Now().Ticks() - _time) / Time::TicksPerMillisecond));
-                REPORT_PRIORITY_DURATION_WARNING({ dispatcher->Dispatch(request); }, WarningReporting::JobTooLongToFinish);
-
-                return (dynamic_cast<IJob*>(request));
-            }
+            EXTERNAL IJob* Process(IDispatcher* dispatcher, const char moduleName[] = System::MODULE_NAME);
             bool IsValid() const
             {
                 return _job.IsValid();
