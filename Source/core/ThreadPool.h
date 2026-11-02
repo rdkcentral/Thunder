@@ -683,7 +683,7 @@ POP_WARNING()
             bool allStopped = true;
 
             while (index != _units.end()) {
-                if (!index->Wait(Thread::STOPPED, timeout)) {
+                if (!index->Wait((Thread::STOPPED | Thread::BLOCKED), timeout)) {
                     allStopped = false;
                 }
                 index++;
