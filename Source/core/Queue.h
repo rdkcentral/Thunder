@@ -84,17 +84,17 @@ namespace Core {
             // This needs to be atomic. Make sure it is.
             _adminLock.Lock();
 
+            typename std::list<CONTEXT>::iterator
+                index
+                = std::find(_queue.begin(), _queue.end(), a_Entry);
+
+            if (index != _queue.end()) {
+                // Yep, we found it, remove it
+                l_Removed = true;
+                _queue.erase(index);
+            }
+
             if (_state != DISABLED) {
-                typename std::list<CONTEXT>::iterator
-                    index
-                    = std::find(_queue.begin(), _queue.end(), a_Entry);
-
-                if (index != _queue.end()) {
-                    // Yep, we found it, remove it
-                    l_Removed = true;
-                    _queue.erase(index);
-                }
-
                 // Determine the new state.
                 _state.SetState(IsEmpty() ? EMPTY : ENTRIES);
             }
