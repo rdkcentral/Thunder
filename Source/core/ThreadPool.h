@@ -685,6 +685,7 @@ POP_WARNING()
             while (index != _units.end()) {
                 if (!index->Wait((Thread::STOPPED | Thread::BLOCKED), timeout)) {
                     allStopped = false;
+                    break;
                 }
                 index++;
             }
