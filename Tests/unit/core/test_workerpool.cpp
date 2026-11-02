@@ -1433,3 +1433,81 @@ TEST(Core_WorkerPool, Check_ReschduledTimedJob_MultiplePool)
     CheckWorkerPool_ReschduledTimedJob(3, 5, 5, 10, 5);
 }
 
+class EmbeddedJobWorkerPool : public ::WPEFramework::Core::WorkerPool {
+private:
+    class Dispatcher : public ::WPEFramework::Core::ThreadPool::IDispatcher {
+    private:
+        void Initialize() override { }
+        void Deinitialize() override { }
+        void Dispatch(::WPEFramework::Core::IDispatch* job) override
+        {
+            job->Dispatch();
+        }
+    };
+
+    class Sink {
+    public:
+        explicit Sink(EmbeddedJobWorkerPool& parent)
+            : _parent(parent)
+            , _job(*this)
+        {
+        }
+
+        void Submit()
+        {
+            ::WPEFramework::Core::ProxyType<::WPEFramework::Core::IDispatch> job(_job.Submit());
+
+            ASSERT(job.IsValid());
+            _parent.Submit(job);
+        }
+
+        void Revoke()
+        {
+            ::WPEFramework::Core::ProxyType<::WPEFramework::Core::IDispatch> job(_job.Revoke());
+
+            if (job.IsValid()) {
+                _parent.Revoke(job);
+                _job.Revoked();
+            }
+        }
+
+        void Dispatch() { }
+
+    private:
+        EmbeddedJobWorkerPool& _parent;
+        ::WPEFramework::Core::ThreadPool::JobType<Sink&> _job;
+    };
+
+public:
+    EmbeddedJobWorkerPool()
+        : ::WPEFramework::Core::WorkerPool(1, 0, 4, &_dispatcher)
+        , _dispatcher()
+        , _sink(*this)
+    {
+    }
+
+    ~EmbeddedJobWorkerPool()
+    {
+        Stop();
+        _sink.Revoke();
+        WaitForStop();
+    }
+
+    void SubmitSinkJob()
+    {
+        _sink.Submit();
+    }
+
+private:
+    Dispatcher _dispatcher;
+    Sink _sink;
+};
+
+TEST(Core_WorkerPool, RevokeEmbeddedJobFromStoppedPoolBeforeOwnerDestruction)
+{
+    auto pool = ::WPEFramework::Core::ProxyType<EmbeddedJobWorkerPool>::Create();
+
+    // Do not run the pool: keep the embedded job queued, then disable the queue.
+    pool->SubmitSinkJob();
+    pool.Release();
+}
