@@ -21,6 +21,10 @@
 
 #include "Module.h"
 
+#include <list>
+#include <string>
+#include <utility>
+
 #if !defined(__CORE_WARNING_REPORTING__) && !defined(__CORE_EXCEPTION_CATCHING__)
 
 #define WARNING_REPORTING_THREAD_SETCALLSIGN_GUARD(CALLSIGN)
@@ -48,12 +52,7 @@ namespace Core {
         template <const char** MODULENAME>
         struct CallsignAccess {
             static const char* Callsign() {
-                static string modulename(string(_T("???  (Module:"))+*MODULENAME+_T(')')); 
-                const char* callsign = CallsignTLS::Callsign();
-                if( callsign == nullptr ) {
-                    callsign = modulename.c_str();
-                }
-                return callsign;
+                return CallsignTLS::CallsignForModule(*MODULENAME);
             }
         };
 
@@ -74,6 +73,7 @@ namespace Core {
 
         static const char* Callsign();
         static void Callsign(const char* callsign);
+        static const char* CallsignForModule(const char moduleName[]);
 
     private:
         friend class Core::ThreadLocalStorageType<CallsignTLS>;
@@ -81,7 +81,7 @@ namespace Core {
         CallsignTLS(const CallsignTLS&) = delete;
         CallsignTLS& operator=(const CallsignTLS&) = delete;
 
-        CallsignTLS() : _name() {};
+        CallsignTLS() : _name(), _fallbacks() {};
         ~CallsignTLS() = default;
 
         void Name(const char* name) {  
@@ -96,11 +96,27 @@ namespace Core {
         }
 
     private:
-        string _name;
+        const char* Fallback(const char moduleName[])
+        {
+            const char* result = nullptr;
+            for (const auto& entry : _fallbacks) {
+                if (entry.first == moduleName) {
+                    result = entry.second.c_str();
+                    break;
+                }
+            }
+            if (result == nullptr) {
+                _fallbacks.emplace_back(moduleName, std::string("???  (Module:") + moduleName + ')');
+                result = _fallbacks.back().second.c_str();
+            }
+            return result;
+        }
+
+        std::string _name;
+        std::list<std::pair<std::string, std::string>> _fallbacks;
     };
 }
 
 } 
 
 #endif
-

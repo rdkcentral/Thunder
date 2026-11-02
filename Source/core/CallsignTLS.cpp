@@ -38,6 +38,15 @@ namespace Core {
     void CallsignTLS::Callsign(const char* callsign) {
         Core::ThreadLocalStorageType<CallsignTLS>::Instance().Context().Name(callsign);
     }
+
+    const char* CallsignTLS::CallsignForModule(const char moduleName[])
+    {
+        const char* callsign = Callsign();
+        if (callsign == nullptr) {
+            callsign = Core::ThreadLocalStorageType<CallsignTLS>::Instance().Context().Fallback(moduleName);
+        }
+        return callsign;
+    }
 }
 } 
 

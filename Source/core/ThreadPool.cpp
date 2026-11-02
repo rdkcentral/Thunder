@@ -23,14 +23,6 @@
 namespace WPEFramework {
 namespace Core {
 
-    namespace {
-        string ThreadPoolCallsign(const char moduleName[])
-        {
-            const char* callsign = CallsignTLS::Callsign();
-            return (callsign != nullptr ? string(callsign) : string(_T("???  (Module:")) + moduleName + _T(')'));
-        }
-    }
-
     ThreadPool::IJob* ThreadPool::MeasurableJob::Process(IDispatcher* dispatcher, const char moduleName[])
     {
         ASSERT(dispatcher != nullptr);
@@ -38,10 +30,10 @@ namespace Core {
         ASSERT(_time != NumberType<uint64_t>::Max());
 
         IDispatch* request = &(*_job);
-        REPORT_PRIORITY_OUTOFBOUNDS_WARNING_CONTEXT(WarningReporting::JobTooLongWaitingInQueue, moduleName, ThreadPoolCallsign(moduleName).c_str(),
+        REPORT_PRIORITY_OUTOFBOUNDS_WARNING_CONTEXT(WarningReporting::JobTooLongWaitingInQueue, moduleName, CallsignTLS::CallsignForModule(moduleName),
             static_cast<uint32_t>((Time::Now().Ticks() - _time) / Time::TicksPerMillisecond));
         REPORT_PRIORITY_DURATION_WARNING_CONTEXT({ dispatcher->Dispatch(request); }, WarningReporting::JobTooLongToFinish,
-            moduleName, ThreadPoolCallsign(moduleName).c_str());
+            moduleName, CallsignTLS::CallsignForModule(moduleName));
 
         return (dynamic_cast<IJob*>(request));
     }
