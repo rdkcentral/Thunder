@@ -34,8 +34,8 @@ namespace WarningReporting {
         public:
             Instantiation()
             {
-                ANNOUNCE_PRIORITY_WARNING(TooLongPluginState);
-                ANNOUNCE_PRIORITY_WARNING(TooLongInvokeMessage);
+                ANNOUNCE_WARNING(TooLongPluginState);
+                ANNOUNCE_WARNING(TooLongInvokeMessage);
             }
         } ControlsRegistration;
 

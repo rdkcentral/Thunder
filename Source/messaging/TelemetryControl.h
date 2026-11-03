@@ -81,14 +81,13 @@ namespace Telemetry {
 #define TELEMETRY(CATEGORY, VALUE)                                                                                                                       \
     do {                                                                                                                                                 \
         static_assert(std::is_base_of<WPEFramework::Telemetry::BaseTelemetryType<CATEGORY>, CATEGORY>::value, "TELEMETRY() only for Telemetry controls");\
-        const auto __targets__ = WPEFramework::Messaging::MessageUnit::Instance().Targets(CATEGORY::Metadata(), CATEGORY::Routing(), CATEGORY::IsEnabled()); \
-        if (__targets__.Any() == true) {                                                                                                                \
+        if (CATEGORY::IsEnabled() == true) {                                                                                                             \
             WPEFramework::Core::Messaging::MessageInfo __info__(                                                                                         \
                 CATEGORY::Metadata(),                                                                                                                    \
                 WPEFramework::Core::Time::Now().Ticks()                                                                                                  \
             );                                                                                                                                           \
             WPEFramework::Core::Messaging::IStore::Telemetry __telemetry__(__info__);                                                                    \
             WPEFramework::Core::Messaging::TelemetryMessage __message__(VALUE);                                                                          \
-            WPEFramework::Messaging::MessageUnit::Instance().Push(__telemetry__, &__message__, __targets__);                                            \
+            WPEFramework::Messaging::MessageUnit::Instance().Push(__telemetry__, &__message__, CATEGORY::Routing());                                     \
         }                                                                                                                                                \
     } while(false)

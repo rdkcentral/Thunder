@@ -179,7 +179,7 @@ namespace Core {
             Core::TimerType<Timer>& _timer;
         };
 
-        #ifdef __CORE_ACTIVE_JOB_MONITORING__
+        #ifdef __CORE_WARNING_REPORTING__
         class DispatchedJobMonitor : public ThreadPool::IDispatchedJobMonitor {
         /**
         * @brief DispatchedJobMonitor monitor/maintains a list of Dispatched Jobs for analysis.
@@ -315,7 +315,7 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
             , _timer(1024 * 1024, _T("WorkerPoolType::Timer"))
             , _metadata()
             , _joined(0)
-            #ifdef __CORE_ACTIVE_JOB_MONITORING__
+            #ifdef __CORE_WARNING_REPORTING__
             , _dispatchedJobMonitor(*this, static_cast<uint32_t>(DispatchedJobMonitor::DefaultScheduleIntervalInMilliSeconds))
             #endif 
         {
@@ -410,14 +410,14 @@ POP_WARNING()
         void Run()
         {
             _threadPool.Run();
-            #ifdef __CORE_ACTIVE_JOB_MONITORING__
+            #ifdef __CORE_WARNING_REPORTING__
             _threadPool.SetDispatchedJobMonitor(&_dispatchedJobMonitor);
             _dispatchedJobMonitor.Start();
             #endif
         }
         void Stop()
         {
-            #ifdef __CORE_ACTIVE_JOB_MONITORING__
+            #ifdef __CORE_WARNING_REPORTING__
             _dispatchedJobMonitor.Stop();
             _threadPool.ResetDispatchedJobMonitor();
             #endif
@@ -435,7 +435,7 @@ POP_WARNING()
         Core::TimerType<Timer> _timer;
         mutable Metadata _metadata;
         ::ThreadId _joined;
-        #ifdef __CORE_ACTIVE_JOB_MONITORING__
+        #ifdef __CORE_WARNING_REPORTING__
         DispatchedJobMonitor _dispatchedJobMonitor;
         #endif
     };

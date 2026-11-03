@@ -210,16 +210,12 @@ do {                                                                            
             WPEFramework::Assertion::AssertionUnitProxy::Instance().AssertionEvent(                                     \
                 __assertMetadata__,                                                                                     \
                 __message__,                                                                                            \
-                __targets__);
+                WPEFramework::Assertion::BaseAssertType::Routing());
 
         #define ASSERT(expr)                                                                                            \
             do {                                                                                                        \
                 if (!(expr)) {                                                                                          \
-                    const auto __targets__ = WPEFramework::Assertion::ResolveTargets(                                   \
-                        WPEFramework::Assertion::BaseAssertType::Metadata(),                                            \
-                        WPEFramework::Assertion::BaseAssertType::Routing(),                                             \
-                        WPEFramework::Assertion::BaseAssertType::IsEnabled());                                          \
-                    if (__targets__.Any() == true) {                                                                    \
+                    if (WPEFramework::Assertion::BaseAssertType::IsEnabled()) {                                         \
                         ASSERT_METADATA                                                                                 \
                         WPEFramework::Core::Messaging::TextMessage __message__(#expr);                                  \
                         ASSERT_SENT                                                                                     \
@@ -231,11 +227,7 @@ do {                                                                            
         #define ASSERT_VERBOSE(expr, format, ...)                                                                       \
             do {                                                                                                        \
                 if (!(expr)) {                                                                                          \
-                    const auto __targets__ = WPEFramework::Assertion::ResolveTargets(                                   \
-                        WPEFramework::Assertion::BaseAssertType::Metadata(),                                            \
-                        WPEFramework::Assertion::BaseAssertType::Routing(),                                             \
-                        WPEFramework::Assertion::BaseAssertType::IsEnabled());                                          \
-                    if (__targets__.Any() == true) {                                                                    \
+                    if (WPEFramework::Assertion::BaseAssertType::IsEnabled()) {                                         \
                         ASSERT_METADATA                                                                                 \
                         char __buffer__[256];                                                                           \
                         std::snprintf(__buffer__, sizeof(__buffer__), "%s: " #format, #expr, ##__VA_ARGS__);            \
