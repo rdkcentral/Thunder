@@ -10,13 +10,13 @@ concurrency:
 on:
   workflow_dispatch:
   push:
-    branches: ["master"]
+    branches: ["R5_3"]
     paths-ignore:
       - 'doc/**'
       - 'docs/**'
       - 'ReleaseNotes/**'
   pull_request:
-    branches: ["master"]
+    branches: ["R5_3"]
     paths-ignore:
       - 'doc/**'
       - 'docs/**'
@@ -26,47 +26,9 @@ jobs:
   Thunder:
     uses: ./.github/workflows/Linux build template.yml
 
-  Test:
-    needs: Thunder
-    runs-on: ubuntu-24.04
-
-    strategy:
-      matrix:
-        build_type: [Debug, Release, MinSizeRel]
-        shared_libs: [ON, OFF]
-
-    env:
-      lib: LD_LIBRARY_PATH=${{github.workspace}}/${{matrix.build_type}}/install/usr/lib:$LD_LIBRARY_PATH
-      path: PATH=${{github.workspace}}/${{matrix.build_type}}/install/usr/bin:$PATH
-
-    name: Test - ${{matrix.shared_libs == 'OFF' && 'Static ' || ''}}${{matrix.build_type}}
-    steps:
-    - name: Install system dependencies
-      uses: rdkcentral/ThunderTools/.github/actions/apt-dependencies@master
-
-    - name: Download Thunder artifact
-      uses: actions/download-artifact@v4
-      with:
-        name: Thunder-${{matrix.build_type}}${{matrix.shared_libs == 'OFF' && '-static' || ''}}-test-artifact
-        path: ${{matrix.build_type}}
-
-    - name: Unpack files
-      run: |
-        tar -xvzf ${{matrix.build_type}}/${{matrix.build_type}}.tar.gz
-        rm ${{matrix.build_type}}/${{matrix.build_type}}.tar.gz
-
-    - name: Run IPTestAdministrator unit tests
-      run: ${{env.path}} ${{env.lib}} Thunder_test_tests
-
-    - name: Run core unit tests
-      run: ${{env.path}} ${{env.lib}} Thunder_test_core
-
-    - name: Run test framework smoke test
-      run: ${{env.path}} ${{env.lib}} thunder_test_runtime_smoke
-
   ThunderInterfaces:
     needs: Thunder
-    uses: rdkcentral/ThunderInterfaces/.github/workflows/Linux build template.yml@master
+    uses: rdkcentral/ThunderInterfaces/.github/workflows/Linux build template.yml@R5_3
 
   ThunderExtensions:
     needs: Thunder
@@ -74,16 +36,20 @@ jobs:
 
   ThunderLibraries:
     needs: Thunder
-    uses: WebPlatformForEmbedded/ThunderLibraries/.github/workflows/Linux build template.yml@main
+    uses: WebPlatformForEmbedded/ThunderLibraries/.github/workflows/Linux build template.yml@R5_3
+
+  ThunderPluginActivator:
+    needs: Thunder
+    uses: rdkcentral/ThunderPluginActivator/.github/workflows/Linux build template.yml@main
 
   ThunderClientLibraries:
     needs: ThunderInterfaces
-    uses: rdkcentral/ThunderClientLibraries/.github/workflows/Linux build template.yml@master
+    uses: rdkcentral/ThunderClientLibraries/.github/workflows/Linux build template.yml@R5_3
 
   ThunderNanoServices:
     needs: ThunderInterfaces
-    uses: rdkcentral/ThunderNanoServices/.github/workflows/Linux build template.yml@master
+    uses: rdkcentral/ThunderNanoServices/.github/workflows/Linux build template.yml@R5_3
 
   ThunderNanoServicesRDK:
     needs: ThunderInterfaces
-    uses: WebPlatformForEmbedded/ThunderNanoServicesRDK/.github/workflows/Linux build template.yml@master
+    uses: WebPlatformForEmbedded/ThunderNanoServicesRDK/.github/workflows/Linux build template.yml@R5_3
