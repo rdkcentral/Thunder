@@ -25,6 +25,7 @@
 
 #include "Thread.h"
 #include "ThreadPool.h"
+#include "SystemInfo.h"
 #include "Timer.h"
 #include "Trace.h"
 
@@ -500,7 +501,7 @@ POP_WARNING()
         WorkerPoolWatchDog(WorkerPool& pool, const uint32_t timeout, const bool abortOnExpiry)
             : Thread(Thread::DefaultStackSize(), _T("WorkerPool::Watchdog"))
             , _pool(pool)
-            , _timeoutTicks(static_cast<uint64_t>(timeout) * Time::TicksPerMillisecond)
+            , _timeoutTicks(static_cast<uint64_t>(timeout) * Time::MicroSecondsPerMilliSecond)
             , _interval(std::min(timeout, 250u))
             , _lastProgress(pool.Progress())
             , _stalledSince(0)
@@ -525,7 +526,7 @@ POP_WARNING()
     private:
         uint32_t Worker() override
         {
-            const uint64_t now = Time::Now().Ticks();
+            const uint64_t now = SystemInfo::Instance().Ticks();
             const uint64_t progress = _pool.Progress();
             const uint32_t active = _pool.ActiveJobs();
             const uint32_t workers = _pool.Count();
@@ -545,13 +546,14 @@ POP_WARNING()
             } else if ((_reported == false) && ((now - _stalledSince) >= _timeoutTicks)) {
                 CC_SYSLOG("WorkerPool stalled: all %u worker(s) active without an extraction for %u ms",
                     workers,
-                    static_cast<uint32_t>(_timeoutTicks / Time::TicksPerMillisecond));
+                    static_cast<uint32_t>(_timeoutTicks / Time::MicroSecondsPerMilliSecond));
                 if (_abortOnExpiry == true) {
                     std::abort();
                 }
                 _reported = true;
             }
 
+            Thread::Block();
             return (_interval);
         }
 
