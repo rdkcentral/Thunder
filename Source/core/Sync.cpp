@@ -844,7 +844,7 @@ namespace Core {
         ASSERT(_semaphore != nullptr);
 #else
         _semaphore = sem_open(sourceName, 0);
-        ASSERT(_semaphore != nullptr);
+        ASSERT(_semaphore != SEM_FAILED);
 #endif
     }
 

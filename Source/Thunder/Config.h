@@ -38,6 +38,12 @@ namespace PluginHost {
      * the documentation in docs/introduction/config.md is updated to reflect the changes!
     */
     class EXTERNAL Config {
+    public:
+        struct Attributes {
+            string Prefix;
+            uint16_t IdleTime = 180;
+        };
+
     private:
         class Substituter {
         private:
@@ -454,7 +460,7 @@ namespace PluginHost {
 #ifdef HIBERNATE_SUPPORT_ENABLED
                 , Hibernate()
 #endif
-#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+#ifdef __CUSTOM_ERROR_CODES__
                 , CustomCodeLibrary()
 #endif
             {
@@ -512,7 +518,7 @@ namespace PluginHost {
 #ifdef HIBERNATE_SUPPORT_ENABLED
                 Add(_T("hibernate"), &Hibernate);
 #endif
-#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+#ifdef __CUSTOM_ERROR_CODES__
                 Add(_T("customcodelibrary"), &CustomCodeLibrary);
 #endif
             }
@@ -574,7 +580,7 @@ namespace PluginHost {
 #ifdef HIBERNATE_SUPPORT_ENABLED
             HibernateConfig Hibernate;
 #endif
-#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+#ifdef __CUSTOM_ERROR_CODES__
             Core::JSON::String CustomCodeLibrary;
 #endif
         };
@@ -701,7 +707,8 @@ namespace PluginHost {
         PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
         Config(Core::File& file, const bool background, Core::OptionalType<Core::JSON::Error>& error)
             : _background(background)
-            , _prefix()
+            , _attributes()
+            , _pendingAttributes()
             , _webPrefix()
             , _JSONRPCPrefix()
             , _volatilePath()
@@ -741,7 +748,6 @@ namespace PluginHost {
             , _portNumber(0)
             , _IPV6()
             , _legacyInitialize(false)
-            , _idleTime(180)
             , _softKillCheckWaitTime(3)
             , _hardKillCheckWaitTime(10)
             , _outOfProcessWaitTime(3000)
@@ -767,7 +773,7 @@ namespace PluginHost {
 #ifdef HIBERNATE_SUPPORT_ENABLED
             , _hibernateLocator()
 #endif
-#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+#ifdef __CUSTOM_ERROR_CODES__
             , _customCodeLibrary()
 #endif
         {
@@ -776,8 +782,8 @@ namespace PluginHost {
             config.IElement::FromFile(file, error);
 
             if (error.IsSet() == false) {
-                _prefix = config.Prefix.Value();
-                _webPrefix = '/' + _prefix;
+                _attributes.Prefix = config.Prefix.Value();
+                _webPrefix = '/' + _attributes.Prefix;
                 _JSONRPCPrefix = '/' + config.JSONRPC.Value();
 #ifdef PROCESSCONTAINERS_ENABLED
                 _processContainersConfig = config.ProcessContainers.Value();
@@ -785,7 +791,7 @@ namespace PluginHost {
 #ifdef HIBERNATE_SUPPORT_ENABLED
                 _hibernateLocator = config.Hibernate.Locator.Value();
 #endif
-#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+#ifdef __CUSTOM_ERROR_CODES__
                 _customCodeLibrary = config.CustomCodeLibrary.Value();
 #endif
                 _volatilePath = Core::Directory::Normalize(config.VolatilePath.Value());
@@ -852,7 +858,7 @@ namespace PluginHost {
                 _hashKey = config.Signature.Value();
                 _communicator = Core::NodeId(config.Communicator.Value().c_str());
                 _redirect = config.Redirect.Value();
-                _idleTime = config.IdleTime.Value();
+                _attributes.IdleTime = config.IdleTime.Value();
                 _softKillCheckWaitTime = config.SoftKillCheckWaitTime.Value();
                 _hardKillCheckWaitTime = config.HardKillCheckWaitTime.Value();
                 _outOfProcessWaitTime = config.OutOfProcessWaitTime.Value() * 1000; // Move to milliseconds
@@ -933,6 +939,8 @@ namespace PluginHost {
                     _linkerPluginPaths.push_back(itr.Current().Value());
                 }
             }
+
+            _pendingAttributes = _attributes;
         }
         POP_WARNING()
         ~Config()
@@ -947,12 +955,11 @@ namespace PluginHost {
         inline const string& Prefix() const
         {
             Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
-            return (_prefix);
+            return (_attributes.Prefix);
         }
         inline void SetPrefix(const string& newValue) {
             Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
-            _prefix = newValue;
-            _webPrefix = '/' + _prefix;
+            _pendingAttributes.Prefix = newValue;
         }
         inline const string& Model() const
         {
@@ -990,7 +997,7 @@ namespace PluginHost {
             return (_hibernateLocator);
         }
 #endif
-#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+#ifdef __CUSTOM_ERROR_CODES__
         inline const string& CustomCodeLibrary() const
         {
             return (_customCodeLibrary);
@@ -1126,11 +1133,25 @@ namespace PluginHost {
         }
         inline uint16_t IdleTime() const {
             Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
-            return (_idleTime);
+            return (_attributes.IdleTime);
         }
         inline void SetIdleTime(const uint16_t newValue)  {
             Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
-            _idleTime = newValue;
+            _pendingAttributes.IdleTime = newValue;
+        }
+        inline void LoadAttributes(const Attributes& attributes) {
+            Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
+            _attributes = attributes;
+            _pendingAttributes = attributes;
+            _webPrefix = '/' + _attributes.Prefix;
+        }
+        inline Attributes PendingAttributes() const {
+            Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
+            return (_pendingAttributes);
+        }
+        inline Attributes ActiveAttributes() const {
+            Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
+            return (_attributes);
         }
         inline uint8_t SoftKillCheckWaitTime() const {
             return _softKillCheckWaitTime;
@@ -1272,9 +1293,7 @@ namespace PluginHost {
     
                 _configLock.Lock();
                 if (selectedNode.IsValid() == true) {
-                    _accessor = selectedNode;
-                    result = _accessor;
-                    
+                    _accessor = std::move(selectedNode);
                 }
             } else if (result.IsAnyInterface() == true) {
                 // TODO: We should iterate here over all interfaces to find a suitable IPv4 address or IPv6.
@@ -1282,17 +1301,17 @@ namespace PluginHost {
 
                 _configLock.Lock();
                 if (selectedNode.IsValid() == true) {
-                    _accessor = selectedNode;
+                    _accessor = std::move(selectedNode);
                 }
             } else {
                 _configLock.Lock();
-                _accessor = result;
+                _accessor = std::move(result);
             }
             string hostaddress;
             if (_accessor.IsValid() == false) {
 
                 // Let's go for the default and make the best of it :-)
-                struct sockaddr_in value;
+                struct sockaddr_in value {};
 
                 value.sin_addr.s_addr = 0;
                 value.sin_family = AF_INET;
@@ -1357,8 +1376,7 @@ namespace PluginHost {
 
             }
             if (_binder.IsValid() == false) {
-                Core::NodeId binder(_binding.c_str(), _portNumber);
-                _binder = binder;
+                _binder = Core::NodeId(_binding.c_str(), _portNumber);
             }
             else {
                 _binder.PortNumber(_portNumber);
@@ -1380,7 +1398,8 @@ namespace PluginHost {
 
     private:
         const bool _background;
-        string _prefix; // store prefix to make it overridable
+        Attributes _attributes;
+        Attributes _pendingAttributes;
         string _webPrefix;
         string _JSONRPCPrefix;
         string _volatilePath;
@@ -1420,7 +1439,6 @@ namespace PluginHost {
         uint16_t _portNumber;
         bool _IPV6;
         bool _legacyInitialize;
-        uint16_t _idleTime;
         uint8_t _softKillCheckWaitTime;
         uint8_t _hardKillCheckWaitTime;
         uint16_t _outOfProcessWaitTime;
@@ -1447,7 +1465,7 @@ namespace PluginHost {
 #ifdef HIBERNATE_SUPPORT_ENABLED
         string _hibernateLocator;
 #endif
-#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+#ifdef __CUSTOM_ERROR_CODES__
         string _customCodeLibrary;
 #endif
     };

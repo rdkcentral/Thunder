@@ -84,8 +84,9 @@ namespace Core {
                 _flags = header->nlmsg_flags;
                 _mySequence = header->nlmsg_seq;
 
-                if ((header->nlmsg_len - sizeof(header)) > 0) {
-                    completed = (Read(reinterpret_cast<const uint8_t *>(NLMSG_DATA(header)), header->nlmsg_len - sizeof(header)) > 0);
+                const uint16_t payloadLength = static_cast<uint16_t>(NLMSG_PAYLOAD(header, 0));
+                if (payloadLength > 0) {
+                    completed = (Read(reinterpret_cast<const uint8_t*>(NLMSG_DATA(header)), payloadLength) > 0);
                 }
 
                 completed = completed && ((header->nlmsg_type == NLMSG_DONE) || ((header->nlmsg_flags & NLM_F_MULTI) == 0));

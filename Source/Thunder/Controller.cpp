@@ -361,6 +361,71 @@ namespace Plugin {
         return result;
     }
 
+    Core::hresult Controller::Attribute(const Core::OptionalType<IConfiguration::attribute>& attribute, string& value) const
+    {
+        Core::hresult result = Core::ERROR_UNKNOWN_KEY;
+
+        ASSERT(_pluginServer != nullptr);
+
+        const PluginHost::Config& configuration(_pluginServer->Configuration());
+        const PluginHost::Config::Attributes attributes(configuration.ActiveAttributes());
+
+        if (attribute.IsSet() == false) {
+            Core::JSON::VariantContainer response;
+            response.Set(Core::EnumToCString(IConfiguration::PREFIX), Core::JSON::Variant(attributes.Prefix));
+            response.Set(Core::EnumToCString(IConfiguration::IDLETIME), Core::JSON::Variant(static_cast<uint32_t>(attributes.IdleTime)));
+            response.ToString(value);
+
+            result = Core::ERROR_NONE;
+        }
+        else if (attribute.Value() == IConfiguration::PREFIX) {
+            Core::JSON::String prefix;
+            prefix = attributes.Prefix;
+            prefix.ToString(value);
+
+            result = Core::ERROR_NONE;
+        }
+        else if (attribute.Value() == IConfiguration::IDLETIME) {
+            Core::JSON::DecUInt16 idleTime(attributes.IdleTime, true);
+            idleTime.ToString(value);
+
+            result = Core::ERROR_NONE;
+        }
+
+        return result;
+    }
+
+    Core::hresult Controller::Attribute(const IConfiguration::attribute attribute, const string& value)
+    {
+        Core::hresult result = Core::ERROR_UNKNOWN_KEY;
+
+        ASSERT(_pluginServer != nullptr);
+
+        PluginHost::Config& configuration(_pluginServer->Configuration());
+        const PluginHost::Config::Attributes active(configuration.ActiveAttributes());
+
+        if (attribute == IConfiguration::PREFIX) {
+            Core::JSON::String prefix;
+
+            result = Core::ERROR_BAD_REQUEST;
+            if (prefix.FromString(value) == true) {
+                configuration.SetPrefix(prefix.Value());
+                result = (prefix.Value() == active.Prefix ? Core::ERROR_NONE : Core::ERROR_REQUEST_SUBMITTED);
+            }
+        }
+        else if (attribute == IConfiguration::IDLETIME) {
+            Core::JSON::DecUInt16 idleTime;
+
+            result = Core::ERROR_BAD_REQUEST;
+            if (idleTime.FromString(value) == true) {
+                configuration.SetIdleTime(idleTime.Value());
+                result = (idleTime.Value() == active.IdleTime ? Core::ERROR_NONE : Core::ERROR_REQUEST_SUBMITTED);
+            }
+        }
+
+        return result;
+    }
+
     Core::hresult Controller::Clone(const string& basecallsign, const string& newcallsign)
     {
         Core::hresult result = Core::ERROR_PRIVILIGED_REQUEST;
@@ -673,7 +738,7 @@ namespace Plugin {
                     }
                 }
             } else if (index.Current() == _T("Discovery")) {
-                if (_probe != nullptr) {
+                if (_probe == nullptr) {
                     result->ErrorCode = Web::STATUS_BAD_REQUEST;
                     result->Message = _T("Probe functionality not enabled!");
                 }
@@ -1219,6 +1284,7 @@ namespace Plugin {
                     meta.FromString(info);
                     services.push_back(IMetadata::Data::Service(meta));
                 }
+                shell->Release();
             }
             else {
                 result = Core::ERROR_UNKNOWN_KEY;
@@ -1605,9 +1671,6 @@ namespace Plugin {
             extensions |= IMetadata::Data::BuildInfo::PROCESS_CONTAINERS;
         #endif
         
-        // coverity[DEADCODE] - extensions is set via #ifdef blocks above. If no optional
-        // features are enabled the guard is dead in that build configuration, but it is
-        // intentionally defensive for all other configurations.
         if (extensions != 0) {
             buildInfo.Extensions = static_cast<IMetadata::Data::BuildInfo::extensiontype>(extensions);
         }

@@ -112,7 +112,7 @@ ENUM_CONVERSION_BEGIN(Web::MIMETypes)
     { Web::MIME_IMAGE_JPG, _TXT("image/jpeg") },
     { Web::MIME_IMAGE_PNG, _TXT("image/png") },
     { Web::MIME_FONT_TTF, _TXT("font/ttf") },
-    { Web::MIME_FONT_OPENTYPE, _TXT("image/jpeg") },
+    { Web::MIME_FONT_OPENTYPE, _TXT("font/otf") },
     { Web::MIME_TEXT_XML, _TXT("text/xml") },
     { Web::MIME_APPLICATION_FONT_WOFF, _TXT("application/font-woff") },
     { Web::MIME_APPLICATION_JAVA_ARCHIVE, _TXT("application/java-archive") },
@@ -182,7 +182,7 @@ ENUM_CONVERSION_BEGIN(Web::WebStatus)
     { Web::STATUS_EXPECTATION_FAILED, _TXT("EXPECTATION_FAILED") },
     { Web::STATUS_INTERNAL_SERVER_ERROR, _TXT("INTERNAL_SERVER_ERROR") },
     { Web::STATUS_NOT_IMPLEMENTED, _TXT("NOT_IMPLEMENTED") },
-    { Web::STATUS_BAD_GATEWAY, _TXT("NOT_IMPLEMENTED") },
+    { Web::STATUS_BAD_GATEWAY, _TXT("BAD_GATEWAY") },
     { Web::STATUS_SERVICE_UNAVAILABLE, _TXT("SERVICE_UNAVAILABLE") },
     { Web::STATUS_GATEWAY_TIMEOUT, _TXT("GATEWAY_TIMEOUT") },
     { Web::STATUS_VERSION_NOT_SUPPORTED, _TXT("VERSION_NOT_SUPPORTED") },
@@ -343,7 +343,7 @@ namespace Web
         { Web::MIME_IMAGE_JPG, _TXT("jpeg") },
         { Web::MIME_IMAGE_PNG, _TXT("png") },
         { Web::MIME_FONT_TTF, _TXT("ttf") },
-        { Web::MIME_FONT_OPENTYPE, _TXT("otp") },
+        { Web::MIME_FONT_OPENTYPE, _TXT("otf") },
         { Web::MIME_TEXT_XML, _TXT("xml") },
         { Web::MIME_APPLICATION_FONT_WOFF, _TXT("woff") },
         { Web::MIME_APPLICATION_JAVA_ARCHIVE, _TXT("jar") },
@@ -427,7 +427,6 @@ namespace Web
 
         if (hashType.IsSet() && hashValue.IsSet()) {
             uint8_t data[64];
-            // coverity[INTEGER_OVERFLOW] - sizeof(data) is 64, well within uint16_t range.
             uint16_t length = sizeof(data);
 
             // It should be base64 encoded, convert it here

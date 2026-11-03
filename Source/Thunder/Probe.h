@@ -107,7 +107,7 @@ namespace Plugin {
             };
 
         public:
-            Broadcaster(Probe& parent, const Core::NodeId address,  const uint8_t timeToLive)
+            Broadcaster(Probe& parent, const Core::NodeId& address,  const uint8_t timeToLive)
                 : Core::SocketDatagram(false, address.AnyInterface(), address, 1024, 1024)
                 , _parent(parent)
                 , _adminLock()
@@ -116,15 +116,11 @@ namespace Plugin {
                 , _answer(Core::ProxyType<Web::TextBody>::Create())
                 , _destinations()
             {
-                string text;
                 _request.Verb = Web::Request::HTTP_MSEARCH;
                 _request.ST = SearchTarget;
 
                 if (Open(1000) == Core::ERROR_NONE) {
-                    Destination newEntry;
-                    newEntry._destination = address;
-                    newEntry._timeToLive = timeToLive;
-                    _destinations.push_back(newEntry);
+                    _destinations.push_back(Destination {address, timeToLive});
                     Core::SocketDatagram::Trigger();
                 } else {
                     ASSERT(false);
@@ -139,12 +135,8 @@ namespace Plugin {
             void Ping(const uint8_t timeToLive)
             {
                 if (IsOpen()) {
-                    Destination newEntry;
-                    newEntry._destination = RemoteNode();
-                    newEntry._timeToLive = timeToLive;
-
                     _adminLock.Lock();
-                    _destinations.push_back(newEntry);
+                    _destinations.push_back(Destination { RemoteNode(), timeToLive });
                     _adminLock.Unlock();
 
                     Core::SocketDatagram::Trigger();

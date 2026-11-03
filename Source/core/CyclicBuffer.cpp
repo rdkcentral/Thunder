@@ -144,7 +144,7 @@ namespace Core {
                 _administration = reinterpret_cast<struct control*>(&(_buffer.Buffer()[actual_offset]));
             }
 
-            if (initiator == true) {
+            if ((initiator == true) && (_administration != nullptr)) {
 
 #ifndef __WINDOWS__
                 pthread_condattr_t cond_attr;
@@ -156,13 +156,13 @@ namespace Core {
                 ret = pthread_condattr_setpshared(&cond_attr, PTHREAD_PROCESS_SHARED);
                 ASSERT(ret == 0); DEBUG_VARIABLE(ret);
 
-                ret = pthread_cond_init(&(_administration->_signal), &cond_attr);
-                ASSERT(ret == 0); DEBUG_VARIABLE(ret);
-
 #ifndef __APPLE__
                 ret = pthread_condattr_setclock(&cond_attr, CLOCK_MONOTONIC);
                 ASSERT(ret == 0); DEBUG_VARIABLE(ret);
 #endif
+
+                ret = pthread_cond_init(&(_administration->_signal), &cond_attr);
+                ASSERT(ret == 0); DEBUG_VARIABLE(ret);
 
                 pthread_mutexattr_t mutex_attr;
 

@@ -148,7 +148,7 @@ namespace PluginHost {
         Core::AdapterObserver _observer;
     };
 
-#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+#ifdef __CUSTOM_ERROR_CODES__
 
     class CustomCodeLibrary {
     public:
@@ -206,7 +206,8 @@ namespace PluginHost {
         Core::CustomCodeToStringHandler _customCodeToStringHandler;
     };
 
-#endif
+#endif // __CUSTOM_ERROR_CODES__
+
 
     class ExitHandler : public Core::Thread {
     private:
@@ -515,7 +516,7 @@ namespace PluginHost {
             string messagingCategories = _config->MessagingCategories();
 
             if (Core::File::IsPathAbsolute(messagingCategories)) {
-                messagingSettings = messagingCategories;
+                messagingSettings = std::move(messagingCategories);
             }
             else {
                 messagingSettings = Core::Directory::Normalize(Core::File::PathName(pathName)) + messagingCategories;
@@ -667,7 +668,15 @@ int main(int argc, char** argv)
         _config = new Config(configFile, _background, error);
 
         if (error.IsSet() == true) {
-            SYSLOG(Logging::ParsingError, (_T("Parsing failed with %s"), ErrorDisplayMessage(error.Value()).c_str()));
+#ifndef __WINDOWS__
+            if (_background == true) {
+                syslog(LOG_ERR, "Parsing failed with %s", ErrorDisplayMessage(error.Value()).c_str());
+            } else
+#endif
+            {
+                fprintf(stderr, "Parsing failed with %s\n", ErrorDisplayMessage(error.Value()).c_str());
+                fflush(stderr);
+            }
             delete _config;
             _config = nullptr;
         }
@@ -684,11 +693,18 @@ int main(int argc, char** argv)
         }
     }
 
-#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+#ifdef __CUSTOM_ERROR_CODES__
     CustomCodeLibrary customcodelibraryhandler;
 #endif
 
     if (_config != nullptr) {
+
+        if (_config->PersistentPath().empty() == false) {
+            Core::Directory persistentPath(_config->PersistentPath().c_str());
+            if ((persistentPath.Exists() == false) && (persistentPath.Create() == false)) {
+                SYSLOG(Logging::Startup, (_T("Failed to create persistent directory [%s]."), _config->PersistentPath().c_str()));
+            }
+        }
 
         if (_config->Process().IsSet() == true) {
 
@@ -747,7 +763,7 @@ int main(int argc, char** argv)
             postMortemPath.CreatePath();
         }
 
-#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+#ifdef __CUSTOM_ERROR_CODES__
         if (_config->CustomCodeLibrary().empty() == false) {
             customcodelibraryhandler.Load(_config->CustomCodeLibrary());
         }
@@ -762,7 +778,9 @@ int main(int argc, char** argv)
         SYSLOG(Logging::Startup, (_T("Process Id:    %d"), Core::ProcessInfo().Id()));
         SYSLOG(Logging::Startup, (_T("Tree ref:      " _T(EXPAND_AND_QUOTE(TREE_REFERENCE)))));
         SYSLOG(Logging::Startup, (_T("Build ref:     " _T(EXPAND_AND_QUOTE(BUILD_REFERENCE)))));
-        SYSLOG(Logging::Startup, (_T("Version:       %d:%d:%d"), Versioning::Major, Versioning::Minor, Versioning::Minor));
+        const Core::Time::microsecondsfromepoch messagingStart = Core::Time::Now().Ticks();
+        SYSLOG(Logging::Startup, (_T("Version:       %d:%d:%d"), Versioning::Major, Versioning::Minor, Versioning::Patch));
+        SYSLOG(Logging::Startup, (_T("Messaging latency: %" PRIu64 " microseconds"), static_cast<uint64_t>(Core::Time::Now().Ticks() - messagingStart)));
 #ifdef __CORE_MESSAGING__
         if (_config->MessagingCategoriesFile() == false) {
             SYSLOG(Logging::Startup, (_T("Messages [INT]:  %s"), options.configFile));
@@ -1144,7 +1162,7 @@ int main(int argc, char** argv)
         fflush(stderr);
     }
 
-#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+#ifdef __CUSTOM_ERROR_CODES__
     customcodelibraryhandler.Release();
 #endif
 

@@ -24,6 +24,11 @@
 #include "TraceFactory.h"
 #include "DirectOutput.h"
 
+#ifdef MESSAGING_EXTERNAL_OUTPUT
+    #include <map>
+    #include <tuple>
+#endif
+
 namespace Thunder {
 
     namespace Messaging {
@@ -70,6 +75,8 @@ namespace Thunder {
             };
 
             using OutputMode = Core::Messaging::OutputMode;
+
+            using OutputTargets = Core::Messaging::OutputTargets;
 
             class EXTERNAL Buffer : public Core::IPC::BufferType<static_cast<uint16_t>(~0)> {
             public:
@@ -296,7 +303,8 @@ namespace Thunder {
                     DIRECT         = 0x02,
                     ABBREVIATED    = 0x04,
                     REDIRECT_OUT   = 0x08,
-                    REDIRECT_ERROR = 0x10
+                    REDIRECT_ERROR = 0x10,
+                    NO_TIME        = 0x20
                 };
 
             public:
@@ -305,6 +313,21 @@ namespace Thunder {
                  */
                 class EXTERNAL Config : public Core::JSON::Container {
                 public:
+                    class DirectSettings : public Core::JSON::Container {
+                    public:
+                        DirectSettings()
+                            : Core::JSON::Container()
+                            , Abbreviated(false)
+                            , Time(true)
+                        {
+                            Add(_T("abbreviated"), &Abbreviated);
+                            Add(_T("time"), &Time);
+                        }
+
+                        Core::JSON::Boolean Abbreviated;
+                        Core::JSON::Boolean Time;
+                    };
+
                     class Section : public Core::JSON::Container {
                     public:
                         class Entry : public Core::JSON::Container {
@@ -394,17 +417,14 @@ namespace Thunder {
                         Section()
                             : Core::JSON::Container()
                             , Settings()
-                            , Abbreviated(true)
                             , Output(Core::Messaging::OutputMode::HANDLER) {
                             Add(_T("settings"), &Settings);
-                            Add(_T("abbreviated"), &Abbreviated);
                             Add(_T("output"), &Output);
                         }
                         ~Section() = default;
 
                     public:
                         Core::JSON::ArrayType<Entry> Settings;
-                        Core::JSON::Boolean Abbreviated;
                         Core::JSON::EnumType<MessageUnit::OutputMode> Output;
                     };
 
@@ -416,9 +436,9 @@ namespace Thunder {
                         , Reporting()
                         , Assertion()
                         , Telemetry()
+                        , Output(Core::Messaging::OutputMode::HANDLER)
                         , Port(0)
                         , Path(_T("MessageDispatcher"))
-                        , Flush(false)
                         , Out(true)
                         , Error(true)
                         , DataSize(MessageUnit::DefaultDataBufferSize)
@@ -431,9 +451,10 @@ namespace Thunder {
                         Add(_T("reporting"), &Reporting);
                         Add(_T("assertion"), &Assertion);
                         Add(_T("telemetry"), &Telemetry);
+                        Add(_T("direct"), &Direct);
+                        Add(_T("output"), &Output);
                         Add(_T("path"), &Path);
                         Add(_T("port"), &Port);
-                        Add(_T("flush"), &Flush);
                         Add(_T("stdout"), &Out);
                         Add(_T("stderr"), &Error);
                         Add(_T("datasize"), &DataSize);
@@ -451,9 +472,10 @@ namespace Thunder {
                     Section Reporting;
                     Section Assertion;
                     Section Telemetry;
+                    DirectSettings Direct;
+                    Core::JSON::EnumType<MessageUnit::OutputMode> Output;
                     Core::JSON::DecUInt16 Port;
                     Core::JSON::String Path;
-                    Core::JSON::Boolean Flush;
                     Core::JSON::Boolean Out;
                     Core::JSON::Boolean Error;
                     Core::JSON::DecUInt16 DataSize;
@@ -523,6 +545,10 @@ namespace Thunder {
                     return ((_mode & mode::DIRECT) != 0);
                 }
 
+                bool IsTimeEnabled() const {
+                    return ((_mode & mode::NO_TIME) == 0);
+                }
+
                 bool HasRedirectedOut() const {
                     return ((_mode & mode::REDIRECT_OUT) != 0);
                 }
@@ -554,8 +580,9 @@ namespace Thunder {
                     _identifier = identifier;
                     _socketPort = jsonParsed.Port.Value();
                     _mode = (background ? mode::BACKGROUND : 0) | 
-                            (((flushMode != flush::OFF) || (jsonParsed.Flush.Value())) ? mode::DIRECT : 0) | 
-                            (flushMode == flush::FLUSH_ABBREVIATED ? mode::ABBREVIATED : 0) |
+                            (((flushMode != flush::OFF) || (jsonParsed.Output.IsSet() && (jsonParsed.Output.Value() != Core::Messaging::OutputMode::HANDLER))) ? mode::DIRECT : 0) |
+                            (((flushMode == flush::FLUSH_ABBREVIATED) || jsonParsed.Direct.Abbreviated.Value()) ? mode::ABBREVIATED : 0) |
+                            ((jsonParsed.Direct.Time.Value() == false) ? mode::NO_TIME : 0) |
                             (jsonParsed.Error.Value() ? mode::REDIRECT_ERROR : 0) |
                             (jsonParsed.Out.IsSet() ? (jsonParsed.Out.Value() ? mode::REDIRECT_OUT : 0) : (background ? mode::REDIRECT_OUT : 0));
 
@@ -768,7 +795,7 @@ namespace Thunder {
                     string settings = _path + DELIMITER +
                                _identifier + DELIMITER +
                                Core::NumberType<uint16_t>(_socketPort).Text() + DELIMITER +
-                               Core::NumberType<uint8_t>(_mode & (mode::BACKGROUND|mode::DIRECT|mode::ABBREVIATED)).Text() + DELIMITER +
+                               Core::NumberType<uint8_t>(_mode & (mode::BACKGROUND|mode::DIRECT|mode::ABBREVIATED|mode::NO_TIME)).Text() + DELIMITER +
                                Core::NumberType<uint16_t>(_dataSize).Text() + DELIMITER +
                                Core::NumberType<uint16_t>(_metadataBufferSize).Text() + DELIMITER +
                                Core::NumberType<uint16_t>(_metadataSize).Text() + DELIMITER +
@@ -847,7 +874,7 @@ namespace Thunder {
                                                 if ((type >= Core::Messaging::Metadata::type::TRACING) && (type <= Core::Messaging::Metadata::type::TELEMETRY)) {
                                                     Core::Messaging::Metadata info(static_cast<Core::Messaging::Metadata::type>(type), category, module);
                                                     const bool hasE = (hasEnabled != 0);
-                                                    const bool hasR = (hasRouting != 0) && (routeMode <= static_cast<uint8_t>(Core::Messaging::OutputMode::ALL));
+                                                    const bool hasR = (hasRouting != 0) && (routeMode <= static_cast<uint8_t>(Core::Messaging::OutputMode::EXTERNAL_DIRECT));
                                                     if ((hasE == true) && (hasR == true)) {
                                                         _settings.emplace_back(info, (enabled != 0), static_cast<OutputMode>(routeMode));
                                                     } else if (hasE == true) {
@@ -884,6 +911,17 @@ namespace Thunder {
 
                         return (*index);
                     };
+
+                    if (config.Output.IsSet() == true) {
+                        for (uint8_t typeValue = static_cast<uint8_t>(Core::Messaging::Metadata::type::TRACING);
+                             typeValue <= static_cast<uint8_t>(Core::Messaging::Metadata::type::TELEMETRY);
+                             ++typeValue) {
+                            const Core::Messaging::Metadata::type type = static_cast<Core::Messaging::Metadata::type>(typeValue);
+                            Core::Messaging::Metadata wildcard(type, _T(""), _T(""));
+                            Control& entry = findOrEmplace(wildcard);
+                            entry.SetRouting(config.Output.Value());
+                        }
+                    }
 
                     auto applySection = [&](const Config::Section& section, const Core::Messaging::Metadata::type msgType) {
                         if (section.Output.IsSet() == true) {
@@ -1260,6 +1298,10 @@ namespace Thunder {
                 , _dataBuffer()
                 , _settings()
                 , _direct()
+#ifdef MESSAGING_EXTERNAL_OUTPUT
+                , _externalInitialized(false)
+                , _externalControls()
+#endif
             {
             }
 
@@ -1300,13 +1342,23 @@ namespace Thunder {
 
             bool Default(const Core::Messaging::Metadata& control) const override;
             Core::Messaging::OutputMode DefaultOutput(const Core::Messaging::Metadata& metadata) const override;
+            void Announce(const Core::Messaging::Metadata& metadata) override;
             void Push(const Core::Messaging::MessageInfo& messageInfo, const Core::Messaging::IEvent* message, Core::Messaging::OutputMode outputMode) override;
+            void Push(const Core::Messaging::MessageInfo& messageInfo, const Core::Messaging::IEvent* message, const OutputTargets& targets);
+            OutputTargets Targets(const Core::Messaging::Metadata& metadata, Core::Messaging::OutputMode outputMode, bool localEnabled) const;
+#ifdef MESSAGING_EXTERNAL_OUTPUT
+            bool ExternalEnabled(const Core::Messaging::Metadata& metadata) const;
+#endif
 
         private:
             uint16_t Serialize(uint8_t* buffer, const uint16_t length, const string& module);
             uint16_t Serialize(uint8_t* buffer, const uint16_t length);
             void Update(const Core::Messaging::Metadata& control, const bool enable);
             void Update();
+#ifdef MESSAGING_EXTERNAL_OUTPUT
+            void InitializeExternal();
+            void DeinitializeExternal();
+#endif
 
         private:
             mutable Core::CriticalSection _adminLock;
@@ -1314,6 +1366,10 @@ namespace Thunder {
             std::unique_ptr<MessageDataBuffer> _dataBuffer;
             Settings _settings;
             DirectOutput _direct;
+#ifdef MESSAGING_EXTERNAL_OUTPUT
+            bool _externalInitialized;
+            mutable std::map<std::tuple<string, uint8_t, string>, bool> _externalControls;
+#endif
         };
 
     } // namespace Messaging

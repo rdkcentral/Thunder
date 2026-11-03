@@ -130,9 +130,20 @@ namespace Core {
         // The default when no explicit override is configured is HANDLER in normal
         // mode and DIRECT in DirectOutput mode (-f / flush flag).
         enum OutputMode : uint8_t {
-            HANDLER = 0,
-            DIRECT  = 1,
-            ALL     = 2
+            ALL             = 0,
+            HANDLER         = 1,
+            DIRECT          = 2,
+            EXTERNAL_DIRECT = 3
+        };
+
+        struct EXTERNAL OutputTargets {
+            bool direct;
+            bool handler;
+            bool external;
+
+            bool Any() const {
+                return (direct || handler || external);
+            }
         };
 
         struct EXTERNAL IControl {
@@ -200,7 +211,7 @@ namespace Core {
         public:
             uint16_t Serialize(uint8_t buffer[], const uint16_t bufferSize) const override;
             uint16_t Deserialize(const uint8_t buffer[], const uint16_t bufferSize) override;
-            virtual string ToString(const abbreviate abbreviate) const;
+            virtual string ToString(const abbreviate abbreviate, const bool time = true) const;
 
         private:
             uint64_t _timeStamp;
@@ -275,7 +286,7 @@ namespace Core {
             public:
                 uint16_t Serialize(uint8_t buffer[], const uint16_t bufferSize) const override;
                 uint16_t Deserialize(const uint8_t buffer[], const uint16_t bufferSize) override;
-                string ToString(const abbreviate abbreviate) const override;
+                string ToString(const abbreviate abbreviate, const bool time = true) const override;
 
             private:
                 string _fileName;
@@ -312,7 +323,7 @@ namespace Core {
             public:
                 uint16_t Serialize(uint8_t buffer[], const uint16_t bufferSize) const override;
                 uint16_t Deserialize(const uint8_t buffer[], const uint16_t bufferSize) override;
-                string ToString(const abbreviate abbreviate) const override;
+                string ToString(const abbreviate abbreviate, const bool time = true) const override;
 
             private:
                 string _callsign;
@@ -394,7 +405,7 @@ namespace Core {
             public:
                 uint16_t Serialize(uint8_t buffer[], const uint16_t bufferSize) const override;
                 uint16_t Deserialize(const uint8_t buffer[], const uint16_t bufferSize) override;
-                string ToString(const abbreviate abbreviate) const override;
+                string ToString(const abbreviate abbreviate, const bool time = true) const override;
 
             private:
                 pid_t _processId;
@@ -433,6 +444,7 @@ namespace Core {
 
             virtual bool Default(const Metadata& metadata) const = 0;
             virtual OutputMode DefaultOutput(const Metadata& metadata) const = 0;
+            virtual void Announce(const Metadata& metadata) = 0;
             virtual void Push(const MessageInfo& messageInfo, const IEvent* message, OutputMode outputMode) = 0;
         };
 

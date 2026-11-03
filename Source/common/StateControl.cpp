@@ -40,13 +40,17 @@ ENUM_CONVERSION_BEGIN(PluginHost::IStateControl::state)
 namespace PluginHost
 {
 
-    /* static */ const TCHAR* IStateControl::ToString(const IStateControl::state value)
+    /* static */ DEPRECATED const TCHAR* IStateControl::ToString(const IStateControl::state value)
     {
         return (Core::EnumerateType<state>(value).Data());
     }
 
-    /* static */ const TCHAR* IStateControl::ToString(const IStateControl::command value)
+    /* static */ DEPRECATED const TCHAR* IStateControl::ToString(const IStateControl::command value)
     {
+        // There is a bug below that converts IStateControl::command to IStateControl::state string
+        // (i.e. returns "SUSPENDED" rather than "Suspend" and "RESUMED" rather than "Resume").
+        // For backward compatibility reasons this mistake will not be fixed. Both of these ToString()
+        // methods have been marked as deprecated. New code should use Core::EnumToCString() instead.
         return (Core::EnumerateType<state>(value).Data());
     }
 }

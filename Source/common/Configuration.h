@@ -185,7 +185,7 @@ namespace Plugin {
                     if (error.IsSet() == true) {
                         SYSLOG(Logging::ParsingError, (_T("Parsing failed with %s"), ErrorDisplayMessage(error.Value()).c_str()));
                     }
-                    *this = settings;
+                    *this = std::move(settings);
 
                     if (Locator.Value().empty() == true) {
                         Locator = info->Locator();
@@ -503,12 +503,13 @@ namespace Plugin {
         }
 
         explicit operator Exchange::Controller::IMetadata::Data::Service() const { 
-            Exchange::Controller::IMetadata::Data::Service result;
+            Exchange::Controller::IMetadata::Data::Service result {};
 
             result.Callsign = Callsign;
             result.Locator = Locator;
             result.ClassName = ClassName;
             result.StartMode = static_cast<PluginHost::IShell::startmode>(StartMode.Value());
+            result.Resumed = Resumed;
             result.Configuration = Configuration;
 
             if (Communicator.IsSet() == true) {

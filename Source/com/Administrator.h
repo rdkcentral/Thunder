@@ -33,10 +33,14 @@ namespace ProxyStub {
 
 namespace RPC {
 
+#ifndef COMRPC_TIMEOUT
+#define COMRPC_TIMEOUT 3000
+#endif
+
 #ifdef __DEBUG__
     enum { CommunicationTimeOut = Core::infinite }; // Time in ms. Forever
 #else
-    enum { CommunicationTimeOut = 3000 }; // Time in ms. 3 Seconds
+    enum { CommunicationTimeOut = COMRPC_TIMEOUT }; // Time in ms.
 #endif
     enum { CommunicationBufferSize = 8120 }; // 8K :-)
 
@@ -127,8 +131,6 @@ namespace RPC {
 
             ProxyStub::UnknownProxy* CreateProxy(const Core::ProxyType<Core::IPCChannel>& channel, const Core::instance_id& implementation, const bool remoteRefCounted) override
             {
-                // coverity[RESOURCE_LEAK] - Ownership transfers to caller; lifetime managed by
-                // Thunder ref-counting (AddRef/Release), not RAII.
                 return (*(new PROXY(channel, implementation, remoteRefCounted)));
             }
         };
@@ -205,8 +207,6 @@ namespace RPC {
         template <typename ACTUALINTERFACE, typename PROXY, typename STUB>
         void Announce(const SecureProxyStubType secure = SecureProxyStubType::PROXYSTUBS_SECURITY_NONE)
         {
-            // coverity[RESOURCE_LEAK] - Both allocations are handed to Announce() which takes
-            // ownership; lifetime managed by the stub/proxy registry.
             Announce(ACTUALINTERFACE::ID, new STUB(), new ProxyType<PROXY>(), secure);
         }
 
