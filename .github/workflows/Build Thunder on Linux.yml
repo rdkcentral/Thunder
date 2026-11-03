@@ -10,13 +10,13 @@ concurrency:
 on:
   workflow_dispatch:
   push:
-    branches: ["master"]
+    branches: ["R5_3"]
     paths-ignore:
       - 'doc/**'
       - 'docs/**'
       - 'ReleaseNotes/**'
   pull_request:
-    branches: ["master"]
+    branches: ["R5_3"]
     paths-ignore:
       - 'doc/**'
       - 'docs/**'
@@ -69,11 +69,15 @@ jobs:
 
   ThunderInterfaces:
     needs: Thunder
-    uses: rdkcentral/ThunderInterfaces/.github/workflows/Linux build template.yml@master
+    uses: rdkcentral/ThunderInterfaces/.github/workflows/Linux build template.yml@R5_3
 
   ThunderLibraries:
     needs: Thunder
-    uses: WebPlatformForEmbedded/ThunderLibraries/.github/workflows/Linux build template.yml@main
+    uses: WebPlatformForEmbedded/ThunderLibraries/.github/workflows/Linux build template.yml@R5_3
+
+  ThunderPluginActivator:
+    needs: Thunder
+    uses: rdkcentral/ThunderPluginActivator/.github/workflows/Linux build template.yml@main
 
   ThunderPluginActivator:
     needs: Thunder
@@ -81,7 +85,7 @@ jobs:
 
   ThunderClientLibraries:
     needs: ThunderInterfaces
-    uses: rdkcentral/ThunderClientLibraries/.github/workflows/Linux build template.yml@master
+    uses: rdkcentral/ThunderClientLibraries/.github/workflows/Linux build template.yml@R5_3
 
   ThunderExtensions:
     needs: ThunderInterfaces
@@ -89,8 +93,8 @@ jobs:
 
   ThunderNanoServices:
     needs: ThunderInterfaces
-    uses: rdkcentral/ThunderNanoServices/.github/workflows/Linux build template.yml@master
+    uses: rdkcentral/ThunderNanoServices/.github/workflows/Linux build template.yml@R5_3
 
   ThunderNanoServicesRDK:
     needs: ThunderInterfaces
-    uses: WebPlatformForEmbedded/ThunderNanoServicesRDK/.github/workflows/Linux build template.yml@master
+    uses: WebPlatformForEmbedded/ThunderNanoServicesRDK/.github/workflows/Linux build template.yml@R5_3
