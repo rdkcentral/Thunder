@@ -25,6 +25,8 @@ on:
 jobs:
   Thunder:
     uses: ./.github/workflows/Linux build template.yml
+    with:
+      source-repository: ${{ github.repository }}
 
   Test:
     needs: Thunder

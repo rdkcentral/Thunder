@@ -67,7 +67,7 @@ jobs:
       uses: actions/checkout@v5
       with:
         path: ThunderOnWindows/Thunder
-        repository: ${{github.repository_owner}}/Thunder
+        repository: ${{ github.repository }}
 
     - name: Regex Thunder
       if: contains(github.event.pull_request.body, '[DependsOn=Thunder:')
@@ -83,7 +83,7 @@ jobs:
       uses: actions/checkout@v5
       with:
         path: ThunderOnWindows/Thunder
-        repository: ${{github.repository_owner}}/Thunder
+        repository: ${{ github.repository }}
         ref: ${{steps.thunder.outputs.first_match}}
     
 # ----- ThunderTools -----
@@ -92,7 +92,7 @@ jobs:
       uses: actions/checkout@v5
       with:
         path: ThunderOnWindows/ThunderTools
-        repository: ${{github.repository_owner}}/ThunderTools
+        repository: rdkcentral/ThunderTools
         ref: ${{ steps.release.outputs.ref }}
  
     - name: Regex ThunderTools
@@ -109,7 +109,7 @@ jobs:
       uses: actions/checkout@v5
       with:
         path: ThunderOnWindows/ThunderTools
-        repository: ${{github.repository_owner}}/ThunderTools
+        repository: rdkcentral/ThunderTools
         ref: ${{steps.tools.outputs.first_match}}
 
 # ----- Other checkouts -----
@@ -117,21 +117,21 @@ jobs:
       uses: actions/checkout@v5
       with:
         path: ThunderOnWindows/ThunderClientLibraries
-        repository: ${{github.repository_owner}}/ThunderClientLibraries
+        repository: rdkcentral/ThunderClientLibraries
         ref: ${{ steps.release.outputs.ref }}
 
     - name: Checkout ThunderInterfaces
       uses: actions/checkout@v5
       with:
         path: ThunderOnWindows/ThunderInterfaces
-        repository: ${{github.repository_owner}}/ThunderInterfaces
+        repository: rdkcentral/ThunderInterfaces
         ref: ${{ steps.release.outputs.ref }}
 
     - name: Checkout ThunderNanoServices
       uses: actions/checkout@v5
       with:
         path: ThunderOnWindows/ThunderNanoServices
-        repository: ${{github.repository_owner}}/ThunderNanoServices
+        repository: rdkcentral/ThunderNanoServices
         ref: ${{ steps.release.outputs.ref }}
 
     - name: Checkout ThunderNanoServicesRDK

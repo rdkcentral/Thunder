@@ -25,6 +25,8 @@ on:
 jobs:
   Thunder_MacOS:
     uses: ./.github/workflows/MacOS build template.yml
+    with:
+      source-repository: ${{ github.repository }}
 
   ThunderInterfaces_MacOS:
     needs: Thunder_MacOS
