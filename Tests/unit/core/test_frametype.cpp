@@ -62,3 +62,24 @@ TEST(test_frame, simple_set)
     EXPECT_EQ(obj1.Size(), Size);
     obj1.Clear();
 }
+TEST(test_frame, lock_fixed_buffer)
+{
+    uint8_t data[] = {1, 2, 3, 4, 5, 6};
+    const uint16_t length = sizeof(data);
+    const ::WPEFramework::Core::FrameType<0> frame(data, length, length);
+    const ::WPEFramework::Core::FrameType<0>::Reader reader(frame, 1);
+    const uint8_t* buffer = nullptr;
+
+    uint16_t size = reader.LockFixedBuffer(buffer, 2);
+    EXPECT_EQ(size, 2u);
+    EXPECT_EQ(buffer[0], 2u);
+    EXPECT_EQ(buffer[1], 3u);
+    EXPECT_EQ(reader.Length(), 5u);
+    reader.UnlockBuffer(size);
+    EXPECT_EQ(reader.Length(), 3u);
+
+    size = reader.LockFixedBuffer(buffer, 0);
+    EXPECT_EQ(size, 0u);
+    EXPECT_EQ(reader.Length(), 3u);
+    reader.UnlockBuffer(size);
+}
