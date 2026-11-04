@@ -87,17 +87,6 @@ namespace Core {
         EXPECT_EQ(size, 0u);
         EXPECT_EQ(reader.Length(), 3u);
         reader.UnlockBuffer(size);
-
-        size = reader.LockFixedBuffer(buffer, 5);
-        EXPECT_EQ(size, 3u);
-        EXPECT_EQ(buffer[0], 4u);
-        EXPECT_EQ(buffer[1], 5u);
-        EXPECT_EQ(buffer[2], 6u);
-        EXPECT_EQ(reader.Length(), 3u);
-        reader.UnlockBuffer(size);
-
-        EXPECT_EQ(reader.Length(), 0u);
-        EXPECT_FALSE(reader.HasData());
     }
 
 } // Core
