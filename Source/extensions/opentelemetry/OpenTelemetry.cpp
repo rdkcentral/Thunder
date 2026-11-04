@@ -216,6 +216,7 @@ void OpenTelemetry::Initialize()
                     exporter_opts.url = _tracerendpoint;
                     exporter_opts.content_type = otlp_exporter::HttpRequestContentType::kJson;
                     exporter = otlp_exporter::OtlpHttpExporterFactory::Create(exporter_opts);
+                    printf("\nUsing HTTP exporter_type tracer exporter with URL: %s\n", _tracerendpoint.c_str());
                 }
                 break;  
             default:
@@ -281,6 +282,7 @@ void OpenTelemetry::Initialize()
                 logexporter_opts.url = _loggerendpoint;
                 logexporter_opts.content_type = otlp_exporter::HttpRequestContentType::kJson;
                 logexporter = otlp_exporter::OtlpHttpLogRecordExporterFactory::Create(logexporter_opts);
+                printf("\nUsing HTTP logger exporter with URL: %s\n", _loggerendpoint.c_str());
             } break;
             default:
                 ASSERT(true);
