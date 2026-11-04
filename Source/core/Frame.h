@@ -207,6 +207,15 @@ namespace Core {
             {
                 return (_container == nullptr ? 0 : _container->Size() - _offset);
             }
+            SIZE_CONTEXT LockFixedBuffer(const uint8_t*& buffer, const uint32_t length) const
+            {
+                ASSERT(_container != nullptr);
+                ASSERT(length <= Length());
+
+                buffer = &(_container->operator[](_offset));
+
+                return (length < Length() ? Length() : length);
+            }
             template <typename TYPENAME>
             TYPENAME LockBuffer(const uint8_t*& buffer) const
             {
@@ -215,7 +224,9 @@ namespace Core {
                 ASSERT(_container != nullptr);
 
                 _offset += _container->GetNumber<TYPENAME>(_offset, result);
-                buffer = &(_container->operator[](_offset));
+                ASSERT(result <= Length());
+
+                buffer = (result == 0 ? nullptr : &(_container->operator[](_offset)));
 
                 return (result);
             }
@@ -223,6 +234,7 @@ namespace Core {
             void UnlockBuffer(TYPENAME length) const
             {
                 ASSERT(_container != nullptr);
+                ASSERT((length >= 0) && (static_cast<uint32_t>(length) <= Length()));
 
                 _offset += length;
             }
@@ -295,14 +307,16 @@ namespace Core {
 
                 return (result);
             }
-            const uint8_t* Data() const {
-
+            const uint8_t* Data() const
+            {
                 ASSERT(_container != nullptr);
 
                 return (&(_container->Data()[_offset]));
             }
-            void Forward (const SIZE_CONTEXT skip) {
+            void Forward(const SIZE_CONTEXT skip)
+            {
                 ASSERT(skip <= Length());
+
                 _offset += skip;
             }
             template <typename TYPENAME>
@@ -639,6 +653,21 @@ namespace Core {
             result = Core::ToString(convertedText);
 
             return (static_cast<SIZE_CONTEXT>(Core::RealSize<TYPENAME>() + textLength));
+        }
+
+        template <typename TYPENAME = uint16_t>
+        void GetTextLength(const SIZE_CONTEXT offset, TYPENAME& result) const
+        {
+            ASSERT((offset + Core::RealSize<TYPENAME>()) <= _size);
+            static_assert(Core::RealSize<TYPENAME>() <= sizeof(SIZE_CONTEXT), "Make sure the logic can handle the size (enlarge the SIZE_CONTEXT)");
+
+            GetNumber<TYPENAME>(offset, result);
+
+            ASSERT((result + offset + Core::RealSize<TYPENAME>()) <= _size);
+
+            if (result + offset + Core::RealSize<TYPENAME>() > _size) {
+                result = static_cast<TYPENAME>(_size - (offset + Core::RealSize<TYPENAME>()));
+            }
         }
 
         SIZE_CONTEXT GetNullTerminatedText(const SIZE_CONTEXT offset, string& result) const

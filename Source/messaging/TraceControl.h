@@ -30,16 +30,17 @@
 #define TRACE_DURATION(CODE, ...)
 #define TRACE_DURATION_GLOBAL(CODE, ...)
 
-#else // _THUNDER_PRODUCTION
+#elif defined(__CORE_MESSAGING__)
 
 #define TRACE_CONTROL(CATEGORY) Thunder::Messaging::LocalLifetimeType<CATEGORY, &Thunder::Core::System::MODULE_NAME, Thunder::Core::Messaging::Metadata::type::TRACING>
 
-#define TRACE_ENABLED(CATEGORY) TRACE_CONTROL(CATEGORY)::IsEnabled()
+#define TRACE_ENABLED(CATEGORY) (Thunder::Messaging::MessageUnit::Instance().Targets(TRACE_CONTROL(CATEGORY)::Metadata(), TRACE_CONTROL(CATEGORY)::Routing(), TRACE_CONTROL(CATEGORY)::IsEnabled()).Any())
 
 #define TRACE(CATEGORY, PARAMETERS)                                                     \
     do {                                                                                \
         using __control__ = TRACE_CONTROL(CATEGORY);                                    \
-        if (__control__::IsEnabled() == true) {                                         \
+        const auto __targets__ = Thunder::Messaging::MessageUnit::Instance().Targets(__control__::Metadata(), __control__::Routing(), __control__::IsEnabled()); \
+        if (__targets__.Any() == true) { \
             CATEGORY __data__ PARAMETERS;                                               \
             Thunder::Core::Messaging::MessageInfo __info__(                             \
                 __control__::Metadata(),                                                \
@@ -52,14 +53,15 @@
                 Thunder::Core::ClassNameOnly(typeid(*this).name()).Text()               \
             );                                                                          \
             Thunder::Core::Messaging::TextMessage __message__(__data__.Data());         \
-            Thunder::Messaging::MessageUnit::Instance().Push(__trace__, &__message__);  \
+            Thunder::Messaging::MessageUnit::Instance().Push(__trace__, &__message__, __targets__);  \
         }                                                                               \
     } while(false)
 
 #define TRACE_GLOBAL(CATEGORY, PARAMETERS)                                              \
     do {                                                                                \
         using __control__ = TRACE_CONTROL(CATEGORY);                                    \
-        if (__control__::IsEnabled() == true) {                                         \
+        const auto __targets__ = Thunder::Messaging::MessageUnit::Instance().Targets(__control__::Metadata(), __control__::Routing(), __control__::IsEnabled()); \
+        if (__targets__.Any() == true) { \
             CATEGORY __data__ PARAMETERS;                                               \
             Thunder::Core::Messaging::MessageInfo __info__(                             \
                 __control__::Metadata(),                                                \
@@ -72,7 +74,7 @@
                 __FUNCTION__                                                            \
             );                                                                          \
             Thunder::Core::Messaging::TextMessage __message__(__data__.Data());         \
-            Thunder::Messaging::MessageUnit::Instance().Push(__trace__, &__message__);  \
+            Thunder::Messaging::MessageUnit::Instance().Push(__trace__, &__message__, __targets__);  \
         }                                                                               \
     } while(false)
 
@@ -90,4 +92,27 @@
         TRACE_GLOBAL(Thunder::Trace::Duration, (start, ##__VA_ARGS__));                 \
     } while(false)
 
-#endif // _THUNDER_PRODUCTION
+#else
+
+#define TRACE_CONTROL(CATEGORY)
+
+#define TRACE_ENABLED(CATEGORY) true
+
+#define TRACE(CATEGORY, PARAMETERS)                                                                                \
+    do {                                                                                                           \
+        CATEGORY __data__ PARAMETERS;                                                                              \
+        TRACE_L1("%s: %s", Thunder::Core::ClassNameOnly(typeid(CATEGORY).name()).Text().c_str(), __data__.Data()); \
+    } while(false)
+
+#define TRACE_GLOBAL(CATEGORY, PARAMETERS) TRACE(CATEGORY, PARAMETERS)
+
+#define TRACE_DURATION(CODE, ...)                                \
+    do {                                                         \
+        Thunder::Core::Time start = Thunder::Core::Time::Now();  \
+        { CODE }                                                 \
+        TRACE(Thunder::Trace::Duration, (start, ##__VA_ARGS__)); \
+    } while(false)
+
+#define TRACE_DURATION_GLOBAL(CODE, ...) TRACE_DURATION(CODE, ##__VA_ARGS__)
+
+#endif // __CORE_MESSAGING__

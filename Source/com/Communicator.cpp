@@ -185,6 +185,7 @@ namespace RPC {
                 if (index->second->operator==(parent) == true) {
                     // Forcefully kill this ID.
                     index->second->Destruct();
+                    index->second->Release();
                     index = _destructors.erase(index);
                 }
                 else {
@@ -309,7 +310,7 @@ namespace RPC {
                     Core::Library library(index.Current().c_str());
 
                     if (library.IsLoaded() == true) {
-                        processProxyStubs.push_back(library);
+                        processProxyStubs.push_back(std::move(library));
                     }
                 }
             }
@@ -520,6 +521,7 @@ namespace RPC {
 
         if ((result == Core::ERROR_NONE) && (_announceEvent.Lock(waitTime) != Core::ERROR_NONE)) {
             result = Core::ERROR_OPENING_FAILED;
+            BaseClass::Close(0);
         }
 
         return (result);
@@ -536,6 +538,7 @@ namespace RPC {
 
         if ((result == Core::ERROR_NONE) && (_announceEvent.Lock(waitTime) != Core::ERROR_NONE)) {
             result = Core::ERROR_OPENING_FAILED;
+            BaseClass::Close(0);
         }
 
         return (result);
@@ -554,6 +557,7 @@ namespace RPC {
 
         if ((result == Core::ERROR_NONE) && (_announceEvent.Lock(waitTime) != Core::ERROR_NONE)) {
             result = Core::ERROR_OPENING_FAILED;
+            BaseClass::Close(0);
         }
 
         return (result);
@@ -600,7 +604,9 @@ namespace RPC {
         if (announceMessage->Response().IsSet() == true) {
             string jsonMessagingCategories(announceMessage->Response().MessagingCategories());
 
+#ifdef __CORE_MESSAGING__
             Assertion::AssertionUnit::Instance();
+#endif
 
 #if defined(WARNING_REPORTING_ENABLED)
             string jsonDefaultWarningCategories(announceMessage->Response().WarningReportingCategories());

@@ -26,6 +26,7 @@
 #include <core/core.h>
 #include <cryptalgo/cryptalgo.h>
 #include <plugins/plugins.h>
+#include <common/common.h>
 #include <websocket/websocket.h>
 #include <messaging/messaging.h>
 

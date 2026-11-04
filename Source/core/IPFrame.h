@@ -71,7 +71,7 @@ namespace Core {
             return (&(_buffer[0]));
         }
         void DestinationMAC(const uint8_t MACAddress[]) {
-            memcpy(&(_buffer[0]), &MACAddress, MACSize);
+            memcpy(&(_buffer[0]), MACAddress, MACSize);
         }
         uint8_t* Frame() {
             return (SIZE > 0 ? &(_buffer[HeaderSize]) : nullptr);

@@ -175,9 +175,9 @@ namespace Core {
             , _flags(move._flags)
             , _mySequence(move._mySequence)
         {
-            _type = NLMSG_DONE;
-            _flags = 0;
-            _mySequence = ~0;    
+            move._type = NLMSG_DONE;
+            move._flags = 0;
+            move._mySequence = ~0;    
         }
         virtual ~Netlink() = default;
 

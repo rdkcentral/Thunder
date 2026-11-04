@@ -95,9 +95,71 @@ The following JSON data type representations are available:
         * `Core::JSON::OctSInt32` - represent a base-8 integer of width uint32_t
 * `Core::JSON::Float`
 * `Core::JSON::Double`
-* `Core::JSON::ArrayType<T>` - An array containing objects of type `T`, where T is either a primative JSON type (e.g. Core::JSON::String) or a Core::JSON::Container object
-* `Core::JSON::EnumType<T>` - A string that will be converted to a C++ enum
+* `Core::JSON::ArrayType<T>` - An array containing objects of type `T`, where T is either a primitive JSON type (e.g. Core::JSON::String) or a Core::JSON::Container object.
+    * Complexity summary:
+        * `Add()` (append): $O(1)$
+        * `Insert(index)`: worst-case $O(n)$; inserts a default-constructed element before `index` and returns a reference to it
+        * `Insert(index, element)`: worst-case $O(n)$; inserts `element` before `index` and returns a reference to the inserted copy
+        * `Insert(Length(), ...)`: equivalent to append in the current implementation
+        * `Remove(index)`: $O(n)$ overall; erases the element at `index` and returns a pointer to the next element (or `nullptr` if the tail was removed)
+    * For large arrays, avoid repeated index-based mutation (`Insert()`/`Remove()`) in tight loops; cumulative cost can become quadratic.
+    * `Insert(Length(), element)` is functionally equivalent to append; use `Add()` when append intent should be explicit.
+    * Out-of-range access for `operator[]`, `Insert()`, and `Remove()` follows the same debug-assert / release-undefined contract.
+    * These mutation helpers are not thread-safe; callers must hold any required lock.
+    * `Length()` reports stored element count. Serialisation includes only elements whose `IsSet()` is true. For wrapper types where constructor-based values may remain unset (for example `Core::JSON::String`, `Core::JSON::NumberType<>`, `Core::JSON::Float`/`Core::JSON::Double`, and `Core::JSON::Boolean`), assign through `operator=` (or otherwise ensure `IsSet()` is true) before calling `Insert()`.
 
+#### ArrayType mutation examples
+
+`Insert(index)` and `Insert(index, element)` insert *before* `index` and return a reference to the inserted element.
+
+```cpp
+Thunder::Core::JSON::ArrayType<Thunder::Core::JSON::String> values;
+Thunder::Core::JSON::String a;
+Thunder::Core::JSON::String c;
+Thunder::Core::JSON::String e;
+
+a = _T("A");
+c = _T("C");
+e = _T("E");
+values.Add() = _T("B");
+values.Add() = _T("D");
+
+// Insert at front (index == 0):
+values.Insert(0, a);
+// values == ["A", "B", "D"]
+
+// Insert in middle:
+values.Insert(2, c);
+// values == ["A", "B", "C", "D"]
+
+// Insert at end (index == Length()):
+values.Insert(values.Length(), e);
+// values == ["A", "B", "C", "D", "E"]
+```
+
+`Remove(index)` erases the element at `index`, returns a pointer to the next element (or `nullptr` when the tail is removed), and shifts later elements down.
+
+```cpp
+Thunder::Core::JSON::ArrayType<Thunder::Core::JSON::String> values;
+values.Add() = _T("A");
+values.Add() = _T("B");
+values.Add() = _T("C");
+values.Add() = _T("D");
+values.Add() = _T("E");
+
+// Remove from front:
+values.Remove(0);
+// values == ["B", "C", "D", "E"]
+
+// Remove from middle:
+values.Remove(1);
+// values == ["B", "D", "E"]
+
+// Remove from end:
+values.Remove(values.Length() - 1);
+// values == ["B", "D"]
+```
+* `Core::JSON::EnumType<T>` - A string that will be converted to a C++ enum
 #### Enums
 
 Thunder supports deserialising JSON strings directly to a C++ enum. This is useful when you need to restrict the possible values of a string to a known set.
@@ -246,6 +308,57 @@ if (error.IsSet()) {
 ```
 
 
+
+#### From Object
+
+Populate a Container from another `IElement` (typed Container, VariantContainer, etc.) without manually calling `ToString()`/`FromString()` yourself (internally it serialises to a temporary string).
+
+`FromObject()` is not thread-safe. If the source or destination object can be accessed from multiple threads, hold the required lock before calling it.
+
+```c++
+ // Example typed container used below
+ struct DeviceInfo : public Core::JSON::Container {
+     DeviceInfo()
+     {
+         Add(_T("model"), &Model);
+         Add(_T("firmware"), &Firmware);
+     }
+     Core::JSON::String Model;
+     Core::JSON::String Firmware;
+ };
+
+// Typed Container populated from a JsonObject
+JsonObject source;
+source["model"] = _T("ES1-B");
+source["firmware"] = _T("R5.0");
+source["extra"] = _T("ignored");  // not registered in DeviceInfo
+
+DeviceInfo device;
+if (device.FromObject(source)) {
+    printf("Model: %s\n", device.Model.Value().c_str());
+    printf("Firmware: %s\n", device.Firmware.Value().c_str());
+    // "extra" was silently skipped — device has no slot for it
+}
+```
+
+```c++
+// JsonObject populated from a typed Container
+DeviceInfo source;
+source.Model = "ES1-A";
+source.Firmware = "R4.4.7";
+
+JsonObject target;
+target["old_key"] = "will-be-gone";
+
+if (target.FromObject(source)) {
+    // target now has "model" and "firmware" only — "old_key" was cleared
+    printf("Model: %s\n", target["model"].String().c_str());
+}
+```
+
+On a typed Container, only pre-registered fields are updated and unknown keys in source are silently skipped. On a VariantContainer, all keys from source are imported and previous content is discarded.
+
+ Returns `false` if the source serialises to a JSON value that cannot be deserialised into the destination container (e.g. a scalar or array; for typed containers, an empty object `{}` is also rejected). Only fields with `IsSet() == true` in the source are transferred.
 
 ### Serialise
 

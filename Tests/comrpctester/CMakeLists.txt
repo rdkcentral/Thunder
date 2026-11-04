@@ -24,7 +24,7 @@ target_link_libraries(comrpctester
         )
 
 set_target_properties(comrpctester PROPERTIES
-        CXX_STANDARD 11
+        CXX_STANDARD ${CXX_STD}
         CXX_STANDARD_REQUIRED YES
         )
 

@@ -280,10 +280,11 @@ namespace Core {
 
             FILE* fp = fopen(buffer, _T("r"));
             if (fp) {
-                int number;
-                fscanf(fp, "%d", &number);
+                int number {};
+                if (fscanf(fp, "%d", &number) == 1) {
+                    result = static_cast<int8_t>(number);
+                }
                 fclose(fp);
-                result = static_cast<uint8_t>(number);
             }
             return (result);
 #endif

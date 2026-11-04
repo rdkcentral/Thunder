@@ -126,8 +126,9 @@ namespace Core {
 
                 void* newBuffer = (::MapViewOfFile(m_MemoryMappedFile, flags, 0, 0, mapSize));
 
-                // Seems like everything succeeded. Lets map it.
-                UpdateCache(0, static_cast<uint8_t*>(newBuffer), requiredSize, mapSize);
+                if (newBuffer != nullptr) {
+                    UpdateCache(0, static_cast<uint8_t*>(newBuffer), requiredSize, mapSize);
+                }
             }
         }
     }
@@ -166,7 +167,7 @@ namespace Core {
                 }
             }
 
-            if (m_MemoryMappedFile == INVALID_HANDLE_VALUE) {
+            if (m_MemoryMappedFile != INVALID_HANDLE_VALUE) {
                 DWORD flags = ((m_Flags & File::USER_READ) != 0 ? FILE_MAP_READ : 0) | ((m_Flags & File::USER_WRITE) != 0 ? FILE_MAP_WRITE : 0);
 
                 void* newBuffer = ::MapViewOfFileEx(m_MemoryMappedFile, flags, 0, 0, static_cast<SIZE_T>(requestedSize), Buffer());
@@ -203,8 +204,11 @@ namespace Core {
     void DataElementFile::OpenMemoryMappedFile(uint32_t requiredSize)
     {
         if (requiredSize > 0) {
-            int pageSize = getpagesize();
-            uint64_t mapSize = ((((requiredSize - 1) / pageSize) + 1) * pageSize);
+            const long pageSize = sysconf(_SC_PAGESIZE);
+            ASSERT(pageSize > 0);
+
+            const uint64_t ullPageSize = static_cast<uint64_t>(pageSize);
+            uint64_t mapSize = ((static_cast<uint64_t>(requiredSize) + ullPageSize - 1) / ullPageSize) * ullPageSize;
             int flags = (((m_Flags & File::USER_READ) != 0 ? PROT_READ : 0) | ((m_Flags & File::USER_WRITE) != 0 ? PROT_WRITE : 0));
 
             // Open the file in MM mode as one element.

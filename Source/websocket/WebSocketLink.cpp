@@ -238,10 +238,11 @@ namespace Web {
                         if (bytesToMove == 126) {
                             bytesToMove = ((dataFrame[2] << 8) + dataFrame[3]);
                         } else if (bytesToMove == 127) {
-                            bytesToMove = dataFrame[9];
-                            for (int i=8; i>=2; i--) bytesToMove = (bytesToMove << 8) + dataFrame[i];
+                            bytesToMove = 0;
+                            for (uint8_t i = 2; i <= 9; ++i) {
+                                bytesToMove = (bytesToMove << 8) | static_cast<uint64_t>(dataFrame[i]);
+                            }
                         }
-
                         // We might not have the full body yet...
                         if ((actualHeader + bytesToMove) > receivedSize) {
                             _pendingReceiveBytes = static_cast<uint32_t>(actualHeader + bytesToMove - receivedSize);
@@ -249,7 +250,7 @@ namespace Web {
                             _progressInfo &= (~0x20);
                         }
 
-                        receivedSize = static_cast<uint32_t>(bytesToMove);
+                        receivedSize = static_cast<uint16_t>(bytesToMove);
 
                         // If it is masked, we need to onvert..
                         if ((dataFrame[1] & MASKING_FRAME) != 0) {

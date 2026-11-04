@@ -23,6 +23,7 @@
 #include "core/Sync.h"
 #include <atomic>
 #include <chrono>
+#include <memory>
 
 using namespace Thunder;
 using namespace Thunder::Core;
@@ -272,7 +273,7 @@ TEST_F(WorkerPoolSelfResubmitTest, MultipleConcurrentSelfResubmittingJobs)
     std::vector<std::unique_ptr<ConcurrentResubmittingJob>> jobs;
 
     for (uint32_t i = 0; i < NUM_JOBS; ++i) {
-        jobs.push_back(std::make_unique<ConcurrentResubmittingJob>(i, EXECUTIONS_PER_JOB));
+        jobs.push_back(std::unique_ptr<ConcurrentResubmittingJob>(new ConcurrentResubmittingJob(i, EXECUTIONS_PER_JOB)));
     }
 
     // Start all jobs
@@ -428,7 +429,7 @@ TEST_F(WorkerPoolSelfResubmitTest, NoDeadlockUnderLoad)
     std::vector<std::unique_ptr<LoadTestJob>> jobs;
 
     for (uint32_t i = 0; i < NUM_JOBS; ++i) {
-        jobs.push_back(std::make_unique<LoadTestJob>(EXECUTIONS_PER_JOB));
+        jobs.push_back(std::unique_ptr<LoadTestJob>(new LoadTestJob(EXECUTIONS_PER_JOB)));
     }
 
     // Start all jobs simultaneously

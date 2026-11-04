@@ -71,7 +71,7 @@ namespace Core {
         };
 
         template <const TCHAR** MODULENAME>
-        struct CallsignAccess {
+        struct EXTERNAL_HIDDEN CallsignAccess {
             static const TCHAR* Callsign() {
                 if (_moduleName.empty()) {
                     _moduleName = (string(_T("???  (Module:")) + *MODULENAME + _T(')'));

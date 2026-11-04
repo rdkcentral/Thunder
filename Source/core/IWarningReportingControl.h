@@ -26,10 +26,13 @@ namespace Thunder {
 
 namespace WarningReporting { 
 
+    using OutputTargets = Core::Messaging::OutputTargets;
+
     struct EXTERNAL IWarningEvent { 
 
         virtual ~IWarningEvent() = default;
         virtual const char* Category() const = 0;
+        virtual Core::Messaging::OutputMode Routing() const { return (Core::Messaging::OutputMode::HANDLER); }
         virtual uint16_t Serialize(uint8_t[], const uint16_t) const = 0;
         virtual uint16_t Deserialize(const uint8_t[], const uint16_t) = 0;
         virtual void ToString(string& text) const = 0;
@@ -38,14 +41,26 @@ namespace WarningReporting {
 
     struct EXTERNAL IWarningReportingUnit {
 
+        #ifdef __CORE_MESSAGING__
         struct EXTERNAL IWarningReportingControl : public Core::Messaging::IControl {
+        #else
+        struct EXTERNAL IWarningReportingControl {
+            virtual ~IWarningReportingControl() = default;
+            virtual void Enable(bool enable) = 0;
+            virtual bool Enable() const = 0;
+            virtual void Routing(Core::Messaging::OutputMode routing) = 0;
+            virtual Core::Messaging::OutputMode Routing() const = 0;
+            virtual void Destroy() = 0;
+        #endif
+            virtual const char* Category() const = 0;
             virtual void Exclude(const string& toExclude) = 0;
             virtual void Configure(const string& setting) = 0;
             virtual IWarningEvent* Clone() const = 0;
         };
 
         virtual ~IWarningReportingUnit() = default;
-        virtual void ReportWarningEvent(const char identifier[], const IWarningEvent& information) = 0;
+        virtual OutputTargets Targets(const char category[], Core::Messaging::OutputMode routing, bool enabled) const = 0;
+        virtual void ReportWarningEvent(const char identifier[], const IWarningEvent& information, const OutputTargets& targets) = 0;
         virtual void FetchCategoryInformation(const string& category, bool& outIsDefaultCategory, bool& outIsEnabled, string& outExcluded, string& outConfiguration) const = 0;
         virtual void AddToCategoryList(IWarningReportingControl& Category) = 0;
         virtual void RemoveFromCategoryList(IWarningReportingControl& Category) = 0;

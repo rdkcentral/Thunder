@@ -22,7 +22,6 @@
   "messaging": {
     "port": 63000,
     "logging": {
-      "abbreviated": true,
       "settings": [
         {
           "category": "Notification",

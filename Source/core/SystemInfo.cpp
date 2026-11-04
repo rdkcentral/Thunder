@@ -69,6 +69,7 @@ namespace Thunder {
 namespace Core {
 
     /* static */ SystemInfo SystemInfo::_systemInfo;
+    static CriticalSection _lock;
 
     static string ConstructUniqueId(
         const TCHAR DeviceId[],
@@ -146,7 +147,7 @@ namespace Core {
 #ifdef __APPLE__
         m_uptime = 0;
         m_totalram = 0;
-        m_pageSize = 0;
+        m_pageSize = static_cast<uint32_t>(sysconf(_SC_PAGESIZE));
         m_freeram = 0;
         m_totalswap=0;
         m_freeswap=0;
@@ -161,12 +162,13 @@ namespace Core {
         struct sysinfo info;
         sysinfo(&info);
 
+        const uint64_t unit = (info.mem_unit != 0) ? info.mem_unit : 1;
         m_uptime = info.uptime;
-        m_totalram = info.totalram;
+        m_totalram = info.totalram * unit;
         m_pageSize = static_cast<uint32_t>(sysconf(_SC_PAGESIZE));
-        m_freeram = info.freeram;
-        m_totalswap = info.totalswap;
-        m_freeswap = info.freeswap;
+        m_freeram = info.freeram * unit;
+        m_totalswap = info.totalswap * unit;
+        m_freeswap = info.freeswap * unit;
         m_cpuloadavg[0]=info.loads[0];
         m_cpuloadavg[1]=info.loads[1];
         m_cpuloadavg[2]=info.loads[2];
@@ -236,6 +238,7 @@ namespace Core {
         m_prevCpuIdleTicks = temoTotalIdleTime;
 
         m_cpuload = ((totalSystemTime + totalUserTime) * 100) / (totalSystemTime + totalUserTime + totalIdleTime);
+
 #elif defined(__LINUX__)
 
         static uint64_t previousTickCount, previousIdleTime;
@@ -244,41 +247,54 @@ namespace Core {
         if (difftime(time(nullptr), m_lastUpdateCpuStats) >= RefreshInterval) {
             FILE* input = fopen(_T("/proc/stat"), _T("r"));
 
-            ASSERT(input && "ERROR: Unable to open /proc/stat");
+            if (input != nullptr) {
+                // First line of /proc/stat contains the overall CPU information
+                uint64_t CpuFields[4] = { 0 };
+                int numFields = 0;
 
-            // First line of /proc/stat contains the overall CPU information
-            uint64_t CpuFields[4];
+                numFields = fscanf(input, _T("cpu %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64),
+                    &CpuFields[0], &CpuFields[1],
+                    &CpuFields[2], &CpuFields[3]);
 
-            int numFields = fscanf(input, _T("cpu %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64),
-                &CpuFields[0], &CpuFields[1],
-                &CpuFields[2], &CpuFields[3]);
+                fclose(input);
 
-            fclose(input);
+                if (numFields == 4) {
+                    uint64_t CurrentIdleTime = CpuFields[3]; // 3 is index of idle ticks time
+                    uint64_t CurrentTickCount{};
 
-            ASSERT((numFields >= 4) && "ERROR: Read invalid CPU information.");
+                    for (int i = 0; i < 4; ++i) {
+                        CurrentTickCount += CpuFields[i];
+                    }
 
-            uint64_t CurrentIdleTime = CpuFields[3]; // 3 is index of idle ticks time
-            uint64_t CurrentTickCount = 0L;
+                    uint64_t DeltaTickCount = (CurrentTickCount - previousTickCount);
 
-            for (int i = 0; i < numFields && i < 10; ++i) {
-                CurrentTickCount += CpuFields[i];
+                    if (DeltaTickCount != 0) { 
+                        uint64_t DeltaIdleTime = (CurrentIdleTime - previousIdleTime);
+                        uint64_t ActiveTicks = (DeltaTickCount > DeltaIdleTime) ? (DeltaTickCount - DeltaIdleTime) : 0;
+                        SystemInfo::m_cpuload = (ActiveTicks * 100) / DeltaTickCount;
+                    }
+                    else {
+                        TRACE_L1("WARNING: CPU metrics sampled too quickly, skipping interval");
+                        SystemInfo::m_cpuload = 0;
+                    }
+
+                    // Store current tick statistics for next cycle
+                    previousTickCount = CurrentTickCount;
+                    previousIdleTime = CurrentIdleTime;
+                }
+                else {
+                    TRACE_L1("ERROR: Read invalid CPU information");
+                    SystemInfo::m_cpuload = 0;
+                }
             }
-            uint64_t DeltaTickCount = CurrentTickCount - previousTickCount;
-            uint64_t DeltaIdleTime = CurrentIdleTime - previousIdleTime;
-
-            if (DeltaTickCount == 0)
+            else {
+                TRACE_L1("ERROR: Unable to open /proc/stat");
                 SystemInfo::m_cpuload = 0;
-            else
-                SystemInfo::m_cpuload = ((DeltaTickCount - DeltaIdleTime) * 100) / DeltaTickCount;
-
-            // Store current tick statistics for next cycle
-            previousTickCount = CurrentTickCount;
-            previousIdleTime = CurrentIdleTime;
+            }
 
             // Store last update time value
             time(&m_lastUpdateCpuStats);
         }
-
 #endif
     }
 
@@ -315,11 +331,12 @@ namespace Core {
         struct sysinfo info;
         sysinfo(&info);
 
+        const uint64_t unit = (info.mem_unit != 0) ? info.mem_unit : 1;
         m_uptime = info.uptime;
-        m_freeram = info.freeram;
-        m_totalram = info.totalram;
-        m_totalswap = info.totalswap;
-        m_freeswap = info.freeswap;
+        m_freeram = info.freeram * unit;
+        m_totalram = info.totalram * unit;
+        m_totalswap = info.totalswap * unit;
+        m_freeswap = info.freeswap * unit;
         m_cpuloadavg[0] = info.loads[0];
         m_cpuloadavg[1] = info.loads[1];
         m_cpuloadavg[2] = info.loads[2];
@@ -366,6 +383,7 @@ namespace Core {
     /* static */ bool SystemInfo::GetEnvironment(const string& name, string& value)
     {
 #ifdef __LINUX__
+        SafeSyncType<CriticalSection> scopedLock(_lock);
         TCHAR* text = ::getenv(name.c_str());
 
         if (text != nullptr) {
@@ -377,17 +395,24 @@ namespace Core {
         return (text != nullptr);
 #else
         TCHAR buffer[1024];
-        DWORD bytes = GetEnvironmentVariable(name.c_str(), buffer, sizeof(buffer));
+        const DWORD capacity = sizeof(buffer) / sizeof(buffer[0]);
 
-        value = string(buffer, bytes);
+        DWORD characters = ::GetEnvironmentVariable(name.c_str(), buffer, capacity);
 
-        return (bytes > 0);
+        ASSERT(characters < capacity);
+        if (characters > 0) {
+            value.assign(buffer, characters);
+        } else {
+            value.clear();
+        }
+        return (characters > 0);
 #endif
     }
 
     /* static */ bool SystemInfo::SetEnvironment(const string& name, const TCHAR* value, const bool forced)
     {
         bool result = false;
+        SafeSyncType<CriticalSection> scopedLock(_lock);
 #ifdef __LINUX__
         if ((forced == true) || (::getenv(name.c_str()) == nullptr)) {
             if (value != nullptr) {
@@ -514,7 +539,7 @@ namespace Core {
                     // reboot process did not exit sanely
                     result = Core::ERROR_UNAVAILABLE;
                 }
-                if (WEXITSTATUS(status) != 0) {
+                else if (WEXITSTATUS(status) != 0) {
                     // reboot process exited with error;
                     // most likely the user lacks the required privileges
                     result = Core::ERROR_PRIVILIGED_REQUEST;

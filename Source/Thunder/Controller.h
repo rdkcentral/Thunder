@@ -53,6 +53,7 @@ namespace Plugin {
 
         class Sink 
             : public PluginHost::IPlugin::INotification
+            , public PluginHost::IPlugin::INotificationExtended
             , public PluginHost::ISubSystem::INotification {
         private:
             class Job {
@@ -109,9 +110,18 @@ namespace Plugin {
             {
                 _parent.NotifyStateChange(callsign, PluginHost::IShell::UNAVAILABLE, plugin->Reason());
             }
+            void Hibernated(const string& callsign, PluginHost::IShell* plugin) override
+            {
+                _parent.NotifyStateChange(callsign, PluginHost::IShell::HIBERNATED, plugin->Reason());
+            }
+            void Destroyed(const string& callsign, PluginHost::IShell* plugin) override
+            {
+                _parent.NotifyStateChange(callsign, PluginHost::IShell::DESTROYED, plugin->Reason());
+            }
 
             BEGIN_INTERFACE_MAP(Sink)
                 INTERFACE_ENTRY(PluginHost::IPlugin::INotification)
+                INTERFACE_ENTRY(PluginHost::IPlugin::INotificationExtended)
             END_INTERFACE_MAP
 
         private:
@@ -171,7 +181,7 @@ namespace Plugin {
         public:
             ProbeConfig Probe;
             Core::JSON::ArrayType<Core::JSON::String> Resumes;
-            Core::JSON::ArrayType<Core::JSON::EnumType<PluginHost::ISubSystem::subsystem>> SubSystems;
+            Core::JSON::ArrayType<Core::JSON::EnumType<Configuration::subsystem>> SubSystems;
             Core::JSON::Boolean Ui;
         };
 
@@ -311,9 +321,12 @@ namespace Plugin {
         Core::hresult DiscoveryResults(IDiscovery::Data::IDiscoveryResultsIterator*& results) const override;
 
         // IConfiguration overrides
-        Core::hresult Persist() override;
+        Core::hresult Persist(const Core::OptionalType<string>& callsign) override;
+        Core::hresult Restore(const Core::OptionalType<string>& callsign) override;
         Core::hresult Configuration(const Core::OptionalType<string>& callsign, string& configuration) const override;
         Core::hresult Configuration(const string& callsign, const string& configuration) override;
+        Core::hresult Attribute(const Core::OptionalType<IConfiguration::attribute>& attribute, string& value) const override;
+        Core::hresult Attribute(const IConfiguration::attribute attribute, const string& value) override;
 
         // ILifeTime overrides
         Core::hresult Register(Exchange::Controller::ILifeTime::INotification* notification, const Core::OptionalType<string>& callsign = {}) override;

@@ -93,19 +93,19 @@ namespace Plugin {
     uint16_t Probe::WebTransform::Transform(Web::Request::Deserializer& deserializer, uint8_t* dataFrame, const uint16_t maxSendSize)
     {
         uint16_t index = 0;
-        const uint8_t* checker = dataFrame;
+        uint16_t offset = 0;
 
         // This is a UDP service, so a message should be complete. If the first keyword is not a keyword we
         // expect, ignore the full message, it is not a m-search package, it does not require any further
         // processing.
         // First skip the white sace, if applicable...
-        while (isspace(*checker)) {
-            checker++;
+        while ((offset < maxSendSize) && (::isspace(static_cast<unsigned char>(dataFrame[offset])) != 0)) {
+            offset++;
         }
 
         // Now see if the first keyword is "M-SEARCH"
-        while ((index < _keywordLength) && (toupper(*checker) == Web::Request::MSEARCH[index])) {
-            checker++;
+        while ((offset < maxSendSize) && (index < _keywordLength) && (::toupper(static_cast<unsigned char>(dataFrame[offset])) == Web::Request::MSEARCH[index])) {
+            offset++;
             index++;
         }
 
@@ -160,7 +160,7 @@ namespace Plugin {
                 newEntry._destination = sourceNode;
                 newEntry._requestTime = Core::NumberType<uint64_t>(body.c_str(), static_cast<uint32_t>(body.length())).Value();
                 newEntry._incomingTime = incomingTime;
-                _destinations.push_back(newEntry);
+                _destinations.push_back(std::move(newEntry));
                 TRACE(Discovery, (_T("Valid discovery request. Responding to"), sourceNode));
                 // remember the NodeId where this comes from.
                 if (_destinations.size() == 1) {

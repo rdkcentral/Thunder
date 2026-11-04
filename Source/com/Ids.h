@@ -71,6 +71,7 @@ namespace RPC {
         ID_COMPOSIT_PLUGIN                         = (ID_OFFSET_INTERNAL + 0x003B),
         ID_COMPOSIT_PLUGIN_CALLBACK                = (ID_OFFSET_INTERNAL + 0x003C),
         ID_DISPATCHER_CALLBACK                     = (ID_OFFSET_INTERNAL + 0x003D),
+        ID_PLUGIN_NOTIFICATION_EXTENDED            = (ID_OFFSET_INTERNAL + 0x003E),
 
         ID_SHELL                                   = (ID_OFFSET_INTERNAL + 0x0040),
         ID_SHELL_COMLINK                           = (ID_OFFSET_INTERNAL + 0x0041),
@@ -94,9 +95,10 @@ namespace RPC {
         ID_REMOTE_INSTANTIATION                    = (ID_OFFSET_INTERNAL + 0x0070),
         ID_SYSTEM_METADATA                         = (ID_OFFSET_INTERNAL + 0x0071),
 
-        ID_EXTERNAL_INTERFACE_OFFSET               = (ID_OFFSET_INTERNAL + 0x0080),
+        ID_EXTENSIONS_INTERFACE_OFFSET             = (ID_OFFSET_INTERNAL + 0x0080),
+        ID_EXTERNAL_INTERFACE_OFFSET               = (ID_OFFSET_INTERNAL + 0x1000),
         ID_EXTERNAL_QA_INTERFACE_OFFSET            = (0xA000),
-	    ID_EXTERNAL_EXAMPLE_INTERFACE_OFFSET       = (0xB000),
+        ID_EXTERNAL_EXAMPLE_INTERFACE_OFFSET       = (0xB000),
         ID_EXTERNAL_CC_INTERFACE_OFFSET            = (0xCC00) // ends on 0xDFFF
     };
 }

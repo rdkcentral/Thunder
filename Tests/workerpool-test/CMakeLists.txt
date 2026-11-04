@@ -3,7 +3,10 @@ add_executable(WorkerPoolTest
     Module.cpp
     WorkerPoolTest.cpp
 )
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pthread")
+
+target_compile_options(WorkerPoolTest PRIVATE -pthread)
+target_link_options(WorkerPoolTest PRIVATE -pthread)
+set_target_properties(WorkerPoolTest PROPERTIES CXX_STANDARD 11 CXX_STANDARD_REQUIRED YES)
 
 target_link_libraries(WorkerPoolTest
     PRIVATE

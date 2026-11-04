@@ -80,19 +80,19 @@ namespace Thunder {
                 // This needs to be atomic. Make sure it is.
                 _adminLock.Lock();
 
-                if (_state != DISABLED) {
-                    typename std::list<CONTEXT>::iterator
-                        index
-                        = std::find(_queue.begin(), _queue.end(), a_Entry);
+                typename std::list<CONTEXT>::iterator
+                    index
+                    = std::find(_queue.begin(), _queue.end(), a_Entry);
 
-                    if (index != _queue.end()) {
-                        // Yep, we found it, remove it
-                        l_Removed = true;
-                        _queue.erase(index);
+                if (index != _queue.end()) {
+                    // Yep, we found it, remove it
+                    l_Removed = true;
+                    _queue.erase(index);
+
+                    if (_state != DISABLED) {
+                        // Determine the new state.
+                        _state.SetState(IsEmpty() ? EMPTY : ENTRIES);
                     }
-
-                    // Determine the new state.
-                    _state.SetState(IsEmpty() ? EMPTY : ENTRIES);
                 }
 
                 // Done with the administration. Release the lock.
@@ -573,28 +573,28 @@ namespace Thunder {
                 // This needs to be atomic. Make sure it is.
                 _adminLock.Lock();
 
-                if (_state != DISABLED) {
-                    typename Entries::iterator index(_queue.begin());
+                typename Entries::iterator index(_queue.begin());
 
-                    while ((index != _queue.end()) && (index->second != entry)) {
-                        ++index;
-                    }
+                while ((index != _queue.end()) && (index->second != entry)) {
+                    ++index;
+                }
 
-                    if (index != _queue.end()) {
-                        // Yep, we found it, remove it
-                        removed = true;
-                        _queue.erase(index);
+                if (index != _queue.end()) {
+                    // Yep, we found it, remove it
+                    removed = true;
+                    _queue.erase(index);
 
+                    if (_state != DISABLED) {
                         // Determine the new state.
                         _state.SetState(IsEmpty() ? EMPTY : ENTRIES);
                     }
-                    else {
-                        typename Categories::iterator categoryIndex = _categories.begin();
-                        while ((categoryIndex != _categories.end()) && (categoryIndex->Remove(entry) == false)) {
-                            categoryIndex++;
-                        }
-                        removed = categoryIndex != _categories.end();
+                }
+                else {
+                    typename Categories::iterator categoryIndex = _categories.begin();
+                    while ((categoryIndex != _categories.end()) && (categoryIndex->Remove(entry) == false)) {
+                        categoryIndex++;
                     }
+                    removed = categoryIndex != _categories.end();
                 }
 
                 // Done with the administration. Release the lock.

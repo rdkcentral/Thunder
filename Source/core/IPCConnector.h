@@ -770,6 +770,8 @@ POP_WARNING()
         virtual uint32_t Id() const = 0;
         virtual string Origin() const = 0;
         virtual uint32_t ReportResponse(Core::ProxyType<IIPC>& inbound) = 0;
+        virtual bool IsOpen() const = 0;
+        virtual bool IsClosed() const = 0;
 
     private:
         virtual uint32_t Execute(const ProxyType<IIPC>& command, IDispatchType<IIPC>* completed) = 0;
@@ -941,6 +943,14 @@ POP_WARNING()
             _link.SendResponse(inbound);
 
             return (Core::ERROR_NONE);
+        }
+        bool IsOpen() const override
+        {
+            return _link.IsOpen();
+        }
+        bool IsClosed() const override
+        {
+            return _link.IsClosed();
         }
         virtual void StateChange()
         {

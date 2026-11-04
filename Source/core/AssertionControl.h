@@ -44,7 +44,8 @@ namespace Assertion {
         static AssertionUnitProxy& Instance();
 
         void Handle(IAssertionUnit* handler);
-        void AssertionEvent(Core::Messaging::IStore::Assert& metadata, const Core::Messaging::TextMessage& message);
+        Core::Messaging::OutputTargets Targets(const Core::Messaging::Metadata& metadata, Core::Messaging::OutputMode outputMode, bool localEnabled) const;
+        void AssertionEvent(Core::Messaging::IStore::Assert& metadata, const Core::Messaging::TextMessage& message, const Core::Messaging::OutputTargets& targets);
 
     protected:
         AssertionUnitProxy();
@@ -53,6 +54,28 @@ namespace Assertion {
         IAssertionUnit* _handler;
         Core::CriticalSection* _adminLock;
     };
+
+    inline Core::Messaging::OutputTargets ResolveTargets(const Core::Messaging::Metadata& metadata, const Core::Messaging::OutputMode routing, const bool enabled)
+    {
+        Core::Messaging::OutputTargets targets = { false, false, false };
+
+        if ((routing == Core::Messaging::OutputMode::ALL) || (routing == Core::Messaging::OutputMode::EXTERNAL_DIRECT)) {
+            targets = AssertionUnitProxy::Instance().Targets(metadata, routing, enabled);
+        } else {
+            switch (routing) {
+            case Core::Messaging::OutputMode::DIRECT:
+                targets.direct = enabled;
+                break;
+            case Core::Messaging::OutputMode::HANDLER:
+                targets.handler = enabled;
+                break;
+            default:
+                break;
+            }
+        }
+
+        return (targets);
+    }
 
     class EXTERNAL BaseAssertType : public Core::Messaging::BaseCategoryType<Core::Messaging::Metadata::type::ASSERT> {
     public:
@@ -69,6 +92,7 @@ namespace Assertion {
             AssertionControl()
                 : _categoryName(EXPAND_AND_QUOTE(ASSERT_CATEGORY))
                 , _enabled(0x03)
+                , _outputMode(Core::Messaging::OutputMode::HANDLER)
                 , _metadata(Core::Messaging::Metadata::type::ASSERT, _categoryName, Core::Messaging::MODULE_ASSERT)
             {
                 Core::Messaging::IControl::Announce(this);
@@ -91,6 +115,14 @@ namespace Assertion {
             {
                 _enabled = (_enabled & 0xFE) | (enabled ? 0x01 : 0x00);
             }
+            Core::Messaging::OutputMode Routing() const override
+            {
+                return (_outputMode);
+            }
+            void Routing(Core::Messaging::OutputMode routing) override
+            {
+                _outputMode = routing;
+            }
             void Destroy() override
             {
                 if ((_enabled & 0x02) != 0) {
@@ -106,6 +138,7 @@ namespace Assertion {
         protected:
             const string _categoryName;
             uint8_t _enabled;
+            Core::Messaging::OutputMode _outputMode;
             Core::Messaging::Metadata _metadata;
         };
     
@@ -131,6 +164,10 @@ namespace Assertion {
 
         inline static void Enable(const bool enable) {
             Instance().Enable(enable);
+        }
+
+        inline static Core::Messaging::OutputMode Routing() {
+            return (Instance().Routing());
         }
         
         inline static const Core::Messaging::Metadata& Metadata() {

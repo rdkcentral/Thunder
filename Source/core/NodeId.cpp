@@ -895,6 +895,7 @@ POP_WARNING()
 #ifndef __APPLE__
         else {
             struct sockaddr_nl info;
+            memset(&info, 0, sizeof(info));
             info.nl_family = AF_NETLINK;
             info.nl_pid = 0;
             info.nl_groups = 0;

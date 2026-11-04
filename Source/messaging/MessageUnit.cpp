@@ -19,8 +19,50 @@
 
 #include "MessageUnit.h"
 #include "ConsoleStreamRedirect.h"
+#include "ExternalOutput.h"
+
+#ifdef MESSAGING_EXTERNAL_OUTPUT
+namespace {
+    ThunderMessageType ExternalType(const Thunder::Core::Messaging::Metadata& metadata)
+    {
+        ThunderMessageType type = THUNDER_EXTERNAL_MESSAGE_LOGGING;
+
+        switch (metadata.Type()) {
+        case Thunder::Core::Messaging::Metadata::type::ASSERT:
+            type = THUNDER_EXTERNAL_MESSAGE_ASSERT;
+            break;
+        case Thunder::Core::Messaging::Metadata::type::REPORTING:
+            type = THUNDER_EXTERNAL_MESSAGE_REPORTING;
+            break;
+        case Thunder::Core::Messaging::Metadata::type::OPERATIONAL_STREAM:
+            type = THUNDER_EXTERNAL_MESSAGE_OPERATIONAL_STREAM;
+            break;
+        case Thunder::Core::Messaging::Metadata::type::TELEMETRY:
+            type = THUNDER_EXTERNAL_MESSAGE_TELEMETRY;
+            break;
+        case Thunder::Core::Messaging::Metadata::type::TRACING:
+            type = THUNDER_EXTERNAL_MESSAGE_TRACING;
+            break;
+        case Thunder::Core::Messaging::Metadata::type::LOGGING:
+            break;
+        default:
+            break;
+        }
+
+        return (type);
+    }
+
+}
+#endif
 
 namespace Thunder {
+
+ENUM_CONVERSION_BEGIN(Thunder::Core::Messaging::OutputMode)
+    { Thunder::Core::Messaging::OutputMode::HANDLER,         _TXT("handler")         },
+    { Thunder::Core::Messaging::OutputMode::DIRECT,          _TXT("direct")          },
+    { Thunder::Core::Messaging::OutputMode::ALL,             _TXT("all")             },
+    { Thunder::Core::Messaging::OutputMode::EXTERNAL_DIRECT, _TXT("external_direct") },
+ENUM_CONVERSION_END(Thunder::Core::Messaging::OutputMode)
 
     namespace Messaging {
 
@@ -177,6 +219,8 @@ namespace Thunder {
                     if (enabled ^ control->Enable()) {
                         control->Enable(enabled);
                     }
+
+                    control->Routing(_settings.EffectiveOutput(control->Metadata()));
                 }
 
             private:
@@ -184,6 +228,120 @@ namespace Thunder {
             } handler(_settings);
 
             Core::Messaging::IControl::Iterate(handler);
+        }
+
+#ifdef MESSAGING_EXTERNAL_OUTPUT
+        void MessageUnit::InitializeExternal()
+        {
+            _externalInitialized = ThunderExternalOutput_Initialize();
+            if (_externalInitialized == false) {
+                TRACE_L1("Unable to initialize external output");
+            }
+            _externalControls.clear();
+
+            if (_externalInitialized == true) {
+                class Handler : public Core::Messaging::IControl::IHandler {
+                public:
+                    Handler() = delete;
+                    Handler(const Handler&) = delete;
+                    Handler& operator=(const Handler&) = delete;
+
+                    Handler(const MessageUnit& messageUnit)
+                        : _messageUnit(messageUnit)
+                    {
+                    }
+                    ~Handler() override = default;
+
+                    void Handle(Core::Messaging::IControl* control) override
+                    {
+                        _messageUnit.ExternalEnabled(control->Metadata());
+                    }
+
+                private:
+                    const MessageUnit& _messageUnit;
+                } handler(*this);
+
+                Core::Messaging::IControl::Iterate(handler);
+            }
+        }
+
+        void MessageUnit::DeinitializeExternal()
+        {
+            if (_externalInitialized == true) {
+                ThunderExternalOutput_Deinitialize();
+            }
+            _externalInitialized = false;
+            _externalControls.clear();
+        }
+
+        bool MessageUnit::ExternalEnabled(const Core::Messaging::Metadata& metadata) const
+        {
+            bool enabled = false;
+
+            _adminLock.Lock();
+            if (_externalInitialized == true) {
+                const string& module = metadata.Module();
+                const ThunderMessageType type = ExternalType(metadata);
+                const auto key = std::make_tuple(module, static_cast<uint8_t>(type), metadata.Category());
+
+                auto entry = _externalControls.find(key);
+
+                if (entry != _externalControls.end()) {
+                    enabled = entry->second;
+                }
+                else {
+                    enabled = ThunderExternalOutput_IsEnabled(module.c_str(), type, metadata.Category().c_str());
+                    _externalControls.emplace(key, enabled);
+                }
+            }
+            _adminLock.Unlock();
+
+            return (enabled);
+        }
+#endif
+
+        MessageUnit::OutputTargets MessageUnit::Targets(const Core::Messaging::Metadata& metadata, const Core::Messaging::OutputMode outputMode, const bool localEnabled) const
+        {
+            OutputTargets targets = { false, false, false };
+#ifdef MESSAGING_EXTERNAL_OUTPUT
+            const bool externalRoute = ((outputMode == Core::Messaging::OutputMode::EXTERNAL_DIRECT) || (outputMode == Core::Messaging::OutputMode::ALL));
+#endif
+
+            switch (outputMode) {
+            case Core::Messaging::OutputMode::DIRECT:
+                targets.direct = localEnabled;
+                break;
+            case Core::Messaging::OutputMode::HANDLER:
+                targets.handler = localEnabled;
+                break;
+            case Core::Messaging::OutputMode::ALL:
+                targets.direct = localEnabled;
+                targets.handler = localEnabled;
+                break;
+            default:
+                break;
+            }
+
+#ifdef MESSAGING_EXTERNAL_OUTPUT
+            if ((externalRoute == true) && !((metadata.Type() == Core::Messaging::Metadata::type::TELEMETRY) && (targets.handler == true))) {
+                targets.external = ExternalEnabled(metadata);
+            }
+#else
+            (void)metadata;
+#endif
+
+            return (targets);
+        }
+
+        void MessageUnit::Announce(const Core::Messaging::Metadata& metadata)
+        {
+#ifdef MESSAGING_EXTERNAL_OUTPUT
+            if (_externalInitialized == true) {
+                ExternalEnabled(metadata);
+            }
+#else
+            (void)metadata;
+#endif
         }
 
         MessageUnit& MessageUnit::Instance() {
@@ -205,7 +363,8 @@ namespace Thunder {
             string identifier = _T("md");
             _settings.Configure(pathName, identifier, configuration, background, flushMode);
 
-            ASSERT(_dispatcher == nullptr);
+            ASSERT(_metaDataBuffer == nullptr);
+            ASSERT(_dataBuffer == nullptr);
 
             if (Core::File(_settings.BasePath()).IsDirectory() == true) {
                 //if directory exists remove it to clear data (eg. sockets) that can remain after previous run
@@ -223,18 +382,36 @@ namespace Thunder {
             // Store it on an environment variable so other instances can pick this info up..
             _settings.Save();
 
-            _dispatcher.reset(new MessageDispatcher(*this, identifier, 0, _settings.BasePath().c_str(), _settings.DataSize(), _settings.SocketPort()));
-            ASSERT(_dispatcher != nullptr);
+            MessageFilenames filenames = PrepareFilenames(_settings.BasePath(), identifier, 0, _settings.SocketPort());
 
-            if ((_dispatcher != nullptr) && (_dispatcher->IsValid() == true)) {
+            _metaDataBuffer.reset(new MetaDataBuffer(*this, filenames.metaData));
+            ASSERT(_metaDataBuffer != nullptr);
 
-                _direct.Mode(_settings.IsBackground(), _settings.IsAbbreviated());
+            if ((_metaDataBuffer != nullptr) && (_metaDataBuffer->IsOpen() == true)) {
+
+                if (_settings.DataSize() != 0) {
+                    _dataBuffer.reset(new MessageDataBuffer(identifier, 0, _settings.BasePath().c_str(), _settings.DataSize(), _settings.SocketPort(), true));
+                    ASSERT(_dataBuffer != nullptr);
+                }
+
+                _direct.Mode(_settings.IsBackground(), _settings.IsAbbreviated(), _settings.IsTimeEnabled());
+
+#ifdef MESSAGING_EXTERNAL_OUTPUT
+                InitializeExternal();
+#endif
 
                 Core::Messaging::IStore::Set(this);
 
                 // according to received config,
                 // let all announced controls know, whether they should push messages
                 Update();
+
+                TRACE_L1("Messaging transport initialized: controls(metadata)=%s [buffer=%u], messages(data)=%s [buffer=%u], directOutput=%s",
+                    (_settings.MetadataBufferSize() == 0 ? _T("disabled") : _T("enabled")),
+                    static_cast<unsigned>(_settings.MetadataBufferSize()),
+                    (_settings.DataSize() == 0 ? _T("disabled") : _T("enabled")),
+                    static_cast<unsigned>(_settings.DataSize()),
+                    (_settings.IsDirect() ? _T("true") : _T("false")));
 
                 // Redirect the standard out and standard error if requested
                 if (_settings.HasRedirectedError() == true) {
@@ -249,6 +426,9 @@ namespace Thunder {
  
                 result = Core::ERROR_NONE;
             }
+            else {
+                _metaDataBuffer.reset();
+            }
 
             return (result);
         }
@@ -261,17 +441,29 @@ namespace Thunder {
         {
             uint32_t result = Core::ERROR_OPENING_FAILED;
 
-            ASSERT(_dispatcher == nullptr);
+            ASSERT(_metaDataBuffer == nullptr);
+            ASSERT(_dataBuffer == nullptr);
 
             if (instanceId != static_cast<uint32_t>(~0)) {
                 _settings.Load();
 
-                _dispatcher.reset(new MessageDispatcher(*this, _settings.Identifier(), instanceId, _settings.BasePath(), _settings.DataSize(), _settings.SocketPort()));
-                ASSERT(_dispatcher != nullptr);
+                MessageFilenames filenames = PrepareFilenames(_settings.BasePath(), _settings.Identifier(), instanceId, _settings.SocketPort());
 
-                if ((_dispatcher != nullptr) && (_dispatcher->IsValid() == true)) {
+                _metaDataBuffer.reset(new MetaDataBuffer(*this, filenames.metaData));
+                ASSERT(_metaDataBuffer != nullptr);
 
-                    _direct.Mode(_settings.IsBackground(), _settings.IsAbbreviated());
+                if ((_metaDataBuffer != nullptr) && (_metaDataBuffer->IsOpen() == true)) {
+
+                    if (_settings.DataSize() != 0) {
+                        _dataBuffer.reset(new MessageDataBuffer(_settings.Identifier(), instanceId, _settings.BasePath(), _settings.DataSize(), _settings.SocketPort(), true));
+                        ASSERT(_dataBuffer != nullptr);
+                    }
+
+                    _direct.Mode(_settings.IsBackground(), _settings.IsAbbreviated(), _settings.IsTimeEnabled());
+
+#ifdef MESSAGING_EXTERNAL_OUTPUT
+                    InitializeExternal();
+#endif
 
                     Core::Messaging::IStore::Set(this);
 
@@ -280,6 +472,9 @@ namespace Thunder {
                     Update();
 
                     result = Core::ERROR_NONE;
+                }
+                else {
+                    _metaDataBuffer.reset();
                 }
             }
 
@@ -304,7 +499,7 @@ namespace Thunder {
                 }
             } handler;
 
-            if (_dispatcher != nullptr) {
+            if (_metaDataBuffer != nullptr) {
                 if (_settings.HasRedirectedError() == true) {
                     Messaging::ConsoleStandardError::Instance().Close();
                 }
@@ -314,8 +509,13 @@ namespace Thunder {
                 Core::Messaging::IStore::Set(nullptr);
                 Core::Messaging::IControl::Iterate(handler);
 
+#ifdef MESSAGING_EXTERNAL_OUTPUT
+                DeinitializeExternal();
+#endif
+
                 _adminLock.Lock();
-                _dispatcher.reset(nullptr);
+                _dataBuffer.reset(nullptr);
+                _metaDataBuffer.reset(nullptr);
                 _adminLock.Unlock();
             }
         }
@@ -324,35 +524,61 @@ namespace Thunder {
             return (_settings.IsEnabled(control));
         }
 
+        /* virtual */ Core::Messaging::OutputMode MessageUnit::DefaultOutput(const Core::Messaging::Metadata& metadata) const {
+            return (_settings.EffectiveOutput(metadata));
+        }
+
+        void MessageUnit::Push(const Core::Messaging::MessageInfo& messageInfo, const Core::Messaging::IEvent* message, const OutputTargets& targets)
+        {
+            if (targets.direct == true) {
+                _direct.Output(messageInfo, message);
+            }
+
+#ifdef MESSAGING_EXTERNAL_OUTPUT
+            if (targets.external == true) {
+                if (_externalInitialized == true) {
+                    ThunderExternalOutput_Submit(messageInfo.Module().c_str(), ExternalType(messageInfo), messageInfo.Category().c_str(), message->Data().c_str());
+                }
+            }
+#endif
+
+            if (targets.handler == true) {
+                if (_dataBuffer != nullptr) {
+                    const uint16_t messageSize = _settings.MessageSize();
+                    ASSERT(messageSize != 0);
+                    uint8_t* serializationBuffer = static_cast<uint8_t*>(ALLOCA(messageSize));
+                    uint16_t length = 0;
+
+                    ASSERT(messageInfo.Type() != Core::Messaging::Metadata::type::INVALID);
+
+                    length = messageInfo.Serialize(serializationBuffer, messageSize);
+
+                    //only serialize message if the information could fit
+                    if (length != 0) {
+                        length += message->Serialize(serializationBuffer + length, messageSize - length);
+
+                        if (_dataBuffer->PushData(length, serializationBuffer) != Core::ERROR_NONE) {
+                            TRACE_L1("Unable to push message data!");
+                        }
+                    }
+                    else {
+                        TRACE_L1("Unable to push data, buffer is too small!");
+                    }
+                }
+                else if (targets.direct == false) {
+                    // Buffer unavailable (early startup or DirectOutput mode without plugin overrides):
+                    // fall back to direct output if we haven't already sent it directly.
+                    _direct.Output(messageInfo, message);
+                }
+            }
+        }
+
         /**
         * @brief Push a message of any type and its information to a buffer
         */
-        /* virtual */ void MessageUnit::Push(const Core::Messaging::MessageInfo& messageInfo, const Core::Messaging::IEvent* message)
+        /* virtual */ void MessageUnit::Push(const Core::Messaging::MessageInfo& messageInfo, const Core::Messaging::IEvent* message, Core::Messaging::OutputMode outputMode)
         {
-            //logging messages can happen in Core, meaning, otherside plugin can be not started yet
-            //those should be just printed
-            if ((_settings.IsDirect() == true) || (_dispatcher == nullptr)) {
-                _direct.Output(messageInfo, message);
-            } else if (_dispatcher != nullptr) {
-                uint8_t serializationBuffer[TempDataBufferSize];
-                uint16_t length = 0;
-
-                ASSERT(messageInfo.Type() != Core::Messaging::Metadata::type::INVALID);
-
-                length = messageInfo.Serialize(serializationBuffer, sizeof(serializationBuffer));
-
-                //only serialize message if the information could fit
-                if (length != 0) {
-                    length += message->Serialize(serializationBuffer + length, sizeof(serializationBuffer) - length);
-
-                    if (_dispatcher->PushData(length, serializationBuffer) != Core::ERROR_NONE) {
-                        TRACE_L1("Unable to push message data!");
-                    }
-                }
-                else {
-                    TRACE_L1("Unable to push data, buffer is too small!");
-                }
-            }
+            Push(messageInfo, message, Targets(messageInfo, outputMode, true));
         }
     } // namespace Messaging
 }
