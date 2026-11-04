@@ -10,13 +10,13 @@ concurrency:
 on:
   workflow_dispatch:
   push:
-    branches: ["master"]
+    branches: ["master", "R*"]
     paths-ignore:
       - 'doc/**'
       - 'docs/**'
       - 'ReleaseNotes/**'
   pull_request:
-    branches: ["master"]
+    branches: ["master", "R*"]
     paths-ignore:
       - 'doc/**'
       - 'docs/**'
@@ -25,6 +25,8 @@ on:
 jobs:
   Thunder:
     uses: ./.github/workflows/Linux build template.yml
+    with:
+      source-repository: ${{ github.repository }}
 
   Test:
     needs: Thunder
