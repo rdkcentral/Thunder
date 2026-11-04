@@ -218,6 +218,15 @@ namespace Core {
             {
                 return (_container == nullptr ? 0 : _container->Size() - _offset);
             }
+            SIZE_CONTEXT LockFixedBuffer(const uint8_t*& buffer, const uint32_t length) const
+            {
+                ASSERT(_container != nullptr);
+                ASSERT(length <= Length());
+
+                buffer = &(_container->operator[](_offset));
+
+                return (length);
+            }
             template <typename TYPENAME>
             TYPENAME LockBuffer(const uint8_t*& buffer) const
             {
