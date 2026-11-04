@@ -204,7 +204,7 @@ namespace Core {
     void DataElementFile::OpenMemoryMappedFile(uint32_t requiredSize)
     {
         if (requiredSize > 0) {
-            const long pageSize = sysconf(_SC_PAGESIZE);
+            long pageSize = sysconf(_SC_PAGESIZE);
             ASSERT(pageSize > 0);
 
             const uint64_t ullPageSize = static_cast<uint64_t>(pageSize);
