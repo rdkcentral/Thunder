@@ -202,16 +202,11 @@ namespace Core {
 
 #ifdef __POSIX__
 
-    void process_data(int *ptr) {
-        // Coverity flags this: ptr might be NULL when passed into the function
-        int value = *ptr; 
-        printf("Value: %d\n", value);
-    }
-
     void DataElementFile::OpenMemoryMappedFile(uint32_t requiredSize)
     {
         if (requiredSize > 0) {
             long pageSize = sysconf(_SC_PAGESIZE);
+            ASSERT(pageSize > 0);
 
             const uint64_t ullPageSize = static_cast<uint64_t>(pageSize);
             uint64_t mapSize = ((static_cast<uint64_t>(requiredSize) + ullPageSize - 1) / ullPageSize) * ullPageSize;
