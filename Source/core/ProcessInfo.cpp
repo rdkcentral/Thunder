@@ -549,6 +549,7 @@ namespace Core {
         std::list<string> output;
 
         FILE* cmdFile = fopen(procPath, "rb");
+        assert(cmdFile != nullptr);
         {
             uint32_t index = 0;
             const int bufferSize = 256;
