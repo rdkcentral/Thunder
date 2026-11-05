@@ -348,7 +348,7 @@ install(
 
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/generated/core/WarningReportingConfig.h"
     DESTINATION include/${NAMESPACE}/core
-    COMPONENT devel)
+    COMPONENT ${NAMESPACE}_Development)
 
 # ===========================================================================================
 # Install METADATA:
