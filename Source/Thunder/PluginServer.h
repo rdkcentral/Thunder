@@ -4641,7 +4641,7 @@ namespace PluginHost {
                 {
                     string result;
                     ASSERT(_service.IsValid() == true);
-                    REPORT_DURATION_WARNING( { result = _service->Inbound(_ID, message); }, WarningReporting::TooLongInvokeMessage, message);
+                    REPORT_PRIORITY_DURATION_WARNING( { result = _service->Inbound(_ID, message); }, WarningReporting::TooLongInvokeMessage, message);
                     return result;
                 }
                 Core::ProxyType<Core::JSONRPC::Message> Process(const string& token, const Core::ProxyType<Core::JSONRPC::Message>& message)
@@ -4659,7 +4659,7 @@ namespace PluginHost {
                     tracking->Dispatch();
                     #endif
 
-                    REPORT_DURATION_WARNING( { result = _service->Invoke(_ID, token, *message); }, WarningReporting::TooLongInvokeMessage, *message);
+                    REPORT_PRIORITY_DURATION_WARNING( { result = _service->Invoke(_ID, token, *message); }, WarningReporting::TooLongInvokeMessage, *message);
 
                     #if THUNDER_PERFORMANCE
                     tracking->Execution();
@@ -4673,7 +4673,7 @@ namespace PluginHost {
                     ASSERT(_service.IsValid() == true);
 
                     Core::ProxyType<Web::Response> result;
-                    REPORT_DURATION_WARNING( { result = _service->Process(*message); }, WarningReporting::TooLongInvokeMessage, *message);
+                    REPORT_PRIORITY_DURATION_WARNING( { result = _service->Process(*message); }, WarningReporting::TooLongInvokeMessage, *message);
                     return result;
                 }
                 Core::ProxyType<Core::JSON::IElement> Process(const Core::ProxyType<Core::JSON::IElement>& message)
@@ -4682,7 +4682,7 @@ namespace PluginHost {
                     ASSERT(_service.IsValid() == true);
 
                     Core::ProxyType<Core::JSON::IElement> result;
-                    REPORT_DURATION_WARNING( { result = _service->Inbound(_ID, message); }, WarningReporting::TooLongInvokeMessage, *message);
+                    REPORT_PRIORITY_DURATION_WARNING( { result = _service->Inbound(_ID, message); }, WarningReporting::TooLongInvokeMessage, *message);
                     return result;
                 }
                 template <typename PACKAGE>
