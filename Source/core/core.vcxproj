@@ -100,6 +100,7 @@
     <ClInclude Include="ThreadPool.h" />
     <ClInclude Include="Time.h" />
     <ClInclude Include="Timer.h" />
+    <ClInclude Include="WatchDog.h" />
     <ClInclude Include="Trace.h" />
     <ClInclude Include="TypeTraits.h" />
     <ClInclude Include="ValueRecorder.h" />
@@ -147,6 +148,7 @@
     <ClCompile Include="Trace.cpp" />
     <ClCompile Include="WarningReportingCategories.cpp" />
     <ClCompile Include="WarningReportingControl.cpp" />
+    <ClCompile Include="WatchDog.cpp" />
     <ClCompile Include="WorkerPool.cpp" />
     <ClCompile Include="XGetopt.cpp" />
   </ItemGroup>

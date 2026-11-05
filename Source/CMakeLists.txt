@@ -55,6 +55,10 @@ option(W3C_TRACE_CONTEXT_ENABLED
         "allow propagation of W3C trace context" OFF)
 option(CUSTOM_ERROR_CODES_ENABLED
         "enable custom error codes (obsolete)" OFF)
+option(RESOURCE_MONITOR_WATCHDOG_SUPPORT
+        "Compile in the WatchDog supervision of the ResourceMonitor (runtime enabled via the Thunder configuration)" ON)
+option(WORKERPOOL_WATCHDOG_SUPPORT
+        "Compile in the WatchDog supervision of the WorkerPool (runtime enabled via the Thunder configuration)" ON)
 
 if(HIDE_NON_EXTERNAL_SYMBOLS)
     set(CMAKE_CXX_VISIBILITY_PRESET hidden)

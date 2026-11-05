@@ -56,6 +56,7 @@ add_library(${TARGET}
         Thread.cpp
         Time.cpp
         Trace.cpp
+        WatchDog.cpp
         WorkerPool.cpp
         XGetopt.cpp
         ResourceMonitor.cpp
@@ -142,6 +143,7 @@ set(PUBLIC_HEADERS
         ThreadPool.h
         Time.h
         Timer.h
+        WatchDog.h
         Trace.h
         TypeTraits.h
         ValueRecorder.h
@@ -194,6 +196,16 @@ endif()
 
 if(WARNING_REPORTING OR EXCEPTION_CATCHING)
     target_sources(${TARGET} PRIVATE CallsignTLS.cpp)
+endif()
+
+if(RESOURCE_MONITOR_WATCHDOG_SUPPORT)
+    target_compile_definitions(${TARGET} PUBLIC __CORE_RESOURCE_MONITOR_WATCHDOG__)
+    message(STATUS "Watchdog supervision of the ResourceMonitor enabled")
+endif()
+
+if(WORKERPOOL_WATCHDOG_SUPPORT)
+    target_compile_definitions(${TARGET} PUBLIC __CORE_WORKERPOOL_WATCHDOG__)
+    message(STATUS "Watchdog supervision of the WorkerPool enabled")
 endif()
 
 if(DEADLOCK_DETECTION)

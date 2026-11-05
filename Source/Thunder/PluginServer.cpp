@@ -1290,9 +1290,12 @@ namespace PluginHost {
             configuration.StackSize(),
             configuration.QueueSize(),
             configuration.LowPriorityThreadCount(),
-            configuration.MediumPriorityThreadCount(),
-            configuration.WorkerPoolWatchdogTimeout(),
-            configuration.WorkerPoolWatchdogAbort())
+            configuration.MediumPriorityThreadCount()
+#ifdef PLUGINHOST_WORKERPOOL_WATCHDOG
+            , configuration.WorkerPoolWatchdogTimeout()
+            , configuration.WorkerPoolWatchdogAbort()
+#endif
+            )
         , _config(configuration)
         , _connections(*this, configuration.Binder())
         , _services(*this)
@@ -1301,12 +1304,10 @@ namespace PluginHost {
     {
         IFactories::Assign(&_factoriesImplementation);
 
-#ifdef __LINUX__
-        if (_config.ResourceMonitorWatchdogTimeout() != 0) {
-            Core::ResourceMonitor::Instance().EnableWatchDog(
-                _config.ResourceMonitorWatchdogTimeout(),
-                _config.ResourceMonitorWatchdogAbort());
-        }
+#ifdef PLUGINHOST_RESOURCE_MONITOR_WATCHDOG
+        Core::ResourceMonitor::Instance().EnableWatchDog(
+            _config.ResourceMonitorWatchdogTimeout(),
+            _config.ResourceMonitorWatchdogAbort());
 #endif
 
         // See if the persistent path for our-selves exist, if not we will create it :-)
@@ -1370,6 +1371,9 @@ namespace PluginHost {
 
     Server::~Server()
     {
+#ifdef PLUGINHOST_RESOURCE_MONITOR_WATCHDOG
+        Core::ResourceMonitor::Instance().DisableWatchDog();
+#endif
         // The workerpool is about to dissapear!!!!
         Core::WorkerPool::Assign(nullptr);
         IFactories::Assign(nullptr);

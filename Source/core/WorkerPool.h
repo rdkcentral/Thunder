@@ -25,7 +25,7 @@
 
 #include "Thread.h"
 #include "ThreadPool.h"
-#include "SystemInfo.h"
+#include "WatchDog.h"
 #include "Timer.h"
 #include "Trace.h"
 
@@ -437,20 +437,26 @@ POP_WARNING()
             _metadata.Slot[1].WorkerId = _joined.load(Core::memory_order::memory_order_relaxed);
             return (_metadata);
         }
+        #ifdef __CORE_WORKERPOOL_WATCHDOG__
         // Aggregate number of jobs extracted by pool workers, including Join().
         uint64_t Progress() const
         {
             return (_threadPool.Progress() + _external.Runs());
         }
-        // Enable before Run() when a watchdog needs worker occupancy data.
-        void EnableActiveJobTracking()
+        // Enable before any job is submitted, a watchdog needs the occupancy and outstanding job data.
+        void EnableJobTracking()
         {
-            _threadPool.EnableActiveJobTracking();
+            _threadPool.EnableJobTracking();
         }
         // Number of pool workers currently executing jobs.
         uint32_t ActiveJobs() const
         {
             return (_threadPool.ActiveJobs());
+        }
+        // Number of accepted jobs not yet extracted by a worker, including the ones waiting for a category quota.
+        uint32_t OutstandingJobs() const
+        {
+            return (_threadPool.OutstandingJobs());
         }
         // Number of pool workers, including an active Join() worker.
         uint32_t Count() const
@@ -458,6 +464,7 @@ POP_WARNING()
             return (static_cast<uint32_t>(_threadPool.Count())
                 + (_joined.load(Core::memory_order::memory_order_relaxed) != 0 ? 1 : 0));
         }
+        #endif
         void Run()
         {
             _threadPool.Run();
@@ -490,81 +497,72 @@ POP_WARNING()
         #endif
     };
 
-    // Construct before Run() to detect a saturated pool whose workers stop extracting jobs.
-    class EXTERNAL WorkerPoolWatchDog : public Thread {
+    #ifdef __CORE_WORKERPOOL_WATCHDOG__
+    // Supervises a WorkerPool without ever touching its queues or locks. The pool is considered stalled if no job was
+    // extracted for the timeout while all workers are busy or while accepted work (including work waiting for a
+    // category quota) is still outstanding. Construct before the pool is started and before jobs are submitted.
+    class EXTERNAL WorkerPoolWatchable : public IWatchable {
     public:
-        WorkerPoolWatchDog(WorkerPoolWatchDog&&) = delete;
-        WorkerPoolWatchDog(const WorkerPoolWatchDog&) = delete;
-        WorkerPoolWatchDog& operator=(WorkerPoolWatchDog&&) = delete;
-        WorkerPoolWatchDog& operator=(const WorkerPoolWatchDog&) = delete;
+        WorkerPoolWatchable(WorkerPoolWatchable&&) = delete;
+        WorkerPoolWatchable(const WorkerPoolWatchable&) = delete;
+        WorkerPoolWatchable& operator=(WorkerPoolWatchable&&) = delete;
+        WorkerPoolWatchable& operator=(const WorkerPoolWatchable&) = delete;
 
-        WorkerPoolWatchDog(WorkerPool& pool, const uint32_t timeout, const bool abortOnExpiry)
-            : Thread(Thread::DefaultStackSize(), _T("WorkerPool::Watchdog"))
-            , _pool(pool)
+        WorkerPoolWatchable(WorkerPool& pool, const uint32_t timeout)
+            : _pool(pool)
+            , _timeout(timeout)
             , _timeoutTicks(static_cast<uint64_t>(timeout) * Time::MicroSecondsPerMilliSecond)
-            , _interval(std::min(timeout, 250u))
             , _lastProgress(pool.Progress())
             , _stalledSince(0)
-            , _abortOnExpiry(abortOnExpiry)
-            , _reported(false)
         {
             ASSERT(timeout != 0);
-            _pool.EnableActiveJobTracking();
-            Thread::Init();
+            _pool.EnableJobTracking();
         }
-        ~WorkerPoolWatchDog() override
-        {
-            Terminate();
-        }
+        ~WorkerPoolWatchable() override = default;
 
     public:
-        void Start()
+        const TCHAR* Name() const override
         {
-            Thread::Run();
+            return (_T("WorkerPool"));
         }
-
-    private:
-        uint32_t Worker() override
+        uint32_t Timeout() const override
         {
-            const uint64_t now = SystemInfo::Instance().Ticks();
+            return (_timeout);
+        }
+        bool Expired(const uint64_t now) override
+        {
             const uint64_t progress = _pool.Progress();
-            const uint32_t active = _pool.ActiveJobs();
             const uint32_t workers = _pool.Count();
-            const bool allWorkersBusy = ((workers != 0) && (active >= workers));
+            const bool outstanding = ((workers != 0) && ((_pool.ActiveJobs() >= workers) || (_pool.OutstandingJobs() != 0)));
 
             if (progress != _lastProgress) {
                 _lastProgress = progress;
                 _stalledSince = now;
-                _reported = false;
             }
 
-            if (allWorkersBusy == false) {
+            if (outstanding == false) {
                 _stalledSince = 0;
-                _reported = false;
             } else if (_stalledSince == 0) {
                 _stalledSince = now;
-            } else if ((_reported == false) && ((now - _stalledSince) >= _timeoutTicks)) {
-                CC_SYSLOG("WorkerPool stalled: all %u worker(s) active without an extraction for %u ms",
-                    workers,
-                    static_cast<uint32_t>(_timeoutTicks / Time::MicroSecondsPerMilliSecond));
-                if (_abortOnExpiry == true) {
-                    std::abort();
-                }
-                _reported = true;
             }
 
-            Thread::Block();
-            return (_interval);
+            return ((_stalledSince != 0) && ((now - _stalledSince) >= _timeoutTicks));
+        }
+        string Report() const override
+        {
+            TCHAR buffer[96];
+            snprintf(buffer, sizeof(buffer), "no job extracted, workers=%u active=%u outstanding=%u",
+                _pool.Count(), _pool.ActiveJobs(), _pool.OutstandingJobs());
+            return (string(buffer));
         }
 
     private:
         WorkerPool& _pool;
+        const uint32_t _timeout;
         const uint64_t _timeoutTicks;
-        const uint32_t _interval;
         uint64_t _lastProgress;
         uint64_t _stalledSince;
-        const bool _abortOnExpiry;
-        bool _reported;
     };
+    #endif
 }
 }

@@ -33,6 +33,14 @@
 
 #define MAX_EXTERNAL_WAITS 2000 /* Wait for 2 Seconds */
 
+#if defined(__CORE_RESOURCE_MONITOR_WATCHDOG__) && defined(__LINUX__)
+#define PLUGINHOST_RESOURCE_MONITOR_WATCHDOG
+#endif
+
+#if defined(__CORE_WORKERPOOL_WATCHDOG__) && defined(__LINUX__)
+#define PLUGINHOST_WORKERPOOL_WATCHDOG
+#endif
+
 #ifndef HIBERNATE_WAKEUP_TIMEOUT
 #define HIBERNATE_WAKEUP_TIMEOUT 10000 /* ms */
 #endif
@@ -174,12 +182,17 @@ namespace PluginHost {
                 const uint32_t stackSize,
                 const uint32_t queueSize,
                 const uint8_t lowPriorityThreadCount,
-                const uint8_t mediumPriorityThreadCount,
-                const uint32_t VARIABLE_IS_NOT_USED watchdogTimeout,
-                const bool VARIABLE_IS_NOT_USED watchdogAbort)
+                const uint8_t mediumPriorityThreadCount
+#ifdef PLUGINHOST_WORKERPOOL_WATCHDOG
+                , const uint32_t watchdogTimeout
+                , const bool watchdogAbort
+#endif
+                )
                 : Core::WorkerPool(threadCount, stackSize, queueSize, &_dispatch, this, lowPriorityThreadCount, mediumPriorityThreadCount)
                 , _dispatch()
-                , _watchdog(nullptr)
+#ifdef PLUGINHOST_WORKERPOOL_WATCHDOG
+                , _watchable(nullptr)
+#endif
             {
                 SYSLOG(Logging::Startup, (_T("<PID:%d>: WorkerPool config: created threads=%d, queue size=%u, stack size=%u, low priority limit=%d, medium priority limit=%d"),
                     Core::ProcessInfo().Id(),
@@ -188,21 +201,26 @@ namespace PluginHost {
                     stackSize,
                     lowPriorityThreadCount,
                     mediumPriorityThreadCount));
-#ifdef __LINUX__
+#ifdef PLUGINHOST_WORKERPOOL_WATCHDOG
                 if (watchdogTimeout != 0) {
-                    _watchdog = new Core::WorkerPoolWatchDog(*this, watchdogTimeout, watchdogAbort);
+                    _watchable = new Core::WorkerPoolWatchable(*this, watchdogTimeout);
                 }
 #endif
                 Run();
-#ifdef __LINUX__
-                if (_watchdog != nullptr) {
-                    _watchdog->Start();
+#ifdef PLUGINHOST_WORKERPOOL_WATCHDOG
+                if (_watchable != nullptr) {
+                    Core::WatchDog::Instance().Register(*_watchable, watchdogAbort);
                 }
 #endif
             }
             ~WorkerPoolImplementation() override
             {
-                delete _watchdog;
+#ifdef PLUGINHOST_WORKERPOOL_WATCHDOG
+                if (_watchable != nullptr) {
+                    Core::WatchDog::Instance().Unregister(*_watchable);
+                    delete _watchable;
+                }
+#endif
             }
 
         public:
@@ -228,7 +246,9 @@ namespace PluginHost {
 
         private:
             Dispatcher _dispatch;
-            Core::WorkerPoolWatchDog* _watchdog;
+#ifdef PLUGINHOST_WORKERPOOL_WATCHDOG
+            Core::WorkerPoolWatchable* _watchable;
+#endif
         };
 
         class FactoriesImplementation : public IFactories {

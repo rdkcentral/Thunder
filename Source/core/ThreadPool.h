@@ -441,7 +441,7 @@ namespace Core {
                 return (_currentRequest.IsValid());
             }
             void Info(Metadata& info) const {
-                info.Runs = _runs.load(Core::memory_order::memory_order_relaxed);
+                info.Runs = Runs();
 
                 _adminLock.Lock();
                 if (_currentRequest.IsValid() == false) {
@@ -473,7 +473,11 @@ namespace Core {
             // Number of jobs extracted by this worker.
             uint32_t Runs() const
             {
+                #ifdef __CORE_WORKERPOOL_WATCHDOG__
                 return (_runs.load(Core::memory_order::memory_order_relaxed));
+                #else
+                return (_runs);
+                #endif
             }
             void Process()
             {
@@ -483,11 +487,17 @@ namespace Core {
 
                     ASSERT(_currentRequest.IsValid() == true);
 
+                    #ifdef __CORE_WORKERPOOL_WATCHDOG__
                     _runs.fetch_add(1, Core::memory_order::memory_order_relaxed);
-                    const bool trackActive = _parent._activeJobTracking;
-                    if (trackActive == true) {
+                    const bool trackJobs = _parent._jobTracking;
+                    if (trackJobs == true) {
+                        // First count it as active, then take it off the pending count, so the job is never unaccounted for.
                         _parent._activeJobs.fetch_add(1, Core::memory_order::memory_order_relaxed);
+                        _parent.JobDequeued();
                     }
+                    #else
+                    _runs++;
+                    #endif
 
                     #ifdef __CORE_WARNING_REPORTING__
                     // Add an entry into the JobMonitor list
@@ -529,9 +539,11 @@ namespace Core {
                     _adminLock.Unlock();
 
                     _parent.Idle();
-                    if (trackActive == true) {
+                    #ifdef __CORE_WORKERPOOL_WATCHDOG__
+                    if (trackJobs == true) {
                         _parent._activeJobs.fetch_sub(1, Core::memory_order::memory_order_relaxed);
                     }
+                    #endif
                 }
 
                 _dispatcher->Deinitialize();
@@ -544,7 +556,11 @@ namespace Core {
             Event _signal;
             std::atomic<uint32_t> _interestCount;
             QueueElement _currentRequest;
+            #ifdef __CORE_WORKERPOOL_WATCHDOG__
             std::atomic<uint32_t> _runs;
+            #else
+            uint32_t _runs;
+            #endif
         };
 
     private:
@@ -620,8 +636,11 @@ namespace Core {
             , _external(external)
             , _callback(callback)
             , _unitsSet()
+            #ifdef __CORE_WORKERPOOL_WATCHDOG__
             , _activeJobs(0)
-            , _activeJobTracking(false)
+            , _pendingJobs(0)
+            , _jobTracking(false)
+            #endif
         {
             DEBUG_VARIABLE(additionalThreads);
             ASSERT(((lowPriorityThreadCount <= (count + additionalThreads)) && (mediumPriorityThreadCount <= (count + additionalThreads))));
@@ -645,15 +664,22 @@ namespace Core {
         uint32_t Pending() const {
             return (_queue.Length());
         }
+        #ifdef __CORE_WORKERPOOL_WATCHDOG__
         // Number of worker jobs currently executing.
         uint32_t ActiveJobs() const
         {
             return (_activeJobs.load(Core::memory_order::memory_order_relaxed));
         }
-        // Enable before Run() when a watchdog needs worker occupancy data.
-        void EnableActiveJobTracking()
+        // Number of accepted jobs that are not yet extracted by a worker, including the ones waiting for a category quota.
+        uint32_t OutstandingJobs() const
         {
-            _activeJobTracking = true;
+            const int32_t pending = _pendingJobs.load(Core::memory_order::memory_order_relaxed);
+            return (pending > 0 ? static_cast<uint32_t>(pending) : 0);
+        }
+        // Enable before any job is submitted, a watchdog needs the occupancy and outstanding job data.
+        void EnableJobTracking()
+        {
+            _jobTracking = true;
         }
         // Aggregate number of jobs extracted by this pool's workers.
         uint64_t Progress() const
@@ -666,6 +692,7 @@ namespace Core {
             }
             return (progress);
         }
+        #endif
         void Snapshot(const uint8_t length, Metadata* entries, std::vector<string>& jobs) const
         {
             uint8_t count = 0;
@@ -703,13 +730,16 @@ namespace Core {
             thread_id threadId = Thread::ThreadId();
             ResourceMonitor& resourceMonitor = ResourceMonitor::Instance();
 
-            if ((threadId == resourceMonitor.Id()) || HasThreadID(threadId)) {
-                _queue.Post(job);
-            }
-            else {
-                _queue.Insert(job, waitTime);
-            }
+            JobQueued();
 
+            if ((threadId == resourceMonitor.Id()) || HasThreadID(threadId)) {
+                if (_queue.Post(job) == false) {
+                    JobDequeued();
+                }
+            }
+            else if (_queue.Insert(job, waitTime) == false) {
+                JobDequeued();
+            }
         }
         void Submit(const ProxyType<IDispatch>& job, const uint32_t waitTime, const Priority priority VARIABLE_IS_NOT_USED)
         {
@@ -751,10 +781,14 @@ namespace Core {
             thread_id threadId = Thread::ThreadId();
             ResourceMonitor& resourceMonitor = ResourceMonitor::Instance();
 
+            JobQueued();
+
             if ((threadId == resourceMonitor.Id()) || HasThreadID(threadId)) {
-                _queue.Post(job, cat);
-            } else {
-                _queue.Insert(job, waitTime, cat);
+                if (_queue.Post(job, cat) == false) {
+                    JobDequeued();
+                }
+            } else if (_queue.Insert(job, waitTime, cat) == false) {
+                JobDequeued();
             }
 #else
             // No priority support in the queue: fall back to non-priority submit.
@@ -768,6 +802,7 @@ namespace Core {
             ASSERT(job.IsValid() == true);
 
             if (_queue.Remove(job) == true) {
+                JobDequeued();
                 result = ERROR_NONE;
             }
             else {
@@ -898,7 +933,10 @@ namespace Core {
                 ProxyType<IDispatch> resubmit = job->Resubmit(scheduleTime);
                 if (resubmit.IsValid() == true) {
                     if ((scheduleTime.IsValid() == false) || (_scheduler == nullptr) || (scheduleTime < Time::Now())) {
-                        _queue.Post(resubmit);
+                        JobQueued();
+                        if (_queue.Post(resubmit) == false) {
+                            JobDequeued();
+                        }
                     }
                     else {
                         // See if we have a hook that can process scheduled entries :-)
@@ -906,6 +944,23 @@ namespace Core {
                     }
                 }
             }
+        }
+
+        void JobQueued()
+        {
+            #ifdef __CORE_WORKERPOOL_WATCHDOG__
+            if (_jobTracking == true) {
+                _pendingJobs.fetch_add(1, Core::memory_order::memory_order_relaxed);
+            }
+            #endif
+        }
+        void JobDequeued()
+        {
+            #ifdef __CORE_WORKERPOOL_WATCHDOG__
+            if (_jobTracking == true) {
+                _pendingJobs.fetch_sub(1, Core::memory_order::memory_order_relaxed);
+            }
+            #endif
         }
 
         void Idle() {
@@ -938,8 +993,11 @@ namespace Core {
         Minion* _external;
         ICallback* _callback;
         std::unordered_set<thread_id> _unitsSet;
+        #ifdef __CORE_WORKERPOOL_WATCHDOG__
         std::atomic<uint32_t> _activeJobs;
-        bool _activeJobTracking;
+        std::atomic<int32_t> _pendingJobs;
+        bool _jobTracking;
+        #endif
     };
 
 }

@@ -19,6 +19,8 @@
 
 #include <gtest/gtest.h>
 
+#include "DeathTestStyle.h"
+
 #ifndef MODULE_NAME
 #include "../Module.h"
 #endif
@@ -27,9 +29,10 @@
 
 #ifdef __POSIX__
 #include <csignal>
-#include <sys/wait.h>
 #include <unistd.h>
 #endif
+
+#ifdef __CORE_RESOURCE_MONITOR_WATCHDOG__
 
 namespace Thunder {
 namespace Tests {
@@ -48,13 +51,16 @@ namespace Core {
         EXPECT_FALSE(monitor.WatchDogEnabled());
         monitor.EnableWatchDog(1000, false);
         EXPECT_TRUE(monitor.WatchDogEnabled());
+        monitor.DisableWatchDog();
+        EXPECT_FALSE(monitor.WatchDogEnabled());
     }
 
-    TEST(Core_ResourceMonitor, ExpiryDoesNotAbortWhenConfiguredOff)
+    TEST(Core_ResourceMonitor, WatchDogStaysDisabledForZeroTimeout)
     {
-        ::Thunder::Core::ResourceMonitorHandler handler(1, false);
+        TestResourceMonitor monitor;
 
-        EXPECT_EQ(handler.Expired(), ::Thunder::Core::infinite);
+        monitor.EnableWatchDog(0, true);
+        EXPECT_FALSE(monitor.WatchDogEnabled());
     }
 
 #ifdef __POSIX__
@@ -204,34 +210,32 @@ namespace Core {
         const bool _blockInEvents;
     };
 
-    void ExpectResourceMonitorWatchDogAbort(const bool blockInEvents)
+    // Runs in a death test child, a fresh process, as the WatchDog thread does not survive a fork.
+    void BlockingResourceMonitorScenario(const bool blockInEvents)
     {
         int descriptors[2];
-        ASSERT_EQ(::pipe(descriptors), 0);
-
-        const pid_t pid = ::fork();
-        ASSERT_GE(pid, 0);
-
-        if (pid == 0) {
-            TestResourceMonitor monitor;
-            monitor.EnableWatchDog(50, true);
-
-            BlockingResource resource(descriptors[0], blockInEvents);
-            monitor.Register(resource);
-
-            const char event = 'x';
-            ::write(descriptors[1], &event, sizeof(event));
-            ::SleepMs(1000);
-            ::_exit(0);
+        if (::pipe(descriptors) != 0) {
+            ::_exit(2);
         }
 
-        ::close(descriptors[0]);
-        ::close(descriptors[1]);
+        TestResourceMonitor monitor;
+        monitor.EnableWatchDog(50, true);
 
-        int status = 0;
-        ASSERT_EQ(::waitpid(pid, &status, 0), pid);
-        ASSERT_TRUE(WIFSIGNALED(status));
-        EXPECT_EQ(WTERMSIG(status), SIGABRT);
+        BlockingResource resource(descriptors[0], blockInEvents);
+        monitor.Register(resource);
+
+        const char event = 'x';
+        if (::write(descriptors[1], &event, sizeof(event)) != static_cast<ssize_t>(sizeof(event))) {
+            ::_exit(3);
+        }
+        ::SleepMs(1000);
+        ::_exit(0);
+    }
+
+    void ExpectResourceMonitorWatchDogAbort(const bool blockInEvents)
+    {
+        THREADSAFE_DEATH_TESTS();
+        EXPECT_EXIT(BlockingResourceMonitorScenario(blockInEvents), ::testing::KilledBySignal(SIGABRT), "");
     }
 
     TEST(Core_ResourceMonitor, ExpiryAbortsTheProcessWhenHandleBlocks)
@@ -247,3 +251,5 @@ namespace Core {
 }
 }
 }
+
+#endif

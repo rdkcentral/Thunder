@@ -20,6 +20,8 @@
 #include <thread>
 #include <gtest/gtest.h>
 
+#include "DeathTestStyle.h"
+
 #ifndef MODULE_NAME
 #include "../Module.h"
 #endif
@@ -28,9 +30,10 @@
 
 #ifdef __POSIX__
 #include <csignal>
-#include <sys/wait.h>
 #include <unistd.h>
 #endif
+
+#ifdef __CORE_WORKERPOOL_WATCHDOG__
 
 namespace Thunder {
 namespace Tests {
@@ -92,87 +95,133 @@ namespace Core {
         ::Thunder::Core::Event& _completed;
     };
 
-    int WorkerPoolWatchDogScenario(const bool releaseStalledJob)
+    // Runs in a death test child, a fresh process, as the WatchDog thread does not survive a fork.
+    void WorkerPoolWatchDogScenario(const bool releaseStalledJob)
     {
-        const pid_t pid = ::fork();
-        if (pid < 0) {
-            return (-1);
+        TestDispatcher dispatcher;
+        ::Thunder::Core::WorkerPool pool(1, 0, 2, &dispatcher, nullptr, 1, 1);
+        ::Thunder::Core::WorkerPoolWatchable watchable(pool, 150);
+        pool.Run();
+
+        ::Thunder::Core::Event started(false, true);
+        ::Thunder::Core::Event release(false, true);
+        ::Thunder::Core::Event stalledJobCompleted(false, true);
+        ::Thunder::Core::Event queuedJobCompleted(false, true);
+
+        ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch> stalledJob =
+            ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>(
+                ::Thunder::Core::ProxyType<BlockingJob>::Create(started, release, stalledJobCompleted));
+        ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch> queuedJob =
+            ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>(
+                ::Thunder::Core::ProxyType<CompletingJob>::Create(queuedJobCompleted));
+
+        pool.Submit(stalledJob);
+        if (started.Lock(1000) != ::Thunder::Core::ERROR_NONE) {
+            ::_exit(2);
         }
-        if (pid == 0) {
-            TestDispatcher dispatcher;
-            ::Thunder::Core::WorkerPool pool(1, 0, 2, &dispatcher, nullptr, 1, 1);
-            ::Thunder::Core::WorkerPoolWatchDog watchdog(pool, 150, true);
-            pool.Run();
 
-            ::Thunder::Core::Event started(false, true);
-            ::Thunder::Core::Event release(false, true);
-            ::Thunder::Core::Event stalledJobCompleted(false, true);
-            ::Thunder::Core::Event queuedJobCompleted(false, true);
+        ::Thunder::Core::WatchDog::Instance().Register(watchable, true);
+        std::thread submitter([&pool, &queuedJob]() {
+            pool.Submit(queuedJob);
+        });
 
-            ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch> stalledJob =
-                ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>(
-                    ::Thunder::Core::ProxyType<BlockingJob>::Create(started, release, stalledJobCompleted));
-            ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch> queuedJob =
-                ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>(
-                    ::Thunder::Core::ProxyType<CompletingJob>::Create(queuedJobCompleted));
-
-            pool.Submit(stalledJob);
-            if (started.Lock(1000) != ::Thunder::Core::ERROR_NONE) {
-                ::_exit(2);
+        if (releaseStalledJob == true) {
+            ::SleepMs(20);
+            release.SetEvent();
+            submitter.join();
+            if ((stalledJobCompleted.Lock(1000) != ::Thunder::Core::ERROR_NONE)
+                || (queuedJobCompleted.Lock(1000) != ::Thunder::Core::ERROR_NONE)) {
+                ::_exit(3);
             }
-
-            watchdog.Start();
-            std::thread submitter([&pool, &queuedJob]() {
-                pool.Submit(queuedJob);
-            });
-
-            if (releaseStalledJob == true) {
-                ::SleepMs(20);
-                release.SetEvent();
-                submitter.join();
-                if ((stalledJobCompleted.Lock(1000) != ::Thunder::Core::ERROR_NONE)
-                    || (queuedJobCompleted.Lock(1000) != ::Thunder::Core::ERROR_NONE)) {
-                    ::_exit(3);
-                }
-                ::SleepMs(300);
-            } else {
-                ::SleepMs(1000);
-            }
-            ::_exit(0);
+            ::SleepMs(300);
+        } else {
+            ::SleepMs(1000);
         }
-
-        int status = 0;
-        if (::waitpid(pid, &status, 0) != pid) {
-            return (-1);
-        }
-        return (status);
+        ::_exit(0);
     }
 
     TEST(Core_WorkerPoolWatchDog, AbortsWhenQueuedWorkMakesNoProgress)
     {
-        const int status = WorkerPoolWatchDogScenario(false);
-        ASSERT_NE(status, -1);
-        ASSERT_TRUE(WIFSIGNALED(status));
-        EXPECT_EQ(WTERMSIG(status), SIGABRT);
+        THREADSAFE_DEATH_TESTS();
+        EXPECT_EXIT(WorkerPoolWatchDogScenario(false), ::testing::KilledBySignal(SIGABRT), "");
     }
 
     TEST(Core_WorkerPoolWatchDog, AllowsProgressAfterATemporaryStall)
     {
-        const int status = WorkerPoolWatchDogScenario(true);
-        ASSERT_NE(status, -1);
-        ASSERT_TRUE(WIFEXITED(status));
-        EXPECT_EQ(WEXITSTATUS(status), 0);
+        THREADSAFE_DEATH_TESTS();
+        EXPECT_EXIT(WorkerPoolWatchDogScenario(true), ::testing::ExitedWithCode(0), "");
     }
+
+#if defined(__JOB_QUEUE_STATIC_PRIORITY__) || defined(__JOB_QUEUE_DYNAMIC_PRIORITY__)
+    // Two workers but a low priority quota of one: the second low priority job waits for the quota while one worker is idle.
+    // Runs in a death test child, a fresh process, as the WatchDog thread does not survive a fork.
+    void WorkerPoolQuotaScenario(const bool releaseStalledJob)
+    {
+        TestDispatcher dispatcher;
+        ::Thunder::Core::WorkerPool pool(2, 0, 8, &dispatcher, nullptr, 1, 1);
+        ::Thunder::Core::WorkerPoolWatchable watchable(pool, 150);
+        pool.Run();
+
+        ::Thunder::Core::Event started(false, true);
+        ::Thunder::Core::Event release(false, true);
+        ::Thunder::Core::Event stalledJobCompleted(false, true);
+        ::Thunder::Core::Event queuedJobCompleted(false, true);
+
+        ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch> stalledJob =
+            ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>(
+                ::Thunder::Core::ProxyType<BlockingJob>::Create(started, release, stalledJobCompleted));
+        ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch> queuedJob =
+            ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>(
+                ::Thunder::Core::ProxyType<CompletingJob>::Create(queuedJobCompleted));
+
+        pool.Submit(stalledJob, ::Thunder::Core::ThreadPool::Priority::Low);
+        if (started.Lock(1000) != ::Thunder::Core::ERROR_NONE) {
+            ::_exit(2);
+        }
+
+        ::Thunder::Core::WatchDog::Instance().Register(watchable, true);
+        std::thread submitter([&pool, &queuedJob]() {
+            pool.Submit(queuedJob, ::Thunder::Core::ThreadPool::Priority::Low);
+        });
+
+        if (releaseStalledJob == true) {
+            ::SleepMs(20);
+            release.SetEvent();
+            submitter.join();
+            if ((stalledJobCompleted.Lock(1000) != ::Thunder::Core::ERROR_NONE)
+                || (queuedJobCompleted.Lock(1000) != ::Thunder::Core::ERROR_NONE)) {
+                ::_exit(3);
+            }
+            ::SleepMs(300);
+        } else {
+            ::SleepMs(1000);
+        }
+        ::_exit(0);
+    }
+
+    TEST(Core_WorkerPoolWatchDog, AbortsWhenWorkIsPendingForACategoryQuotaWhileAWorkerIsIdle)
+    {
+        THREADSAFE_DEATH_TESTS();
+        EXPECT_EXIT(WorkerPoolQuotaScenario(false), ::testing::KilledBySignal(SIGABRT), "");
+    }
+
+    TEST(Core_WorkerPoolWatchDog, AllowsCategoryQuotaWorkToProceedAfterATemporaryStall)
+    {
+        THREADSAFE_DEATH_TESTS();
+        EXPECT_EXIT(WorkerPoolQuotaScenario(true), ::testing::ExitedWithCode(0), "");
+    }
+#endif
 
     TEST(Core_WorkerPoolWatchDog, StopsCleanlyWhenPoolIsIdle)
     {
         TestDispatcher dispatcher;
         ::Thunder::Core::WorkerPool pool(1, 0, 2, &dispatcher, nullptr, 1, 1, 0);
-        ::Thunder::Core::WorkerPoolWatchDog watchdog(pool, 100, false);
+        ::Thunder::Core::WorkerPoolWatchable watchable(pool, 100);
         pool.Run();
 
-        watchdog.Start();
+        ::Thunder::Core::WatchDog::Instance().Register(watchable, false);
         ::SleepMs(20);
+        ::Thunder::Core::WatchDog::Instance().Unregister(watchable);
 
         pool.Stop();
         EXPECT_TRUE(pool.WaitForStop(1000));
@@ -182,3 +231,5 @@ namespace Core {
 }
 }
 }
+
+#endif
