@@ -72,6 +72,8 @@ namespace Core {
                 } else {
                     m_File.Permission(type & 0xFFFF);
                 }
+            } else if (noFollow) {
+                m_Flags = 0;
             }
         } else {
             m_File.Open((type & File::USER_WRITE) == 0);
