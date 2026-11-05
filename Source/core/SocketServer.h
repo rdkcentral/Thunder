@@ -62,31 +62,45 @@ namespace Core {
                 , _iterator(_clients.begin())
             {
             }
-            IteratorType(IteratorType<HANDLECLIENT>&& move)
+            IteratorType(IteratorType<HANDLECLIENT>&& move) noexcept
                 : _atHead(move._atHead)
-                , _clients(std::move(move._clients))
-                , _iterator(std::move(move._iterator))
+                , _clients()
+                , _iterator()
             {
+                const bool atEnd = (move._iterator == move._clients.end());
+
+                _clients = std::move(move._clients);
+                _iterator = (atEnd == true ? _clients.end() : move._iterator);
+
                 move._atHead = true;
+                move._iterator = move._clients.begin();
             }
             ~IteratorType() = default;
 
             IteratorType& operator=(const IteratorType<HANDLECLIENT>& RHS)
             {
+                if (this != &RHS) {
+                    _atHead = true;
+                    _clients = RHS._clients;
+                    _iterator = _clients.begin();
+                }
 
-                _atHead = RHS._atHead;
-                _clients = RHS._clients;
-                _iterator = RHS._iterator;
+                return (*this);
             }
-            IteratorType& operator=(IteratorType<HANDLECLIENT>&& move)
+            IteratorType& operator=(IteratorType<HANDLECLIENT>&& move) noexcept
             {
                 if (this != &move) {
+                    const bool atEnd = (move._iterator == move._clients.end());
+
                     _atHead = move._atHead;
                     _clients = std::move(move._clients);
-                    _iterator = std::move(move._iterator);
+                    _iterator = (atEnd == true ? _clients.end() : move._iterator);
 
                     move._atHead = true;
+                    move._iterator = move._clients.begin();
                 }
+
+                return (*this);
             }
 
         public:
