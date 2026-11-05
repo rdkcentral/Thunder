@@ -549,9 +549,7 @@ namespace Core {
         std::list<string> output;
 
         FILE* cmdFile = fopen(procPath, "rb");
-        if (cmdFile == nullptr) {
-            TRACE_L1("Failed to open /proc/.../cmdline for process %u", _pid);
-        } else {
+        {
             uint32_t index = 0;
             const int bufferSize = 256;
             char buffer[bufferSize];
