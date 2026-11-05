@@ -52,6 +52,11 @@ namespace Core {
     }
 
     DataElementFile::DataElementFile(const string& fileName, const uint32_t type, const uint32_t requestedSize)
+        : DataElementFile(fileName, type, requestedSize, false)
+    {
+    }
+
+    DataElementFile::DataElementFile(const string& fileName, const uint32_t type, const uint32_t requestedSize, const bool noFollow)
         : DataElement()
         , m_File(fileName)
         , m_MemoryMappedFile(INVALID_HANDLE_VALUE)
@@ -61,8 +66,13 @@ namespace Core {
         ASSERT(m_Flags != 0);
 
         if ((type & File::CREATE) != 0) {
-            m_File.Create(type);
-            m_File.Permission(type & 0xFFFF);
+            if (m_File.Create(type, false, noFollow)) {
+                if (noFollow) {
+                    m_File.PermissionOnHandle(type & 0xFFFF);
+                } else {
+                    m_File.Permission(type & 0xFFFF);
+                }
+            }
         } else {
             m_File.Open((type & File::USER_WRITE) == 0);
         }
@@ -96,7 +106,7 @@ namespace Core {
 
     bool DataElementFile::Load() {
         bool available = (m_File.IsOpen() == true);
-        if (available == false) {
+        if ((available == false) && (m_Flags != 0)) {
             m_File.Open((m_Flags & File::USER_WRITE) == 0);
             if (m_File.IsOpen() == true) {
                 available = true;
