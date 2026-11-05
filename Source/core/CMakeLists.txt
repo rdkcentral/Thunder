@@ -347,7 +347,7 @@ install(
 )
 
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/generated/core/WarningReportingConfig.h"
-    DESTINATION include/${NAMESPACE}/core
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}/core
     COMPONENT ${NAMESPACE}_Development)
 
 # ===========================================================================================
