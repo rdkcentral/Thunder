@@ -17,6 +17,8 @@
 
 set(TARGET ${NAMESPACE}COM)
 
+option(COMRPC_ABORT_ON_TIMEOUT "Abort the process when a COMRPC invoke times out (debugging aid)" OFF)
+
 ProxyStubGenerator(NAMESPACE "WPEFramework::RPC" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/ICOM.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
 
 add_library(${TARGET} SHARED
@@ -71,6 +73,12 @@ target_include_directories(${TARGET}
         )
 
 target_compile_definitions(${TARGET} PRIVATE COM_EXPORTS)
+
+if(COMRPC_ABORT_ON_TIMEOUT)
+    target_compile_definitions(${TARGET}
+        PRIVATE
+            COMRPC_ABORT_ON_TIMEOUT)
+endif()
 
 if(PROCESSCONTAINERS)
     target_link_libraries(${TARGET}
