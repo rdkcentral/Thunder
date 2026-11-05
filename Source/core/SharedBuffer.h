@@ -85,7 +85,11 @@ namespace Core {
         {
             // fprintf(stderr, "Entering RequestProduce: %d %d\n", (int)_producer.IsLocked(), (int)_consumer.IsLocked());
 
-            uint32_t output = (IsValid() ? _producer.Lock(waitTime) : Core::ERROR_UNAVAILABLE);
+            uint32_t output = Core::ERROR_UNAVAILABLE;
+
+            if (IsValid() == true) {
+                output = _producer.Lock(waitTime);
+            }
 
             // fprintf(stderr, "Leaving RequestProduce: %d %d\n", (int)_producer.IsLocked(), (int)_consumer.IsLocked());
 
@@ -161,7 +165,11 @@ namespace Core {
 
         uint32_t User(const string& userName) const
         {
-            uint32_t result = (IsValid() ? _administrationBuffer.User(userName) : Core::ERROR_UNAVAILABLE);
+            uint32_t result = Core::ERROR_UNAVAILABLE;
+
+            if (IsValid() == true) {
+                result = _administrationBuffer.User(userName);
+            }
 
             if (result == Core::ERROR_NONE){
                 result = DataElementFile::User(userName);
@@ -171,7 +179,11 @@ namespace Core {
         }
         uint32_t Group(const string& groupName) const
         {
-            uint32_t result = (IsValid() ? _administrationBuffer.Group(groupName) : Core::ERROR_UNAVAILABLE);
+            uint32_t result = Core::ERROR_UNAVAILABLE;
+
+            if (IsValid() == true) {
+                result = _administrationBuffer.Group(groupName);
+            }
 
             if (result == Core::ERROR_NONE){
                 result = DataElementFile::Group(groupName);
@@ -181,7 +193,11 @@ namespace Core {
         }
         uint32_t Permission(uint16_t mode) const
         {
-            uint32_t result = (IsValid() ? _administrationBuffer.Storage().PermissionOnHandle(mode) : Core::ERROR_UNAVAILABLE);
+            uint32_t result = Core::ERROR_UNAVAILABLE;
+
+            if (IsValid() == true) {
+                result = _administrationBuffer.Storage().PermissionOnHandle(mode);
+            }
 
             if (result == Core::ERROR_NONE){
                 result = DataElementFile::Permission(mode);
