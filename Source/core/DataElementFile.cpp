@@ -201,6 +201,13 @@ namespace Core {
 #endif
 
 #ifdef __POSIX__
+
+    void process_data(int *ptr) {
+        // Coverity flags this: ptr might be NULL when passed into the function
+        int value = *ptr; 
+        printf("Value: %d\n", value);
+    }
+
     void DataElementFile::OpenMemoryMappedFile(uint32_t requiredSize)
     {
         if (requiredSize > 0) {
