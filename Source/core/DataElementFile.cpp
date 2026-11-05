@@ -75,8 +75,10 @@ namespace Core {
             } else if (noFollow) {
                 m_Flags = 0;
             }
-        } else {
+        } else if (noFollow == false) {
             m_File.Open((type & File::USER_WRITE) == 0);
+        } else {
+            m_Flags = 0;
         }
 
         if (IsValid()) {
