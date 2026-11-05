@@ -3356,7 +3356,7 @@
 </tr>
 <tr>
 <td>resourcemonitorwatchdogtimeout</td>
-<td>ResourceMonitor callback watchdog timeout in milliseconds. <code>0</code> disables the watchdog. Enabled only in the Linux Thunder daemon. Set the generated config default with CMake cache variable <code>RESOURCE_MONITOR_WATCHDOG_TIMEOUT</code>.</td>
+<td>ResourceMonitor callback watchdog timeout in milliseconds. <code>0</code> disables the watchdog. Enabled only in the Linux Thunder daemon and only if compiled in (CMake option <code>RESOURCE_MONITOR_WATCHDOG_SUPPORT</code>, on by default). Set the generated config default with CMake cache variable <code>RESOURCE_MONITOR_WATCHDOG_TIMEOUT</code>.</td>
 <td>integer</td>
 <td>0</td>
 <td>30000</td>
@@ -3370,7 +3370,7 @@
 </tr>
 <tr>
 <td>workerpoolwatchdogtimeout</td>
-<td>WorkerPool no-progress timeout in milliseconds when all workers are occupied without extracting another job. <code>0</code> disables the watchdog. Enabled only in the Linux Thunder daemon. Set the generated config default with CMake cache variable <code>WORKERPOOL_WATCHDOG_TIMEOUT</code>.</td>
+<td>WorkerPool no-progress timeout in milliseconds: no job was extracted while all workers are occupied or while accepted work (including work waiting for a priority category quota) is still outstanding. <code>0</code> disables the watchdog. Enabled only in the Linux Thunder daemon and only if compiled in (CMake option <code>WORKERPOOL_WATCHDOG_SUPPORT</code>, on by default). Set the generated config default with CMake cache variable <code>WORKERPOOL_WATCHDOG_TIMEOUT</code>.</td>
 <td>integer</td>
 <td>0</td>
 <td>30000</td>
