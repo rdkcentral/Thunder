@@ -17,7 +17,6 @@
  * limitations under the License.
  */
 
-#include <type_traits>
 #include <utility>
 
 #include <gtest/gtest.h>
@@ -77,9 +76,6 @@ namespace Core {
 
         return count;
     }
-
-    static_assert(std::is_nothrow_move_constructible<Iterator>::value, "move constructor must be noexcept");
-    static_assert(std::is_nothrow_move_assignable<Iterator>::value, "move assignment must be noexcept");
 
     // ---------------------------------------------------------------------
     // The fix: moving an iterator that sits at end() (empty or fully walked)

@@ -62,7 +62,7 @@ namespace Core {
                 , _iterator(_clients.begin())
             {
             }
-            IteratorType(IteratorType<HANDLECLIENT>&& move) noexcept
+            IteratorType(IteratorType<HANDLECLIENT>&& move)
                 : _atHead(move._atHead)
                 , _clients()
                 , _iterator()
@@ -87,7 +87,7 @@ namespace Core {
 
                 return (*this);
             }
-            IteratorType& operator=(IteratorType<HANDLECLIENT>&& move) noexcept
+            IteratorType& operator=(IteratorType<HANDLECLIENT>&& move)
             {
                 if (this != &move) {
                     const bool atEnd = (move._iterator == move._clients.end());
