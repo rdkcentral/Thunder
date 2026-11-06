@@ -236,6 +236,9 @@ namespace ProxyStub {
                         result = _channel->Invoke(message, RPC::CommunicationTimeOut);
 
                         if (result != Core::ERROR_NONE) {
+                            if (result == Core::ERROR_TIMEDOUT) {
+                                SYSLOG(Logging::Error, (_T("Remote release of the Proxy for Interface [0x%X] timed out, %s"), message->Parameters().InterfaceId(), RemoteInfo(_channel).c_str()));
+                            }
                             TRACE_L1("Could not remote release the Proxy.");
                             result |= COM_ERROR;
                         }
@@ -265,6 +268,7 @@ namespace ProxyStub {
         inline void* RemoteInterface(const uint32_t id) const
         {
             void* result = nullptr;
+            uint32_t invokeResult = Core::ERROR_NONE;
             Core::ProxyType<RPC::InvokeMessage> message(RPC::Administrator::Instance().Message());
             RPC::Data::Frame::Writer parameters(message->Parameters().Writer());
 
@@ -273,7 +277,10 @@ namespace ProxyStub {
 
             _adminLock.Lock();
 
-            if ((_channel.IsValid() == false) || (_channel->Invoke(message, RPC::CommunicationTimeOut) != Core::ERROR_NONE)) {
+            if ((_channel.IsValid() == false) || ((invokeResult = _channel->Invoke(message, RPC::CommunicationTimeOut)) != Core::ERROR_NONE)) {
+                if (invokeResult == Core::ERROR_TIMEDOUT) {
+                    SYSLOG(Logging::Error, (_T("Remote QueryInterface for Interface [0x%X] timed out, %s"), message->Parameters().InterfaceId(), RemoteInfo(_channel).c_str()));
+                }
                 _adminLock.Unlock();
             }
             else {
@@ -439,6 +446,8 @@ namespace ProxyStub {
             }
         }
 
+    private:
+        static string RemoteInfo(const Core::ProxyType<Core::IPCChannel>& channel);
     private:
         mutable Core::CriticalSection _adminLock;
         mutable uint32_t _refCount;
