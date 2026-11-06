@@ -1140,7 +1140,7 @@ namespace RPC {
                         // listens for clients requesting service.
                         Communicator::RemoteConnection* remoteConnection = Core::Service<RemoteConnection>::Create<RemoteConnection>(channel, info.Id());
 
-                        channel->Extension().Link(*this, remoteConnection->Id());
+                        channel->Extension().Link(*this, remoteConnection->Id(), info.Id());
                         ASSERT(remoteConnection != nullptr);
 
                         // Add ref is done during the creation, no need to take another reference unless we also would release it after
@@ -1190,7 +1190,7 @@ namespace RPC {
                 // This is when we requested this interface/object to be created, there must be already an
                 // administration, it is just not complete.... yet!!!!
                 index->second->Open(channel, info.Id());
-                channel->Extension().Link(*this, index->second->Id());
+                channel->Extension().Link(*this, index->second->Id(), info.Id());
 
                 Activated(index->second);
 
@@ -1288,6 +1288,7 @@ namespace RPC {
                 : _channel(channel->Source())
                 , _connectionMap(nullptr)
                 , _id(0)
+                , _remotePid(0)
             {
                 // We are a composit of the Channel, no need (and do not for cyclic references) not maintain a reference...
                 ASSERT(channel != nullptr);
@@ -1295,10 +1296,11 @@ namespace RPC {
             ~ChannelLink() = default;
 
         public:
-            void Link(RemoteConnectionMap& connectionMap, const uint32_t id)
+            void Link(RemoteConnectionMap& connectionMap, const uint32_t id, const uint32_t remotePid)
             {
                 _connectionMap = &connectionMap;
                 _id = id;
+                _remotePid = remotePid;
             }
             void StateChange()
             {
@@ -1315,12 +1317,17 @@ namespace RPC {
             {
                 return _id;
             }
+            uint32_t RemotePid() const
+            {
+                return _remotePid;
+            }
 
         private:
             // Non ref-counted reference to our parent, of which we are a composit :-)
             Core::SocketPort& _channel;
             RemoteConnectionMap* _connectionMap;
             uint32_t _id;
+            uint32_t _remotePid;
         };
 
     private:
