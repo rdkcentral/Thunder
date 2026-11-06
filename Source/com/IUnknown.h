@@ -290,7 +290,7 @@ namespace ProxyStub {
         inline void* RemoteInterface(const uint32_t id) const
         {
             void* result = nullptr;
-            uint32_t invokeResult = 0;
+            uint32_t invokeResult = Core::ERROR_NONE;
             Core::ProxyType<RPC::InvokeMessage> message(RPC::Administrator::Instance().Message());
             message->Parameters().Set(_implementation, _interfaceId, 2);
             RPC::Data::Frame::Writer parameters(message->Parameters().Writer());
