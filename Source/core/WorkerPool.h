@@ -193,7 +193,7 @@ namespace Core {
             Core::TimerType<Timer>& _timer;
         };
 
-        #ifdef __CORE_WARNING_REPORTING__
+        #ifdef __CORE_ACTIVE_JOB_MONITORING__
         class DispatchedJobMonitor : public ThreadPool::IDispatchedJobMonitor {
         /**
         * @brief DispatchedJobMonitor monitor/maintains a list of Dispatched Jobs for analysis.
@@ -337,7 +337,7 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
             #ifdef THUNDER_CORE_WORKERPOOL_WATCHDOG
             , _running(false)
             #endif
-            #ifdef __CORE_WARNING_REPORTING__
+            #ifdef __CORE_ACTIVE_JOB_MONITORING__
             , _dispatchedJobMonitor(*this, static_cast<uint32_t>(DispatchedJobMonitor::DefaultScheduleIntervalInMilliSeconds))
             #endif 
         {
@@ -479,7 +479,7 @@ POP_WARNING()
             #ifdef THUNDER_CORE_WORKERPOOL_WATCHDOG
             _running.store(true, Core::memory_order::memory_order_relaxed);
             #endif
-            #ifdef __CORE_WARNING_REPORTING__
+            #ifdef __CORE_ACTIVE_JOB_MONITORING__
             _threadPool.SetDispatchedJobMonitor(&_dispatchedJobMonitor);
             _dispatchedJobMonitor.Start();
             #endif
@@ -489,7 +489,7 @@ POP_WARNING()
             #ifdef THUNDER_CORE_WORKERPOOL_WATCHDOG
             _running.store(false, Core::memory_order::memory_order_relaxed);
             #endif
-            #ifdef __CORE_WARNING_REPORTING__
+            #ifdef __CORE_ACTIVE_JOB_MONITORING__
             _dispatchedJobMonitor.Stop();
             _threadPool.ResetDispatchedJobMonitor();
             #endif
@@ -509,7 +509,7 @@ POP_WARNING()
         #ifdef THUNDER_CORE_WORKERPOOL_WATCHDOG
         std::atomic<bool> _running;
         #endif
-        #ifdef __CORE_WARNING_REPORTING__
+        #ifdef __CORE_ACTIVE_JOB_MONITORING__
         DispatchedJobMonitor _dispatchedJobMonitor;
         #endif
     };

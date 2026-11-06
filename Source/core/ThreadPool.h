@@ -25,6 +25,11 @@
 #include "ResourceMonitor.h"
 #include "Number.h"
 
+// Slim warning reporting skips the periodic active-job monitoring.
+#if defined(__CORE_WARNING_REPORTING__) && !defined(__CORE_SLIM_WARNING_REPORTING__)
+#define __CORE_ACTIVE_JOB_MONITORING__
+#endif
+
 namespace Thunder {
 
 namespace Core {
@@ -63,7 +68,7 @@ namespace Core {
             Low = 2
         };
 
-        #ifdef __CORE_WARNING_REPORTING__
+        #ifdef __CORE_ACTIVE_JOB_MONITORING__
         struct EXTERNAL DispatchedJobMetaData {
             thread_id  WorkerId;
             string     CallSign;
@@ -142,8 +147,8 @@ namespace Core {
 
                 IDispatch* request = &(*_job);
 
-                REPORT_OUTOFBOUNDS_WARNING(WarningReporting::JobTooLongWaitingInQueue, static_cast<uint32_t>((Time::Now().Ticks() - _time) / Time::TicksPerMillisecond));
-                REPORT_DURATION_WARNING({ dispatcher->Dispatch(request); }, WarningReporting::JobTooLongToFinish);
+                REPORT_PRIORITY_OUTOFBOUNDS_WARNING(WarningReporting::JobTooLongWaitingInQueue, static_cast<uint32_t>((Time::Now().Ticks() - _time) / Time::TicksPerMillisecond));
+                REPORT_PRIORITY_DURATION_WARNING({ dispatcher->Dispatch(request); }, WarningReporting::JobTooLongToFinish);
             }
             bool IsValid() const
             {
@@ -500,16 +505,20 @@ namespace Core {
                     #endif
 
                     #ifdef __CORE_WARNING_REPORTING__
+                    #ifdef __CORE_ACTIVE_JOB_MONITORING__
                     // Add an entry into the JobMonitor list
                     DispatchedJobMetaData data{Thread::ThreadId(),
                         string(Thunder::Core::CallsignTLS::CallsignAccess<&Thunder::Core::System::MODULE_NAME>::Callsign()),
                         Time::Now().Ticks(), 0};
 
                     _parent.SaveDispatchedJobContext(data);
+                    #endif
 
                     _currentRequest.Process(_dispatcher);
 
+                    #ifdef __CORE_ACTIVE_JOB_MONITORING__
                     _parent.RemoveDispatchedJobContext(data);
+                    #endif
 
                     #else
                     IDispatch* request = &(*_currentRequest);
@@ -630,7 +639,7 @@ namespace Core {
             : _queue(queueSize)
             #endif 
             , _scheduler(scheduler)
-            #ifdef __CORE_WARNING_REPORTING__
+            #ifdef __CORE_ACTIVE_JOB_MONITORING__
             , _dispatchedJobMonitor(nullptr)
             #endif
             , _external(external)
@@ -872,7 +881,7 @@ namespace Core {
             _unitsSet.erase(id);
         }
 
-        #ifdef __CORE_WARNING_REPORTING__
+        #ifdef __CORE_ACTIVE_JOB_MONITORING__
         void SetDispatchedJobMonitor(IDispatchedJobMonitor* dispatchedJobMonitor)
         {
             _dispatchedJobMonitor = dispatchedJobMonitor;
@@ -987,7 +996,7 @@ namespace Core {
         MessageQueue _queue;
         std::list<Executor> _units;
         IScheduler* _scheduler;
-        #ifdef __CORE_WARNING_REPORTING__
+        #ifdef __CORE_ACTIVE_JOB_MONITORING__
         IDispatchedJobMonitor* _dispatchedJobMonitor;
         #endif
         Minion* _external;

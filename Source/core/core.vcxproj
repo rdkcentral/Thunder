@@ -212,6 +212,9 @@
     <Import Project="CoreDefault.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <WarningReportingGeneratedIncludePath Condition="'$(WarningReportingGeneratedIncludePath)' == ''">$(SolutionDir)build\Source\core\generated\core</WarningReportingGeneratedIncludePath>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
     <OutDir>$(SolutionDir)..\artifacts\$(Configuration)\</OutDir>
@@ -240,8 +243,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>$(CoreConsole);$(CoreDefines);CORE_EXPORTS;_CRT_SECURE_NO_WARNINGS;_WINSOCK_DEPRECATED_NO_WARNINGS;WIN32;_DEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions);</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>
-      </AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(WarningReportingGeneratedIncludePath)\..;$(WarningReportingGeneratedIncludePath);$(ProjectDir)..;$(WindowsPath);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <UseStandardPreprocessor>true</UseStandardPreprocessor>
     </ClCompile>
     <Link>
@@ -259,7 +261,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>$(CoreConsole);$(CoreDefines);CORE_EXPORTS;_CRT_SECURE_NO_WARNINGS;_WINSOCK_DEPRECATED_NO_WARNINGS;DEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions); __W3C_TRACE_CONTEXT__</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(WindowsPath)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(WarningReportingGeneratedIncludePath)\..;$(WarningReportingGeneratedIncludePath);$(ProjectDir)..;$(WindowsPath);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <UseStandardPreprocessor>true</UseStandardPreprocessor>
     </ClCompile>
     <Link>
@@ -279,8 +281,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>$(CoreConsole);$(CoreDefines);CORE_EXPORTS;_CRT_SECURE_NO_WARNINGS;_WINSOCK_DEPRECATED_NO_WARNINGS;IN32;NDEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>
-      </AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(WarningReportingGeneratedIncludePath)\..;$(WarningReportingGeneratedIncludePath);$(ProjectDir)..;$(WindowsPath);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <UseStandardPreprocessor>true</UseStandardPreprocessor>
     </ClCompile>
     <Link>
@@ -302,8 +303,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>$(CoreConsole);$(CoreDefines);CORE_EXPORTS;_CRT_SECURE_NO_WARNINGS;_WINSOCK_DEPRECATED_NO_WARNINGS;NDEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>
-      </AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(WarningReportingGeneratedIncludePath)\..;$(WarningReportingGeneratedIncludePath);$(ProjectDir)..;$(WindowsPath);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <UseStandardPreprocessor>true</UseStandardPreprocessor>
     </ClCompile>
     <Link>
