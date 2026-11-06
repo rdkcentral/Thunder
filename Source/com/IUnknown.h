@@ -350,7 +350,6 @@ namespace ProxyStub {
         const Core::ProxyType<Core::IPCChannel>& Channel() const {
             return (_channel);
         }
-        static string RemoteInfo(const Core::ProxyType<Core::IPCChannel>& channel);
 
         // -------------------------------------------------------------------------------------------------------------------------------
         // Proxy environment calls
@@ -477,6 +476,8 @@ namespace ProxyStub {
             }
         }
 
+    private:
+        static string RemoteInfo(const Core::ProxyType<Core::IPCChannel>& channel);
     private:
         mutable Core::CriticalSection _adminLock;
         mutable uint32_t _refCount;
