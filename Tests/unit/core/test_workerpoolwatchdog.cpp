@@ -33,7 +33,7 @@
 #include <unistd.h>
 #endif
 
-#ifdef __CORE_WORKERPOOL_WATCHDOG__
+#ifdef THUNDER_CORE_WORKERPOOL_WATCHDOG
 
 namespace Thunder {
 namespace Tests {
@@ -211,6 +211,55 @@ namespace Core {
         EXPECT_EXIT(WorkerPoolQuotaScenario(true), ::testing::ExitedWithCode(0), "");
     }
 #endif
+
+    // Work that is left over in a pool that has been stopped, like during the shutdown of the daemon, is not a stall.
+    // Runs in a death test child, a fresh process, as the WatchDog thread does not survive a fork.
+    void StoppedPoolWithPendingWorkScenario()
+    {
+        TestDispatcher dispatcher;
+        ::Thunder::Core::WorkerPool pool(1, 0, 2, &dispatcher, nullptr, 1, 1);
+        ::Thunder::Core::WorkerPoolWatchable watchable(pool, 150);
+        pool.Run();
+
+        ::Thunder::Core::Event started(false, true);
+        ::Thunder::Core::Event release(false, true);
+        ::Thunder::Core::Event stalledJobCompleted(false, true);
+        ::Thunder::Core::Event queuedJobCompleted(false, true);
+
+        ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch> stalledJob =
+            ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>(
+                ::Thunder::Core::ProxyType<BlockingJob>::Create(started, release, stalledJobCompleted));
+        ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch> queuedJob =
+            ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>(
+                ::Thunder::Core::ProxyType<CompletingJob>::Create(queuedJobCompleted));
+
+        pool.Submit(stalledJob);
+        if (started.Lock(1000) != ::Thunder::Core::ERROR_NONE) {
+            ::_exit(2);
+        }
+
+        // The job waits for the category quota, the submitter is blocked till it is promoted.
+        std::thread submitter([&pool, &queuedJob]() {
+            pool.Submit(queuedJob);
+        });
+        ::SleepMs(50);
+
+        ::Thunder::Core::WatchDog::Instance().Register(watchable, true);
+
+        pool.Stop();
+        ::SleepMs(500);
+
+        release.SetEvent();
+        submitter.join();
+        ::Thunder::Core::WatchDog::Instance().Unregister(watchable);
+        ::_exit(pool.WaitForStop(1000) == true ? 0 : 3);
+    }
+
+    TEST(Core_WorkerPoolWatchDog, DoesNotExpireForPendingWorkOfAStoppedPool)
+    {
+        THREADSAFE_DEATH_TESTS();
+        EXPECT_EXIT(StoppedPoolWithPendingWorkScenario(), ::testing::ExitedWithCode(0), "");
+    }
 
     TEST(Core_WorkerPoolWatchDog, StopsCleanlyWhenPoolIsIdle)
     {

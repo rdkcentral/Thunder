@@ -198,13 +198,13 @@ if(WARNING_REPORTING OR EXCEPTION_CATCHING)
     target_sources(${TARGET} PRIVATE CallsignTLS.cpp)
 endif()
 
-if(RESOURCE_MONITOR_WATCHDOG_SUPPORT)
-    target_compile_definitions(${TARGET} PUBLIC __CORE_RESOURCE_MONITOR_WATCHDOG__)
+if(THUNDER_CORE_RESOURCE_MONITOR_WATCHDOG)
+    target_compile_definitions(${TARGET} PUBLIC THUNDER_CORE_RESOURCE_MONITOR_WATCHDOG)
     message(STATUS "Watchdog supervision of the ResourceMonitor enabled")
 endif()
 
-if(WORKERPOOL_WATCHDOG_SUPPORT)
-    target_compile_definitions(${TARGET} PUBLIC __CORE_WORKERPOOL_WATCHDOG__)
+if(THUNDER_CORE_WORKERPOOL_WATCHDOG)
+    target_compile_definitions(${TARGET} PUBLIC THUNDER_CORE_WORKERPOOL_WATCHDOG)
     message(STATUS "Watchdog supervision of the WorkerPool enabled")
 endif()
 

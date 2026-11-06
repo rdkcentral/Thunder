@@ -33,12 +33,12 @@
 
 #define MAX_EXTERNAL_WAITS 2000 /* Wait for 2 Seconds */
 
-#if defined(__CORE_RESOURCE_MONITOR_WATCHDOG__) && defined(__LINUX__)
-#define PLUGINHOST_RESOURCE_MONITOR_WATCHDOG
+#if defined(THUNDER_CORE_RESOURCE_MONITOR_WATCHDOG) && defined(__LINUX__)
+#define THUNDER_PLUGINHOST_RESOURCE_MONITOR_WATCHDOG
 #endif
 
-#if defined(__CORE_WORKERPOOL_WATCHDOG__) && defined(__LINUX__)
-#define PLUGINHOST_WORKERPOOL_WATCHDOG
+#if defined(THUNDER_CORE_WORKERPOOL_WATCHDOG) && defined(__LINUX__)
+#define THUNDER_PLUGINHOST_WORKERPOOL_WATCHDOG
 #endif
 
 #ifndef HIBERNATE_WAKEUP_TIMEOUT
@@ -183,14 +183,14 @@ namespace PluginHost {
                 const uint32_t queueSize,
                 const uint8_t lowPriorityThreadCount,
                 const uint8_t mediumPriorityThreadCount
-#ifdef PLUGINHOST_WORKERPOOL_WATCHDOG
+#ifdef THUNDER_PLUGINHOST_WORKERPOOL_WATCHDOG
                 , const uint32_t watchdogTimeout
                 , const bool watchdogAbort
 #endif
                 )
                 : Core::WorkerPool(threadCount, stackSize, queueSize, &_dispatch, this, lowPriorityThreadCount, mediumPriorityThreadCount)
                 , _dispatch()
-#ifdef PLUGINHOST_WORKERPOOL_WATCHDOG
+#ifdef THUNDER_PLUGINHOST_WORKERPOOL_WATCHDOG
                 , _watchable(nullptr)
 #endif
             {
@@ -201,13 +201,13 @@ namespace PluginHost {
                     stackSize,
                     lowPriorityThreadCount,
                     mediumPriorityThreadCount));
-#ifdef PLUGINHOST_WORKERPOOL_WATCHDOG
+#ifdef THUNDER_PLUGINHOST_WORKERPOOL_WATCHDOG
                 if (watchdogTimeout != 0) {
                     _watchable = new Core::WorkerPoolWatchable(*this, watchdogTimeout);
                 }
 #endif
                 Run();
-#ifdef PLUGINHOST_WORKERPOOL_WATCHDOG
+#ifdef THUNDER_PLUGINHOST_WORKERPOOL_WATCHDOG
                 if (_watchable != nullptr) {
                     Core::WatchDog::Instance().Register(*_watchable, watchdogAbort);
                 }
@@ -215,7 +215,7 @@ namespace PluginHost {
             }
             ~WorkerPoolImplementation() override
             {
-#ifdef PLUGINHOST_WORKERPOOL_WATCHDOG
+#ifdef THUNDER_PLUGINHOST_WORKERPOOL_WATCHDOG
                 if (_watchable != nullptr) {
                     Core::WatchDog::Instance().Unregister(*_watchable);
                     delete _watchable;
@@ -246,7 +246,7 @@ namespace PluginHost {
 
         private:
             Dispatcher _dispatch;
-#ifdef PLUGINHOST_WORKERPOOL_WATCHDOG
+#ifdef THUNDER_PLUGINHOST_WORKERPOOL_WATCHDOG
             Core::WorkerPoolWatchable* _watchable;
 #endif
         };

@@ -418,11 +418,11 @@ namespace PluginHost {
 #endif
                 , ProxyStubPath()
                 , PostMortemPath(_T("/opt/minidumps"))
-#ifdef __CORE_RESOURCE_MONITOR_WATCHDOG__
+#ifdef THUNDER_CORE_RESOURCE_MONITOR_WATCHDOG
                 , ResourceMonitorWatchdogTimeout(0)
                 , ResourceMonitorWatchdogAbort(false)
 #endif
-#ifdef __CORE_WORKERPOOL_WATCHDOG__
+#ifdef THUNDER_CORE_WORKERPOOL_WATCHDOG
                 , WorkerPoolWatchdogTimeout(0)
                 , WorkerPoolWatchdogAbort(false)
 #endif
@@ -481,11 +481,11 @@ namespace PluginHost {
                 Add(_T("volatilepath"), &VolatilePath);
                 Add(_T("proxystubpath"), &ProxyStubPath);
                 Add(_T("postmortempath"), &PostMortemPath);
-#ifdef __CORE_RESOURCE_MONITOR_WATCHDOG__
+#ifdef THUNDER_CORE_RESOURCE_MONITOR_WATCHDOG
                 Add(_T("resourcemonitorwatchdogtimeout"), &ResourceMonitorWatchdogTimeout);
                 Add(_T("resourcemonitorwatchdogabort"), &ResourceMonitorWatchdogAbort);
 #endif
-#ifdef __CORE_WORKERPOOL_WATCHDOG__
+#ifdef THUNDER_CORE_WORKERPOOL_WATCHDOG
                 Add(_T("workerpoolwatchdogtimeout"), &WorkerPoolWatchdogTimeout);
                 Add(_T("workerpoolwatchdogabort"), &WorkerPoolWatchdogAbort);
 #endif
@@ -547,11 +547,11 @@ namespace PluginHost {
             Core::JSON::String VolatilePath;
             Core::JSON::String ProxyStubPath;
             Core::JSON::String PostMortemPath;
-#ifdef __CORE_RESOURCE_MONITOR_WATCHDOG__
+#ifdef THUNDER_CORE_RESOURCE_MONITOR_WATCHDOG
             Core::JSON::DecUInt32 ResourceMonitorWatchdogTimeout;
             Core::JSON::Boolean ResourceMonitorWatchdogAbort;
 #endif
-#ifdef __CORE_WORKERPOOL_WATCHDOG__
+#ifdef THUNDER_CORE_WORKERPOOL_WATCHDOG
             Core::JSON::DecUInt32 WorkerPoolWatchdogTimeout;
             Core::JSON::Boolean WorkerPoolWatchdogAbort;
 #endif
@@ -738,11 +738,11 @@ namespace PluginHost {
             , _proxyStubPath()
             , _observableProxyStubPath()
             , _postMortemPath()
-#ifdef __CORE_RESOURCE_MONITOR_WATCHDOG__
+#ifdef THUNDER_CORE_RESOURCE_MONITOR_WATCHDOG
             , _resourceMonitorWatchdogTimeout(0)
             , _resourceMonitorWatchdogAbort(false)
 #endif
-#ifdef __CORE_WORKERPOOL_WATCHDOG__
+#ifdef THUNDER_CORE_WORKERPOOL_WATCHDOG
             , _workerPoolWatchdogTimeout(0)
             , _workerPoolWatchdogAbort(false)
 #endif
@@ -860,11 +860,11 @@ namespace PluginHost {
                     _pluginConfigPath = Core::Directory::Normalize(config.Observe.PluginConfigPath.Value());
                 }
                 _postMortemPath = Core::Directory::Normalize(config.PostMortemPath.Value());
-#ifdef __CORE_RESOURCE_MONITOR_WATCHDOG__
+#ifdef THUNDER_CORE_RESOURCE_MONITOR_WATCHDOG
                 _resourceMonitorWatchdogTimeout = config.ResourceMonitorWatchdogTimeout.Value();
                 _resourceMonitorWatchdogAbort = config.ResourceMonitorWatchdogAbort.Value();
 #endif
-#ifdef __CORE_WORKERPOOL_WATCHDOG__
+#ifdef THUNDER_CORE_WORKERPOOL_WATCHDOG
                 _workerPoolWatchdogTimeout = config.WorkerPoolWatchdogTimeout.Value();
                 _workerPoolWatchdogAbort = config.WorkerPoolWatchdogAbort.Value();
 #endif
@@ -1106,7 +1106,7 @@ namespace PluginHost {
         {
             return (_postMortemPath);
         }
-#ifdef __CORE_RESOURCE_MONITOR_WATCHDOG__
+#ifdef THUNDER_CORE_RESOURCE_MONITOR_WATCHDOG
         inline uint32_t ResourceMonitorWatchdogTimeout() const
         {
             return (_resourceMonitorWatchdogTimeout);
@@ -1116,7 +1116,7 @@ namespace PluginHost {
             return (_resourceMonitorWatchdogAbort);
         }
 #endif
-#ifdef __CORE_WORKERPOOL_WATCHDOG__
+#ifdef THUNDER_CORE_WORKERPOOL_WATCHDOG
         inline uint32_t WorkerPoolWatchdogTimeout() const
         {
             return (_workerPoolWatchdogTimeout);
@@ -1441,11 +1441,11 @@ namespace PluginHost {
         string _proxyStubPath;
         string _observableProxyStubPath;
         string _postMortemPath;
-#ifdef __CORE_RESOURCE_MONITOR_WATCHDOG__
+#ifdef THUNDER_CORE_RESOURCE_MONITOR_WATCHDOG
         uint32_t _resourceMonitorWatchdogTimeout;
         bool _resourceMonitorWatchdogAbort;
 #endif
-#ifdef __CORE_WORKERPOOL_WATCHDOG__
+#ifdef THUNDER_CORE_WORKERPOOL_WATCHDOG
         uint32_t _workerPoolWatchdogTimeout;
         bool _workerPoolWatchdogAbort;
 #endif

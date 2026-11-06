@@ -334,6 +334,9 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
             , _timer(1024 * 1024, _T("WorkerPoolType::Timer"))
             , _metadata()
             , _joined(0)
+            #ifdef THUNDER_CORE_WORKERPOOL_WATCHDOG
+            , _running(false)
+            #endif
             #ifdef __CORE_WARNING_REPORTING__
             , _dispatchedJobMonitor(*this, static_cast<uint32_t>(DispatchedJobMonitor::DefaultScheduleIntervalInMilliSeconds))
             #endif 
@@ -437,7 +440,7 @@ POP_WARNING()
             _metadata.Slot[1].WorkerId = _joined.load(Core::memory_order::memory_order_relaxed);
             return (_metadata);
         }
-        #ifdef __CORE_WORKERPOOL_WATCHDOG__
+        #ifdef THUNDER_CORE_WORKERPOOL_WATCHDOG
         // Aggregate number of jobs extracted by pool workers, including Join().
         uint64_t Progress() const
         {
@@ -458,6 +461,11 @@ POP_WARNING()
         {
             return (_threadPool.OutstandingJobs());
         }
+        // The pool is between Run() and Stop(), work that is left over after Stop() is not supervised.
+        bool Running() const
+        {
+            return (_running.load(Core::memory_order::memory_order_relaxed));
+        }
         // Number of pool workers, including an active Join() worker.
         uint32_t Count() const
         {
@@ -468,6 +476,9 @@ POP_WARNING()
         void Run()
         {
             _threadPool.Run();
+            #ifdef THUNDER_CORE_WORKERPOOL_WATCHDOG
+            _running.store(true, Core::memory_order::memory_order_relaxed);
+            #endif
             #ifdef __CORE_WARNING_REPORTING__
             _threadPool.SetDispatchedJobMonitor(&_dispatchedJobMonitor);
             _dispatchedJobMonitor.Start();
@@ -475,6 +486,9 @@ POP_WARNING()
         }
         void Stop()
         {
+            #ifdef THUNDER_CORE_WORKERPOOL_WATCHDOG
+            _running.store(false, Core::memory_order::memory_order_relaxed);
+            #endif
             #ifdef __CORE_WARNING_REPORTING__
             _dispatchedJobMonitor.Stop();
             _threadPool.ResetDispatchedJobMonitor();
@@ -492,12 +506,15 @@ POP_WARNING()
         Core::TimerType<Timer> _timer;
         mutable Metadata _metadata;
         std::atomic<thread_id> _joined;
+        #ifdef THUNDER_CORE_WORKERPOOL_WATCHDOG
+        std::atomic<bool> _running;
+        #endif
         #ifdef __CORE_WARNING_REPORTING__
         DispatchedJobMonitor _dispatchedJobMonitor;
         #endif
     };
 
-    #ifdef __CORE_WORKERPOOL_WATCHDOG__
+    #ifdef THUNDER_CORE_WORKERPOOL_WATCHDOG
     // Supervises a WorkerPool without ever touching its queues or locks. The pool is considered stalled if no job was
     // extracted for the timeout while all workers are busy or while accepted work (including work waiting for a
     // category quota) is still outstanding. Construct before the pool is started and before jobs are submitted.
@@ -532,6 +549,14 @@ POP_WARNING()
         bool Expired(const uint64_t now) override
         {
             const uint64_t progress = _pool.Progress();
+
+            // A stopped pool does not extract anymore, what is left over is not a stall. Start over when it runs again.
+            if (_pool.Running() == false) {
+                _lastProgress = progress;
+                _stalledSince = 0;
+                return (false);
+            }
+
             const uint32_t workers = _pool.Count();
             const bool outstanding = ((workers != 0) && ((_pool.ActiveJobs() >= workers) || (_pool.OutstandingJobs() != 0)));
 

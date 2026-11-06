@@ -32,7 +32,7 @@
 #include <unistd.h>
 #endif
 
-#ifdef __CORE_RESOURCE_MONITOR_WATCHDOG__
+#ifdef THUNDER_CORE_RESOURCE_MONITOR_WATCHDOG
 
 namespace Thunder {
 namespace Tests {

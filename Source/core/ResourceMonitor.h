@@ -125,7 +125,7 @@ namespace Core {
             , _monitorRuns(0)
             , _name(_T("Monitor::") + ClassNameOnly(typeid(RESOURCE).name()).Text())
             , _watchDog(nullptr)
-            #ifdef __CORE_RESOURCE_MONITOR_WATCHDOG__
+            #ifdef THUNDER_CORE_RESOURCE_MONITOR_WATCHDOG
             , _watchable(nullptr)
             , _watchDogEnabled(false)
             #endif
@@ -164,7 +164,7 @@ namespace Core {
                 delete _monitor;
             }
 
-            #ifdef __CORE_RESOURCE_MONITOR_WATCHDOG__
+            #ifdef THUNDER_CORE_RESOURCE_MONITOR_WATCHDOG
             DisableWatchDog();
             #endif
 
@@ -182,7 +182,7 @@ namespace Core {
         }
 
     public:
-        #ifdef __CORE_RESOURCE_MONITOR_WATCHDOG__
+        #ifdef THUNDER_CORE_RESOURCE_MONITOR_WATCHDOG
         // Callback monitoring by the WatchDog; timeout is in milliseconds, 0 keeps it disabled. The first enabled
         // timeout wins.
         void EnableWatchDog(const uint32_t timeout, const bool abortOnExpiry)
@@ -682,7 +682,7 @@ POP_WARNING()
         uint32_t _monitorRuns;
         string _name;
         WATCHDOG* _watchDog;
-        #ifdef __CORE_RESOURCE_MONITOR_WATCHDOG__
+        #ifdef THUNDER_CORE_RESOURCE_MONITOR_WATCHDOG
         IWatchable* _watchable;
         std::atomic<bool> _watchDogEnabled;
         #endif
@@ -702,7 +702,7 @@ POP_WARNING()
         #endif
     };
 
-    #ifdef __CORE_RESOURCE_MONITOR_WATCHDOG__
+    #ifdef THUNDER_CORE_RESOURCE_MONITOR_WATCHDOG
     // The ResourceMonitor arms it for the duration of a complete pass over its resources (not while it waits for
     // events). It expires if the pass does not complete within the timeout, which is meant to catch a stuck
     // callback, so the timeout is expected to be well above the duration of a healthy pass.
@@ -767,7 +767,7 @@ POP_WARNING()
 
         ResourceMonitor()
         {
-            #ifdef __CORE_RESOURCE_MONITOR_WATCHDOG__
+            #ifdef THUNDER_CORE_RESOURCE_MONITOR_WATCHDOG
             // Construct the WatchDog first, it has to be destroyed after the ResourceMonitor that is registered with it.
             WatchDog::Instance();
             #endif

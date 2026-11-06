@@ -1291,7 +1291,7 @@ namespace PluginHost {
             configuration.QueueSize(),
             configuration.LowPriorityThreadCount(),
             configuration.MediumPriorityThreadCount()
-#ifdef PLUGINHOST_WORKERPOOL_WATCHDOG
+#ifdef THUNDER_PLUGINHOST_WORKERPOOL_WATCHDOG
             , configuration.WorkerPoolWatchdogTimeout()
             , configuration.WorkerPoolWatchdogAbort()
 #endif
@@ -1304,7 +1304,7 @@ namespace PluginHost {
     {
         IFactories::Assign(&_factoriesImplementation);
 
-#ifdef PLUGINHOST_RESOURCE_MONITOR_WATCHDOG
+#ifdef THUNDER_PLUGINHOST_RESOURCE_MONITOR_WATCHDOG
         Core::ResourceMonitor::Instance().EnableWatchDog(
             _config.ResourceMonitorWatchdogTimeout(),
             _config.ResourceMonitorWatchdogAbort());
@@ -1371,7 +1371,7 @@ namespace PluginHost {
 
     Server::~Server()
     {
-#ifdef PLUGINHOST_RESOURCE_MONITOR_WATCHDOG
+#ifdef THUNDER_PLUGINHOST_RESOURCE_MONITOR_WATCHDOG
         Core::ResourceMonitor::Instance().DisableWatchDog();
 #endif
         // The workerpool is about to dissapear!!!!

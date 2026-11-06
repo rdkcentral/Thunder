@@ -473,7 +473,7 @@ namespace Core {
             // Number of jobs extracted by this worker.
             uint32_t Runs() const
             {
-                #ifdef __CORE_WORKERPOOL_WATCHDOG__
+                #ifdef THUNDER_CORE_WORKERPOOL_WATCHDOG
                 return (_runs.load(Core::memory_order::memory_order_relaxed));
                 #else
                 return (_runs);
@@ -487,7 +487,7 @@ namespace Core {
 
                     ASSERT(_currentRequest.IsValid() == true);
 
-                    #ifdef __CORE_WORKERPOOL_WATCHDOG__
+                    #ifdef THUNDER_CORE_WORKERPOOL_WATCHDOG
                     _runs.fetch_add(1, Core::memory_order::memory_order_relaxed);
                     const bool trackJobs = _parent._jobTracking;
                     if (trackJobs == true) {
@@ -539,7 +539,7 @@ namespace Core {
                     _adminLock.Unlock();
 
                     _parent.Idle();
-                    #ifdef __CORE_WORKERPOOL_WATCHDOG__
+                    #ifdef THUNDER_CORE_WORKERPOOL_WATCHDOG
                     if (trackJobs == true) {
                         _parent._activeJobs.fetch_sub(1, Core::memory_order::memory_order_relaxed);
                     }
@@ -556,7 +556,7 @@ namespace Core {
             Event _signal;
             std::atomic<uint32_t> _interestCount;
             QueueElement _currentRequest;
-            #ifdef __CORE_WORKERPOOL_WATCHDOG__
+            #ifdef THUNDER_CORE_WORKERPOOL_WATCHDOG
             std::atomic<uint32_t> _runs;
             #else
             uint32_t _runs;
@@ -636,7 +636,7 @@ namespace Core {
             , _external(external)
             , _callback(callback)
             , _unitsSet()
-            #ifdef __CORE_WORKERPOOL_WATCHDOG__
+            #ifdef THUNDER_CORE_WORKERPOOL_WATCHDOG
             , _activeJobs(0)
             , _pendingJobs(0)
             , _jobTracking(false)
@@ -664,7 +664,7 @@ namespace Core {
         uint32_t Pending() const {
             return (_queue.Length());
         }
-        #ifdef __CORE_WORKERPOOL_WATCHDOG__
+        #ifdef THUNDER_CORE_WORKERPOOL_WATCHDOG
         // Number of worker jobs currently executing.
         uint32_t ActiveJobs() const
         {
@@ -948,7 +948,7 @@ namespace Core {
 
         void JobQueued()
         {
-            #ifdef __CORE_WORKERPOOL_WATCHDOG__
+            #ifdef THUNDER_CORE_WORKERPOOL_WATCHDOG
             if (_jobTracking == true) {
                 _pendingJobs.fetch_add(1, Core::memory_order::memory_order_relaxed);
             }
@@ -956,7 +956,7 @@ namespace Core {
         }
         void JobDequeued()
         {
-            #ifdef __CORE_WORKERPOOL_WATCHDOG__
+            #ifdef THUNDER_CORE_WORKERPOOL_WATCHDOG
             if (_jobTracking == true) {
                 _pendingJobs.fetch_sub(1, Core::memory_order::memory_order_relaxed);
             }
@@ -993,7 +993,7 @@ namespace Core {
         Minion* _external;
         ICallback* _callback;
         std::unordered_set<thread_id> _unitsSet;
-        #ifdef __CORE_WORKERPOOL_WATCHDOG__
+        #ifdef THUNDER_CORE_WORKERPOOL_WATCHDOG
         std::atomic<uint32_t> _activeJobs;
         std::atomic<int32_t> _pendingJobs;
         bool _jobTracking;
