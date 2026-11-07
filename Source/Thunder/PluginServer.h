@@ -1894,15 +1894,17 @@ namespace PluginHost {
 
                 Plugin()
                     : Core::JSON::Container()
-                    #ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+                    , Version()
+#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
                     , Configuration()
-                #else
+#else
                     , Configuration(_T("{}"), false)
-                #endif
+#endif
                     , SystemRootPath()
                     , StartMode()
                     , Resumed()
                 {
+                    Add(_T("$version"), &Version);
                     Add(_T("configuration"), &Configuration);
                     Add(_T("systemrootpath"), &SystemRootPath);
                     Add(_T("startmode"), &StartMode);
@@ -1910,6 +1912,7 @@ namespace PluginHost {
                 }
                 Plugin(const string& config, const string& systemRootPath, const PluginHost::IShell::startmode value, const bool resumed)
                     : Core::JSON::Container()
+                    , Version()
 #ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
                     , Configuration(config)
 #else
@@ -1919,6 +1922,7 @@ namespace PluginHost {
                     , StartMode(static_cast<Thunder::Plugin::Configuration::startmode>(value))
                     , Resumed(resumed)
                 {
+                    Add(_T("$version"), &Version);
                     Add(_T("configuration"), &Configuration);
                     Add(_T("systemrootpath"), &SystemRootPath);
                     Add(_T("startmode"), &StartMode);
@@ -1926,11 +1930,13 @@ namespace PluginHost {
                 }
                 Plugin(Plugin const& copy)
                     : Core::JSON::Container()
+                    , Version(copy.Version)
                     , Configuration(copy.Configuration)
                     , SystemRootPath(copy.SystemRootPath)
                     , StartMode(copy.StartMode)
                     , Resumed(copy.Resumed)
                 {
+                    Add(_T("$version"), &Version);
                     Add(_T("configuration"), &Configuration);
                     Add(_T("systemrootpath"), &SystemRootPath);
                     Add(_T("startmode"), &StartMode);
@@ -1938,11 +1944,13 @@ namespace PluginHost {
                 }
                 Plugin(Plugin&& move)
                     : Core::JSON::Container()
+                    , Version(std::move(move.Version))
                     , Configuration(std::move(move.Configuration))
                     , SystemRootPath(std::move(move.SystemRootPath))
                     , StartMode(std::move(move.StartMode))
                     , Resumed(std::move(move.Resumed))
                 {
+                    Add(_T("$version"), &Version);
                     Add(_T("configuration"), &Configuration);
                     Add(_T("systemrootpath"), &SystemRootPath);
                     Add(_T("startmode"), &StartMode);
@@ -1952,6 +1960,7 @@ namespace PluginHost {
                 ~Plugin() override = default;
 
             public:
+                Core::JSON::String Version;
 #ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
                 Core::JSON::Variant Configuration;
 #else
@@ -1966,13 +1975,17 @@ namespace PluginHost {
 
         private:
             static const TCHAR* PluginHostCallsign() {return _T("PluginHost");}
+            static string CurrentVersion() {
+                return (Core::Format(_T("%d.%d.%d"), Versioning::Major, Versioning::Minor, Versioning::Patch));
+            }
 
         public:
             Override(const Override&) = delete;
             Override& operator=(const Override&) = delete;
 
             Override(PluginHost::Config& serverconfig, ServiceMap& services, const string& persistentFolder)
-                : Services()
+                : Version()
+                , Services()
                 , Prefix(serverconfig.Prefix())
                 , IdleTime(serverconfig.IdleTime())
                 , _services(services)
@@ -1980,6 +1993,7 @@ namespace PluginHost {
                 , _persistentFolder(persistentFolder)
                 , _callsigns()
             {
+                Add(_T("$version"), &Version);
                 Add(_T("Services"), &Services);
                 Add(_T("prefix"), &Prefix);
                 Add(_T("idletime"), &IdleTime);
@@ -2008,9 +2022,11 @@ namespace PluginHost {
                         if (storage.Open(true) == true) {
 
                             indexCallsigns->second.Clear();
-                            indexCallsigns->second.IElement::FromFile(storage);
+                            const bool valid = ((indexCallsigns->second.IElement::FromFile(storage) == true) &&
+                                (indexCallsigns->second.Version.IsSet() == true) &&
+                                (indexCallsigns->second.Version.Value() == CurrentVersion()));
 
-                            if (indexCallsigns->second.IsSet() == true) {
+                            if (valid == true) {
                                 if (indexCallsigns->second.Configuration.IsSet() == true) {
                                     indexService->ConfigLine(indexCallsigns->second.Configuration.Value());
                                 }
@@ -2025,6 +2041,13 @@ namespace PluginHost {
                                 }
                             }
                             storage.Close();
+
+                            if (valid == false) {
+                                indexCallsigns->second.Clear();
+                                if ((storage.Destroy() == false) && (result == Core::ERROR_NONE)) {
+                                    result = storage.ErrorCode();
+                                }
+                            }
                         }
                         else if (result == Core::ERROR_NONE) {
                             result = storage.ErrorCode();
@@ -2126,6 +2149,7 @@ namespace PluginHost {
                 return result;
             }
 
+            Core::JSON::String Version;
             Core::JSON::Container Services;
             Core::JSON::String Prefix;
             Core::JSON::DecUInt16 IdleTime;
@@ -2178,6 +2202,7 @@ namespace PluginHost {
                         Callsigns::iterator it = RegisterService(callsign);
                         ASSERT(it != _callsigns.end());
 
+                        it->second.Version = CurrentVersion();
                         it->second.Configuration = configValue;
                         it->second.SystemRootPath = shell.SystemRootPath();
                         it->second.StartMode = static_cast<Thunder::Plugin::Configuration::startmode>(shell.StartMode());
@@ -2258,18 +2283,28 @@ namespace PluginHost {
                 Core::File storage(CreateOverridePath(PluginHostCallsign()));
                 if (storage.Exists() == true) {
                     if (storage.Open(true) == true) {
-                        IElement::FromFile(storage);
-                        Config::Attributes attributes(_serverconfig.ActiveAttributes());
+                        const bool valid = ((IElement::FromFile(storage) == true) &&
+                            (Version.IsSet() == true) && (Version.Value() == CurrentVersion()));
 
-                        if (Prefix.IsSet() == true) {
-                            attributes.Prefix = Prefix.Value();
-                        }
-                        if (IdleTime.IsSet() == true) {
-                            attributes.IdleTime = IdleTime.Value();
-                        }
-                        _serverconfig.LoadAttributes(attributes);
+                        if (valid == true) {
+                            Config::Attributes attributes(_serverconfig.ActiveAttributes());
 
+                            if (Prefix.IsSet() == true) {
+                                attributes.Prefix = Prefix.Value();
+                            }
+                            if (IdleTime.IsSet() == true) {
+                                attributes.IdleTime = IdleTime.Value();
+                            }
+                            _serverconfig.LoadAttributes(attributes);
+                        }
                         storage.Close();
+
+                        if (valid == false) {
+                            Clear();
+                            if (storage.Destroy() == false) {
+                                result = storage.ErrorCode();
+                            }
+                        }
                     }
                     else {
                         result = storage.ErrorCode();
@@ -2285,6 +2320,7 @@ namespace PluginHost {
                 Core::File storage(CreateOverridePath(PluginHostCallsign()));
 
                 if (storage.Create() == true) {
+                    Version = CurrentVersion();
                     Prefix = pending.Prefix;
                     IdleTime = pending.IdleTime;
 
