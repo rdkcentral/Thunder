@@ -372,8 +372,13 @@ namespace Core {
 
         bool Create(const uint32_t mode, const bool exclusive = false)
         {
+            return (Create(mode, exclusive, false));
+        }
+
+        bool Create(const uint32_t mode, const bool exclusive, VARIABLE_IS_NOT_USED const bool noFollow)
+        {
 #ifdef __POSIX__
-            _handle = open(_name.c_str(), O_CLOEXEC | O_RDWR | O_CREAT | O_TRUNC | (exclusive ? O_EXCL : 0), mode);
+            _handle = open(_name.c_str(), O_CLOEXEC | O_RDWR | O_CREAT | O_TRUNC | (noFollow ? O_NOFOLLOW : 0) | (exclusive ? O_EXCL : 0), mode);
 #endif
 #ifdef __WINDOWS__
             _handle = ::CreateFile(_name.c_str(), (GENERIC_READ | GENERIC_WRITE), (exclusive ? 0 : (FILE_SHARE_READ | FILE_SHARE_WRITE)), nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
@@ -616,6 +621,7 @@ POP_WARNING()
         uint32_t User(const string& userName) const;
         uint32_t Group(const string& groupName) const;
         uint32_t Permission(uint16_t flags) const;
+        uint32_t PermissionOnHandle(uint16_t flags) const;
 
     private:
         inline static uint32_t ExtensionOffset(const string& name)
