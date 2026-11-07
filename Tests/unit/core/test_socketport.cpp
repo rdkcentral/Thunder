@@ -586,23 +586,26 @@ namespace Core {
     {
         const string path = "/tmp/test_sp_closenowait.sock";
         ::unlink(path.c_str());
-        TestDatagram sock(::Thunder::Core::NodeId(path.c_str()));
 
-        ASSERT_EQ(sock.Open(1000), ::Thunder::Core::ERROR_NONE);
-        EXPECT_TRUE(sock.IsOpen());
+        {
+            TestDatagram sock(::Thunder::Core::NodeId(path.c_str()));
 
-        // Close(0) returns immediately without waiting for the far end.
-        EXPECT_NO_FATAL_FAILURE(sock.Close(0));
+            ASSERT_EQ(sock.Open(1000), ::Thunder::Core::ERROR_NONE);
+            EXPECT_TRUE(sock.IsOpen());
 
-        // The socket is not yet fully deregistered from the ResourceMonitor.
-        // Wait for IsClosed() before Singleton::Dispose() to avoid the debug
-        // assert that fires if resources are still registered at teardown.
-        uint32_t waited = 0;
-        while (!sock.IsClosed() && waited < 1000) {
-            SleepMs(10);
-            waited += 10;
-        }
-        EXPECT_TRUE(sock.IsClosed());
+            // Close(0) returns immediately without waiting for the far end.
+            EXPECT_NO_FATAL_FAILURE(sock.Close(0));
+
+            // Wait for IsClosed() before the socket goes out of scope so
+            // it is fully deregistered from the ResourceMonitor before
+            // Singleton::Dispose() runs.
+            uint32_t waited = 0;
+            while (!sock.IsClosed() && waited < 1000) {
+                SleepMs(10);
+                waited += 10;
+            }
+            EXPECT_TRUE(sock.IsClosed());
+        } // sock destroyed here: deregistered from ResourceMonitor before Dispose()
 
         ::Thunder::Core::Singleton::Dispose();
     }
@@ -1362,9 +1365,20 @@ TEST(test_socketport, open_tcp_ipv4_refused_connection_returns_error)
 
     TEST(test_socketport, remote_unexpected_close_triggers_statechange)
     {
-        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 8,
-                           maxWaitTimeMs = 8000, maxInitTime = 500;
-        constexpr uint8_t maxRetries = 4;
+        // maxWaitTime and maxRetries bumped from 8s/4 to 16s/10:
+        // server.Close() on a loaded CI runner can consume close to maxWaitTimeMs
+        // while the ResourceMonitor processes socket closure, leaving little margin
+        // for the child's Signal to arrive before the parent's Wait expires.
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 16,
+                           maxWaitTimeMs = 16000, maxInitTime = 500;
+        constexpr uint8_t maxRetries = 10;
+
+        // IPTestAdministrator uses a single shared futex.  Signal(v, n) calls
+        // FUTEX_WAKE then exchange(v); Wait(v) blocks while the value equals v.
+        // Because Signal and Wait are called sequentially in the same process,
+        // a process's own signal cannot satisfy its own wait — FUTEX_WAKE only
+        // wakes sleeping waiters, and the signaling process is not sleeping.
+        // Using the same value (0) for every round is therefore correct and safe.
 
         const string connector = "/tmp/test_sp_remotesc.sock";
 
@@ -1382,9 +1396,12 @@ TEST(test_socketport, open_tcp_ipv4_refused_connection_returns_error)
             ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
 
             // Close the server — simulates unexpected remote close from
-            // the client's perspective.  The parent detects the close via
-            // StateChange, so no final signal is needed.
-            server.Close(maxWaitTimeMs);
+            // the client's perspective.
+            ASSERT_EQ(server.Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+
+            // Signal parent that server has closed.
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries),
+                      ::Thunder::Core::ERROR_NONE);
         };
 
         IPTestAdministrator::Callback callback_parent = [&](IPTestAdministrator& testAdmin) {
@@ -1403,6 +1420,9 @@ TEST(test_socketport, open_tcp_ipv4_refused_connection_returns_error)
             // from the client's point of view.
             ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries),
                       ::Thunder::Core::ERROR_NONE);
+
+            // Wait for server closure signal.
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
 
             // Wait for the remote-close StateChange notification.
             uint32_t waited = 0;
@@ -1529,9 +1549,11 @@ TEST(test_socketport, open_tcp_ipv4_refused_connection_returns_error)
 
     TEST(test_socketport, is_suspended_after_remote_close)
     {
-        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 8,
-                           maxWaitTimeMs = 8000, maxInitTime = 500;
-        constexpr uint8_t maxRetries = 1;
+        // maxWaitTime bumped from 8s to 16s for the same reason as
+        // remote_unexpected_close_triggers_statechange above.
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 16,
+                           maxWaitTimeMs = 16000, maxInitTime = 500;
+        constexpr uint8_t maxRetries = 10;
 
         const string connector = "/tmp/test_sp_suspended.sock";
 
