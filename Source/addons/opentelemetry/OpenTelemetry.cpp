@@ -385,7 +385,7 @@ OpenTelemetry::Span::~Span()
 
 void OpenTelemetry::Span::End()
 {
-    //it is a pitty, opentelemetry span does not expose the information the span has ended
+    // OpenTelemetry does not expose whether a span has ended, so track that state locally.
     if(_hasEnded == false) {
         Deactivate();
         _span->End();
