@@ -654,23 +654,14 @@ POP_WARNING()
                                 // skip payload bytes for control frames:
                                 if (headerSize > 1) {
                                     payloadSizeInControlFrame = dataFrame[result+1] & 0x7F;
-                                    if (payloadSizeInControlFrame == 126) {
-                                        if (headerSize > 3) {
-                                            payloadSizeInControlFrame = (dataFrame[result + 2]) << 8 | static_cast<uint64_t>(dataFrame[result + 3]);
-                                        } else {
-                                            TRACE_L1("Header too small for 16-bit extended payload size");
-                                            payloadSizeInControlFrame = 0;
-                                        }
-                                    } else if (payloadSizeInControlFrame == 127) {
-                                        if (headerSize > 9) {
-                                            payloadSizeInControlFrame = 0;
-                                            for (uint8_t i = 2; i <= 9; ++i) {
-                                                payloadSizeInControlFrame = (payloadSizeInControlFrame << 8) | static_cast<uint64_t>(dataFrame[result + i]);
-                                            }
-                                        } else {
-                                            TRACE_L1("Header too small for 64-bit jumbo payload size ");
-                                            payloadSizeInControlFrame = 0;
-                                        }
+                                    // Security: RFC 6455 §5.5 mandates that control frames
+                                    // MUST have a payload length of 125 bytes or less.
+                                    // Reject extended length indicators (126/127) on control
+                                    // frames to prevent uint16 overflow in the result pointer
+                                    // arithmetic and potential heap overflow via memmove.
+                                    if (payloadSizeInControlFrame >= 126) {
+                                        TRACE_L1("WebSocket protocol violation: control frame with extended payload length (%u)", static_cast<unsigned>(payloadSizeInControlFrame));
+                                        payloadSizeInControlFrame = 0;
                                     }
                                 }
                                 if (headerSize == 0) {
