@@ -19,6 +19,7 @@
 
 #include "PluginServer.h"
 #include "Controller.h"
+#include <core/ResourceMonitor.h>
 
 #ifndef __WINDOWS__
 #include <syslog.h>
@@ -1284,7 +1285,17 @@ namespace PluginHost {
     // -----------------------------------------------------------------------------------------------------------------------------------
     PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
     Server::Server(Config& configuration, const bool background)
-        : _dispatcher(configuration.ThreadPoolCount(), configuration.StackSize(), configuration.QueueSize(), configuration.LowPriorityThreadCount(), configuration.MediumPriorityThreadCount())
+        : _dispatcher(
+            configuration.ThreadPoolCount(),
+            configuration.StackSize(),
+            configuration.QueueSize(),
+            configuration.LowPriorityThreadCount(),
+            configuration.MediumPriorityThreadCount()
+#ifdef THUNDER_PLUGINHOST_WORKERPOOL_WATCHDOG
+            , configuration.WorkerPoolWatchdogTimeout()
+            , configuration.WorkerPoolWatchdogAbort()
+#endif
+            )
         , _config(configuration)
         , _connections(*this, configuration.Binder())
         , _services(*this)
@@ -1292,6 +1303,12 @@ namespace PluginHost {
         , _factoriesImplementation()
     {
         IFactories::Assign(&_factoriesImplementation);
+
+#ifdef THUNDER_PLUGINHOST_RESOURCE_MONITOR_WATCHDOG
+        Core::ResourceMonitor::Instance().EnableWatchDog(
+            _config.ResourceMonitorWatchdogTimeout(),
+            _config.ResourceMonitorWatchdogAbort());
+#endif
 
         // See if the persistent path for our-selves exist, if not we will create it :-)
         Core::File persistentPath(_config.PersistentPath() + PluginOverrideDirectory);
@@ -1354,6 +1371,9 @@ namespace PluginHost {
 
     Server::~Server()
     {
+#ifdef THUNDER_PLUGINHOST_RESOURCE_MONITOR_WATCHDOG
+        Core::ResourceMonitor::Instance().DisableWatchDog();
+#endif
         // The workerpool is about to dissapear!!!!
         Core::WorkerPool::Assign(nullptr);
         IFactories::Assign(nullptr);
