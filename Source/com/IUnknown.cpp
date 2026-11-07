@@ -145,6 +145,23 @@ namespace ProxyStub {
     // PROXY
     // -------------------------------------------------------------------------------------------
 
+    namespace {
+        // Non-null only when we own the COMRPC server side of this channel (i.e. we are Thunder).
+        RPC::Communicator::Client* ServerChannel(const Core::ProxyType<Core::IPCChannel>& channel)
+        {
+            return ((channel.IsValid() == true) ? dynamic_cast<RPC::Communicator::Client*>(channel.operator->()) : nullptr);
+        }
+    }
+
+    /* static */ string UnknownProxy::RemoteInfo(const Core::ProxyType<Core::IPCChannel>& channel)
+    {
+        RPC::Communicator::Client* server = ServerChannel(channel);
+
+        return ((server != nullptr)
+            ? (string(_T("RemotePid: ")) + Core::NumberType<uint32_t>(server->Extension().RemotePid()).Text())
+            : string(_T("RemotePid: n/a")));
+    }
+
     uint32_t UnknownProxy::Invoke(Core::ProxyType<RPC::InvokeMessage>& message, const uint32_t waitTime) const
     {
         uint32_t result = Core::ERROR_UNAVAILABLE | COM_ERROR;
@@ -159,7 +176,14 @@ namespace ProxyStub {
             if (result != Core::ERROR_NONE) {
 
                 if (result == Core::ERROR_TIMEDOUT) {
-                Shutdown();
+                    SYSLOG(Logging::Error, (_T("IPC method Invoke failed due to timeout (Interface ID 0x%X, Method ID 0x%X, %s). Execution of code may or may not have happened."), message->Parameters().InterfaceId(), message->Parameters().MethodId(), RemoteInfo(channel).c_str()));
+#ifdef COMRPC_ABORT_ON_TIMEOUT
+                    // Only the side owning the COMRPC server (Thunder) aborts; clients do not.
+                    if (ServerChannel(channel) != nullptr) {
+                        std::abort();
+                    }
+#endif
+                    Shutdown();
                 }
 
                 result |= COM_ERROR;
@@ -184,12 +208,10 @@ namespace ProxyStub {
     void UnknownProxy::Shutdown() const
     {
         _adminLock.Lock();
-        if (_channel.IsValid() == true) {
-            RPC::Communicator::Client* comchannel = dynamic_cast<RPC::Communicator::Client*>(_channel.operator->());
-            if (comchannel != nullptr) {
-                SYSLOG(Logging::Error, (_T("Shutting down the socket to avoid side-effects likely because an IPC method Invoke failed due to timeout. Execution of code may or may not have happened.")));
-                comchannel->Source().Close(0);
-            }
+        RPC::Communicator::Client* server = ServerChannel(_channel);
+        if (server != nullptr) {
+            SYSLOG(Logging::Error, (_T("Shutting down the socket to avoid side-effects likely because an IPC method Invoke failed due to timeout. Execution of code may or may not have happened.")));
+            server->Source().Close(0);
         }
         _adminLock.Unlock();
     }

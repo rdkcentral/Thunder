@@ -66,6 +66,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_rectangle.cpp
    test_rpc.cpp
    test_comrpc.cpp
+   test_comrpc_timeout.cpp
    test_plugin.cpp
    test_semaphore.cpp
    test_sharedbuffer.cpp
@@ -172,6 +173,10 @@ add_executable(${TEST_RUNNER_NAME}
 endif()
 
 set_source_files_properties(test_systeminfo.cpp PROPERTIES COMPILE_OPTIONS "-fexceptions")
+
+if(COMRPC_ABORT_ON_TIMEOUT)
+    set_source_files_properties(test_comrpc_timeout.cpp PROPERTIES COMPILE_DEFINITIONS COMRPC_ABORT_ON_TIMEOUT)
+endif()
 
 target_compile_definitions(${TEST_RUNNER_NAME}
    PRIVATE BUILD_DIR=\"${CMAKE_CURRENT_BINARY_DIR}\"
