@@ -20,7 +20,7 @@ The rest of this guide shows how to enable the library, configure it once for a 
 
 ## Plugin CMake setup
 
-There are two build steps: the Thunder build must include OpenTelemetry support, and the plugin must link against the resulting library. Build and install Thunder with `OPENTELEMETRY=ON` so the OpenTelemetry library and its CMake package are available. In a plugin's `CMakeLists.txt`, add the package lookup alongside the other Thunder packages and link the imported target to the plugin:
+There are two build steps: the Thunder build must include OpenTelemetry support, and the plugin must link against the resulting library. Make the upstream `opentelemetry-cpp` CMake package available, then build and install Thunder with `-DTHUNDER_OPENTELEMETRY=ON -DW3C_TRACE_CONTEXT_ENABLED=ON` so the OpenTelemetry library and its CMake package are available. In a plugin's `CMakeLists.txt`, add the package lookup alongside the other Thunder packages and link the imported target to the plugin:
 
 ```cmake
 find_package(${NAMESPACE}OpenTelemetry REQUIRED)
