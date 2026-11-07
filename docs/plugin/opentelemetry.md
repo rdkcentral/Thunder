@@ -35,7 +35,7 @@ Here `${MODULE_NAME}` is the plugin target already defined by `add_library()`; k
 
 ## Configuration and lifecycle
 
-After linking, include `<opentelemetry/OpenTelemetry.h>` (adjust the include path for your build layout). `Config` holds the settings used when the telemetry providers are initialized. Configure **before** the first `Initialize()`; do not wait until after creating the first span, log, or instrument. For a component that owns initialization:
+After linking, include `<open_telemetry/open_telemetry.h>` (adjust the include path for your build layout). `Config` holds the settings used when the telemetry providers are initialized. Configure **before** the first `Initialize()`; do not wait until after creating the first span, log, or instrument. For a component that owns initialization:
 
 ```cpp
 Thunder::Telemetry::OpenTelemetry::Config config;
