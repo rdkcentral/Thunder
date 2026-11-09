@@ -615,7 +615,7 @@ namespace Thunder {
                 // ERROR_ILLEGAL_STATE is returned when the socket is already open and
                 // registered in the ResourceMonitor — destroying it here would corrupt
                 // the monitor's poll array.
-                // A socket that failed before registration and must be cleaned up.
+                // A socket that failed before registration must be cleaned up.
                 DestroySocket(m_Socket);
             }
             return (nStatus);
