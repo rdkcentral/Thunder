@@ -1351,7 +1351,11 @@ namespace Thunder {
             if (m_State != 0) {
                 result = false;
             } else {
-                DestroySocket(m_Socket);
+                // ... Unless listen failed and the socket was never properly created.
+                if (m_Socket != INVALID_SOCKET) {
+                    DestroySocket(m_Socket);
+                }
+
                 ResourceMonitor::Instance().Unregister(*this);
 
                 // Remove socket descriptor for UNIX domain datagram socket.
