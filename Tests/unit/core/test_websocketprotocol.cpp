@@ -211,7 +211,7 @@ namespace Tests {
             EXPECT_FALSE(decoder.ReceiveInProgress());
         }
 
-        TEST(WebSocketLink, RejectedFrameClosesConnection)
+        TEST(WebSocketLink, RejectedFrameDoesNotCloseReentrantly)
         {
             WebSocketTestSocket socket;
             UpgradeToWebSocket(socket);
@@ -219,8 +219,8 @@ namespace Tests {
             uint8_t frame[] = { 0x89, 126, 0x00, 0x7E };
 
             EXPECT_EQ(socket.Link().ReceiveData(frame, sizeof(frame)), sizeof(frame));
-            EXPECT_EQ(socket.Link().CloseCount(), 1u);
-            EXPECT_TRUE(socket.IsClosed());
+            EXPECT_EQ(socket.Link().CloseCount(), 0u);
+            EXPECT_TRUE(socket.IsOpen());
         }
 
         TEST(WebSocketLink, SplitMaskedControlFramePreservesNextFrame)
