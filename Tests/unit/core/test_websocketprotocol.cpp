@@ -188,7 +188,7 @@ namespace Tests {
             EXPECT_EQ(frame[15], 0xBB);
         }
 
-        TEST(WebSocketLink, OversizedFrameClosesConnection)
+        TEST(WebSocketLink, OversizedFrameDoesNotCloseReentrantly)
         {
             WebSocketTestSocket socket;
             UpgradeToWebSocket(socket);
@@ -199,8 +199,8 @@ namespace Tests {
             };
 
             EXPECT_EQ(socket.Link().ReceiveData(frame, sizeof(frame)), sizeof(frame));
-            EXPECT_EQ(socket.Link().CloseCount(), 1u);
-            EXPECT_TRUE(socket.IsClosed());
+            EXPECT_EQ(socket.Link().CloseCount(), 0u);
+            EXPECT_TRUE(socket.IsOpen());
         }
 
     } // Core
