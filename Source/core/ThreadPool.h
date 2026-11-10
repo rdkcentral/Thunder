@@ -434,6 +434,14 @@ POP_WARNING()
                     ASSERT(_currentRequest.IsValid() == true);
 
                     _runs++;
+#ifdef THUNDER_CORE_WORKERPOOL_WATCHDOG
+                    _parent._progress.fetch_add(1, std::memory_order_relaxed);
+                    const bool trackJobs = _parent._jobTracking;
+                    if (trackJobs == true) {
+                        _parent._activeJobs.fetch_add(1, std::memory_order_relaxed);
+                        _parent.JobDequeued();
+                    }
+#endif
 
                     #ifdef __CORE_WARNING_REPORTING__
                     #ifdef __CORE_ACTIVE_JOB_MONITORING__
@@ -488,6 +496,11 @@ POP_WARNING()
                     _adminLock.Unlock();
 
                     _parent.Idle();
+#ifdef THUNDER_CORE_WORKERPOOL_WATCHDOG
+                    if (trackJobs == true) {
+                        _parent._activeJobs.fetch_sub(1, std::memory_order_relaxed);
+                    }
+#endif
                 }
 
                 _dispatcher->Deinitialize();
@@ -567,6 +580,12 @@ POP_WARNING()
             #endif
             , _external(external)
             , _callback(callback)
+#ifdef THUNDER_CORE_WORKERPOOL_WATCHDOG
+            , _activeJobs(0)
+            , _pendingJobs(0)
+            , _progress(0)
+            , _jobTracking(false)
+#endif
         {
             const TCHAR* name = _T("WorkerPool::Thread");
             for (uint8_t index = 0; index < count; index++) {
@@ -586,6 +605,25 @@ POP_WARNING()
         uint32_t Pending() const {
             return (_queue.Length());
         }
+#ifdef THUNDER_CORE_WORKERPOOL_WATCHDOG
+        uint32_t ActiveJobs() const
+        {
+            return (_activeJobs.load(std::memory_order_relaxed));
+        }
+        uint32_t OutstandingJobs() const
+        {
+            const int32_t pending = _pendingJobs.load(std::memory_order_relaxed);
+            return (pending > 0 ? static_cast<uint32_t>(pending) : 0);
+        }
+        void EnableJobTracking()
+        {
+            _jobTracking = true;
+        }
+        uint64_t Progress() const
+        {
+            return (_progress.load(std::memory_order_relaxed));
+        }
+#endif
         void Snapshot(const uint8_t length, Metadata* entries, std::vector<string>& jobs) const
         {
             uint8_t count = 0;
@@ -620,11 +658,20 @@ POP_WARNING()
             ASSERT(job.IsValid() == true);
             ASSERT(_queue.HasEntry(job) == false);
 
+#ifdef THUNDER_CORE_WORKERPOOL_WATCHDOG
+            JobQueued();
+#endif
             if (Thread::ThreadId() == ResourceMonitor::Instance().Id()) {
-                _queue.Post(job);
+                if (_queue.Post(job) == false) {
+#ifdef THUNDER_CORE_WORKERPOOL_WATCHDOG
+                    JobDequeued();
+#endif
+                }
             }
-            else {
-                _queue.Insert(job, waitTime);
+            else if (_queue.Insert(job, waitTime) == false) {
+#ifdef THUNDER_CORE_WORKERPOOL_WATCHDOG
+                JobDequeued();
+#endif
             }
 
         }
@@ -635,6 +682,9 @@ POP_WARNING()
             ASSERT(job.IsValid() == true);
 
             if (_queue.Remove(job) == true) {
+#ifdef THUNDER_CORE_WORKERPOOL_WATCHDOG
+                JobDequeued();
+#endif
                 result = ERROR_NONE;
             }
             else {
@@ -714,6 +764,21 @@ POP_WARNING()
         #endif
 
     private:
+#ifdef THUNDER_CORE_WORKERPOOL_WATCHDOG
+        void JobQueued()
+        {
+            if (_jobTracking == true) {
+                _pendingJobs.fetch_add(1, std::memory_order_relaxed);
+            }
+        }
+        void JobDequeued()
+        {
+            if (_jobTracking == true) {
+                _pendingJobs.fetch_sub(1, std::memory_order_relaxed);
+            }
+        }
+#endif
+
         void Idle() {
             if (_callback != nullptr) {
                 _queue.Lock();
@@ -739,7 +804,14 @@ POP_WARNING()
             ProxyType<IDispatch> resubmit = job.Resubmit(scheduleTime);
             if (resubmit.IsValid() == true) {
                 if ((scheduleTime.IsValid() == false) || (_scheduler == nullptr) || (scheduleTime < Time::Now()) ) {
-                    _queue.Post(resubmit);
+#ifdef THUNDER_CORE_WORKERPOOL_WATCHDOG
+                    JobQueued();
+#endif
+                    if (_queue.Post(resubmit) == false) {
+#ifdef THUNDER_CORE_WORKERPOOL_WATCHDOG
+                        JobDequeued();
+#endif
+                    }
                 }
                 else {
                     // See if we have a hook that can process scheduled entries :-)
@@ -758,6 +830,12 @@ POP_WARNING()
         #endif
         Minion* _external;
         ICallback* _callback;
+    #ifdef THUNDER_CORE_WORKERPOOL_WATCHDOG
+        std::atomic<uint32_t> _activeJobs;
+        std::atomic<int32_t> _pendingJobs;
+        std::atomic<uint64_t> _progress;
+        bool _jobTracking;
+    #endif
     };
 
 }

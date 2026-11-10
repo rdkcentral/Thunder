@@ -26,6 +26,9 @@
 #include "Thread.h"
 #include "Trace.h"
 #include "Timer.h"
+#include "WatchDog.h"
+
+#include <atomic>
 
 namespace WPEFramework {
 
@@ -41,6 +44,50 @@ namespace Core {
         virtual uint16_t Events() = 0;
         virtual void Handle(const uint16_t events) = 0;
     };
+
+#ifdef THUNDER_CORE_RESOURCE_MONITOR_WATCHDOG
+    class ResourceMonitorWatchDog : public IWatchable {
+    public:
+        explicit ResourceMonitorWatchDog(const uint32_t timeout)
+            : _timeout(timeout)
+            , _timeoutTicks(static_cast<uint64_t>(timeout) * Time::MicroSecondsPerMilliSecond)
+            , _deadline(0)
+        {
+        }
+        ~ResourceMonitorWatchDog() override = default;
+
+        void Arm()
+        {
+            _deadline.store(WatchDog::Ticks() + _timeoutTicks, std::memory_order_relaxed);
+        }
+        void Reset()
+        {
+            _deadline.store(0, std::memory_order_relaxed);
+        }
+        const TCHAR* Name() const override
+        {
+            return (_T("ResourceMonitor"));
+        }
+        uint32_t Timeout() const override
+        {
+            return (_timeout);
+        }
+        bool Expired(const uint64_t now) override
+        {
+            const uint64_t deadline = _deadline.load(std::memory_order_relaxed);
+            return ((deadline != 0) && (now >= deadline));
+        }
+        string Report() const override
+        {
+            return (string(_T("callback did not return")));
+        }
+
+    private:
+        const uint32_t _timeout;
+        const uint64_t _timeoutTicks;
+        std::atomic<uint64_t> _deadline;
+    };
+#endif
 
     template <typename RESOURCE, typename WATCHDOG>
     class ResourceMonitorType {
@@ -104,6 +151,10 @@ namespace Core {
             , _monitorRuns(0)
             , _name(_T("Monitor::") + ClassNameOnly(typeid(RESOURCE).name()).Text())
             , _watchDog(1024 * 512, _name.c_str())
+#ifdef THUNDER_CORE_RESOURCE_MONITOR_WATCHDOG
+            , _watchable(nullptr)
+            , _watchDogEnabled(false)
+#endif
 #ifdef __WINDOWS__
             , _action(WSACreateEvent())
 #else
@@ -140,6 +191,10 @@ namespace Core {
                 delete _monitor;
             }
 
+#ifdef THUNDER_CORE_RESOURCE_MONITOR_WATCHDOG
+            DisableWatchDog();
+#endif
+
 #ifdef __LINUX__
             ::free(_descriptorArray);
             if (_signalDescriptor != -1) {
@@ -152,6 +207,31 @@ namespace Core {
         }
 
     public:
+#ifdef THUNDER_CORE_RESOURCE_MONITOR_WATCHDOG
+        void EnableWatchDog(const uint32_t timeout, const bool abortOnExpiry)
+        {
+            if (timeout != 0) {
+                _adminLock.Lock();
+                if (_watchable == nullptr) {
+                    _watchable = new ResourceMonitorWatchDog(timeout);
+                    WatchDog::Instance().Register(*_watchable, abortOnExpiry);
+                    _watchDogEnabled.store(true, std::memory_order_relaxed);
+                }
+                _adminLock.Unlock();
+            }
+        }
+        void DisableWatchDog()
+        {
+            _adminLock.Lock();
+            if (_watchable != nullptr) {
+                WatchDog::Instance().Unregister(*_watchable);
+                delete _watchable;
+                _watchable = nullptr;
+                _watchDogEnabled.store(false, std::memory_order_relaxed);
+            }
+            _adminLock.Unlock();
+        }
+#endif
         const TCHAR* Name() const
         {
             return (_name.c_str());
@@ -269,12 +349,22 @@ namespace Core {
         Arm()
         {
             _watchDog.Arm();
+#ifdef THUNDER_CORE_RESOURCE_MONITOR_WATCHDOG
+            if (_watchDogEnabled.load(std::memory_order_relaxed) == true) {
+                _watchable->Arm();
+            }
+#endif
         }
 
         template <typename TYPE=WATCHDOG>
         inline typename Core::TypeTraits::enable_if<!hasArm<TYPE, void>::value, void>::type
         Arm()
         {
+#ifdef THUNDER_CORE_RESOURCE_MONITOR_WATCHDOG
+            if (_watchDogEnabled.load(std::memory_order_relaxed) == true) {
+                _watchable->Arm();
+            }
+#endif
         }
 
         IS_MEMBER_AVAILABLE(Reset, hasReset);
@@ -284,12 +374,22 @@ namespace Core {
         Reset()
         {
             _watchDog.Reset();
+#ifdef THUNDER_CORE_RESOURCE_MONITOR_WATCHDOG
+            if (_watchDogEnabled.load(std::memory_order_relaxed) == true) {
+                _watchable->Reset();
+            }
+#endif
         }
 
         template <typename TYPE=WATCHDOG>
         inline typename Core::TypeTraits::enable_if<!hasReset<TYPE, void>::value, void>::type
         Reset()
         {
+#ifdef THUNDER_CORE_RESOURCE_MONITOR_WATCHDOG
+            if (_watchDogEnabled.load(std::memory_order_relaxed) == true) {
+                _watchable->Reset();
+            }
+#endif
         }
 
     public:
@@ -529,6 +629,10 @@ namespace Core {
         uint32_t _monitorRuns;
         string _name;
         WATCHDOG _watchDog;
+    #ifdef THUNDER_CORE_RESOURCE_MONITOR_WATCHDOG
+        ResourceMonitorWatchDog* _watchable;
+        std::atomic<bool> _watchDogEnabled;
+    #endif
 
 #ifdef __LINUX__
         uint32_t _descriptorArrayLength;
@@ -576,6 +680,9 @@ namespace Core {
         ResourceMonitor()
             : ResourceMonitorBase()
         {
+#ifdef THUNDER_CORE_RESOURCE_MONITOR_WATCHDOG
+            WatchDog::Instance();
+#endif
         }
         ResourceMonitor(const ResourceMonitor&) = delete;
         ResourceMonitor& operator=(const ResourceMonitor&) = delete;
