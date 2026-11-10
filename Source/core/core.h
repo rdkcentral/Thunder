@@ -38,7 +38,6 @@
 #include "DataElement.h"
 #include "DataElementFile.h"
 #include "Enumerate.h"
-#include "Errors.h"
 #include "Factory.h"
 #include "FileSystem.h"
 #include "FileObserver.h"
