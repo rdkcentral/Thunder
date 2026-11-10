@@ -1111,7 +1111,12 @@ namespace PluginHost
 PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
 
     Server::Server(Config& configuration, const bool background)
-        : _dispatcher(configuration.StackSize())
+        : _dispatcher(configuration.StackSize()
+    #ifdef THUNDER_CORE_WORKERPOOL_WATCHDOG
+            , configuration.WorkerPoolWatchdogTimeout()
+            , configuration.WorkerPoolWatchdogAbort()
+    #endif
+            )
         , _connections(*this, configuration.Binder(), configuration.IdleTime())
         , _config(configuration)
         , _services(*this)
@@ -1119,6 +1124,12 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
         , _factoriesImplementation()
     {
         IFactories::Assign(&_factoriesImplementation);
+
+#ifdef THUNDER_CORE_RESOURCE_MONITOR_WATCHDOG
+        Core::ResourceMonitor::Instance().EnableWatchDog(
+            _config.ResourceMonitorWatchdogTimeout(),
+            _config.ResourceMonitorWatchdogAbort());
+#endif
 
         // See if the persitent path for our-selves exist, if not we will create it :-)
         Core::File persistentPath(_config.PersistentPath() + _T("PluginHost"));
@@ -1174,6 +1185,9 @@ POP_WARNING()
 
     Server::~Server()
     {
+#ifdef THUNDER_CORE_RESOURCE_MONITOR_WATCHDOG
+        Core::ResourceMonitor::Instance().DisableWatchDog();
+#endif
         // The workerpool is about to dissapear!!!!
         Core::WorkerPool::Assign(nullptr);
         IFactories::Assign(nullptr);

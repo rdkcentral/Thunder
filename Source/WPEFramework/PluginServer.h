@@ -124,13 +124,39 @@ namespace PluginHost {
             WorkerPoolImplementation(const WorkerPoolImplementation&) = delete;
             WorkerPoolImplementation& operator=(const WorkerPoolImplementation&) = delete;
 
-            WorkerPoolImplementation(const uint32_t stackSize)
+            WorkerPoolImplementation(const uint32_t stackSize
+#ifdef THUNDER_CORE_WORKERPOOL_WATCHDOG
+                , const uint32_t watchdogTimeout
+                , const bool watchdogAbort
+#endif
+                )
                 : Core::WorkerPool(THREADPOOL_COUNT, stackSize, 64 * THREADPOOL_COUNT, &_dispatch, this)
                 , _dispatch()
+#ifdef THUNDER_CORE_WORKERPOOL_WATCHDOG
+                , _watchable(nullptr)
+#endif
             {
+#ifdef THUNDER_CORE_WORKERPOOL_WATCHDOG
+                if (watchdogTimeout != 0) {
+                    _watchable = new Core::WorkerPoolWatchable(*this, watchdogTimeout);
+                }
+#endif
                 Run();
+#ifdef THUNDER_CORE_WORKERPOOL_WATCHDOG
+                if (_watchable != nullptr) {
+                    Core::WatchDog::Instance().Register(*_watchable, watchdogAbort);
+                }
+#endif
             }
-            ~WorkerPoolImplementation() override = default;
+            ~WorkerPoolImplementation() override
+            {
+#ifdef THUNDER_CORE_WORKERPOOL_WATCHDOG
+                if (_watchable != nullptr) {
+                    Core::WatchDog::Instance().Unregister(*_watchable);
+                    delete _watchable;
+                }
+#endif
+            }
 
         public:
             void Idle() {
@@ -154,6 +180,9 @@ namespace PluginHost {
 
         private:
             Dispatcher _dispatch;
+#ifdef THUNDER_CORE_WORKERPOOL_WATCHDOG
+            Core::WorkerPoolWatchable* _watchable;
+#endif
         };
 
         class FactoriesImplementation : public IFactories {
