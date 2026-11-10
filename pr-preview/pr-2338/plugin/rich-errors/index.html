@@ -3320,7 +3320,8 @@
 <span class="k">namespace</span><span class="w"> </span><span class="nn">Example</span><span class="w"> </span><span class="p">{</span>
 
 <span class="w">    </span><span class="c1">// @json 1.0.0</span>
-<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">ISimpleRichError</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">virtual</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">IUnknown</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">EXTERNAL</span><span class="w"> </span><span class="n">ISimpleRichError</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">virtual</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">IUnknown</span><span class="w"> </span><span class="p">{</span>
+
 <span class="w">        </span><span class="k">enum</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">ID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ID_SIMPLERICHERROR</span><span class="w"> </span><span class="p">};</span>
 
 <span class="w">        </span><span class="k">struct</span><span class="w"> </span><span class="nc">Diagnostic</span><span class="w"> </span><span class="p">{</span>
