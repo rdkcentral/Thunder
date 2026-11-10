@@ -67,10 +67,6 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
 namespace WPEFramework {
     namespace Core {
 
-#ifdef __DEBUG__
-#define WATCHDOG_ENABLED
-#endif
-
         //////////////////////////////////////////////////////////////////////
         // SocketPort::Initialization
         //////////////////////////////////////////////////////////////////////
