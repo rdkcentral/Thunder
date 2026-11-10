@@ -411,8 +411,8 @@ namespace Core {
     {
         toString(dst, format, ap);
     }
-
-#ifdef __CUSTOM_ERROR_CODES__
+    
+#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
 
 namespace {
 
@@ -484,7 +484,7 @@ namespace {
 
         return result;
     }
-
+    
     int24_t IsCustomCode(const Core::hresult code)
     {
         static_assert(CUSTOM_ERROR == 0x1000000, "Code below assumes 25th bit used for CUSTOM_ERROR");
@@ -501,11 +501,11 @@ namespace {
         return result;
     }
 
-#endif // __CUSTOM_ERROR_CODES__
+#endif
 
     const TCHAR* ErrorToString(const Core::hresult code)
     {
-#ifdef __CUSTOM_ERROR_CODES__
+#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
         int24_t customcode = IsCustomCode(code);
 
         if (customcode != 0) {
@@ -517,7 +517,7 @@ namespace {
 
     string ErrorToStringExtended(const Core::hresult code)
     {
-#ifdef __CUSTOM_ERROR_CODES__
+#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
         int24_t customcode = IsCustomCode(code);
 
         if (customcode != 0) {
