@@ -43,6 +43,8 @@
 
 #define ANNOUNCE_WARNING(CATEGORY)
 
+#define ANNOUNCE_PRIORITY_WARNING(CATEGORY)
+
 #define REPORT_WARNING(CATEGORY, ...)
 
 #define REPORT_WARNING_GLOBAL(CATEGORY, ...)
@@ -53,6 +55,13 @@
 
 #define REPORT_DURATION_WARNING(CODE, CATEGORY, ...) \
     CODE
+
+#define REPORT_PRIORITY_DURATION_WARNING(CODE, CATEGORY, ...) \
+    CODE
+
+#define REPORT_PRIORITY_OUTOFBOUNDS_WARNING(CATEGORY, ACTUALVALUE, ...)
+
+#define REPORT_PRIORITY_OUTOFBOUNDS_WARNING_EX(CATEGORY, CALLSIGN, ACTUALVALUE, ...)
 
 #else
 
@@ -76,9 +85,14 @@
 // OutOfBounds warning category:
 //  - BoundsType to indicate type for boubnds values
 
-#define ANNOUNCE_WARNING(CATEGORY)  \
+#define ANNOUNCE_PRIORITY_WARNING(CATEGORY) \
     Thunder::WarningReporting::WarningReportingType<Thunder::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::IsEnabled()
 
+#ifdef __CORE_SLIM_WARNING_REPORTING__
+#define ANNOUNCE_WARNING(CATEGORY)
+#define REPORT_WARNING(CATEGORY, ...)
+#else
+#define ANNOUNCE_WARNING(CATEGORY) ANNOUNCE_PRIORITY_WARNING(CATEGORY)
 #define REPORT_WARNING(CATEGORY, ...) \
     if (const auto __targets__ = Thunder::WarningReporting::ResolveTargets( \
         Thunder::WarningReporting::WarningReportingType<CATEGORY>::CategoryName(), \
@@ -93,8 +107,9 @@
                 __message__, __targets__); \
         } \
     }
+#endif
 
-#define REPORT_OUTOFBOUNDS_WARNING(CATEGORY, ACTUALVALUE, ...) \
+#define REPORT_PRIORITY_OUTOFBOUNDS_WARNING(CATEGORY, ACTUALVALUE, ...) \
     if (const auto __targets__ = Thunder::WarningReporting::ResolveTargets( \
         Thunder::WarningReporting::WarningReportingType<Thunder::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::CategoryName(), \
         Thunder::WarningReporting::WarningReportingType<Thunder::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::RoutingMode(), \
@@ -109,7 +124,7 @@
         } \
     }
 
-#define REPORT_OUTOFBOUNDS_WARNING_EX(CATEGORY, CALLSIGN, ACTUALVALUE, ...) \
+#define REPORT_PRIORITY_OUTOFBOUNDS_WARNING_EX(CATEGORY, CALLSIGN, ACTUALVALUE, ...) \
     if (const auto __targets__ = Thunder::WarningReporting::ResolveTargets( \
         Thunder::WarningReporting::WarningReportingType<Thunder::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::CategoryName(), \
         Thunder::WarningReporting::WarningReportingType<Thunder::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::RoutingMode(), \
@@ -122,7 +137,7 @@
         } \
     }
 
-#define REPORT_DURATION_WARNING(CODE, CATEGORY, ...) \
+#define REPORT_PRIORITY_DURATION_WARNING(CODE, CATEGORY, ...) \
     if (const auto __targets__ = Thunder::WarningReporting::ResolveTargets( \
         Thunder::WarningReporting::WarningReportingType<Thunder::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::CategoryName(), \
         Thunder::WarningReporting::WarningReportingType<Thunder::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::RoutingMode(), \
@@ -141,6 +156,19 @@
     } else { \
         CODE \
     }
+
+#ifdef __CORE_SLIM_WARNING_REPORTING__
+#define REPORT_OUTOFBOUNDS_WARNING(CATEGORY, ACTUALVALUE, ...)
+#define REPORT_OUTOFBOUNDS_WARNING_EX(CATEGORY, CALLSIGN, ACTUALVALUE, ...)
+#define REPORT_DURATION_WARNING(CODE, CATEGORY, ...) CODE
+#else
+#define REPORT_OUTOFBOUNDS_WARNING(CATEGORY, ACTUALVALUE, ...) \
+    REPORT_PRIORITY_OUTOFBOUNDS_WARNING(CATEGORY, ACTUALVALUE, ##__VA_ARGS__)
+#define REPORT_OUTOFBOUNDS_WARNING_EX(CATEGORY, CALLSIGN, ACTUALVALUE, ...) \
+    REPORT_PRIORITY_OUTOFBOUNDS_WARNING_EX(CATEGORY, CALLSIGN, ACTUALVALUE, ##__VA_ARGS__)
+#define REPORT_DURATION_WARNING(CODE, CATEGORY, ...) \
+    REPORT_PRIORITY_DURATION_WARNING(CODE, CATEGORY, ##__VA_ARGS__)
+#endif
 
 namespace Thunder {
 

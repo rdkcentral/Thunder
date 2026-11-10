@@ -166,6 +166,13 @@ namespace Core {
         EXPECT_EQ(::Thunder::Core::Directory::Normalize("foo////bar////././././."), "foo/bar/");
         EXPECT_EQ(::Thunder::Core::Directory::Normalize("/foo////bar////././././."), "/foo/bar/");
 
+        // Dot-prefixed names are regular path segments and can be collapsed by ..
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize(".hidden/.."), "./");
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("..hidden/../directory"), "directory/");
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("/..hidden/.."), "/");
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("/...name/../"), "/");
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("a.b/.."), "./");
+
         // Cases where navigating upwards compacts completely
         EXPECT_EQ(::Thunder::Core::Directory::Normalize("foo/bar/../.."), "./");
         EXPECT_EQ(::Thunder::Core::Directory::Normalize("foo/bar/../.."), "./");
@@ -227,6 +234,11 @@ namespace Core {
         EXPECT_EQ(::Thunder::Core::File::Normalize("foo/../bar", true), "bar");
         EXPECT_EQ(::Thunder::Core::File::Normalize("/foo/../bar", true), "/bar");
         EXPECT_EQ(::Thunder::Core::File::Normalize("/foo/.././././bar", true), "/bar");
+        EXPECT_EQ(::Thunder::Core::File::Normalize(".hidden/../file", true), "file");
+        EXPECT_EQ(::Thunder::Core::File::Normalize("..hidden/../file", true), "file");
+        EXPECT_EQ(::Thunder::Core::File::Normalize("/..hidden/../file", true), "/file");
+        EXPECT_EQ(::Thunder::Core::File::Normalize("/...name/../file", true), "/file");
+        EXPECT_EQ(::Thunder::Core::File::Normalize("a.b/../file", true), "file");
 
         // Negative test cases, all fail because they point to a directory
         EXPECT_EQ(::Thunder::Core::File::Normalize("/", true), "");

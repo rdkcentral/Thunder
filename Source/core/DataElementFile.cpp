@@ -205,7 +205,7 @@ namespace Core {
     {
         if (requiredSize > 0) {
             const long pageSize = sysconf(_SC_PAGESIZE);
-            ASSERT(pageSize > 0);
+            ASSERT((pageSize > 0) && (pageSize <= (16*1024*1024))); // sanity check, 16MB page size limit
 
             const uint64_t ullPageSize = static_cast<uint64_t>(pageSize);
             uint64_t mapSize = ((static_cast<uint64_t>(requiredSize) + ullPageSize - 1) / ullPageSize) * ullPageSize;
