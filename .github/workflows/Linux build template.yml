@@ -5,6 +5,17 @@ permissions:
 
 on:
   workflow_call:
+    inputs:
+      source-repository:
+        description: Repository containing the Thunder source
+        required: false
+        type: string
+        default: rdkcentral/Thunder
+      thundertools-repository:
+        description: Repository containing the ThunderTools source
+        required: false
+        type: string
+        default: rdkcentral/ThunderTools
 
 jobs:
   Thunder:
@@ -32,13 +43,28 @@ jobs:
         pip install jsonref
 
 # ----- Checkout & DependsOn regex -----
+    - name: Resolve release dependency branch
+      id: release
+      shell: bash
+      env:
+        BUILD_BRANCH: ${{ github.base_ref || github.ref_name }}
+        REF_TYPE: ${{ github.ref_type }}
+      run: |
+        release_ref=
+        if [[ "$REF_TYPE" == 'branch' && "$BUILD_BRANCH" == R* ]]; then
+          release_ref="refs/heads/$BUILD_BRANCH"
+        fi
+        echo "ref=$release_ref" >> "$GITHUB_OUTPUT"
+        echo "Dependency branch: ${release_ref:-repository default}"
+
 # --------- Thunder ----------
     - name: Checkout Thunder - default
       if: ${{ !contains(github.event.pull_request.body, '[DependsOn=Thunder:') }}
       uses: actions/checkout@v5
       with:
         path: Thunder
-        repository: rdkcentral/Thunder
+        repository: ${{ inputs.source-repository }}
+        ref: ${{ github.repository != inputs.source-repository && steps.release.outputs.ref || '' }}
 
     - name: Regex Thunder
       if: contains(github.event.pull_request.body, '[DependsOn=Thunder:')
@@ -54,7 +80,7 @@ jobs:
       uses: actions/checkout@v5
       with:
         path: Thunder
-        repository: rdkcentral/Thunder
+        repository: ${{ inputs.source-repository }}
         ref: ${{steps.thunder.outputs.first_match}}
 
 # ------- ThunderTools -------
@@ -63,7 +89,8 @@ jobs:
       uses: actions/checkout@v5
       with:
         path: ThunderTools
-        repository: rdkcentral/ThunderTools
+        repository: ${{ inputs.thundertools-repository }}
+        ref: ${{ github.repository != inputs.thundertools-repository && steps.release.outputs.ref || '' }}
 
     - name: Regex ThunderTools
       if: contains(github.event.pull_request.body, '[DependsOn=ThunderTools:')
@@ -79,8 +106,14 @@ jobs:
       uses: actions/checkout@v5
       with:
         path: ThunderTools
-        repository: rdkcentral/ThunderTools
+        repository: ${{ inputs.thundertools-repository }}
         ref: ${{steps.tools.outputs.first_match}}
+
+    - name: Log source revisions
+      shell: bash
+      run: |
+        git -C Thunder log -1 --format='Thunder: %H'
+        git -C ThunderTools log -1 --format='ThunderTools: %H'
 
 # ----- Installing generators & Options regex -----
     - name: Install generators
@@ -132,6 +165,8 @@ jobs:
         -DHIBERNATESUPPORT=ON \
         -DHIBERNATE_CHECKPOINTSERVER=ON \
         -DLOCALTRACER=ON \
+        -DMESSAGING_EXTERNAL_OUTPUT=ON \
+        -DMESSAGING_EXTERNAL_OUTPUT_USE_MOCK=ON \
         -DPERFORMANCE_MONITOR=ON \
         -DPRIVILEGEDREQUEST=ON \
         ${{matrix.architecture == 'tests64' && '-DENABLE_TEST_RUNTIME=ON -DBUILD_TESTS=ON' || '-DPROCESSCONTAINERS=ON -DPROCESSCONTAINERS_RUNC=ON -DWARNING_REPORTING=ON'}} \

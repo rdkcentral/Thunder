@@ -124,14 +124,15 @@ namespace Telemetry {
 #define TELEMETRY(CATEGORY, VALUE)                                                                                                                  \
     do {                                                                                                                                            \
         static_assert(std::is_base_of<Thunder::Telemetry::BaseTelemetryType<CATEGORY>, CATEGORY>::value, "TELEMETRY() only for Telemetry controls");\
-        if (CATEGORY::IsEnabled() == true) {                                                                                                        \
+        const auto __targets__ = Thunder::Messaging::MessageUnit::Instance().Targets(CATEGORY::Metadata(), CATEGORY::Routing(), CATEGORY::IsEnabled()); \
+        if (__targets__.Any() == true) {                                                                                                            \
             Thunder::Core::Messaging::MessageInfo __info__(                                                                                         \
                 CATEGORY::Metadata(),                                                                                                               \
                 Thunder::Core::Time::Now().Ticks()                                                                                                  \
             );                                                                                                                                      \
             Thunder::Core::Messaging::IStore::Telemetry __telemetry__(__info__);                                                                    \
             Thunder::Core::Messaging::TelemetryMessage __message__(VALUE);                                                                          \
-            Thunder::Messaging::MessageUnit::Instance().Push(__telemetry__, &__message__, CATEGORY::Routing());                                     \
+            Thunder::Messaging::MessageUnit::Instance().Push(__telemetry__, &__message__, __targets__);                                             \
         }                                                                                                                                           \
     } while(false)
 #else
