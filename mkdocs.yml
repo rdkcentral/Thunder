@@ -1,6 +1,6 @@
 site_name: Thunder
 site_url: https://rdkcentral.github.com/Thunder
-
+ 
 repo_name: rdkcentral/Thunder
 repo_url: https://github.com/rdkcentral/Thunder/
 
@@ -45,6 +45,8 @@ nav:
     - Private COM-RPC : plugin/private-comrpc.md
     - Split Implementation: plugin/split-implementation.md
     - Composite Plugins: plugin/composite.md
+    - Open Telemetry: plugin/opentelemetry.md
+    - Rich Errors: plugin/rich-errors.md
     - Plugin Development Tools:
       - ThunderDevTools: plugin/devtools/devtools.md
       - Plugin Skeleton Generator: plugin/devtools/pluginskeletongenerator.md
@@ -65,7 +67,6 @@ nav:
     - Processes: utils/processes.md
     - Protocols:
       - WebSocket: rfc/websocket.md
-    - Custom Codes: utils/customcodes.md
   - Client Development:
     - Introduction: client/intro.md
     - JSON-RPC App: client/json-rpc.md
