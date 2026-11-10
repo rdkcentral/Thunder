@@ -605,8 +605,6 @@ POP_WARNING()
                     while ((result < receivedSize) && (tooSmall == false)) {
                         uint16_t actualDataSize = receivedSize - result;
                         uint16_t headerSize = _handler.Decoder(const_cast<uint8_t*>(&dataFrame[result]), actualDataSize);
-                        uint64_t payloadSizeInControlFrame;
-
                         tooSmall = ((headerSize == 0) && (actualDataSize == 0));
 
                         if (tooSmall == false) {
@@ -614,11 +612,9 @@ POP_WARNING()
 
                                 TRACE_L1("Oops we received uncomprehensable data on the web socket 0x%X", _handler.FrameType());
 
-                                // Oops we got an error, Change link state !!
-                                // ACTUALLINK::Close(0);
-
                                 // Nothing we can do with this shit..
                                 result = receivedSize;
+                                ACTUALLINK::Close(0);
                             } else if ((_handler.FrameType() & 0x08) != 0) {
                                 // Build the associated message with this..
                                 // _commandData += dataFrame
@@ -650,25 +646,8 @@ POP_WARNING()
                                     _commandData.clear();
                                 }
 
-                                payloadSizeInControlFrame = 0;
                                 // skip payload bytes for control frames:
-                                if (headerSize > 1) {
-                                    payloadSizeInControlFrame = dataFrame[result+1] & 0x7F;
-                                    // Security: RFC 6455 §5.5 mandates that control frames
-                                    // MUST have a payload length of 125 bytes or less.
-                                    // Reject extended length indicators (126/127) on control
-                                    // frames to prevent uint16 overflow in the result pointer
-                                    // arithmetic and potential heap overflow via memmove.
-                                    if (payloadSizeInControlFrame >= 126) {
-                                        TRACE_L1("WebSocket protocol violation: control frame with extended payload length (%u)", static_cast<unsigned>(payloadSizeInControlFrame));
-                                        payloadSizeInControlFrame = 0;
-                                    }
-                                }
-                                if (headerSize == 0) {
-                                    result += actualDataSize;
-                                } else {
-                                    result += static_cast<uint16_t>(headerSize + payloadSizeInControlFrame);
-                                }
+                                result += (headerSize + actualDataSize);
                             } else {
                                 if (actualDataSize != 0) {
                                    _parent.ReceiveData(&(dataFrame[result + headerSize]), actualDataSize);

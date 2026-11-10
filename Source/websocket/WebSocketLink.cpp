@@ -196,7 +196,8 @@ namespace Web {
                 receivedSize = 0;
             } else {
                 // This seems to be a new frame, check it out !!!
-                uint64_t bytesToMove = (dataFrame[1] & 0x7F);
+                const uint8_t lengthIndicator = (dataFrame[1] & 0x7F);
+                uint64_t bytesToMove = lengthIndicator;
 
                 // check if the full header is present..
                 actualHeader = 2 + (bytesToMove == 127 ? 8 : (bytesToMove == 126 ? 2 : 0)) + ((dataFrame[1] & MASKING_FRAME) ? 4 : 0);
@@ -233,11 +234,17 @@ namespace Web {
                         _frameType = INCONSISTENT;
                     }
 
+                    if (((_frameType & 0xF0) == 0) && ((_frameType & CONTROL_FRAME) != 0) && (lengthIndicator >= 126)) {
+                        TRACE_L1("WebSocket protocol violation: control frame uses an extended payload length");
+                        _frameType = VIOLATION;
+                        receivedSize = 0;
+                    }
+
                     // If the frame is not an error, unpack/move what is required..
-                    if ((_frameType & 0xF8) == 0) {
-                        if (bytesToMove == 126) {
+                    if ((_frameType & 0xF0) == 0) {
+                        if (lengthIndicator == 126) {
                             bytesToMove = ((dataFrame[2] << 8) + dataFrame[3]);
-                        } else if (bytesToMove == 127) {
+                        } else if (lengthIndicator == 127) {
                             bytesToMove = 0;
                             for (uint8_t i = 2; i <= 9; ++i) {
                                 bytesToMove = (bytesToMove << 8) | static_cast<uint64_t>(dataFrame[i]);
