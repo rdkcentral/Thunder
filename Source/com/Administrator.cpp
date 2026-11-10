@@ -207,7 +207,7 @@ namespace RPC {
 
         if (stub != nullptr) {
             uint16_t methodId = message->Parameters().MethodId();
-            REPORT_DURATION_WARNING({ stub->Handle(methodId, channel, message); }, WarningReporting::TooLongInvokeRPC, interfaceId, methodId);
+            REPORT_PRIORITY_DURATION_WARNING({ stub->Handle(methodId, channel, message); }, WarningReporting::TooLongInvokeRPC, interfaceId, methodId);
         } 
     }
 
