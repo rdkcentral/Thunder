@@ -21,7 +21,7 @@ namespace Thunder {
 namespace Example {
 
     // @json 1.0.0
-    struct ISimpleRichError : virtual public Core::IUnknown {
+    struct EXTERNAL ISimpleRichError : virtual public Core::IUnknown {
         enum { ID = ID_SIMPLERICHERROR };
 
         struct Diagnostic {
