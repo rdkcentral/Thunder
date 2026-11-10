@@ -47,6 +47,7 @@
     <ClInclude Include="IPFrame.h" />
     <ClInclude Include="ISO639.h" />
     <ClInclude Include="IWarningReportingControl.h" />
+    <ClInclude Include="JobContext.h" />
     <ClInclude Include="JSON.h" />
     <ClInclude Include="JSONRPC.h" />
     <ClInclude Include="KeyValue.h" />
@@ -118,6 +119,7 @@
     <ClCompile Include="Errors.cpp" />
     <ClCompile Include="FileSystem.cpp" />
     <ClCompile Include="ISO639.cpp" />
+    <ClCompile Include="JobContext.cpp" />
     <ClCompile Include="JSON.cpp" />
     <ClCompile Include="JSONRPC.cpp" />
     <ClCompile Include="Library.cpp" />
@@ -208,6 +210,9 @@
     <Import Project="CoreDefault.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <WarningReportingGeneratedIncludePath Condition="'$(WarningReportingGeneratedIncludePath)' == ''">$(SolutionDir)build\Source\core\generated\core</WarningReportingGeneratedIncludePath>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
     <OutDir>$(SolutionDir)..\artifacts\$(Configuration)\</OutDir>
@@ -236,8 +241,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>$(CoreConsole);$(CoreDefines);CORE_EXPORTS;_CRT_SECURE_NO_WARNINGS;_WINSOCK_DEPRECATED_NO_WARNINGS;WIN32;_DEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions);</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>
-      </AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(WarningReportingGeneratedIncludePath)\..;$(WarningReportingGeneratedIncludePath);$(ProjectDir)..;$(WindowsPath);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <UseStandardPreprocessor>true</UseStandardPreprocessor>
     </ClCompile>
     <Link>
@@ -253,9 +257,9 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>$(CoreConsole);$(CoreDefines);CORE_EXPORTS;_CRT_SECURE_NO_WARNINGS;_WINSOCK_DEPRECATED_NO_WARNINGS;DEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>$(CoreConsole);$(CoreDefines);CORE_EXPORTS;_CRT_SECURE_NO_WARNINGS;_WINSOCK_DEPRECATED_NO_WARNINGS;DEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions); __W3C_TRACE_CONTEXT__</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(WindowsPath)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(WarningReportingGeneratedIncludePath)\..;$(WarningReportingGeneratedIncludePath);$(ProjectDir)..;$(WindowsPath);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <UseStandardPreprocessor>true</UseStandardPreprocessor>
     </ClCompile>
     <Link>
@@ -275,8 +279,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>$(CoreConsole);$(CoreDefines);CORE_EXPORTS;_CRT_SECURE_NO_WARNINGS;_WINSOCK_DEPRECATED_NO_WARNINGS;IN32;NDEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>
-      </AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(WarningReportingGeneratedIncludePath)\..;$(WarningReportingGeneratedIncludePath);$(ProjectDir)..;$(WindowsPath);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <UseStandardPreprocessor>true</UseStandardPreprocessor>
     </ClCompile>
     <Link>
@@ -298,8 +301,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>$(CoreConsole);$(CoreDefines);CORE_EXPORTS;_CRT_SECURE_NO_WARNINGS;_WINSOCK_DEPRECATED_NO_WARNINGS;NDEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>
-      </AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(WarningReportingGeneratedIncludePath)\..;$(WarningReportingGeneratedIncludePath);$(ProjectDir)..;$(WindowsPath);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <UseStandardPreprocessor>true</UseStandardPreprocessor>
     </ClCompile>
     <Link>

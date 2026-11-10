@@ -18,6 +18,11 @@
 set(TARGET ${NAMESPACE}Core)
 include(CompileSettings)
 
+configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/WarningReportingConfig.h.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/generated/core/WarningReportingConfig.h"
+    @ONLY)
+
 find_package(Threads REQUIRED)
 find_package(ExecInfo)
 find_package(LIBRT)
@@ -35,6 +40,7 @@ add_library(${TARGET}
         ISO639.cpp
         JSON.cpp
         JSONRPC.cpp
+        JobContext.cpp
         Library.cpp
         Netlink.cpp
         NetworkInfo.cpp
@@ -90,6 +96,7 @@ set(PUBLIC_HEADERS
         IWarningReportingControl.h
         JSON.h
         JSONRPC.h
+        JobContext.h
         KeyValue.h
         Library.h
         Link.h
@@ -151,7 +158,6 @@ set(PUBLIC_HEADERS
         CallsignTLS.h
         TokenizedStringList.h
         MessageStore.h
-        ICustomErrorCode.h
         Errors.h
         ExtraNumberDefinitions.h
         ${CMAKE_CURRENT_BINARY_DIR}/generated/core/Version.h
@@ -182,6 +188,9 @@ endif()
 if(WARNING_REPORTING)
     target_sources(${TARGET} PRIVATE WarningReportingControl.cpp WarningReportingCategories.cpp)
     target_compile_definitions(${TARGET} PUBLIC __CORE_WARNING_REPORTING__)
+    if(SLIM_WARNING_REPORTING)
+        target_compile_definitions(${TARGET} PUBLIC __CORE_SLIM_WARNING_REPORTING__)
+    endif()
     message(STATUS "Warning reporting enabled")
 endif()
 
@@ -203,6 +212,17 @@ endif()
 if(NOT WCHAR_SUPPORT)
     target_compile_definitions(${TARGET} PUBLIC __CORE_NO_WCHAR_SUPPORT__)
     message(STATUS "Disabled WCHAR support.")
+endif()
+
+if(W3C_TRACE_CONTEXT_ENABLED)
+   target_compile_definitions(${TARGET} PUBLIC __W3C_TRACE_CONTEXT__)
+   message(STATUS "support for W3C trace context propagation")
+endif()
+
+if(CUSTOM_ERROR_CODES_ENABLED)
+    target_compile_definitions(${TARGET} PUBLIC __CUSTOM_ERROR_CODES__)
+    message(WARNING "Enabled support for custom error codes (obsolete!)")
+    list(APPEND PUBLIC_HEADERS "ICustomErrorCode.h")
 endif()
 
 if (INSTANCE_ID_BITS)
@@ -230,11 +250,11 @@ if(BLUETOOTH_SUPPORT)
     foreach(path ${Bluez5IncludeDirs})
     target_include_directories(${TARGET}
         PUBLIC
-            $<BUILD_INTERFACE:${path}>)        
+            $<BUILD_INTERFACE:${path}>)
     endforeach()
 
     CheckBluez5InclusiveLanguage(INCLUSIVE_LANGUAGE)
-    
+
     if(NOT ${INCLUSIVE_LANGUAGE})
         #TODO: Remove NO_INCLUSIVE_LANGUAGE define when the plugins are synced to BLUEZ_HAS_NO_INCLUSIVE_LANGUAGE
         target_compile_definitions(${TARGET} PUBLIC INTERFACE NO_INCLUSIVE_LANGUAGE BLUEZ_HAS_NO_INCLUSIVE_LANGUAGE)
@@ -285,7 +305,8 @@ endif()
 
 target_include_directories( ${TARGET}
         PUBLIC
-          $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/generated/core> 
+          $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/generated>
+          $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/generated/core>
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../> #core.h
           $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}>)
 
@@ -324,6 +345,10 @@ install(
         PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}/core COMPONENT ${NAMESPACE}_Development   
         INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}
 )
+
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/generated/core/WarningReportingConfig.h"
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}/core
+    COMPONENT ${NAMESPACE}_Development)
 
 # ===========================================================================================
 # Install METADATA:
