@@ -32,6 +32,9 @@ namespace Core {
     private:
         using ClientMap = std::map<uint32_t, Core::ProxyType<CLIENT>>;
 
+        template <typename HANDLECLIENT>
+        class SocketHandler;
+
     public:
         template <typename HANDLECLIENT>
         class IteratorType {
@@ -56,6 +59,12 @@ namespace Core {
                 }
                 _iterator = _clients.begin();
             }
+            ~IteratorType() = default;
+
+        private:
+        
+            friend class SocketHandler<CLIENT>;
+
             IteratorType(const IteratorType<HANDLECLIENT>& copy)
                 : _atHead(true)
                 , _clients(copy._clients)
@@ -63,19 +72,13 @@ namespace Core {
             {
             }
             IteratorType(IteratorType<HANDLECLIENT>&& move)
-                : _atHead(move._atHead)
-                , _clients()
-                , _iterator()
+                : _atHead(true)
+                , _clients(std::move(move._clients))
+                , _iterator(_clients.begin())
             {
-                const bool atEnd = (move._iterator == move._clients.end());
-
-                _clients = std::move(move._clients);
-                _iterator = (atEnd == true ? _clients.end() : move._iterator);
-
                 move._atHead = true;
                 move._iterator = move._clients.begin();
             }
-            ~IteratorType() = default;
 
             IteratorType& operator=(const IteratorType<HANDLECLIENT>& RHS)
             {
@@ -90,11 +93,9 @@ namespace Core {
             IteratorType& operator=(IteratorType<HANDLECLIENT>&& move)
             {
                 if (this != &move) {
-                    const bool atEnd = (move._iterator == move._clients.end());
-
-                    _atHead = move._atHead;
+                    _atHead = true;
                     _clients = std::move(move._clients);
-                    _iterator = (atEnd == true ? _clients.end() : move._iterator);
+                    _iterator = _clients.begin();
 
                     move._atHead = true;
                     move._iterator = move._clients.begin();
