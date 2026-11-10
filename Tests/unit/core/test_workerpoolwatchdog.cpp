@@ -142,6 +142,19 @@ namespace Core {
         THREADSAFE_DEATH_TESTS();
         EXPECT_EXIT(WorkerPoolWatchDogScenario(true), ::testing::ExitedWithCode(0), "");
     }
+
+    TEST(Core_WorkerPoolWatchDog, DoesNotExpireAfterPoolStops)
+    {
+        TestDispatcher dispatcher;
+        ::WPEFramework::Core::WorkerPool pool(1, 0, 2, &dispatcher);
+        ::WPEFramework::Core::WorkerPoolWatchable watchable(pool, 150);
+        pool.Run();
+        pool.Stop();
+
+        const uint64_t afterTimeout = ::WPEFramework::Core::WatchDog::Ticks()
+            + (2 * 150 * ::WPEFramework::Core::Time::MicroSecondsPerMilliSecond);
+        EXPECT_FALSE(watchable.Expired(afterTimeout));
+    }
 #endif
 }
 }

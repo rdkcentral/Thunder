@@ -58,6 +58,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_queue.cpp
    test_rangetype.cpp
    test_readwritelock.cpp
+   test_resourcemonitor.cpp
    test_rectangle.cpp
    #test_rpc.cpp
    test_semaphore.cpp

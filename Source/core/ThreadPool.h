@@ -19,6 +19,8 @@
  
 #pragma once
 
+#include <atomic>
+
 #include "Thread.h"
 #include "ResourceMonitor.h"
 #include "Number.h"
@@ -396,7 +398,7 @@ POP_WARNING()
                 return (_currentRequest.IsValid());
             }
             void Info(Metadata& info) const {
-                info.Runs = _runs;
+                info.Runs = Runs();
 
 		        _adminLock.Lock();
                 if (_currentRequest.IsValid() == false) {
@@ -407,6 +409,14 @@ POP_WARNING()
                     info.Job = _currentRequest->Identifier();
 		            _adminLock.Unlock();
                 }
+            }
+            uint32_t Runs() const
+            {
+#ifdef THUNDER_CORE_WORKERPOOL_WATCHDOG
+                return (_runs.load(std::memory_order_relaxed));
+#else
+                return (_runs);
+#endif
             }
             uint32_t Completed (const ProxyType<IDispatch>& job, const uint32_t waitTime) {
                 uint32_t result = ERROR_UNKNOWN_KEY;
@@ -433,14 +443,16 @@ POP_WARNING()
 
                     ASSERT(_currentRequest.IsValid() == true);
 
-                    _runs++;
 #ifdef THUNDER_CORE_WORKERPOOL_WATCHDOG
+                    _runs.fetch_add(1, std::memory_order_relaxed);
                     _parent._progress.fetch_add(1, std::memory_order_relaxed);
                     const bool trackJobs = _parent._jobTracking;
                     if (trackJobs == true) {
                         _parent._activeJobs.fetch_add(1, std::memory_order_relaxed);
                         _parent.JobDequeued();
                     }
+#else
+                    _runs++;
 #endif
 
                     #ifdef __CORE_WARNING_REPORTING__
@@ -517,7 +529,11 @@ POP_WARNING()
             #else
             ProxyType<IDispatch> _currentRequest;
             #endif
+#ifdef THUNDER_CORE_WORKERPOOL_WATCHDOG
+            std::atomic<uint32_t> _runs;
+#else
             uint32_t _runs;
+#endif
         };
 
     private:
