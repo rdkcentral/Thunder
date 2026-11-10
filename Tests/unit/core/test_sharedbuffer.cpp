@@ -240,7 +240,7 @@ namespace Core {
         EXPECT_EQ(::rmdir(directory), 0);
     }
 
-    TEST(Core_SharedBuffer, PayloadSymlinkRequiresExplicitOptIn)
+    TEST(Core_SharedBuffer, PayloadSymlinkKeepsLegacyBehavior)
     {
         char directoryTemplate[] = "/tmp/thunder-sharedbuffer-payload-XXXXXX";
         char* directory = ::mkdtemp(directoryTemplate);
@@ -249,41 +249,29 @@ namespace Core {
         const std::string bufferName = std::string(directory) + "/buffer";
         const std::string administrationName = bufferName + ".admin";
         const std::string targetName = std::string(directory) + "/target";
-        constexpr char targetContents[] = "protected";
         constexpr uint32_t mode = ::Thunder::Core::File::USER_READ | ::Thunder::Core::File::USER_WRITE;
 
         int target = ::open(targetName.c_str(), O_CREAT | O_WRONLY | O_TRUNC, 0600);
         ASSERT_TRUE(target >= 0);
-        ASSERT_EQ(::write(target, targetContents, sizeof(targetContents) - 1), static_cast<ssize_t>(sizeof(targetContents) - 1));
         ASSERT_EQ(::close(target), 0);
         ASSERT_EQ(::symlink(targetName.c_str(), bufferName.c_str()), 0);
 
         {
-            ::Thunder::Core::DataElementFile file(bufferName, mode | ::Thunder::Core::File::CREATE, 4096, true);
-            EXPECT_FALSE(file.IsValid());
-            EXPECT_FALSE(file.Load());
+            ::Thunder::Core::File file(bufferName);
+            EXPECT_TRUE(file.Create(mode));
+            file.Close();
         }
 
         {
             ::Thunder::Core::SharedBuffer buffer(bufferName.c_str(), mode, 4096, 64);
-            EXPECT_FALSE(buffer.IsValid());
-            EXPECT_FALSE(buffer.Load());
-        }
-
-        char contents[sizeof(targetContents)] = {};
-        target = ::open(targetName.c_str(), O_RDONLY);
-        ASSERT_TRUE(target >= 0);
-        ASSERT_EQ(::read(target, contents, sizeof(contents)), static_cast<ssize_t>(sizeof(targetContents) - 1));
-        ASSERT_EQ(::close(target), 0);
-        EXPECT_EQ(std::string(contents), targetContents);
-        EXPECT_EQ(::unlink(administrationName.c_str()), 0);
-
-        {
-            ::Thunder::Core::SharedBuffer buffer(bufferName.c_str(), mode, 4096, 64, false);
             EXPECT_TRUE(buffer.IsValid());
             EXPECT_TRUE(buffer.Buffer() != nullptr);
             EXPECT_EQ(buffer.Size(), 4096u);
         }
+
+        struct stat targetStatus;
+        ASSERT_EQ(::stat(targetName.c_str(), &targetStatus), 0);
+        EXPECT_EQ(targetStatus.st_size, 4096);
 
         EXPECT_EQ(::unlink(administrationName.c_str()), 0);
         EXPECT_EQ(::unlink(bufferName.c_str()), 0);

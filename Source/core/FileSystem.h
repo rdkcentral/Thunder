@@ -372,7 +372,7 @@ namespace Core {
 
         bool Create(const uint32_t mode, const bool exclusive = false)
         {
-            return (Create(mode, exclusive, true));
+            return (Create(mode, exclusive, false));
         }
 
         bool Create(const uint32_t mode, const bool exclusive, VARIABLE_IS_NOT_USED const bool noFollow)

@@ -38,13 +38,8 @@ static string HashedSemName(const string& name, const char* suffix) {
 #endif
 
     SharedBuffer::SharedBuffer(const TCHAR name[])
-        : SharedBuffer(name, true)
-    {
-    }
-
-    SharedBuffer::SharedBuffer(const TCHAR name[], const bool noFollow)
-        : DataElementFile(name, File::USER_READ | File::USER_WRITE | File::SHAREABLE, 0, noFollow)
-        , _administrationBuffer((string(name) + ".admin"), File::USER_READ | File::USER_WRITE | File::SHAREABLE, 0, noFollow)
+        : DataElementFile(name, File::USER_READ | File::USER_WRITE | File::SHAREABLE, 0)
+        , _administrationBuffer((string(name) + ".admin"), File::USER_READ | File::USER_WRITE | File::SHAREABLE, 0, true)
         , _administration(reinterpret_cast<Administration*>(PointerAlign(_administrationBuffer.Buffer())))
     #ifdef __WINDOWS__
         , _producer((string(name) + ".producer").c_str(), (_administration != nullptr) && IsValid())
@@ -69,15 +64,10 @@ static string HashedSemName(const string& name, const char* suffix) {
     }
 
     SharedBuffer::SharedBuffer(const TCHAR name[], const uint32_t mode, const uint32_t bufferSize, const uint16_t administratorSize)
-        : SharedBuffer(name, mode, bufferSize, administratorSize, true)
-    {
-    }
-
-    SharedBuffer::SharedBuffer(const TCHAR name[], const uint32_t mode, const uint32_t bufferSize, const uint16_t administratorSize, const bool noFollow)
-        : DataElementFile(name, mode | File::SHAREABLE | File::CREATE, bufferSize, noFollow)
+        : DataElementFile(name, mode | File::SHAREABLE | File::CREATE, bufferSize)
         , _administrationBuffer((string(name) + ".admin"), mode | File::SHAREABLE | File::CREATE, sizeof(Administration) + (SharedSemaphore::Size() * 2) + administratorSize 
             + (sizeof(void*) * 2) + ((sizeof(Administration) + (SharedSemaphore::Size() * 2) + administratorSize) % sizeof(void*) == 0 ?
-            0 : (sizeof(void*) - ((sizeof(Administration) + (SharedSemaphore::Size() * 2) + administratorSize) % sizeof(void*)))) /* Align buffer on 32/64 bits boundary */, noFollow)
+            0 : (sizeof(void*) - ((sizeof(Administration) + (SharedSemaphore::Size() * 2) + administratorSize) % sizeof(void*)))) /* Align buffer on 32/64 bits boundary */, true)
         , _administration(reinterpret_cast<Administration*>(PointerAlign(_administrationBuffer.Buffer())))
     #ifdef __WINDOWS__
         , _producer((string(name) + ".producer").c_str(), 1, 1, (_administration != nullptr) && IsValid())

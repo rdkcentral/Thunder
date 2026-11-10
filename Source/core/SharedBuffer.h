@@ -76,12 +76,10 @@ namespace Core {
         // construct. The producer will create the Administration area, and the shared buffer,
         // default size.
         SharedBuffer(const TCHAR name[]);
-        SharedBuffer(const TCHAR name[], const bool noFollow);
 
         // This is the Producer constructor. It sets up all the information and locks the
         // Semaphore by default.
         SharedBuffer(const TCHAR name[], const uint32_t mode, const uint32_t bufferSize, const uint16_t administrationSize);
-        SharedBuffer(const TCHAR name[], const uint32_t mode, const uint32_t bufferSize, const uint16_t administrationSize, const bool noFollow);
 
         inline uint32_t RequestProduce(const uint32_t waitTime)
         {
