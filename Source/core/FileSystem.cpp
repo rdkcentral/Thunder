@@ -76,13 +76,6 @@ namespace Core {
     {
         string result(location);
 
-        const auto isParentReference = [&result](const uint32_t offset) {
-            const uint32_t segment = offset + (result[offset] == '/' ? 1 : 0);
-
-            return ((segment + 1 < result.length()) && (result[segment] == '.') && (result[segment + 1] == '.') &&
-                ((segment + 2 == result.length()) || (result[segment + 2] == '/')));
-        };
-
         // First see if we are not empy.
         if (result.empty() == false) {
             uint32_t index = 0;
@@ -135,7 +128,7 @@ namespace Core {
                                 }
 
                                 // ...but don't swallow another ..
-                                if (isParentReference(offset) == false) {
+                                if ((result[offset] != '.') && (result[offset + 1] != '.')) {
                                     result.erase(offset + (result[offset] == '/' ? 1 : 0), index - offset + (result[offset] == '/' ? 0 : -1));
                                     index = offset;
                                 }
@@ -188,7 +181,7 @@ namespace Core {
                             }
 
                             // again do not swallow another ..
-                            if (isParentReference(offset) == false) {
+                            if ((result[offset] != '.') && (result[offset + 1] != '.')) {
                                 result.erase(offset + (result[offset] == '/' ? 1 : 0));
 
                                 if ((result.empty() == true) && (allowDirs == true)) {
