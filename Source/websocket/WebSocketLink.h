@@ -614,11 +614,9 @@ POP_WARNING()
 
                                 TRACE_L1("Oops we received uncomprehensable data on the web socket 0x%X", _handler.FrameType());
 
-                                // Oops we got an error, Change link state !!
-                                // ACTUALLINK::Close(0);
-
                                 // Nothing we can do with this shit..
                                 result = receivedSize;
+                                ACTUALLINK::Close(0);
                             } else if ((_handler.FrameType() & 0x08) != 0) {
                                 // Build the associated message with this..
                                 // _commandData += dataFrame
