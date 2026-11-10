@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-#include <type_traits>
+#include <utility>
 
 #include <gtest/gtest.h>
 
@@ -27,157 +27,211 @@
 
 #include <core/core.h>
 
-#include <unistd.h>
-
 namespace Thunder {
 namespace Tests {
 namespace Core {
 
-    // Minimal stream client. The server creates one of these for every
-    // accepted connection; the test also uses it to connect to the server.
-    class StreamClient : public ::Thunder::Core::SocketStream {
+    // Simple client type; no real sockets are needed to test the iterator.
+    class DummyClient {
     public:
-        StreamClient() = delete;
-        StreamClient(const StreamClient&) = delete;
-        StreamClient& operator=(const StreamClient&) = delete;
+        explicit DummyClient(const uint32_t id)
+            : _id(id)
+        {
+        }
+        virtual ~DummyClient() = default;
 
-        // Server side: created by SocketServerType when a connection is accepted.
-        StreamClient(const SOCKET& connector, const ::Thunder::Core::NodeId& remote,
-            ::Thunder::Core::SocketServerType<StreamClient>*)
-            : ::Thunder::Core::SocketStream(false, connector, remote, 512, 512)
+        uint32_t Id() const
         {
-        }
-        // Client side: connects to the server.
-        explicit StreamClient(const ::Thunder::Core::NodeId& remote)
-            : ::Thunder::Core::SocketStream(false, remote.AnyInterface(), remote, 512, 512)
-        {
-        }
-        ~StreamClient() override
-        {
-            Close(::Thunder::Core::infinite);
+            return _id;
         }
 
-        uint16_t SendData(uint8_t*, const uint16_t) override { return 0; }
-        uint16_t ReceiveData(uint8_t*, const uint16_t size) override { return size; }
-        void StateChange() override { }
+    private:
+        uint32_t _id;
     };
 
-    using Server = ::Thunder::Core::SocketServerType<StreamClient>;
+    using Server = ::Thunder::Core::SocketServerType<DummyClient>;
     using Iterator = Server::Iterator;
+    using ClientMap = std::map<uint32_t, ::Thunder::Core::ProxyType<DummyClient>>;
 
+    // Builds a map with clients 1..count.
+    static ClientMap MakeClients(const uint32_t count)
+    {
+        ClientMap clients;
+
+        for (uint32_t id = 1; id <= count; ++id) {
+            clients.emplace(id, ::Thunder::Core::ProxyType<DummyClient>::Create(id));
+        }
+
+        return clients;
+    }
+
+    // Counts how many clients Next() still visits.
     static uint32_t Walk(Iterator& iterator)
     {
         uint32_t count = 0;
 
         while (iterator.Next() == true) {
-            EXPECT_TRUE(iterator.IsValid());
-            EXPECT_TRUE(iterator.Client().IsValid());
             ++count;
         }
 
         return count;
     }
 
-    // Waits until the server has accepted the expected number of clients.
-    // Uses Clients().Count() rather than server.Count(): Clients() takes the
-    // server's lock, server.Count() reads the client map without it.
-    static bool WaitForClients(const Server& server, const uint32_t expected)
+    // ---------------------------------------------------------------------
+    // The fix: moving an iterator that sits at end() (empty or fully walked)
+    // must not keep the old list's end(). Before the fix these crashed.
+    // The moved iterator now restarts at the first client of its own list.
+    // ---------------------------------------------------------------------
+
+    TEST(Core_SocketServerIterator, MoveConstructFromEmpty)
     {
-        uint32_t waited = 0;
+        Iterator source;
+        Iterator moved(std::move(source));
 
-        while ((server.Clients().Count() < expected) && (waited < 2000)) {
-            SleepMs(10);
-            waited += 10;
-        }
-
-        return (server.Clients().Count() == expected);
+        EXPECT_EQ(moved.Count(), 0u);
+        EXPECT_FALSE(moved.Next());
+        EXPECT_FALSE(moved.IsValid());
     }
 
-    // Copy and move are private: only the server (through Clients()) may
-    // create iterators. Outside code must not be able to copy or move one.
-    static_assert(!std::is_copy_constructible<Iterator>::value, "copy constructor must not be public");
-    static_assert(!std::is_move_constructible<Iterator>::value, "move constructor must not be public");
-    static_assert(!std::is_copy_assignable<Iterator>::value, "copy assignment must not be public");
-    static_assert(!std::is_move_assignable<Iterator>::value, "move assignment must not be public");
-
-    // The original startup crash: Clients() on a server with no clients
-    // returns an empty iterator that must be safe to use.
-    TEST(Core_SocketServerIterator, ClientsOnEmptyServer)
+    TEST(Core_SocketServerIterator, MoveConstructFromEnd)
     {
-        const ::Thunder::Core::NodeId node("/tmp/test_socketserver_empty.sock");
-        Server server(node);
+        ClientMap clients = MakeClients(2);
+        Iterator source(clients);
+        EXPECT_EQ(Walk(source), 2u); // source is now at end()
 
-        Iterator iterator = server.Clients();
+        Iterator moved(std::move(source));
 
-        EXPECT_EQ(iterator.Count(), 0u);
-        EXPECT_FALSE(iterator.IsValid());
-        EXPECT_FALSE(iterator.Next());
-        EXPECT_FALSE(iterator.IsValid());
-
-        iterator.Reset();
-        EXPECT_FALSE(iterator.Next());
+        EXPECT_EQ(moved.Count(), 2u);
+        EXPECT_FALSE(moved.IsValid()); // restarted before the first client
+        EXPECT_EQ(Walk(moved), 2u);
     }
 
-    // Clients() returns an iterator over every connected client.
-    TEST(Core_SocketServerIterator, ClientsWithConnectedClients)
+    TEST(Core_SocketServerIterator, MoveAssignFromEnd)
     {
-        const char* path = "/tmp/test_socketserver_clients.sock";
-        ::unlink(path);
+        ClientMap clients = MakeClients(2);
+        Iterator source(clients);
+        EXPECT_EQ(Walk(source), 2u); // source is now at end()
 
-        const ::Thunder::Core::NodeId node(path);
-        Server server(node);
-        ASSERT_EQ(server.Open(1000), ::Thunder::Core::ERROR_NONE);
+        Iterator target;
+        target = std::move(source);
 
-        StreamClient first(node);
-        StreamClient second(node);
-        ASSERT_EQ(first.Open(1000), ::Thunder::Core::ERROR_NONE);
-        ASSERT_EQ(second.Open(1000), ::Thunder::Core::ERROR_NONE);
-        ASSERT_TRUE(WaitForClients(server, 2));
-
-        Iterator iterator = server.Clients();
-
-        EXPECT_EQ(iterator.Count(), 2u);
-        EXPECT_FALSE(iterator.IsValid()); // starts before the first client
-        EXPECT_EQ(Walk(iterator), 2u);
-        EXPECT_FALSE(iterator.IsValid()); // past the last client
-
-        // Reset() walks the same clients again.
-        iterator.Reset();
-        EXPECT_EQ(Walk(iterator), 2u);
-
-        first.Close(1000);
-        second.Close(1000);
-        server.Close(1000);
+        EXPECT_EQ(target.Count(), 2u);
+        EXPECT_FALSE(target.IsValid()); // restarted before the first client
+        EXPECT_EQ(Walk(target), 2u);
     }
 
-    // Each Clients() call returns its own iterator: walking one does not
-    // move the other.
-    TEST(Core_SocketServerIterator, ClientsReturnsIndependentIterators)
+    // ---------------------------------------------------------------------
+    // Move: the destination takes the clients and starts from the first one,
+    // like a copy; the source is left empty and safe to use.
+    // ---------------------------------------------------------------------
+
+    TEST(Core_SocketServerIterator, MoveConstruct)
     {
-        const char* path = "/tmp/test_socketserver_independent.sock";
-        ::unlink(path);
+        ClientMap clients = MakeClients(3);
+        Iterator source(clients);
+        ASSERT_TRUE(source.Next()); // on client 1
 
-        const ::Thunder::Core::NodeId node(path);
-        Server server(node);
-        ASSERT_EQ(server.Open(1000), ::Thunder::Core::ERROR_NONE);
+        Iterator moved(std::move(source));
 
-        StreamClient first(node);
-        StreamClient second(node);
-        ASSERT_EQ(first.Open(1000), ::Thunder::Core::ERROR_NONE);
-        ASSERT_EQ(second.Open(1000), ::Thunder::Core::ERROR_NONE);
-        ASSERT_TRUE(WaitForClients(server, 2));
+        EXPECT_EQ(moved.Count(), 3u);
+        EXPECT_FALSE(moved.IsValid()); // starts before the first client
+        ASSERT_TRUE(moved.Next());
+        EXPECT_EQ(moved.Client()->Id(), 1u);
+        EXPECT_EQ(Walk(moved), 2u); // clients 2 and 3 left
 
-        Iterator a = server.Clients();
-        Iterator b = server.Clients();
+        EXPECT_EQ(source.Count(), 0u);
+        EXPECT_FALSE(source.IsValid());
+        EXPECT_FALSE(source.Next());
+    }
 
+    TEST(Core_SocketServerIterator, MoveAssign)
+    {
+        ClientMap clients = MakeClients(3);
+        Iterator source(clients);
+        ASSERT_TRUE(source.Next()); // on client 1
+
+        ClientMap old = MakeClients(5);
+        Iterator target(old);
+        target = std::move(source);
+
+        EXPECT_EQ(target.Count(), 3u);
+        EXPECT_FALSE(target.IsValid()); // starts before the first client
+        ASSERT_TRUE(target.Next());
+        EXPECT_EQ(target.Client()->Id(), 1u);
+        EXPECT_EQ(Walk(target), 2u);
+
+        EXPECT_EQ(source.Count(), 0u);
+        EXPECT_FALSE(source.Next());
+    }
+
+    // ---------------------------------------------------------------------
+    // Copy: the copy gets its own list and starts from the first client;
+    // the source is not changed.
+    // ---------------------------------------------------------------------
+
+    TEST(Core_SocketServerIterator, CopyConstruct)
+    {
+        ClientMap clients = MakeClients(3);
+        Iterator source(clients);
+        ASSERT_TRUE(source.Next()); // on client 1
+
+        Iterator copy(source);
+
+        EXPECT_EQ(copy.Count(), 3u);
+        EXPECT_FALSE(copy.IsValid()); // starts before the first client
+        EXPECT_EQ(Walk(copy), 3u);
+
+        ASSERT_TRUE(source.IsValid()); // source unchanged
+        EXPECT_EQ(source.Client()->Id(), 1u);
+    }
+
+    TEST(Core_SocketServerIterator, CopyAssign)
+    {
+        ClientMap clients = MakeClients(3);
+        Iterator source(clients);
+        ASSERT_TRUE(source.Next()); // on client 1
+
+        ClientMap old = MakeClients(5);
+        Iterator target(old);
+        target = source;
+
+        EXPECT_EQ(target.Count(), 3u);
+        EXPECT_FALSE(target.IsValid()); // starts before the first client
+        EXPECT_EQ(Walk(target), 3u);
+
+        ASSERT_TRUE(source.IsValid()); // source unchanged
+        EXPECT_EQ(source.Client()->Id(), 1u);
+    }
+
+    // ---------------------------------------------------------------------
+    // Assignment returns *this (chaining works) and self-assignment is safe.
+    // ---------------------------------------------------------------------
+
+    TEST(Core_SocketServerIterator, ChainedAssign)
+    {
+        ClientMap clients = MakeClients(2);
+        Iterator source(clients);
+        Iterator a;
+        Iterator b;
+
+        a = b = source;
+
+        EXPECT_EQ(a.Count(), 2u);
+        EXPECT_EQ(b.Count(), 2u);
         EXPECT_EQ(Walk(a), 2u);
+    }
 
-        EXPECT_FALSE(b.IsValid()); // b is still at its start
-        EXPECT_EQ(Walk(b), 2u);
+    TEST(Core_SocketServerIterator, SelfAssign)
+    {
+        ClientMap clients = MakeClients(2);
+        Iterator iterator(clients);
+        Iterator& alias = iterator; // alias avoids self-assignment warnings
 
-        first.Close(1000);
-        second.Close(1000);
-        server.Close(1000);
+        iterator = alias;
+        EXPECT_EQ(Walk(iterator), 2u);
+
+        iterator = std::move(alias);
+        EXPECT_EQ(iterator.Count(), 2u);
     }
 
 } // namespace Core

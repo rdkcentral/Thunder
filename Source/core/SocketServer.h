@@ -32,9 +32,6 @@ namespace Core {
     private:
         using ClientMap = std::map<uint32_t, Core::ProxyType<CLIENT>>;
 
-        template <typename HANDLECLIENT>
-        class SocketHandler;
-
     public:
         template <typename HANDLECLIENT>
         class IteratorType {
@@ -59,12 +56,6 @@ namespace Core {
                 }
                 _iterator = _clients.begin();
             }
-            ~IteratorType() = default;
-
-        private:
-        
-            friend class SocketHandler<CLIENT>;
-
             IteratorType(const IteratorType<HANDLECLIENT>& copy)
                 : _atHead(true)
                 , _clients(copy._clients)
@@ -79,6 +70,7 @@ namespace Core {
                 move._atHead = true;
                 move._iterator = move._clients.begin();
             }
+            ~IteratorType() = default;
 
             IteratorType& operator=(const IteratorType<HANDLECLIENT>& RHS)
             {

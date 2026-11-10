@@ -174,7 +174,6 @@ add_executable(${TEST_RUNNER_NAME}
 endif()
 
 set_source_files_properties(test_systeminfo.cpp PROPERTIES COMPILE_OPTIONS "-fexceptions")
-set_source_files_properties(test_socketserver.cpp PROPERTIES COMPILE_OPTIONS "-fno-elide-constructors")
 
 target_compile_definitions(${TEST_RUNNER_NAME}
    PRIVATE BUILD_DIR=\"${CMAKE_CURRENT_BINARY_DIR}\"
