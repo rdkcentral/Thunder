@@ -208,10 +208,24 @@ namespace ProxyStub {
     void UnknownProxy::Shutdown() const
     {
         _adminLock.Lock();
-        RPC::Communicator::Client* server = ServerChannel(_channel);
-        if (server != nullptr) {
+        Core::SocketPort* source = nullptr;
+
+        if (_channel.IsValid() == true) {
+            // Thunder side (server owned channel) or client side (CommunicatorClient).
+            RPC::Communicator::Client* server = dynamic_cast<RPC::Communicator::Client*>(_channel.operator->());
+            if (server != nullptr) {
+                source = &(server->Source());
+            } else {
+                RPC::CommunicatorClient* client = dynamic_cast<RPC::CommunicatorClient*>(_channel.operator->());
+                if (client != nullptr) {
+                    source = &(client->Source());
+                }
+            }
+        }
+
+        if (source != nullptr) {
             SYSLOG(Logging::Error, (_T("Shutting down the socket to avoid side-effects likely because an IPC method Invoke failed due to timeout. Execution of code may or may not have happened.")));
-            server->Source().Close(0);
+            source->Close(0);
         }
         _adminLock.Unlock();
     }
