@@ -36,7 +36,6 @@ add_library(${TARGET} SHARED
         ISO639.cpp
         JSON.cpp
         JSONRPC.cpp
-        JobContext.cpp
         Library.cpp
         MessageException.cpp
         Netlink.cpp
@@ -91,7 +90,6 @@ set(PUBLIC_HEADERS
         ISO639.h
         JSON.h
         JSONRPC.h
-        JobContext.h
         KeyValue.h
         Library.h
         Link.h
@@ -207,17 +205,6 @@ endif()
 if(NOT WCHAR_SUPPORT)
     target_compile_definitions(${TARGET} PUBLIC __CORE_NO_WCHAR_SUPPORT__)
     message(STATUS "Disabled WCHAR support.")
-endif()
-
-if(W3C_TRACE_CONTEXT_ENABLED)
-   target_compile_definitions(${TARGET} PUBLIC __W3C_TRACE_CONTEXT__)
-   message(STATUS "support for W3C trace context propagation")
-endif()
-
-if(CUSTOM_ERROR_CODES_ENABLED)
-    target_compile_definitions(${TARGET} PUBLIC __CUSTOM_ERROR_CODES__)
-    message(WARNING "Enabled support for custom error codes (obsolete!)")
-    list(APPEND PUBLIC_HEADERS "ICustomErrorCode.h")
 endif()
 
 if (INSTANCE_ID_BITS)
