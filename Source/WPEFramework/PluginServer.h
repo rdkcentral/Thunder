@@ -1565,10 +1565,11 @@ namespace PluginHost {
                                 }
                             }
                         }
-#ifdef __W3C_TRACE_CONTEXT__
-                        jobContext.TraceContextW3C().ClearTraceContext();
-#endif
                     }
+
+#ifdef __W3C_TRACE_CONTEXT__
+                    jobContext.TraceContextW3C().ClearTraceContext();
+#endif
 
                     Core::InterlockedDecrement(_activity);
                 }

@@ -107,7 +107,7 @@ ENUM_CONVERSION_BEGIN(Telemetry::OpenTelemetry::SamplerType)
 
 ENUM_CONVERSION_BEGIN(Telemetry::OpenTelemetry::ProcessorType)
 
-    { Telemetry::OpenTelemetry::ProcessorType::SYNCHRONOUS, _TXT("Synchronous") },
+    { Telemetry::OpenTelemetry::ProcessorType::SYMCHRONOUS, _TXT("Synchronous") },
     { Telemetry::OpenTelemetry::ProcessorType::BATCH, _TXT("Batch") },
 
 ENUM_CONVERSION_END(Telemetry::OpenTelemetry::ProcessorType )
@@ -224,7 +224,7 @@ void OpenTelemetry::Initialize()
 
         switch (_processortype)
         {
-            case ProcessorType::SYNCHRONOUS:
+            case ProcessorType::SYMCHRONOUS:
                 processor = sdktrace::SimpleSpanProcessorFactory::Create(std::move(exporter)); 
                 break;
             case ProcessorType::BATCH:
@@ -287,7 +287,7 @@ void OpenTelemetry::Initialize()
             }
 
             switch (_processortype) {
-            case ProcessorType::SYNCHRONOUS:
+            case ProcessorType::SYMCHRONOUS:
                 logprocessor = sdklogs::SimpleLogRecordProcessorFactory::Create(std::move(logexporter));
                 break;
             case ProcessorType::BATCH:
