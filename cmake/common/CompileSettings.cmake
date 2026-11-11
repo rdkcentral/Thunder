@@ -62,10 +62,7 @@ endif()
 # target_compile_definitions(CompileSettings INTERFACE "THUNDER_PLATFORM=${THUNDER_PLATFORM}")
 # message(STATUS "Selected platform ${THUNDER_PLATFORM}")
 
-target_compile_options(CompileSettings INTERFACE -Wno-psabi)
-
-# Only force C++11 on consumers that do not select a standard themselves.
-target_compile_options(CompileSettings INTERFACE $<$<NOT:$<BOOL:$<TARGET_PROPERTY:CXX_STANDARD>>>:-std=c++11>)
+target_compile_options(CompileSettings INTERFACE -std=c++11 -Wno-psabi)
 
 #
 # Build type specific options
