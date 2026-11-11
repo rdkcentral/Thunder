@@ -250,7 +250,6 @@ public:
             , _hadTraceState(Core::JobContext::Instance().TraceContextW3C().HasTraceState())
             , _traceParent(_hadTraceParent ? Core::JobContext::Instance().TraceContextW3C().TraceParent() : Core::string())
             , _traceState(_hadTraceState ? Core::JobContext::Instance().TraceContextW3C().TraceState() : Core::string())
-            , _hasEnded(false)
             , _token()
         {
             auto tracecontext = opentelemetry::trace::SpanContext::GetInvalid();
@@ -274,7 +273,6 @@ public:
         bool _hadTraceState;
         Core::string _traceParent;
         Core::string _traceState;
-        bool _hasEnded;
         opentelemetry::nostd::unique_ptr<opentelemetry::context::Token> _token;
     };
 

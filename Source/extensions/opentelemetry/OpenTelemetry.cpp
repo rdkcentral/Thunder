@@ -385,20 +385,16 @@ OpenTelemetry::Span::~Span()
 
 void OpenTelemetry::Span::End()
 {
-    // OpenTelemetry does not expose whether a span has ended, so track that state locally.
-    if(_hasEnded == false) {
-        Deactivate();
-        _span->End();
-        Core::JobContext::Instance().TraceContextW3C().ClearTraceContext();
-        if (_hadTraceParent == true) {
-            Core::JobContext::Instance().TraceContextW3C().TraceParent(std::move(_traceParent));
-            _hadTraceParent = false;
-        }
-        if (_hadTraceState == true) {
-            Core::JobContext::Instance().TraceContextW3C().TraceState(std::move(_traceState));
-            _hadTraceState = false;
-        }
-        _hasEnded = true;
+    Deactivate();
+    _span->End();
+    Core::JobContext::Instance().TraceContextW3C().ClearTraceContext();
+    if (_hadTraceParent == true) {
+        Core::JobContext::Instance().TraceContextW3C().TraceParent(std::move(_traceParent));
+        _hadTraceParent = false;
+    }
+    if (_hadTraceState == true) {
+        Core::JobContext::Instance().TraceContextW3C().TraceState(std::move(_traceState));
+        _hadTraceState = false;
     }
 }
 
