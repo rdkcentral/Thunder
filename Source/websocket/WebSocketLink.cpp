@@ -196,7 +196,8 @@ namespace Web {
                 receivedSize = 0;
             } else {
                 // This seems to be a new frame, check it out !!!
-                uint64_t bytesToMove = (dataFrame[1] & 0x7F);
+                const uint8_t lengthIndicator = (dataFrame[1] & 0x7F);
+                uint64_t bytesToMove = lengthIndicator;
 
                 // check if the full header is present..
                 actualHeader = 2 + (bytesToMove == 127 ? 8 : (bytesToMove == 126 ? 2 : 0)) + ((dataFrame[1] & MASKING_FRAME) ? 4 : 0);
@@ -233,44 +234,59 @@ namespace Web {
                         _frameType = INCONSISTENT;
                     }
 
+                    if (((_frameType & 0xF8) == 0) && (lengthIndicator == 127) && ((dataFrame[2] & 0x80) != 0)) {
+                        TRACE_L1("WebSocket protocol violation: invalid 64-bit payload length");
+                        _frameType = VIOLATION;
+                        receivedSize = 0;
+                    }
+
                     // If the frame is not an error, unpack/move what is required..
                     if ((_frameType & 0xF8) == 0) {
-                        if (bytesToMove == 126) {
+                        if (lengthIndicator == 126) {
                             bytesToMove = ((dataFrame[2] << 8) + dataFrame[3]);
-                        } else if (bytesToMove == 127) {
+                        } else if (lengthIndicator == 127) {
                             bytesToMove = 0;
                             for (uint8_t i = 2; i <= 9; ++i) {
                                 bytesToMove = (bytesToMove << 8) | static_cast<uint64_t>(dataFrame[i]);
                             }
                         }
-                        // We might not have the full body yet...
-                        if ((actualHeader + bytesToMove) > receivedSize) {
-                            _pendingReceiveBytes = static_cast<uint32_t>(actualHeader + bytesToMove - receivedSize);
-                            bytesToMove = receivedSize - actualHeader;
-                            _progressInfo &= (~0x20);
-                        }
 
-                        receivedSize = static_cast<uint16_t>(bytesToMove);
+                        if (bytesToMove > UINT32_MAX) {
+                            TRACE_L1("WebSocket payload exceeds the supported frame size");
+                            _frameType = TOO_BIG;
+                            receivedSize = 0;
+                        } else {
+                            const uint16_t availablePayload = receivedSize - actualHeader;
 
-                        // If it is masked, we need to onvert..
-                        if ((dataFrame[1] & MASKING_FRAME) != 0) {
-                            _scrambleKey[0] = dataFrame[actualHeader - 4];
-                            _scrambleKey[1] = dataFrame[actualHeader - 3];
-                            _scrambleKey[2] = dataFrame[actualHeader - 2];
-                            _scrambleKey[3] = dataFrame[actualHeader - 1];
+                            // We might not have the full body yet...
+                            if (bytesToMove > availablePayload) {
+                                _pendingReceiveBytes = static_cast<uint32_t>(bytesToMove - availablePayload);
+                                bytesToMove = availablePayload;
+                                _progressInfo &= (~0x20);
+                            }
 
-                            // The last two bits in the progressInfo are used to select the proper scrambling key.
-                            // We need to clear them if we start., the 0x20 indicates scrambling required
-                            _progressInfo |= 0x20;
-                            _progressInfo &= (~0x03);
+                            receivedSize = static_cast<uint16_t>(bytesToMove);
 
-                            uint8_t* source = &dataFrame[actualHeader];
+                            // If it is masked, we need to onvert..
+                            if ((dataFrame[1] & MASKING_FRAME) != 0) {
+                                _scrambleKey[0] = dataFrame[actualHeader - 4];
+                                _scrambleKey[1] = dataFrame[actualHeader - 3];
+                                _scrambleKey[2] = dataFrame[actualHeader - 2];
+                                _scrambleKey[3] = dataFrame[actualHeader - 1];
 
-                            while (bytesToMove != 0) {
-                                *source = (*source ^ _scrambleKey[(_progressInfo & 0x3)]);
-                                source++;
-                                bytesToMove--;
-                                _progressInfo = ((_progressInfo + 1) & 0xF3);
+                                // The last two bits in the progressInfo are used to select the proper scrambling key.
+                                // We need to clear them if we start., the 0x20 indicates scrambling required
+                                _progressInfo |= 0x20;
+                                _progressInfo &= (~0x03);
+
+                                uint8_t* source = &dataFrame[actualHeader];
+
+                                while (bytesToMove != 0) {
+                                    *source = (*source ^ _scrambleKey[(_progressInfo & 0x3)]);
+                                    source++;
+                                    bytesToMove--;
+                                    _progressInfo = ((_progressInfo + 1) & 0xF3);
+                                }
                             }
                         }
                     }

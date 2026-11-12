@@ -165,7 +165,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>APPLICATION_NAME=Thunder;_CRT_SECURE_NO_WARNINGS;_WINDOWS;THREADPOOL_COUNT=4;HOSTING_COMPROCESS=comprocess.exe;THUNDER_POSTMORTEM_WORKERPOOL_SINK_DEFAULT=1;THUNDER_POSTMORTEM_CALLSTACK_SINK_DEFAULT=0;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>APPLICATION_NAME=Thunder;_CRT_SECURE_NO_WARNINGS;_WINDOWS;THREADPOOL_COUNT=4;HOSTING_COMPROCESS=comprocess.exe;THUNDER_POSTMORTEM_WORKERPOOL_SINK_DEFAULT=1;THUNDER_POSTMORTEM_CALLSTACK_SINK_DEFAULT=0;_DEBUG;_CONSOLE;%(PreprocessorDefinitions);</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>$(FrameworkPath)plugins;$(FrameworkPath);$(WindowsPath);$(WindowsPath)zlib;$(FrameworkPath)addons</AdditionalIncludeDirectories>

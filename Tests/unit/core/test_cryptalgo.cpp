@@ -179,6 +179,33 @@ namespace Tests {
         EXPECT_EQ(hex1, hex2);
     }
 
+    TEST(Cryptalgo_HMAC, SHA256_NIST_BlockLengthKey_ConstructionAndRekey)
+    {
+        string key;
+        for (uint8_t index = 0; index < 64; index++) {
+            key.push_back(static_cast<char>(index));
+        }
+        ASSERT_EQ(key.length(), 64u);
+        ASSERT_EQ(key.length(), Crypto::SHA256HMAC::BlockLength());
+
+        const string data = "Sample message for keylen=blocklen";
+        const string expected = "8bb9a1db9806f20df7f77b82138c7914d174d59e13dc4d0169c9057b133e1d62";
+
+        Crypto::SHA256HMAC hmac(key);
+        hmac.Input(reinterpret_cast<const uint8_t*>(data.c_str()), static_cast<uint16_t>(data.length()));
+        EXPECT_EQ(ToHex(hmac.Result(), Crypto::SHA256HMAC::Length), expected);
+
+        const string shortKeyData = "what do ya want for nothing?";
+        hmac.Key("Jefe");
+        hmac.Input(reinterpret_cast<const uint8_t*>(shortKeyData.c_str()), static_cast<uint16_t>(shortKeyData.length()));
+        EXPECT_EQ(ToHex(hmac.Result(), Crypto::SHA256HMAC::Length),
+                  "5bdcc146bf60754e6a042426089575c75a003f089d2739839dec58b964ec3843");
+
+        hmac.Key(key);
+        hmac.Input(reinterpret_cast<const uint8_t*>(data.c_str()), static_cast<uint16_t>(data.length()));
+        EXPECT_EQ(ToHex(hmac.Result(), Crypto::SHA256HMAC::Length), expected);
+    }
+
     TEST(Cryptalgo_HMAC, SHA256_Reset_ReuseSameKey)
     {
         const string key = "mykey";
