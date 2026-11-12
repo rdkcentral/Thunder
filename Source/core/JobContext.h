@@ -28,6 +28,8 @@
 namespace WPEFramework {
 namespace Core {
 
+#ifdef __W3C_TRACE_CONTEXT__
+
     class EXTERNAL JobContext {
     public:
 
@@ -41,7 +43,6 @@ namespace Core {
             static thread_local JobContext instance;
             return (instance);
         }
-#ifdef __W3C_TRACE_CONTEXT__
 
         class W3CTraceContext
         {
@@ -142,16 +143,14 @@ namespace Core {
             return _tracecontext;
         }
 
-#endif
-
     private:
         JobContext() = default;
         ~JobContext() = default;
 
-#ifdef __W3C_TRACE_CONTEXT__
         W3CTraceContext _tracecontext;
-#endif
     };
+    
+#endif
 
 }
 }
