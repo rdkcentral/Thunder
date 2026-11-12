@@ -4,6 +4,7 @@
 	"idletime":180,
 	"persistentpath":"/tmp",
 	"datapath":"/opt/thunder/Plugins/",
+	"linkerpluginpaths":["/opt/thunder/"],
 	"plugins":
 	[
 	  {"callsign":"Tracing","locator":"/opt/thunder/libtracecontrol.so", "classname":"TraceControl", "configuration":{"console":true,"remote":{"port":4444,"binding":"0.0.0.0"}}},

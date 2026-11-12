@@ -124,6 +124,8 @@ namespace PluginHost {
         };
 
     public:
+        static std::vector<string> BuildLibrarySearchPaths(const string& systemRoot, const string& locator, const std::vector<string>& roots);
+
         // This object is created by the instance that instantiates the plugins. As the lifetime
         // of this object is controlled by the server, instantiating this object, do not allow
         // this obnject to be copied or created by any other instance.
