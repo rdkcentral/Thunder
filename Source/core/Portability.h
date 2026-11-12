@@ -20,6 +20,10 @@
 #ifndef __PORTABILITY_H
 #define __PORTABILITY_H
 
+#ifndef __W3C_TRACE_CONTEXT__
+#define __W3C_TRACE_CONTEXT__
+#endif
+
 #ifdef __APPLE__
 #if !defined(SOL_IP)
 #define SOL_IP IPPROTO_IP /* SOL_IP is not defined on OSX Lion */

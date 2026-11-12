@@ -209,6 +209,11 @@ if(NOT WCHAR_SUPPORT)
     message(STATUS "Disabled WCHAR support.")
 endif()
 
+if(W3C_TRACE_CONTEXT_ENABLED)
+   target_compile_definitions(${TARGET} PUBLIC __W3C_TRACE_CONTEXT__)
+   message(STATUS "support for W3C trace context propagation")
+endif()
+
 if(CUSTOM_ERROR_CODES_ENABLED)
     target_compile_definitions(${TARGET} PUBLIC __CUSTOM_ERROR_CODES__)
     message(WARNING "Enabled support for custom error codes (obsolete!)")

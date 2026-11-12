@@ -85,15 +85,18 @@ namespace RPC {
             {
                 _data.Clear();
             }
-            // note Set must be called before getting a writer. (but it is smart to do anyway in that order :) )
+            // note in case __W3C_TRACE_CONTEXT__ is turned on Set must be called before getting a writer. (but it is smart to do anyway in that order :) )
             void Set(Core::instance_id implementation, const uint32_t interfaceId, const uint8_t methodId)
             {
                 Frame::Writer frameWriter(_data, 0);
                 frameWriter.Number(implementation);
                 frameWriter.Number(interfaceId);
                 frameWriter.Number(methodId);
+#ifdef __W3C_TRACE_CONTEXT__
                 frameWriter.Number<uint8_t>(0);
+#endif
             }
+#ifdef __W3C_TRACE_CONTEXT__
             void Set(Core::instance_id implementation, const uint32_t interfaceId, const uint8_t methodId, const string* const traceParent, const string* const traceState)
             {
                 Frame::Writer frameWriter(_data, 0);
@@ -111,6 +114,7 @@ namespace RPC {
                     frameWriter.Text<uint16_t>(*traceState);
                 }
             }
+#endif
             Core::instance_id Implementation()
             {
                 Core::instance_id result = 0;
@@ -135,6 +139,7 @@ namespace RPC {
 
                 return (result);
             }
+#ifdef __W3C_TRACE_CONTEXT__
             void TraceContext(string& traceParent, string& traceState) const {
                 uint32_t size = InitialHeaderSize();
                 uint8_t traceflags = 0;
@@ -149,20 +154,25 @@ namespace RPC {
                     }
                 }
             }
+#endif
             uint32_t Length() const
             {
                 return (_data.Size());
             }
             inline Frame::Writer Writer()
             {
-                // if this fires it means that the Set method was not called before getting a writer.
+#ifdef __W3C_TRACE_CONTEXT__
+                // if this fires it means that the Set method was not called before getting a writer. (which is required in case __W3C_TRACE_CONTEXT__ is turned on)
                 ASSERT(_data.Size() > 0);
+#endif
                 return (Frame::Writer(_data, HeaderSize()));
             }
             inline const Frame::Reader Reader() const
             {
+#ifdef __W3C_TRACE_CONTEXT__
                 // if this fires it means that the header info was not filled before getting a reader (to get the header info one would expect the specific methods like InterfaceId() to be used, not a reader) 
                 ASSERT(_data.Size() > 0);
+#endif
                 return (Frame::Reader(_data, HeaderSize()));
             }
             uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, const uint32_t offset) const
@@ -181,6 +191,9 @@ namespace RPC {
             }
             uint32_t HeaderSize() const
             {
+#ifndef __W3C_TRACE_CONTEXT__
+                return InitialHeaderSize();
+#else
                 uint32_t size = InitialHeaderSize();
                 uint8_t traceflags = 0;
                 _data.GetNumber<uint8_t>(size, traceflags);
@@ -198,6 +211,7 @@ namespace RPC {
                     }
                 }
                 return size;
+#endif
             }
 
         private:

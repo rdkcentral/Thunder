@@ -20,8 +20,10 @@
 #pragma once
 
 #include "Module.h"
+#ifdef __W3C_TRACE_CONTEXT__
 #include <memory>
 #include <utility>
+#endif
 
 namespace WPEFramework {
 namespace Core {
@@ -39,6 +41,7 @@ namespace Core {
             static thread_local JobContext instance;
             return (instance);
         }
+#ifdef __W3C_TRACE_CONTEXT__
 
         class W3CTraceContext
         {
@@ -139,11 +142,15 @@ namespace Core {
             return _tracecontext;
         }
 
+#endif
+
     private:
         JobContext() = default;
         ~JobContext() = default;
 
+#ifdef __W3C_TRACE_CONTEXT__
         W3CTraceContext _tracecontext;
+#endif
     };
 
 }

@@ -51,6 +51,8 @@ option(ENABLE_CONFIG_OVERRIDE
         "Enable persistent configuration overrides." OFF)
 option(SLIM_WARNING_REPORTING
         "Only report Invoke durations and WorkerPool warnings." OFF)
+option(W3C_TRACE_CONTEXT_ENABLED
+        "allow propagation of W3C trace context" OFF)
 option(CUSTOM_ERROR_CODES_ENABLED
         "enable custom error codes (obsolete)" OFF)
 

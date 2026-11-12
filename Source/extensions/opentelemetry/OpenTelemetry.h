@@ -19,6 +19,10 @@
 
 #pragma once
 
+#ifndef __W3C_TRACE_CONTEXT__
+#error Thunder needs to be build with W3C Trace Context support for Thunder Open Telemetry support to be available
+#endif
+
 #include "Module.h"
 
 #include <atomic>
