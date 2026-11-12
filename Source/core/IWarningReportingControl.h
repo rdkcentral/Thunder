@@ -26,6 +26,8 @@ namespace Thunder {
 
 namespace WarningReporting { 
 
+    using OutputTargets = Core::Messaging::OutputTargets;
+
     struct EXTERNAL IWarningEvent { 
 
         virtual ~IWarningEvent() = default;
@@ -57,7 +59,8 @@ namespace WarningReporting {
         };
 
         virtual ~IWarningReportingUnit() = default;
-        virtual void ReportWarningEvent(const char identifier[], const IWarningEvent& information) = 0;
+        virtual OutputTargets Targets(const char category[], Core::Messaging::OutputMode routing, bool enabled) const = 0;
+        virtual void ReportWarningEvent(const char identifier[], const IWarningEvent& information, const OutputTargets& targets) = 0;
         virtual void FetchCategoryInformation(const string& category, bool& outIsDefaultCategory, bool& outIsEnabled, string& outExcluded, string& outConfiguration) const = 0;
         virtual void AddToCategoryList(IWarningReportingControl& Category) = 0;
         virtual void RemoveFromCategoryList(IWarningReportingControl& Category) = 0;

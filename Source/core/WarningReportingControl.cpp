@@ -93,12 +93,25 @@ namespace WarningReporting {
         return (Core::SingletonType<WarningReportingUnitProxy>::Instance());
     }
 
-    void WarningReportingUnitProxy::ReportWarningEvent(const char module[], const IWarningEvent& information)
+    OutputTargets WarningReportingUnitProxy::Targets(const char category[], const Core::Messaging::OutputMode routing, const bool enabled) const
+    {
+        OutputTargets result = { false, false, false };
+
+        _adminLock->Lock();
+        if (_handler != nullptr) {
+            result = _handler->Targets(category, routing, enabled);
+        }
+        _adminLock->Unlock();
+
+        return (result);
+    }
+
+    void WarningReportingUnitProxy::ReportWarningEvent(const char module[], const IWarningEvent& information, const OutputTargets& targets)
     {
         _adminLock->Lock();
         ASSERT (_handler != nullptr);
         if (_handler != nullptr) {
-            _handler->ReportWarningEvent(module, information);
+            _handler->ReportWarningEvent(module, information, targets);
         }
         _adminLock->Unlock();
     }

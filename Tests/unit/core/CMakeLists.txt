@@ -43,6 +43,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_jsonobject.cpp
    test_jsonparser.cpp
    test_jsonrpc_handler.cpp
+   test_jsonrpc_richerror.cpp
    test_jsonstring.cpp
    test_keyvalue.cpp
    test_library.cpp
@@ -88,6 +89,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_weblinkjson.cpp
    test_weblinktext.cpp
    test_websocketjson.cpp
+   test_websocketprotocol.cpp
    test_websockettext.cpp
    test_workerpool.cpp
    test_xgetopt.cpp
@@ -131,6 +133,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_jsonobject.cpp
    test_jsonparser.cpp
    test_jsonrpc_handler.cpp
+   test_jsonrpc_richerror.cpp
    test_jsonstring.cpp
    test_keyvalue.cpp
    test_library.cpp

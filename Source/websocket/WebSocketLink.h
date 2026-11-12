@@ -614,7 +614,8 @@ POP_WARNING()
 
                                 TRACE_L1("Oops we received uncomprehensable data on the web socket 0x%X", _handler.FrameType());
 
-                                // Oops we got an error, Change link state !!
+                                // Close() would re-enter SocketPort while Read() holds its
+                                // non-recursive m_syncAdmin lock.
                                 // ACTUALLINK::Close(0);
 
                                 // Nothing we can do with this shit..

@@ -85,6 +85,10 @@ namespace Core {
             _receiveSocket = ::socket(_doorbell.Type(), SOCK_DGRAM|SOCK_CLOEXEC, 0);
 #endif
 
+            if (_receiveSocket == INVALID_SOCKET) {
+                TRACE_L1("Failed to allocate the socket. <%d>", __ERRORRESULT__);
+            }
+
 #ifndef __WINDOWS__
             // Remove any stale domain socket path before binding. Using unlink()
             // directly avoids the TOCTOU race between access() and remove().
@@ -102,42 +106,48 @@ namespace Core {
                 }
             }
 #endif
-            if ((_doorbell.Type() == NodeId::TYPE_IPV4) || (_doorbell.Type() == NodeId::TYPE_IPV6)) {
-                // set SO_REUSEADDR on a socket to true (1): allows other sockets to bind() to this
-                // port, unless there is an active listening socket bound to the port already. This
-                // enables you to get around those "Address already in use" error messages when you
-                // try to restart your server after a crash.
-                int optval = 1;
-                const socklen_t optionLength = static_cast<socklen_t>(sizeof(optval));
 
-                ::setsockopt(_receiveSocket, SOL_SOCKET, SO_REUSEADDR, (const char*)&optval, optionLength);
-            }
+            if (_receiveSocket != INVALID_SOCKET) {
+
+                if ((_doorbell.Type() == NodeId::TYPE_IPV4) || (_doorbell.Type() == NodeId::TYPE_IPV6)) {
+                    // set SO_REUSEADDR on a socket to true (1): allows other sockets to bind() to this
+                    // port, unless there is an active listening socket bound to the port already. This
+                    // enables you to get around those "Address already in use" error messages when you
+                    // try to restart your server after a crash.
+                    int optval = 1;
+                    const socklen_t optionLength = static_cast<socklen_t>(sizeof(optval));
+
+                    if (::setsockopt(_receiveSocket, SOL_SOCKET, SO_REUSEADDR, (const char*)&optval, optionLength) < 0) {
+                        TRACE_L1("Failed to set SO_REUSEADDR option . <%d>", __ERRORRESULT__);
+                    }
+                }
 
 #ifdef __WINDOWS__
-            unsigned long l_Value = 1;
-            if (ioctlsocket(_receiveSocket, FIONBIO, &l_Value) != 0) {
-                TRACE_L1("Error on port socket NON_BLOCKING call. Error %d", ::WSAGetLastError());
-                ::closesocket(_receiveSocket);
-                _receiveSocket = INVALID_SOCKET;
-            }
+                unsigned long l_Value = 1;
+                if (ioctlsocket(_receiveSocket, FIONBIO, &l_Value) != 0) {
+                    TRACE_L1("Error on port socket NON_BLOCKING call. Error %d", ::WSAGetLastError());
+                    ::closesocket(_receiveSocket);
+                    _receiveSocket = INVALID_SOCKET;
+                }
 #else
-            if (fcntl(_receiveSocket, F_SETOWN, getpid()) == -1) {
-                TRACE_L1("Setting Process ID failed. <%d>", errno);
-                ::close(_receiveSocket);
-                _receiveSocket = INVALID_SOCKET;
-            }
-            else {
-                int flags = fcntl(_receiveSocket, F_GETFL, 0) | O_NONBLOCK;
-#ifdef __APPLE__
-                flags |= O_CLOEXEC;
-#endif
-                if (fcntl(_receiveSocket, F_SETFL, flags) != 0) {
-                    TRACE_L1("Error on port socket F_SETFL call. Error %d", errno);
+                if (fcntl(_receiveSocket, F_SETOWN, getpid()) == -1) {
+                    TRACE_L1("Setting Process ID failed. <%d>", errno);
                     ::close(_receiveSocket);
                     _receiveSocket = INVALID_SOCKET;
                 }
-            }
+                else {
+                    int flags = fcntl(_receiveSocket, F_GETFL, 0) | O_NONBLOCK;
+#ifdef __APPLE__
+                    flags |= O_CLOEXEC;
 #endif
+                    if (fcntl(_receiveSocket, F_SETFL, flags) != 0) {
+                        TRACE_L1("Error on port socket F_SETFL call. Error %d", errno);
+                        ::close(_receiveSocket);
+                        _receiveSocket = INVALID_SOCKET;
+                    }
+                }
+#endif
+            }
 
             if (_receiveSocket != INVALID_SOCKET) {
 
