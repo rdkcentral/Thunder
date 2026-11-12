@@ -380,8 +380,24 @@ void SecureSocketPort::Handler::CreateContext(const struct ssl_method_st* method
             VARIABLE_IS_NOT_USED unsigned long bitmask = SSL_CTX_set_options(_context, options);
 
             ASSERT((bitmask & options) == options);
+            SSL_set_verify(_ssl, SSL_VERIFY_PEER, nullptr);
         }
     }
+}
+
+void SecureSocketPort::Handler::Validate(const IValidate* callback) {
+    Core::SocketPort::Lock();
+
+    ASSERT((callback == nullptr) ^ (_callback == nullptr));
+
+    _callback = callback;
+
+    // A custom validator takes responsibility for peer verification.
+    if (_ssl != nullptr) {
+        SSL_set_verify(_ssl, (callback == nullptr ? SSL_VERIFY_PEER : SSL_VERIFY_NONE), nullptr);
+    }
+
+    Core::SocketPort::Unlock();
 }
 
 uint32_t SecureSocketPort::Handler::Initialize() {
