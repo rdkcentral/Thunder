@@ -1467,42 +1467,13 @@ namespace PluginHost {
 
             RPC::IStringIterator* GetLibrarySearchPaths(const string& locator) const override
             {
-                std::vector<string> searchPaths;
+                const std::vector<string>& configuredPaths = _administrator.Configuration().LinkerPluginPaths();
+                const std::vector<string> defaultPaths{ DataPath(), PersistentPath(), SystemPath(), PluginPath() };
+                const std::vector<string>& roots = (configuredPaths.empty() == false ? configuredPaths : defaultPaths);
+                std::vector<string> searchPaths(PluginHost::Service::BuildLibrarySearchPaths(PluginHost::Service::Configuration().SystemRootPath, locator, roots));
 
-                const string normalized(Core::File::Normalize(locator));
-                const string rootPath(Core::Directory::Normalize(PluginHost::Service::Configuration().SystemRootPath));
-
-                ASSERT_VERBOSE((normalized.empty() == locator.empty()), "path normalization failed");
-                ASSERT_VERBOSE((rootPath.empty() == PluginHost::Service::Configuration().SystemRootPath.Value().empty()), "path normalization failed");
-
-                // Security: Reject locators containing path traversal sequences
-                // to prevent dlopen of attacker-controlled libraries.
-                if ((normalized.find("..") != string::npos)) {
-                    SYSLOG(Logging::Error, (_T("Security: GetLibrarySearchPaths rejected locator with traversal: '%s'"), locator.c_str()));
-                    return (Core::ServiceType<RPC::StringIterator>::Create<RPC::IStringIterator>(searchPaths));
-                }
-
-                if (normalized.empty() == false)  {
-                    if (Core::File::IsPathAbsolute(locator) == true) {
-                        searchPaths.push_back(Core::File::Normalize(rootPath + normalized));
-                    }
-                    else {
-                        const std::vector<string>& linkerPaths = _administrator.Configuration().LinkerPluginPaths();
-
-                        if (linkerPaths.empty() == false) {
-                            // override system paths
-                            for (const string& path : linkerPaths) {
-                                searchPaths.push_back(Core::Directory::Normalize(rootPath + path) + normalized);
-                            }
-                        }
-                        else {
-                            // system configured paths
-                            searchPaths.push_back(Core::Directory::Normalize(rootPath + DataPath()) + normalized);
-                            searchPaths.push_back(Core::Directory::Normalize(rootPath + PersistentPath()) + normalized);
-                            searchPaths.push_back(Core::Directory::Normalize(rootPath + SystemPath()) + normalized);
-                            searchPaths.push_back(Core::Directory::Normalize(rootPath + PluginPath()) + normalized);
-                        }
-                    }
+                if ((locator.empty() == false) && (searchPaths.empty() == true)) {
+                    SYSLOG(Logging::Error, (_T("Rejected plugin locator outside configured library search paths: '%s'"), locator.c_str()));
                 }
 
                 return (Core::ServiceType<RPC::StringIterator>::Create<RPC::IStringIterator>(searchPaths));
@@ -1792,12 +1763,12 @@ namespace PluginHost {
                 // we allow all paths for normal plugins but also extensions. Extensions are not secure by definition (anybody who can put a file into a folder and change some configuration can make ny plugin to be an extension). But it is good enough
                 // and one could make a plugin locator point direclty to the extension folder if needed, but okay it will at least not work out of the box
 
-                std::vector<string> searchPaths;
+                if (Administrator().Configuration().LinkerPluginPaths().empty() == false) {
+                    return (Service::GetLibrarySearchPaths(locator));
+                }
 
-                const string normalized(Core::File::Normalize(locator));
-                const string rootPath(Core::Directory::Normalize(PluginHost::Service::Configuration().SystemRootPath));
-                searchPaths.push_back(Core::Directory::Normalize(rootPath + ExtensionPath()) + normalized);
-                searchPaths.push_back(Core::Directory::Normalize(rootPath + Administrator().Configuration().AppPath() + _T("Extensions/")) + normalized);
+                const std::vector<string> extensionPaths{ ExtensionPath(), Administrator().Configuration().AppPath() + _T("Extensions/") };
+                std::vector<string> searchPaths(PluginHost::Service::BuildLibrarySearchPaths(PluginHost::Service::Configuration().SystemRootPath, locator, extensionPaths));
 
                 RPC::IStringIterator* paths = Service::GetLibrarySearchPaths(locator);
 

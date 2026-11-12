@@ -24,6 +24,46 @@ namespace Thunder {
 
 namespace PluginHost {
 
+    /* static */ std::vector<string> Service::BuildLibrarySearchPaths(const string& systemRoot, const string& locator, const std::vector<string>& roots)
+    {
+        std::vector<string> result;
+
+        if (locator.empty() == false) {
+            const string normalized(Core::File::Normalize(locator, true));
+
+            if (normalized.empty() == false) {
+                const string rootPath(Core::Directory::Normalize(systemRoot));
+                const bool absolute(Core::File::IsPathAbsolute(locator));
+                const string candidate(absolute == true ? Core::File::Normalize(rootPath + normalized) : string());
+
+                for (const string& root : roots) {
+                    const string path(root.empty() == false ? Core::Directory::Normalize(rootPath + root) : string());
+
+                    if (path.empty() == false) {
+                        bool contained = false;
+
+                        if (absolute == true) {
+#ifdef __WINDOWS__
+                            contained = (_tcsnicmp(candidate.c_str(), path.c_str(), path.length()) == 0);
+#else
+                            contained = (candidate.compare(0, path.length(), path) == 0);
+#endif
+                        }
+
+                        if (contained == true) {
+                            result.emplace_back(candidate);
+                            break;
+                        } else if (absolute == false) {
+                            result.emplace_back(path + normalized);
+                        }
+                    }
+                }
+            }
+        }
+
+        return (result);
+    }
+
     PluginHost::Request::Request()
         : Web::Request()
         , _state(INCOMPLETE | mode::RESTFULL)

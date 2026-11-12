@@ -340,42 +340,23 @@ POP_WARNING()
         void* result = nullptr;
 
         if ((options.Locator != nullptr) && (options.ClassName != nullptr)) {
+            std::vector<string> defaultPaths{ options.PersistentPath, options.SystemPath };
 
-            const string rootPath = Core::Directory::Normalize(options.SystemRootPath);
-
-            if (Core::File::IsPathAbsolute(options.Locator) == true) {
-                result = CheckInstance(Core::File::Normalize(rootPath + options.Locator), options);
+            if (options.ExtensionPath.empty() == false) {
+                defaultPaths.emplace_back(options.ExtensionPath);
             }
-            else if (options.LinkerPaths.empty() == false) {
-                // Linker paths override system paths
-                for (const string& linkerPath : options.LinkerPaths) {
-                    result = CheckInstance((Core::Directory::Normalize(options.SystemRootPath + linkerPath) + options.Locator), options);
 
-                    if (result != nullptr) {
-                        break;
-                    }
-                }
-            }
-            else {
-                // System paths
-                result = CheckInstance((Core::Directory::Normalize(options.SystemRootPath + options.PersistentPath) + options.Locator), options);
+            defaultPaths.emplace_back(options.DataPath);
+            defaultPaths.emplace_back(options.AppPath + _T("Plugins"));
 
-                if (result == nullptr) {
-                    result = CheckInstance((Core::Directory::Normalize(options.SystemRootPath + options.SystemPath) + options.Locator), options);
+            const std::vector<string>& roots = (options.LinkerPaths.empty() == false ? options.LinkerPaths : defaultPaths);
+            const std::vector<string> searchPaths(PluginHost::Service::BuildLibrarySearchPaths(options.SystemRootPath, options.Locator, roots));
 
-                    if (result == nullptr) {
-                        if (options.ExtensionPath.empty() == false) {
-                            result = CheckInstance((Core::Directory::Normalize(options.SystemRootPath + options.ExtensionPath) + options.Locator), options);
-                        }
+            for (const string& path : searchPaths) {
+                result = CheckInstance(path, options);
 
-                        if (result == nullptr) {
-                            result = CheckInstance((Core::Directory::Normalize(options.SystemRootPath + options.DataPath) + options.Locator), options);
-
-                            if (result == nullptr) {
-                                result = CheckInstance((Core::Directory::Normalize(options.SystemRootPath + options.AppPath + _T("Plugins")) + options.Locator), options);
-                            }
-                        }
-                    }
+                if (result != nullptr) {
+                    break;
                 }
             }
         }
