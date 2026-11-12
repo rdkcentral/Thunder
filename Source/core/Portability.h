@@ -20,7 +20,7 @@
 #ifndef __PORTABILITY_H
 #define __PORTABILITY_H
 
-#define W3C_TRACE_CONTEXT_ENABLED
+#define __W3C_TRACE_CONTEXT__
 
 #ifdef __APPLE__
 #if !defined(SOL_IP)
