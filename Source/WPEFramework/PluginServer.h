@@ -1514,7 +1514,6 @@ namespace PluginHost {
                     }
                     else {
                         string output;
-#ifdef __W3C_TRACE_CONTEXT__
                         Core::JobContext& jobContext = Core::JobContext::Instance();
                         jobContext.TraceContextW3C().ClearTraceContext();
                         if (message.traceparent.IsSet() == true) {
@@ -1523,7 +1522,6 @@ namespace PluginHost {
                         if (message.tracestate.IsSet() == true) {
                             jobContext.TraceContextW3C().TraceState(message.tracestate.Value());
                         }
-#endif
                         result = _jsonrpc->Invoke(channelId, message.Id.Value(), token, method, message.Parameters.Value(), output);
 
                         if (response.IsValid() == true) {
@@ -1565,9 +1563,7 @@ namespace PluginHost {
                                 }
                             }
                         }
-#ifdef __W3C_TRACE_CONTEXT__
                         jobContext.TraceContextW3C().ClearTraceContext();
-#endif
                     }
 
                     Core::InterlockedDecrement(_activity);

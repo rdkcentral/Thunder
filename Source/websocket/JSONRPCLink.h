@@ -22,9 +22,7 @@
 #include "Module.h"
 #include "WebSocketLink.h"
 
-#ifdef __W3C_TRACE_CONTEXT__
 #include <core/JobContext.h>
-#endif
 
 namespace WPEFramework {
 
@@ -1007,9 +1005,7 @@ namespace WPEFramework {
                     }
                     ToMessage(parameters, message);
 
-#ifdef __W3C_TRACE_CONTEXT__
                     ApplyTraceContext(message);
-#endif
 
 					_adminLock.Lock();
 
@@ -1075,9 +1071,7 @@ namespace WPEFramework {
                     }
                     ToMessage(parameters, message);
 
-#ifdef __W3C_TRACE_CONTEXT__
                     ApplyTraceContext(message);
-#endif
 
 					_adminLock.Lock();
 
@@ -1149,7 +1143,6 @@ namespace WPEFramework {
 					if (callsign == _localSpace) {
 						// Looks like this is an event.
 						ASSERT(inbound->Id.IsSet() == false);
-#ifdef __W3C_TRACE_CONTEXT__
                         Core::JobContext& jobContext = Core::JobContext::Instance();
                         jobContext.TraceContextW3C().ClearTraceContext();
                         if (inbound->traceparent.IsSet() == true) {
@@ -1158,13 +1151,10 @@ namespace WPEFramework {
                         if (inbound->tracestate.IsSet() == true) {
                             jobContext.TraceContextW3C().TraceState(inbound->tracestate.Value());
                         }
-#endif
 
                         string response;
                         _handler.Invoke(Core::JSONRPC::Context(), inbound->FullMethod(), inbound->Parameters.Value(), response);
-#ifdef __W3C_TRACE_CONTEXT__
                         jobContext.TraceContextW3C().ClearTraceContext();
-#endif
 
                     }
                 }
@@ -1173,7 +1163,6 @@ namespace WPEFramework {
 			}
 
         private:
-#ifdef __W3C_TRACE_CONTEXT__
             void ApplyTraceContext(Core::ProxyType<Core::JSONRPC::Message>& message) const
             {
                 const Core::JobContext& context = Core::JobContext::Instance();
@@ -1185,7 +1174,6 @@ namespace WPEFramework {
                     message->tracestate = context.TraceContextW3C().TraceState();
                 }
             }
-#endif
             void ToMessage(const string& parameters, Core::ProxyType<Core::JSONRPC::Message>& message) const
             {
                 if (parameters.empty() != true) {
