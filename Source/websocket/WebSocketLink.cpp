@@ -234,14 +234,23 @@ namespace Web {
                         _frameType = INCONSISTENT;
                     }
 
-                    if (((_frameType & 0xF8) == 0) && (lengthIndicator == 127) && ((dataFrame[2] & 0x80) != 0)) {
-                        TRACE_L1("WebSocket protocol violation: invalid 64-bit payload length");
-                        _frameType = VIOLATION;
-                        receivedSize = 0;
+                    if ((_frameType & 0xF0) == 0) {
+                        // Control frames cannot use an extended payload length
+                        if (((_frameType & CONTROL_FRAME) != 0) && (lengthIndicator >= 126)) {
+                            TRACE_L1("WebSocket protocol violation: control frame uses an extended payload length");
+                            _frameType = VIOLATION;
+                            receivedSize = 0;
+                        }
+                        // The high bit of a 64-bit payload length must be zero
+                        else if ((lengthIndicator == 127) && ((dataFrame[2] & 0x80) != 0)) {
+                            TRACE_L1("WebSocket protocol violation: invalid 64-bit payload length");
+                            _frameType = VIOLATION;
+                            receivedSize = 0;
+                        }
                     }
 
                     // If the frame is not an error, unpack/move what is required..
-                    if ((_frameType & 0xF8) == 0) {
+                    if ((_frameType & 0xF0) == 0) {
                         if (lengthIndicator == 126) {
                             bytesToMove = ((dataFrame[2] << 8) + dataFrame[3]);
                         } else if (lengthIndicator == 127) {
