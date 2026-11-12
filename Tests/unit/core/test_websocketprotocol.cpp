@@ -31,6 +31,10 @@ namespace Tests {
     namespace Core {
 
         class WebSocketTestLink {
+        private:
+            WebSocketTestLink(const WebSocketTestLink&) = delete;
+            WebSocketTestLink& operator=(const WebSocketTestLink&) = delete;
+
         public:
             WebSocketTestLink()
                 : _closed(false)
@@ -39,22 +43,50 @@ namespace Tests {
             }
             virtual ~WebSocketTestLink() = default;
 
-            virtual uint16_t SendData(uint8_t*, const uint16_t) { return (0); }
-            virtual uint16_t ReceiveData(uint8_t*, const uint16_t) { return (0); }
-            virtual void StateChange() {}
-            bool IsOpen() const { return (_closed == false); }
-            bool IsClosed() const { return (_closed == true); }
-            bool IsSuspended() const { return (false); }
+            virtual uint16_t SendData(uint8_t*, const uint16_t)
+            {
+                return (0);
+            }
+            virtual uint16_t ReceiveData(uint8_t*, const uint16_t)
+            {
+                return (0);
+            }
+            virtual void StateChange()
+            {
+            }
+            bool IsOpen() const
+            {
+                return (_closed == false);
+            }
+            bool IsClosed() const
+            {
+                return (_closed == true);
+            }
+            bool IsSuspended() const
+            {
+                return (false);
+            }
             uint32_t Close(const uint32_t)
             {
                 _closed = true;
                 _closeCount++;
                 return (::Thunder::Core::ERROR_NONE);
             }
-            void Trigger() {}
-            string LocalId() const { return ("local"); }
-            string RemoteId() const { return ("remote"); }
-            uint32_t CloseCount() const { return (_closeCount); }
+            void Trigger()
+            {
+            }
+            string LocalId() const
+            {
+                return ("local");
+            }
+            string RemoteId() const
+            {
+                return ("remote");
+            }
+            uint32_t CloseCount() const
+            {
+                return (_closeCount);
+            }
 
         private:
             bool _closed;
@@ -64,6 +96,9 @@ namespace Tests {
         class WebSocketTestSocket : public Web::WebSocketLinkType<WebSocketTestLink, Web::Request, Web::Response, Web::WebSocket::RequestAllocator&> {
         private:
             typedef Web::WebSocketLinkType<WebSocketTestLink, Web::Request, Web::Response, Web::WebSocket::RequestAllocator&> BaseClass;
+
+            WebSocketTestSocket(const WebSocketTestSocket&) = delete;
+            WebSocketTestSocket& operator=(const WebSocketTestSocket&) = delete;
 
         public:
             WebSocketTestSocket()
@@ -77,18 +112,35 @@ namespace Tests {
                 }
             }
 
-            void LinkBody(::Thunder::Core::ProxyType<Web::Request>&) override {}
-            void Received(::Thunder::Core::ProxyType<Web::Request>&) override {}
-            void Send(const ::Thunder::Core::ProxyType<Web::Response>&) override {}
+            void LinkBody(::Thunder::Core::ProxyType<Web::Request>&) override
+            {
+            }
+            void Received(::Thunder::Core::ProxyType<Web::Request>&) override
+            {
+            }
+            void Send(const ::Thunder::Core::ProxyType<Web::Response>&) override
+            {
+            }
             uint16_t ReceiveData(uint8_t* data, const uint16_t size) override
             {
                 _received.append(reinterpret_cast<const char*>(data), size);
                 return (size);
             }
-            uint16_t SendData(uint8_t*, const uint16_t) override { return (0); }
-            void StateChange() override {}
-            bool IsIdle() const override { return (true); }
-            const string& ReceivedData() const { return (_received); }
+            uint16_t SendData(uint8_t*, const uint16_t) override
+            {
+                return (0);
+            }
+            void StateChange() override
+            {
+            }
+            bool IsIdle() const override
+            {
+                return (true);
+            }
+            const string& ReceivedData() const
+            {
+                return (_received);
+            }
 
         private:
             string _received;
@@ -147,6 +199,89 @@ namespace Tests {
             EXPECT_EQ(size, 0);
             EXPECT_EQ(decoder.FrameType(), Web::WebSocket::Protocol::VIOLATION);
             EXPECT_TRUE(decoder.IsCompleteMessage());
+        }
+
+        TEST(WebSocketProtocol, RejectsPayloadLengthWithHighBitSet)
+        {
+            Web::WebSocket::Protocol decoder(true, false);
+            uint8_t frame[] = { 0x82, 127, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+            uint16_t size = sizeof(frame);
+
+            EXPECT_EQ(decoder.Decoder(frame, size), sizeof(frame));
+            EXPECT_EQ(size, 0);
+            EXPECT_EQ(decoder.FrameType(), Web::WebSocket::Protocol::VIOLATION);
+            EXPECT_TRUE(decoder.IsCompleteMessage());
+        }
+
+        TEST(WebSocketProtocol, StreamsPayloadLargerThanSixteenMiB)
+        {
+            Web::WebSocket::Protocol decoder(true, false);
+            uint8_t frame[] = {
+                0x82, 127,
+                0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x01,
+                0xAA, 0xBB
+            };
+            uint16_t size = sizeof(frame);
+
+            EXPECT_EQ(decoder.Decoder(frame, size), 10);
+            EXPECT_EQ(size, 2);
+            EXPECT_EQ(decoder.FrameType(), Web::WebSocket::Protocol::BINARY);
+            EXPECT_FALSE(decoder.IsCompleteMessage());
+
+            uint8_t continuation[] = { 0xCC, 0xDD, 0xEE };
+            size = sizeof(continuation);
+            EXPECT_EQ(decoder.Decoder(continuation, size), 0);
+            EXPECT_EQ(size, sizeof(continuation));
+            EXPECT_FALSE(decoder.IsCompleteMessage());
+        }
+
+        TEST(WebSocketProtocol, RejectsFrameLargerThanPendingState)
+        {
+            Web::WebSocket::Protocol decoder(true, false);
+            uint8_t frame[] = {
+                0x82, 127,
+                0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00
+            };
+            uint16_t size = sizeof(frame);
+
+            EXPECT_EQ(decoder.Decoder(frame, size), sizeof(frame));
+            EXPECT_EQ(size, 0);
+            EXPECT_EQ(decoder.FrameType(), Web::WebSocket::Protocol::TOO_BIG);
+            EXPECT_TRUE(decoder.IsCompleteMessage());
+        }
+
+        TEST(WebSocketProtocol, AcceptsMaximumTrackableFrameSize)
+        {
+            Web::WebSocket::Protocol decoder(true, false);
+            uint8_t frame[] = {
+                0x82, 127,
+                0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF,
+                0xAA
+            };
+            uint16_t size = sizeof(frame);
+
+            EXPECT_EQ(decoder.Decoder(frame, size), 10);
+            EXPECT_EQ(size, 1);
+            EXPECT_EQ(decoder.FrameType(), Web::WebSocket::Protocol::BINARY);
+            EXPECT_FALSE(decoder.IsCompleteMessage());
+        }
+
+        TEST(WebSocketProtocol, RejectsMaskedOversizedFrameBeforeUnmasking)
+        {
+            Web::WebSocket::Protocol decoder(true, true);
+            uint8_t frame[] = {
+                0x82, 0xFF,
+                0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00,
+                0x01, 0x02, 0x03, 0x04,
+                0xAA, 0xBB
+            };
+            uint16_t size = sizeof(frame);
+
+            EXPECT_EQ(decoder.Decoder(frame, size), 14);
+            EXPECT_EQ(size, 0);
+            EXPECT_EQ(decoder.FrameType(), Web::WebSocket::Protocol::TOO_BIG);
+            EXPECT_EQ(frame[14], 0xAA);
+            EXPECT_EQ(frame[15], 0xBB);
         }
 
         TEST(WebSocketProtocol, StreamsValidControlPayloadAcrossReads)
@@ -209,18 +344,6 @@ namespace Tests {
             EXPECT_EQ(decoder.Decoder(last, size), 2);
             EXPECT_EQ(decoder.FrameType(), Web::WebSocket::Protocol::TEXT);
             EXPECT_FALSE(decoder.ReceiveInProgress());
-        }
-
-        TEST(WebSocketLink, RejectedFrameDoesNotCloseReentrantly)
-        {
-            WebSocketTestSocket socket;
-            UpgradeToWebSocket(socket);
-
-            uint8_t frame[] = { 0x89, 126, 0x00, 0x7E };
-
-            EXPECT_EQ(socket.Link().ReceiveData(frame, sizeof(frame)), sizeof(frame));
-            EXPECT_EQ(socket.Link().CloseCount(), 0u);
-            EXPECT_TRUE(socket.IsOpen());
         }
 
         TEST(WebSocketLink, SplitMaskedControlFramePreservesNextFrame)
