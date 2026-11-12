@@ -250,34 +250,43 @@ namespace Web {
                                 bytesToMove = (bytesToMove << 8) | static_cast<uint64_t>(dataFrame[i]);
                             }
                         }
-                        // We might not have the full body yet...
-                        if ((actualHeader + bytesToMove) > receivedSize) {
-                            _pendingReceiveBytes = static_cast<uint32_t>(actualHeader + bytesToMove - receivedSize);
-                            bytesToMove = receivedSize - actualHeader;
-                            _progressInfo &= (~0x20);
-                        }
 
-                        receivedSize = static_cast<uint16_t>(bytesToMove);
+                        if (bytesToMove > UINT32_MAX) {
+                            TRACE_L1("WebSocket payload exceeds the supported frame size");
+                            _frameType = TOO_BIG;
+                            receivedSize = 0;
+                        } else {
+                            const uint16_t availablePayload = receivedSize - actualHeader;
 
-                        // If it is masked, we need to onvert..
-                        if ((dataFrame[1] & MASKING_FRAME) != 0) {
-                            _scrambleKey[0] = dataFrame[actualHeader - 4];
-                            _scrambleKey[1] = dataFrame[actualHeader - 3];
-                            _scrambleKey[2] = dataFrame[actualHeader - 2];
-                            _scrambleKey[3] = dataFrame[actualHeader - 1];
+                            // We might not have the full body yet...
+                            if (bytesToMove > availablePayload) {
+                                _pendingReceiveBytes = static_cast<uint32_t>(bytesToMove - availablePayload);
+                                bytesToMove = availablePayload;
+                                _progressInfo &= (~0x20);
+                            }
 
-                            // The last two bits in the progressInfo are used to select the proper scrambling key.
-                            // We need to clear them if we start., the 0x20 indicates scrambling required
-                            _progressInfo |= 0x20;
-                            _progressInfo &= (~0x03);
+                            receivedSize = static_cast<uint16_t>(bytesToMove);
 
-                            uint8_t* source = &dataFrame[actualHeader];
+                            // If it is masked, we need to onvert..
+                            if ((dataFrame[1] & MASKING_FRAME) != 0) {
+                                _scrambleKey[0] = dataFrame[actualHeader - 4];
+                                _scrambleKey[1] = dataFrame[actualHeader - 3];
+                                _scrambleKey[2] = dataFrame[actualHeader - 2];
+                                _scrambleKey[3] = dataFrame[actualHeader - 1];
 
-                            while (bytesToMove != 0) {
-                                *source = (*source ^ _scrambleKey[(_progressInfo & 0x3)]);
-                                source++;
-                                bytesToMove--;
-                                _progressInfo = ((_progressInfo + 1) & 0xF3);
+                                // The last two bits in the progressInfo are used to select the proper scrambling key.
+                                // We need to clear them if we start., the 0x20 indicates scrambling required
+                                _progressInfo |= 0x20;
+                                _progressInfo &= (~0x03);
+
+                                uint8_t* source = &dataFrame[actualHeader];
+
+                                while (bytesToMove != 0) {
+                                    *source = (*source ^ _scrambleKey[(_progressInfo & 0x3)]);
+                                    source++;
+                                    bytesToMove--;
+                                    _progressInfo = ((_progressInfo + 1) & 0xF3);
+                                }
                             }
                         }
                     }
