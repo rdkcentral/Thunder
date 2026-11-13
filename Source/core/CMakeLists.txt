@@ -151,7 +151,6 @@ set(PUBLIC_HEADERS
         IWarningReportingControl.h
         Messaging.h
         MessageStore.h
-		WarningReportingConfig.h
         WarningReportingControl.h
         WarningReportingCategories.h
         Module.h
