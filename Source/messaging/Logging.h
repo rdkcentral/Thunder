@@ -72,14 +72,14 @@ namespace Logging {
         }
     };
 #else
-    inline void DumpException(const string& exceptionType)
+    inline void DumpException(const string& exceptionType VARIABLE_IS_NOT_USED)
     {
         TRACE_L1("Unhandled exception: %s", exceptionType.c_str());
     }
 
-    inline void DumpSystemFiles(const pid_t pid)
+    inline void DumpSystemFiles(const pid_t pid VARIABLE_IS_NOT_USED)
     {
-        TRACE_L1("System diagnostics requested for process %d", pid);
+        TRACE_L1("System diagnostics requested for process %d", pid );
     }
 
     template <typename CATEGORY>
