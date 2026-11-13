@@ -48,6 +48,7 @@ namespace Core {
 
         DataElementFile(File& fileName, const uint32_t type);
         DataElementFile(const string& fileName, const uint32_t mode, const uint32_t requiredSize = 0);
+        DataElementFile(const string& fileName, const uint32_t mode, const uint32_t requiredSize, const bool noFollow);
         DataElementFile(const DataElementFile&);
         DataElementFile(DataElementFile&&);
         ~DataElementFile() override {
@@ -111,12 +112,26 @@ namespace Core {
         void Sync();
 
     protected:
+        void Invalidate()
+        {
+            Close();
+            m_File.Close();
+            DataElement::operator=(DataElement());
+            m_Flags = 0;
+        }
         void Close();
         void Reallocation(const uint64_t size) override;
 
         void ReopenMemoryMappedFile();
 
     private:
+        static constexpr uint32_t NO_FOLLOW = 0x40000000;
+
+        bool NoFollow() const
+        {
+            return ((m_Flags & NO_FOLLOW) != 0);
+        }
+
         void OpenMemoryMappedFile(uint32_t requiredSize);
 
     private:
