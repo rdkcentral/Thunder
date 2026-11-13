@@ -73,7 +73,7 @@ namespace Telemetry {
     EXTERNAL_HIDDEN typename BaseTelemetryType<CATEGORY>::Control
         BaseTelemetryType<CATEGORY>::_control(false);
 #else
-    inline void ConsoleTelemetry(const string& category, const string& value)
+    inline void ConsoleTelemetry(const string& category VARIABLE_IS_NOT_USED, const string& value VARIABLE_IS_NOT_USED)
     {
         TRACE_L1("%s: %s", category.c_str(), value.c_str());
     }
