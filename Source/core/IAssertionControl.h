@@ -27,8 +27,7 @@ namespace Assertion {
 
     struct EXTERNAL IAssertionUnit {
         virtual ~IAssertionUnit() = default;
-        virtual Core::Messaging::OutputTargets Targets(const Core::Messaging::Metadata& metadata, Core::Messaging::OutputMode outputMode, bool localEnabled) const = 0;
-        virtual void AssertionEvent(Core::Messaging::IStore::Assert& metadata, const Core::Messaging::TextMessage& message, const Core::Messaging::OutputTargets& targets) = 0;
+        virtual void AssertionEvent(Core::Messaging::IStore::Assert& metadata, const Core::Messaging::TextMessage& message, Core::Messaging::OutputMode outputMode) = 0;
     };
 
 }

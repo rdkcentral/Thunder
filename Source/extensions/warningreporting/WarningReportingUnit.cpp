@@ -139,20 +139,7 @@ namespace WarningReporting {
         _adminLock.Unlock();
     }
 
-        OutputTargets WarningReportingUnit::Targets(const char category[], const Core::Messaging::OutputMode routing, const bool enabled) const
-        {
-    #ifdef __CORE_MESSAGING__
-        const Core::Messaging::Metadata metadata(Core::Messaging::Metadata::type::REPORTING, category, Core::Messaging::MODULE_REPORTING);
-        return (Messaging::MessageUnit::Instance().Targets(metadata, routing, enabled));
-    #else
-        (void)category;
-        (void)routing;
-        OutputTargets targets = { enabled, false, false };
-        return (targets);
-    #endif
-        }
-
-        void WarningReportingUnit::ReportWarningEvent(const char identifier[], const IWarningEvent& information, const OutputTargets& targets)
+    void WarningReportingUnit::ReportWarningEvent(const char identifier[], const IWarningEvent& information)
     {
         WPEFramework::Core::Messaging::Metadata metadata(WPEFramework::Core::Messaging::Metadata::type::REPORTING, information.Category(), WPEFramework::Core::Messaging::MODULE_REPORTING);
         WPEFramework::Core::Messaging::MessageInfo messageInfo(metadata, WPEFramework::Core::Time::Now().Ticks());
@@ -162,7 +149,7 @@ namespace WarningReporting {
         information.ToString(text);
         WPEFramework::Core::Messaging::TextMessage data(text);
 
-        WPEFramework::Messaging::MessageUnit::Instance().Push(report, &data, targets);
+        WPEFramework::Messaging::MessageUnit::Instance().Push(report, &data, information.Routing());
     }
 }
 }

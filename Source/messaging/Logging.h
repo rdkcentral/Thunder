@@ -83,8 +83,7 @@ namespace Logging {
 #define SYSLOG(CATEGORY, PARAMETERS)                                                                                                             \
     do {                                                                                                                                         \
         static_assert(std::is_base_of<WPEFramework::Logging::BaseLoggingType<CATEGORY>, CATEGORY>::value, "SYSLOG() only for Logging controls"); \
-        const auto __targets__ = WPEFramework::Messaging::MessageUnit::Instance().Targets(CATEGORY::Metadata(), CATEGORY::Routing(), CATEGORY::IsEnabled()); \
-        if (__targets__.Any() == true) {                                                                                                        \
+        if (CATEGORY::IsEnabled() == true) {                                                                                                     \
             CATEGORY __data__ PARAMETERS;                                                                                                        \
             WPEFramework::Core::Messaging::MessageInfo __info__(                                                                                 \
                 CATEGORY::Metadata(),                                                                                                            \
@@ -92,7 +91,7 @@ namespace Logging {
             );                                                                                                                                   \
             WPEFramework::Core::Messaging::IStore::Logging __log__(__info__);                                                                    \
             WPEFramework::Core::Messaging::TextMessage __message__(__data__.Data());                                                             \
-            WPEFramework::Messaging::MessageUnit::Instance().Push(__log__, &__message__, __targets__);                                          \
+            WPEFramework::Messaging::MessageUnit::Instance().Push(__log__, &__message__, CATEGORY::Routing());                                   \
         }                                                                                                                                        \
     } while(false)
 

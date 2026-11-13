@@ -38,12 +38,11 @@ namespace WPEFramework {
         public:
             void Output(const uint16_t length, const TCHAR buffer[])
             {
-                const auto targets = MessageUnit::Instance().Targets(OperationalStream::StandardOut::Metadata(), OperationalStream::StandardOut::Routing(), OperationalStream::StandardOut::IsEnabled());
-                if (targets.Any() == true) {
+                if (OperationalStream::StandardOut::IsEnabled() == true) {
                     Core::Messaging::MessageInfo messageInfo(OperationalStream::StandardOut::Metadata(), Core::Time::Now().Ticks());
                     Core::Messaging::IStore::OperationalStream operationalStream(messageInfo);
                     Core::Messaging::TextMessage data(length, buffer);
-                    MessageUnit::Instance().Push(operationalStream, &data, targets);
+                    MessageUnit::Instance().Push(operationalStream, &data, OperationalStream::StandardOut::Routing());
                 }
             }
 
@@ -62,12 +61,11 @@ namespace WPEFramework {
         public:
             void Output(const uint16_t length, const TCHAR buffer[])
             {
-                const auto targets = MessageUnit::Instance().Targets(OperationalStream::StandardError::Metadata(), OperationalStream::StandardError::Routing(), OperationalStream::StandardError::IsEnabled());
-                if (targets.Any() == true) {
+                if (OperationalStream::StandardError::IsEnabled() == true) {
                     Core::Messaging::MessageInfo messageInfo(OperationalStream::StandardError::Metadata(), Core::Time::Now().Ticks());
                     Core::Messaging::IStore::OperationalStream operationalStream(messageInfo);
                     Core::Messaging::TextMessage data(length, buffer);
-                    MessageUnit::Instance().Push(operationalStream, &data, targets);
+                    MessageUnit::Instance().Push(operationalStream, &data, OperationalStream::StandardError::Routing());
                 }
             }
         };

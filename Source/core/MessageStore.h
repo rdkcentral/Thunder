@@ -130,20 +130,9 @@ namespace Core {
         // The default when no explicit override is configured is HANDLER in normal
         // mode and DIRECT in DirectOutput mode (-f / flush flag).
         enum OutputMode : uint8_t {
-            ALL             = 0,
-            HANDLER         = 1,
-            DIRECT          = 2,
-            EXTERNAL_DIRECT = 3
-        };
-
-        struct EXTERNAL OutputTargets {
-            bool direct;
-            bool handler;
-            bool external;
-
-            bool Any() const {
-                return (direct || handler || external);
-            }
+            HANDLER = 0,
+            DIRECT  = 1,
+            ALL     = 2
         };
 
         struct EXTERNAL IControl {
@@ -444,7 +433,6 @@ namespace Core {
 
             virtual bool Default(const Metadata& metadata) const = 0;
             virtual OutputMode DefaultOutput(const Metadata& metadata) const = 0;
-            virtual void Announce(const Metadata& metadata) = 0;
             virtual void Push(const MessageInfo& messageInfo, const IEvent* message, OutputMode outputMode) = 0;
         };
 
