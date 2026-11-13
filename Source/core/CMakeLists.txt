@@ -30,6 +30,8 @@ find_package(LIBRT)
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/Version.h.in" "${CMAKE_CURRENT_BINARY_DIR}/generated/core/Version.h" @ONLY)
 message(VERBOSE "Generated ${CMAKE_CURRENT_BINARY_DIR}/generated/core/Version.h")
 
+# core/BuildDefines.h is generated at the end of this file, when all ABI relevant defines are known
+
 add_library(${TARGET}
         Module.cpp
         DoorBell.cpp
@@ -161,6 +163,7 @@ set(PUBLIC_HEADERS
         Errors.h
         ExtraNumberDefinitions.h
         ${CMAKE_CURRENT_BINARY_DIR}/generated/core/Version.h
+        ${CMAKE_CURRENT_BINARY_DIR}/generated/core/BuildDefines.h
         )
 
 target_compile_options (${TARGET} PRIVATE -Wno-psabi)
@@ -171,16 +174,19 @@ target_compile_options (${TARGET} PRIVATE -Wno-psabi)
 # picked up everywhere!
 if(DISABLE_TRACING OR NOT ENABLED_TRACING_LEVEL)
     target_compile_definitions(${TARGET} PUBLIC _TRACE_LEVEL=0)
+    thunder_abi_value(_TRACE_LEVEL 0)
     message(STATUS "Force trace level to 0")
 else()
     if(ENABLED_TRACING_LEVEL)
         target_compile_definitions(${TARGET} PUBLIC _TRACE_LEVEL=${ENABLED_TRACING_LEVEL})
+        thunder_abi_value(_TRACE_LEVEL ${ENABLED_TRACING_LEVEL})
         message(STATUS "Force trace level to ${ENABLED_TRACING_LEVEL}")
     endif()
 endif()
 
 if(MESSAGING)
     target_compile_definitions(${TARGET} PUBLIC __CORE_MESSAGING__)
+    thunder_abi_enable(__CORE_MESSAGING__)
     target_sources(${TARGET} PRIVATE Messaging.cpp MessageStore.cpp AssertionControl.cpp)
     message(STATUS "Messaging enabled")
 endif()
@@ -188,14 +194,17 @@ endif()
 if(WARNING_REPORTING)
     target_sources(${TARGET} PRIVATE WarningReportingControl.cpp WarningReportingCategories.cpp)
     target_compile_definitions(${TARGET} PUBLIC __CORE_WARNING_REPORTING__)
+    thunder_abi_enable(__CORE_WARNING_REPORTING__)
     if(SLIM_WARNING_REPORTING)
         target_compile_definitions(${TARGET} PUBLIC __CORE_SLIM_WARNING_REPORTING__)
+        thunder_abi_enable(__CORE_SLIM_WARNING_REPORTING__)
     endif()
     message(STATUS "Warning reporting enabled")
 endif()
 
 if(EXCEPTION_CATCHING)
     target_compile_definitions(${TARGET} PUBLIC __CORE_EXCEPTION_CATCHING__)
+    thunder_abi_enable(__CORE_EXCEPTION_CATCHING__)
     set_source_files_properties( Thread.cpp PROPERTIES COMPILE_FLAGS "-fexceptions" )
     message(STATUS "Unhandled Exception catching enabled")
 endif()
@@ -206,37 +215,48 @@ endif()
 
 if(DEADLOCK_DETECTION)
     target_compile_definitions(${TARGET} PUBLIC __CORE_CRITICAL_SECTION_LOG__)
+    thunder_abi_enable(__CORE_CRITICAL_SECTION_LOG__)
     message(STATUS "Enabled deadlock detection.")
+endif()
+
+if(DISABLE_USE_COMPLEMENTARY_CODE_SET)
+    thunder_abi_enable(__DISABLE_USE_COMPLEMENTARY_CODE_SET__)
 endif()
 
 if(NOT WCHAR_SUPPORT)
     target_compile_definitions(${TARGET} PUBLIC __CORE_NO_WCHAR_SUPPORT__)
+    thunder_abi_enable(__CORE_NO_WCHAR_SUPPORT__)
     message(STATUS "Disabled WCHAR support.")
 endif()
 
 if(W3C_TRACE_CONTEXT_ENABLED)
    target_compile_definitions(${TARGET} PUBLIC __W3C_TRACE_CONTEXT__)
+   thunder_abi_enable(__W3C_TRACE_CONTEXT__)
    message(STATUS "support for W3C trace context propagation")
 endif()
 
 if(CUSTOM_ERROR_CODES_ENABLED)
     target_compile_definitions(${TARGET} PUBLIC __CUSTOM_ERROR_CODES__)
+    thunder_abi_enable(__CUSTOM_ERROR_CODES__)
     message(WARNING "Enabled support for custom error codes (obsolete!)")
     list(APPEND PUBLIC_HEADERS "ICustomErrorCode.h")
 endif()
 
 if (INSTANCE_ID_BITS)
     target_compile_definitions(${TARGET} PUBLIC __CORE_INSTANCE_BITS__=${INSTANCE_ID_BITS})
+    thunder_abi_value(__CORE_INSTANCE_BITS__ ${INSTANCE_ID_BITS})
     message(STATUS "COMRPC instanceid defined as ${INSTANCE_ID_BITS} bits.")
 endif()
 
 if (ENABLE_JSONRPC_FORGIVING_METHOD_CASE_HANDLING)
     target_compile_definitions(${TARGET} PUBLIC __ENABLE_JSONRPC_FORGIVING_METHOD_CASE_HANDLING__=${ENABLE_JSONRPC_FORGIVING_METHOD_CASE_HANDLING})
+    thunder_abi_enable(__ENABLE_JSONRPC_FORGIVING_METHOD_CASE_HANDLING__)
     message(STATUS "json rpc forgiving method handling enabled")
 endif()
 
 if(BLUETOOTH_SUPPORT)
     target_compile_definitions(${TARGET} PUBLIC __CORE_BLUETOOTH_SUPPORT__)
+    thunder_abi_enable(__CORE_BLUETOOTH_SUPPORT__)
 
     include(GetBluez5Headers)
 
@@ -332,6 +352,50 @@ if(SYSTEMD_FOUND)
     )
     target_compile_definitions(${TARGET} PRIVATE SYSTEMD_FOUND)
 endif()
+
+# ===========================================================================================
+# Generate core/BuildDefines.h: the ABI relevant configuration of this build
+# ===========================================================================================
+# Switches that change layout, symbols or inline code of the public headers. Enabled ones are
+# defined, disabled ones are rejected if a consumer defines them.
+set(THUNDER_ABI_CHECKED_SWITCHES
+    __CORE_MESSAGING__
+    __CORE_WARNING_REPORTING__
+    __CORE_SLIM_WARNING_REPORTING__
+    __CORE_EXCEPTION_CATCHING__
+    __CORE_CRITICAL_SECTION_LOG__
+    __CORE_NO_WCHAR_SUPPORT__
+    __W3C_TRACE_CONTEXT__
+    __CUSTOM_ERROR_CODES__
+    __CORE_BLUETOOTH_SUPPORT__
+    __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+    __ENABLE_JSONRPC_FORGIVING_METHOD_CASE_HANDLING__)
+
+set(THUNDER_ABI_DEFINES "")
+foreach(_define ${THUNDER_ABI_CHECKED_SWITCHES})
+    if(_define IN_LIST THUNDER_ABI_ENABLED)
+        string(APPEND THUNDER_ABI_DEFINES "#ifndef ${_define}\n#define ${_define}\n#endif\n\n")
+    else()
+        string(APPEND THUNDER_ABI_DEFINES "#ifdef ${_define}\n#error \"${_define} is defined, but Thunder was built without it\"\n#endif\n\n")
+    endif()
+endforeach()
+
+# Build type switches: defined when enabled. A contradicting combination is caught in Portability.h.
+foreach(_define ${THUNDER_ABI_ENABLED})
+    if(NOT _define IN_LIST THUNDER_ABI_CHECKED_SWITCHES)
+        string(APPEND THUNDER_ABI_DEFINES "#ifndef ${_define}\n#define ${_define}\n#endif\n\n")
+    endif()
+endforeach()
+
+# Valued defines: they must be equal if the consumer sets them as well.
+list(REMOVE_DUPLICATES THUNDER_ABI_VALUES)
+foreach(_define ${THUNDER_ABI_VALUES})
+    set(_value "${THUNDER_ABI_VALUE_${_define}}")
+    string(APPEND THUNDER_ABI_DEFINES "#if defined(${_define}) && (${_define} != ${_value})\n#error \"${_define} differs from the value Thunder was built with (${_value})\"\n#endif\n#ifndef ${_define}\n#define ${_define} ${_value}\n#endif\n\n")
+endforeach()
+
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/BuildDefines.h.in" "${CMAKE_CURRENT_BINARY_DIR}/generated/core/BuildDefines.h" @ONLY)
+message(VERBOSE "Generated ${CMAKE_CURRENT_BINARY_DIR}/generated/core/BuildDefines.h")
 
 # ===========================================================================================
 # Install ARTIFACTS:

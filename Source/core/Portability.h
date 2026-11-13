@@ -20,6 +20,9 @@
 #ifndef __PORTABILITY_H
 #define __PORTABILITY_H
 
+// The configuration this Thunder was built with, it must be known before anything else is evaluated.
+#include "BuildDefines.h"
+
 #ifdef __APPLE__
 #if !defined(SOL_IP)
 #define SOL_IP IPPROTO_IP /* SOL_IP is not defined on OSX Lion */

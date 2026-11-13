@@ -23,6 +23,24 @@ option(POSITION_INDEPENDENT_CODE "Create position independent code on all target
 option(EXCEPTIONS_ENABLE "Enable exception handling" OFF)
 option(PERFORMANCE_MONITOR "Include Performance Monitoring" OFF)
 
+
+#[[ ABI relevant defines
+Defines that change the layout, vtable, symbols or inline behaviour of the public headers are
+recorded here and generated into core/BuildDefines.h (included first by Portability.h), so consumers
+that do not use our CMake/pkg-config files still compile against the same configuration.
+ - thunder_abi_enable(NAME)       : a switch, checked with #ifdef/#ifndef in the headers
+ - thunder_abi_value(NAME VALUE)  : a valued define (also for the ones checked with #if)
+#]]
+set(THUNDER_ABI_ENABLED "")
+set(THUNDER_ABI_VALUES "")
+macro(thunder_abi_enable _name)
+    list(APPEND THUNDER_ABI_ENABLED ${_name})
+endmacro()
+macro(thunder_abi_value _name _value)
+    list(APPEND THUNDER_ABI_VALUES ${_name})
+    set(THUNDER_ABI_VALUE_${_name} "${_value}")
+endmacro()
+
 add_library(CompileSettings INTERFACE)
 add_library(CompileSettings::CompileSettings ALIAS CompileSettings)
 
@@ -52,6 +70,9 @@ endif()
 
 if(PERFORMANCE_MONITOR)
     target_compile_definitions(CompileSettings INTERFACE "THUNDER_PERFORMANCE=1")
+    thunder_abi_value(THUNDER_PERFORMANCE 1)
+else()
+    thunder_abi_value(THUNDER_PERFORMANCE 0)
 endif()
 
 if(NOT CMAKE_BUILD_TYPE)
@@ -74,6 +95,8 @@ endif()
 if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
     target_compile_definitions(CompileSettings INTERFACE _THUNDER_DEBUG)
     target_compile_definitions(CompileSettings INTERFACE _THUNDER_CALLSTACK_INFO)
+    thunder_abi_enable(_THUNDER_DEBUG)
+    thunder_abi_enable(_THUNDER_CALLSTACK_INFO)
     target_compile_options(CompileSettings INTERFACE -funwind-tables)
     set(CONFIG_DIR "Debug" CACHE STRING "Build config directory" FORCE)
 
@@ -81,6 +104,9 @@ elseif("${CMAKE_BUILD_TYPE}" STREQUAL "DebugOptimized")
     target_compile_definitions(CompileSettings INTERFACE _THUNDER_DEBUG)
     target_compile_definitions(CompileSettings INTERFACE _THUNDER_DEBUG_OPTIMIZED)
     target_compile_definitions(CompileSettings INTERFACE _THUNDER_CALLSTACK_INFO)
+    thunder_abi_enable(_THUNDER_DEBUG)
+    thunder_abi_enable(_THUNDER_DEBUG_OPTIMIZED)
+    thunder_abi_enable(_THUNDER_CALLSTACK_INFO)
     target_compile_options(CompileSettings INTERFACE -funwind-tables)
     set(CONFIG_DIR "DebugOptimized" CACHE STRING "Build config directory" FORCE)
 
@@ -88,17 +114,24 @@ elseif("${CMAKE_BUILD_TYPE}" STREQUAL "RelWithDebInfo")
     target_compile_definitions(CompileSettings INTERFACE _THUNDER_NDEBUG)
     target_compile_definitions(CompileSettings INTERFACE _THUNDER_NDEBUG_DEB_INFO)
     target_compile_definitions(CompileSettings INTERFACE _THUNDER_CALLSTACK_INFO)
+    thunder_abi_enable(_THUNDER_NDEBUG)
+    thunder_abi_enable(_THUNDER_NDEBUG_DEB_INFO)
+    thunder_abi_enable(_THUNDER_CALLSTACK_INFO)
     target_compile_options(CompileSettings INTERFACE -funwind-tables)
     set(CONFIG_DIR "RelWithDebInfo" CACHE STRING "Build config directory" FORCE)
 
 elseif("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
     target_compile_definitions(CompileSettings INTERFACE _THUNDER_NDEBUG)
     target_compile_definitions(CompileSettings INTERFACE _THUNDER_CALLSTACK_INFO)
+    thunder_abi_enable(_THUNDER_NDEBUG)
+    thunder_abi_enable(_THUNDER_CALLSTACK_INFO)
     target_compile_options(CompileSettings INTERFACE -funwind-tables)
     set(CONFIG_DIR "Release" CACHE STRING "Build config directory" FORCE)
 
 elseif("${CMAKE_BUILD_TYPE}" STREQUAL "MinSizeRel")
     target_compile_definitions(CompileSettings INTERFACE _THUNDER_NDEBUG _THUNDER_PRODUCTION)
+    thunder_abi_enable(_THUNDER_NDEBUG)
+    thunder_abi_enable(_THUNDER_PRODUCTION)
     set(CONFIG_DIR "MinSizeRel" CACHE STRING "Build config directory" FORCE)
 
 else()
