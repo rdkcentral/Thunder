@@ -100,7 +100,7 @@ namespace RPC {
                 _referenceCount = ((_referenceCount & 0x7FFFFFFF) - dropCount) | (_referenceCount & 0x80000000);
                 return((_referenceCount & 0x7FFFFFFF) > 0);
             }
-#ifdef __DEBUG__
+#if defined(__DEBUG__) || defined(_THUNDER_PRODUCTION)
             bool Flushed() const {
                 return (((_referenceCount & 0x7FFFFFFF) == 0) || (IsComposit()));
             }
