@@ -418,6 +418,14 @@ namespace PluginHost {
 #endif
                 , ProxyStubPath()
                 , PostMortemPath(_T("/opt/minidumps"))
+#ifdef THUNDER_CORE_RESOURCE_MONITOR_WATCHDOG
+                , ResourceMonitorWatchdogTimeout(0)
+                , ResourceMonitorWatchdogAbort(false)
+#endif
+#ifdef THUNDER_CORE_WORKERPOOL_WATCHDOG
+                , WorkerPoolWatchdogTimeout(0)
+                , WorkerPoolWatchdogAbort(false)
+#endif
 #ifdef __WINDOWS__
                 , Communicator(_T("127.0.0.1:7889"))
 #else
@@ -473,6 +481,14 @@ namespace PluginHost {
                 Add(_T("volatilepath"), &VolatilePath);
                 Add(_T("proxystubpath"), &ProxyStubPath);
                 Add(_T("postmortempath"), &PostMortemPath);
+#ifdef THUNDER_CORE_RESOURCE_MONITOR_WATCHDOG
+                Add(_T("resourcemonitorwatchdogtimeout"), &ResourceMonitorWatchdogTimeout);
+                Add(_T("resourcemonitorwatchdogabort"), &ResourceMonitorWatchdogAbort);
+#endif
+#ifdef THUNDER_CORE_WORKERPOOL_WATCHDOG
+                Add(_T("workerpoolwatchdogtimeout"), &WorkerPoolWatchdogTimeout);
+                Add(_T("workerpoolwatchdogabort"), &WorkerPoolWatchdogAbort);
+#endif
                 Add(_T("postmortemworkerpoolsink"), &PostMortemWorkerPoolSink);
                 Add(_T("postmortemcallstacksink"), &PostMortemCallstackSink);
                 Add(_T("communicator"), &Communicator);
@@ -531,6 +547,14 @@ namespace PluginHost {
             Core::JSON::String VolatilePath;
             Core::JSON::String ProxyStubPath;
             Core::JSON::String PostMortemPath;
+#ifdef THUNDER_CORE_RESOURCE_MONITOR_WATCHDOG
+            Core::JSON::DecUInt32 ResourceMonitorWatchdogTimeout;
+            Core::JSON::Boolean ResourceMonitorWatchdogAbort;
+#endif
+#ifdef THUNDER_CORE_WORKERPOOL_WATCHDOG
+            Core::JSON::DecUInt32 WorkerPoolWatchdogTimeout;
+            Core::JSON::Boolean WorkerPoolWatchdogAbort;
+#endif
             Core::JSON::EnumType<PostMortemDataSink> PostMortemWorkerPoolSink;
             Core::JSON::EnumType<PostMortemDataSink> PostMortemCallstackSink;
             Core::JSON::String Communicator;
@@ -714,6 +738,14 @@ namespace PluginHost {
             , _proxyStubPath()
             , _observableProxyStubPath()
             , _postMortemPath()
+#ifdef THUNDER_CORE_RESOURCE_MONITOR_WATCHDOG
+            , _resourceMonitorWatchdogTimeout(0)
+            , _resourceMonitorWatchdogAbort(false)
+#endif
+#ifdef THUNDER_CORE_WORKERPOOL_WATCHDOG
+            , _workerPoolWatchdogTimeout(0)
+            , _workerPoolWatchdogAbort(false)
+#endif
             , _workerPoolSink(static_cast<PostMortemDataSink>(THUNDER_POSTMORTEM_WORKERPOOL_SINK_DEFAULT))
             , _callstackSink(static_cast<PostMortemDataSink>(THUNDER_POSTMORTEM_CALLSTACK_SINK_DEFAULT))
             , _pluginConfigPath()
@@ -828,6 +860,14 @@ namespace PluginHost {
                     _pluginConfigPath = Core::Directory::Normalize(config.Observe.PluginConfigPath.Value());
                 }
                 _postMortemPath = Core::Directory::Normalize(config.PostMortemPath.Value());
+#ifdef THUNDER_CORE_RESOURCE_MONITOR_WATCHDOG
+                _resourceMonitorWatchdogTimeout = config.ResourceMonitorWatchdogTimeout.Value();
+                _resourceMonitorWatchdogAbort = config.ResourceMonitorWatchdogAbort.Value();
+#endif
+#ifdef THUNDER_CORE_WORKERPOOL_WATCHDOG
+                _workerPoolWatchdogTimeout = config.WorkerPoolWatchdogTimeout.Value();
+                _workerPoolWatchdogAbort = config.WorkerPoolWatchdogAbort.Value();
+#endif
                 _workerPoolSink = config.PostMortemWorkerPoolSink.IsSet()
                     ? config.PostMortemWorkerPoolSink.Value()
                     : static_cast<PostMortemDataSink>(THUNDER_POSTMORTEM_WORKERPOOL_SINK_DEFAULT);
@@ -1066,6 +1106,26 @@ namespace PluginHost {
         {
             return (_postMortemPath);
         }
+#ifdef THUNDER_CORE_RESOURCE_MONITOR_WATCHDOG
+        inline uint32_t ResourceMonitorWatchdogTimeout() const
+        {
+            return (_resourceMonitorWatchdogTimeout);
+        }
+        inline bool ResourceMonitorWatchdogAbort() const
+        {
+            return (_resourceMonitorWatchdogAbort);
+        }
+#endif
+#ifdef THUNDER_CORE_WORKERPOOL_WATCHDOG
+        inline uint32_t WorkerPoolWatchdogTimeout() const
+        {
+            return (_workerPoolWatchdogTimeout);
+        }
+        inline bool WorkerPoolWatchdogAbort() const
+        {
+            return (_workerPoolWatchdogAbort);
+        }
+#endif
         inline PostMortemDataSink PostMortemWorkerPoolSink() const
         {
             return (_workerPoolSink);
@@ -1381,6 +1441,14 @@ namespace PluginHost {
         string _proxyStubPath;
         string _observableProxyStubPath;
         string _postMortemPath;
+#ifdef THUNDER_CORE_RESOURCE_MONITOR_WATCHDOG
+        uint32_t _resourceMonitorWatchdogTimeout;
+        bool _resourceMonitorWatchdogAbort;
+#endif
+#ifdef THUNDER_CORE_WORKERPOOL_WATCHDOG
+        uint32_t _workerPoolWatchdogTimeout;
+        bool _workerPoolWatchdogAbort;
+#endif
         PostMortemDataSink _workerPoolSink;
         PostMortemDataSink _callstackSink;
         string _pluginConfigPath;

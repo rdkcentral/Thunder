@@ -63,6 +63,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_queue.cpp
    test_rangetype.cpp
    test_readwritelock.cpp
+   test_resourcemonitor.cpp
    test_rectangle.cpp
    test_rpc.cpp
    test_comrpc.cpp
@@ -82,6 +83,8 @@ add_executable(${TEST_RUNNER_NAME}
    test_textreader.cpp
    test_thread.cpp
    test_threadpool.cpp
+   test_watchdog.cpp
+   test_workerpoolwatchdog.cpp
    test_time.cpp
    test_time_arithmetic.cpp
    test_timer.cpp
@@ -152,6 +155,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_queue.cpp
    test_rangetype.cpp
    test_readwritelock.cpp
+   test_resourcemonitor.cpp
    test_rectangle.cpp
    test_semaphore.cpp
    test_singleton.cpp
@@ -163,6 +167,8 @@ add_executable(${TEST_RUNNER_NAME}
    test_textreader.cpp
    test_thread.cpp
    test_threadpool.cpp
+   test_watchdog.cpp
+   test_workerpoolwatchdog.cpp
    test_time.cpp
    test_timer.cpp
    #test_valuerecorder.cpp

@@ -3,6 +3,12 @@ port = '@PORT@'
 binding = '@BINDING@'
 ipv6 = '@IPV6_SUPPORT@'
 idletime = '@IDLE_TIME@'
+if boolean('@THUNDER_CORE_RESOURCE_MONITOR_WATCHDOG@'):
+  resourcemonitorwatchdogtimeout = '@RESOURCE_MONITOR_WATCHDOG_TIMEOUT@'
+  resourcemonitorwatchdogabort = '@_RESOURCE_MONITOR_WATCHDOG_ABORT@'
+if boolean('@THUNDER_CORE_WORKERPOOL_WATCHDOG@'):
+  workerpoolwatchdogtimeout = '@WORKERPOOL_WATCHDOG_TIMEOUT@'
+  workerpoolwatchdogabort = '@_WORKERPOOL_WATCHDOG_ABORT@'
 softkillcheckwaittime = '@SOFT_KILL_CHECK_WAIT_TIME@'
 hardkillcheckwaittime = '@HARD_KILL_CHECK_WAIT_TIME@'
 persistentpath = '@PERSISTENT_PATH@'

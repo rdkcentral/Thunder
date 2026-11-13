@@ -19,9 +19,15 @@
  
 #pragma once
 
+#include <algorithm>
+#include <atomic>
+#include <cstdlib>
+
 #include "Thread.h"
 #include "ThreadPool.h"
+#include "WatchDog.h"
 #include "Timer.h"
+#include "Trace.h"
 
 namespace Thunder {
 
@@ -110,6 +116,7 @@ namespace Core {
         virtual void Schedule(const Core::Time& time, const Core::ProxyType<IDispatch>& job) = 0;
         virtual bool Reschedule(const Core::Time& time, const Core::ProxyType<IDispatch>& job) = 0;
         virtual uint32_t Revoke(const Core::ProxyType<IDispatch>& job, const uint32_t waitTime = Core::infinite) = 0;
+        // Runs the single external worker loop; only one caller may Join at a time.
         virtual void Join() = 0;
         virtual const Metadata& Snapshot() const = 0;
     };
@@ -327,6 +334,9 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
             , _timer(1024 * 1024, _T("WorkerPoolType::Timer"))
             , _metadata()
             , _joined(0)
+            #ifdef THUNDER_CORE_WORKERPOOL_WATCHDOG
+            , _running(false)
+            #endif
             #ifdef __CORE_ACTIVE_JOB_MONITORING__
             , _dispatchedJobMonitor(*this, static_cast<uint32_t>(DispatchedJobMonitor::DefaultScheduleIntervalInMilliSeconds))
             #endif 
@@ -385,7 +395,7 @@ POP_WARNING()
             uint32_t report = _threadPool.Revoke(job, waitTime);
 
             if (report == Core::ERROR_UNKNOWN_KEY) {
-               if (_joined == Thread::ThreadId()) {
+               if (_joined.load(Core::memory_order::memory_order_relaxed) == Thread::ThreadId()) {
                     result = Core::ERROR_NONE;
                 } else {
                     report = _external.Completed(job, waitTime);
@@ -399,11 +409,12 @@ POP_WARNING()
         }
         void Join() override
         {
-            _joined = Thread::ThreadId();
-            _threadPool.Announce(_joined);
+            const thread_id joined = Thread::ThreadId();
+            _joined.store(joined, Core::memory_order::memory_order_relaxed);
+            _threadPool.Announce(joined);
             _external.Process();
-            _threadPool.Revoke(_joined);
-            _joined = 0;
+            _threadPool.Revoke(joined);
+            _joined.store(0, Core::memory_order::memory_order_relaxed);
         }
         thread_id Id(const uint8_t index) const override
         {
@@ -412,7 +423,7 @@ POP_WARNING()
             if (index == 0) {
                 result = _timer.ThreadId();
             } else if (index == 1) {
-                result = _joined;
+                result = _joined.load(Core::memory_order::memory_order_relaxed);
             } else if ((index - 2) < _threadPool.Count()) {
                 result = _threadPool.Id(index - 2);
             }
@@ -426,12 +437,48 @@ POP_WARNING()
             _metadata.Slot[0].Job = string(_T("WorkerPool::Timer"));
             _external.Info(_metadata.Slot[1]);
             _threadPool.Snapshot(_threadPool.Count(), &(_metadata.Slot[2]), _metadata.Pending);
-            _metadata.Slot[1].WorkerId = _joined;
+            _metadata.Slot[1].WorkerId = _joined.load(Core::memory_order::memory_order_relaxed);
             return (_metadata);
         }
+        #ifdef THUNDER_CORE_WORKERPOOL_WATCHDOG
+        // Aggregate number of jobs extracted by pool workers, including Join().
+        uint64_t Progress() const
+        {
+            return (_threadPool.Progress() + _external.Runs());
+        }
+        // Enable before any job is submitted, a watchdog needs the occupancy and outstanding job data.
+        void EnableJobTracking()
+        {
+            _threadPool.EnableJobTracking();
+        }
+        // Number of pool workers currently executing jobs.
+        uint32_t ActiveJobs() const
+        {
+            return (_threadPool.ActiveJobs());
+        }
+        // Number of accepted jobs not yet extracted by a worker, including the ones waiting for a category quota.
+        uint32_t OutstandingJobs() const
+        {
+            return (_threadPool.OutstandingJobs());
+        }
+        // The pool is between Run() and Stop(), work that is left over after Stop() is not supervised.
+        bool Running() const
+        {
+            return (_running.load(Core::memory_order::memory_order_relaxed));
+        }
+        // Number of pool workers, including an active Join() worker.
+        uint32_t Count() const
+        {
+            return (static_cast<uint32_t>(_threadPool.Count())
+                + (_joined.load(Core::memory_order::memory_order_relaxed) != 0 ? 1 : 0));
+        }
+        #endif
         void Run()
         {
             _threadPool.Run();
+            #ifdef THUNDER_CORE_WORKERPOOL_WATCHDOG
+            _running.store(true, Core::memory_order::memory_order_relaxed);
+            #endif
             #ifdef __CORE_ACTIVE_JOB_MONITORING__
             _threadPool.SetDispatchedJobMonitor(&_dispatchedJobMonitor);
             _dispatchedJobMonitor.Start();
@@ -439,6 +486,9 @@ POP_WARNING()
         }
         void Stop()
         {
+            #ifdef THUNDER_CORE_WORKERPOOL_WATCHDOG
+            _running.store(false, Core::memory_order::memory_order_relaxed);
+            #endif
             #ifdef __CORE_ACTIVE_JOB_MONITORING__
             _dispatchedJobMonitor.Stop();
             _threadPool.ResetDispatchedJobMonitor();
@@ -455,10 +505,89 @@ POP_WARNING()
         ThreadPool::Minion _external;
         Core::TimerType<Timer> _timer;
         mutable Metadata _metadata;
-        thread_id _joined;
+        std::atomic<thread_id> _joined;
+        #ifdef THUNDER_CORE_WORKERPOOL_WATCHDOG
+        std::atomic<bool> _running;
+        #endif
         #ifdef __CORE_ACTIVE_JOB_MONITORING__
         DispatchedJobMonitor _dispatchedJobMonitor;
         #endif
     };
+
+    #ifdef THUNDER_CORE_WORKERPOOL_WATCHDOG
+    // Supervises a WorkerPool without ever touching its queues or locks. The pool is considered stalled if no job was
+    // extracted for the timeout while all workers are busy or while accepted work (including work waiting for a
+    // category quota) is still outstanding. Construct before the pool is started and before jobs are submitted.
+    class EXTERNAL WorkerPoolWatchable : public IWatchable {
+    public:
+        WorkerPoolWatchable(WorkerPoolWatchable&&) = delete;
+        WorkerPoolWatchable(const WorkerPoolWatchable&) = delete;
+        WorkerPoolWatchable& operator=(WorkerPoolWatchable&&) = delete;
+        WorkerPoolWatchable& operator=(const WorkerPoolWatchable&) = delete;
+
+        WorkerPoolWatchable(WorkerPool& pool, const uint32_t timeout)
+            : _pool(pool)
+            , _timeout(timeout)
+            , _timeoutTicks(static_cast<uint64_t>(timeout) * Time::MicroSecondsPerMilliSecond)
+            , _lastProgress(pool.Progress())
+            , _stalledSince(0)
+        {
+            ASSERT(timeout != 0);
+            _pool.EnableJobTracking();
+        }
+        ~WorkerPoolWatchable() override = default;
+
+    public:
+        const TCHAR* Name() const override
+        {
+            return (_T("WorkerPool"));
+        }
+        uint32_t Timeout() const override
+        {
+            return (_timeout);
+        }
+        bool Expired(const uint64_t now) override
+        {
+            const uint64_t progress = _pool.Progress();
+
+            // A stopped pool does not extract anymore, what is left over is not a stall. Start over when it runs again.
+            if (_pool.Running() == false) {
+                _lastProgress = progress;
+                _stalledSince = 0;
+                return (false);
+            }
+
+            const uint32_t workers = _pool.Count();
+            const bool outstanding = ((workers != 0) && ((_pool.ActiveJobs() >= workers) || (_pool.OutstandingJobs() != 0)));
+
+            if (progress != _lastProgress) {
+                _lastProgress = progress;
+                _stalledSince = now;
+            }
+
+            if (outstanding == false) {
+                _stalledSince = 0;
+            } else if (_stalledSince == 0) {
+                _stalledSince = now;
+            }
+
+            return ((_stalledSince != 0) && ((now - _stalledSince) >= _timeoutTicks));
+        }
+        string Report() const override
+        {
+            TCHAR buffer[96];
+            snprintf(buffer, sizeof(buffer), "no job extracted, workers=%u active=%u outstanding=%u",
+                _pool.Count(), _pool.ActiveJobs(), _pool.OutstandingJobs());
+            return (string(buffer));
+        }
+
+    private:
+        WorkerPool& _pool;
+        const uint32_t _timeout;
+        const uint64_t _timeoutTicks;
+        uint64_t _lastProgress;
+        uint64_t _stalledSince;
+    };
+    #endif
 }
 }

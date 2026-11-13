@@ -19,6 +19,7 @@
  
 #pragma once
 
+#include <atomic>
 #include <unordered_set>
 #include "Thread.h"
 #include "ResourceMonitor.h"
@@ -445,7 +446,7 @@ namespace Core {
                 return (_currentRequest.IsValid());
             }
             void Info(Metadata& info) const {
-                info.Runs = _runs;
+                info.Runs = Runs();
 
                 _adminLock.Lock();
                 if (_currentRequest.IsValid() == false) {
@@ -474,6 +475,15 @@ namespace Core {
 
                 return(result);
             }
+            // Number of jobs extracted by this worker.
+            uint32_t Runs() const
+            {
+                #ifdef THUNDER_CORE_WORKERPOOL_WATCHDOG
+                return (_runs.load(Core::memory_order::memory_order_relaxed));
+                #else
+                return (_runs);
+                #endif
+            }
             void Process()
             {
                 _dispatcher->Initialize();
@@ -482,7 +492,17 @@ namespace Core {
 
                     ASSERT(_currentRequest.IsValid() == true);
 
+                    #ifdef THUNDER_CORE_WORKERPOOL_WATCHDOG
+                    _runs.fetch_add(1, Core::memory_order::memory_order_relaxed);
+                    const bool trackJobs = _parent._jobTracking;
+                    if (trackJobs == true) {
+                        // First count it as active, then take it off the pending count, so the job is never unaccounted for.
+                        _parent._activeJobs.fetch_add(1, Core::memory_order::memory_order_relaxed);
+                        _parent.JobDequeued();
+                    }
+                    #else
                     _runs++;
+                    #endif
 
                     #ifdef __CORE_WARNING_REPORTING__
                     #ifdef __CORE_ACTIVE_JOB_MONITORING__
@@ -528,6 +548,11 @@ namespace Core {
                     _adminLock.Unlock();
 
                     _parent.Idle();
+                    #ifdef THUNDER_CORE_WORKERPOOL_WATCHDOG
+                    if (trackJobs == true) {
+                        _parent._activeJobs.fetch_sub(1, Core::memory_order::memory_order_relaxed);
+                    }
+                    #endif
                 }
 
                 _dispatcher->Deinitialize();
@@ -540,7 +565,11 @@ namespace Core {
             Event _signal;
             std::atomic<uint32_t> _interestCount;
             QueueElement _currentRequest;
+            #ifdef THUNDER_CORE_WORKERPOOL_WATCHDOG
+            std::atomic<uint32_t> _runs;
+            #else
             uint32_t _runs;
+            #endif
         };
 
     private:
@@ -566,6 +595,10 @@ namespace Core {
         public:
             bool IsActive() const {
                 return (_minion.IsActive());
+            }
+            // Number of jobs extracted by this executor's worker.
+            uint32_t Runs() const {
+                return (_minion.Runs());
             }
             void Info(Metadata& info) const {
                 _minion.Info(info);
@@ -612,6 +645,11 @@ namespace Core {
             , _external(external)
             , _callback(callback)
             , _unitsSet()
+            #ifdef THUNDER_CORE_WORKERPOOL_WATCHDOG
+            , _activeJobs(0)
+            , _pendingJobs(0)
+            , _jobTracking(false)
+            #endif
         {
             DEBUG_VARIABLE(additionalThreads);
             ASSERT(((lowPriorityThreadCount <= (count + additionalThreads)) && (mediumPriorityThreadCount <= (count + additionalThreads))));
@@ -635,6 +673,35 @@ namespace Core {
         uint32_t Pending() const {
             return (_queue.Length());
         }
+        #ifdef THUNDER_CORE_WORKERPOOL_WATCHDOG
+        // Number of worker jobs currently executing.
+        uint32_t ActiveJobs() const
+        {
+            return (_activeJobs.load(Core::memory_order::memory_order_relaxed));
+        }
+        // Number of accepted jobs that are not yet extracted by a worker, including the ones waiting for a category quota.
+        uint32_t OutstandingJobs() const
+        {
+            const int32_t pending = _pendingJobs.load(Core::memory_order::memory_order_relaxed);
+            return (pending > 0 ? static_cast<uint32_t>(pending) : 0);
+        }
+        // Enable before any job is submitted, a watchdog needs the occupancy and outstanding job data.
+        void EnableJobTracking()
+        {
+            _jobTracking = true;
+        }
+        // Aggregate number of jobs extracted by this pool's workers.
+        uint64_t Progress() const
+        {
+            uint64_t progress = 0;
+            std::list<Executor>::const_iterator index = _units.cbegin();
+            while (index != _units.cend()) {
+                progress += index->Runs();
+                ++index;
+            }
+            return (progress);
+        }
+        #endif
         void Snapshot(const uint8_t length, Metadata* entries, std::vector<string>& jobs) const
         {
             uint8_t count = 0;
@@ -670,14 +737,18 @@ namespace Core {
             ASSERT(_queue.HasEntry(job) == false);
 
             thread_id threadId = Thread::ThreadId();
+            ResourceMonitor& resourceMonitor = ResourceMonitor::Instance();
 
-            if (threadId == ResourceMonitor::Instance().Id() || HasThreadID(threadId)) {
-                _queue.Post(job);
-            }
-            else {
-                _queue.Insert(job, waitTime);
-            }
+            JobQueued();
 
+            if ((threadId == resourceMonitor.Id()) || HasThreadID(threadId)) {
+                if (_queue.Post(job) == false) {
+                    JobDequeued();
+                }
+            }
+            else if (_queue.Insert(job, waitTime) == false) {
+                JobDequeued();
+            }
         }
         void Submit(const ProxyType<IDispatch>& job, const uint32_t waitTime, const Priority priority VARIABLE_IS_NOT_USED)
         {
@@ -717,11 +788,16 @@ namespace Core {
             }
 
             thread_id threadId = Thread::ThreadId();
+            ResourceMonitor& resourceMonitor = ResourceMonitor::Instance();
 
-            if (threadId == ResourceMonitor::Instance().Id() || HasThreadID(threadId)) {
-                _queue.Post(job, cat);
-            } else {
-                _queue.Insert(job, waitTime, cat);
+            JobQueued();
+
+            if ((threadId == resourceMonitor.Id()) || HasThreadID(threadId)) {
+                if (_queue.Post(job, cat) == false) {
+                    JobDequeued();
+                }
+            } else if (_queue.Insert(job, waitTime, cat) == false) {
+                JobDequeued();
             }
 #else
             // No priority support in the queue: fall back to non-priority submit.
@@ -735,6 +811,7 @@ namespace Core {
             ASSERT(job.IsValid() == true);
 
             if (_queue.Remove(job) == true) {
+                JobDequeued();
                 result = ERROR_NONE;
             }
             else {
@@ -865,7 +942,10 @@ namespace Core {
                 ProxyType<IDispatch> resubmit = job->Resubmit(scheduleTime);
                 if (resubmit.IsValid() == true) {
                     if ((scheduleTime.IsValid() == false) || (_scheduler == nullptr) || (scheduleTime < Time::Now())) {
-                        _queue.Post(resubmit);
+                        JobQueued();
+                        if (_queue.Post(resubmit) == false) {
+                            JobDequeued();
+                        }
                     }
                     else {
                         // See if we have a hook that can process scheduled entries :-)
@@ -873,6 +953,23 @@ namespace Core {
                     }
                 }
             }
+        }
+
+        void JobQueued()
+        {
+            #ifdef THUNDER_CORE_WORKERPOOL_WATCHDOG
+            if (_jobTracking == true) {
+                _pendingJobs.fetch_add(1, Core::memory_order::memory_order_relaxed);
+            }
+            #endif
+        }
+        void JobDequeued()
+        {
+            #ifdef THUNDER_CORE_WORKERPOOL_WATCHDOG
+            if (_jobTracking == true) {
+                _pendingJobs.fetch_sub(1, Core::memory_order::memory_order_relaxed);
+            }
+            #endif
         }
 
         void Idle() {
@@ -905,6 +1002,11 @@ namespace Core {
         Minion* _external;
         ICallback* _callback;
         std::unordered_set<thread_id> _unitsSet;
+        #ifdef THUNDER_CORE_WORKERPOOL_WATCHDOG
+        std::atomic<uint32_t> _activeJobs;
+        std::atomic<int32_t> _pendingJobs;
+        bool _jobTracking;
+        #endif
     };
 
 }

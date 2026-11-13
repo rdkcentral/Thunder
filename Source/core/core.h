@@ -99,6 +99,7 @@
 #include "ThreadPool.h"
 #include "Time.h"
 #include "Timer.h"
+#include "WatchDog.h"
 #include "TokenizedStringList.h"
 #include "Trace.h"
 #include "TypeTraits.h"

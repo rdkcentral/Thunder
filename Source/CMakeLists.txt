@@ -55,6 +55,10 @@ option(W3C_TRACE_CONTEXT_ENABLED
         "allow propagation of W3C trace context" OFF)
 option(CUSTOM_ERROR_CODES_ENABLED
         "enable custom error codes (obsolete)" OFF)
+option(THUNDER_CORE_RESOURCE_MONITOR_WATCHDOG
+        "Compile in the WatchDog supervision of the ResourceMonitor (runtime enabled via the Thunder configuration)" ON)
+option(THUNDER_CORE_WORKERPOOL_WATCHDOG
+        "Compile in the WatchDog supervision of the WorkerPool (runtime enabled via the Thunder configuration)" ON)
 option(SLIM_WARNING_REPORTING
     "Only report Invoke durations and WorkerPool warnings." OFF)
 
