@@ -23,11 +23,6 @@
 #include "ResourceMonitor.h"
 #include "Number.h"
 
-// Slim warning reporting skips the periodic active-job monitoring.
-#if defined(__CORE_WARNING_REPORTING__) && !defined(__CORE_SLIM_WARNING_REPORTING__)
-#define __CORE_ACTIVE_JOB_MONITORING__
-#endif
-
 namespace WPEFramework {
 
 namespace Core {
@@ -61,7 +56,7 @@ namespace Core {
             Core::OptionalType<string>  Job;
         };
 
-        #ifdef __CORE_ACTIVE_JOB_MONITORING__
+        #ifdef __CORE_WARNING_REPORTING__
         struct EXTERNAL DispatchedJobMetaData {
             ::ThreadId WorkerId;
             string     CallSign;
@@ -436,20 +431,16 @@ POP_WARNING()
                     _runs++;
 
                     #ifdef __CORE_WARNING_REPORTING__
-                    #ifdef __CORE_ACTIVE_JOB_MONITORING__
                     // Add an entry into the JobMonitor list
                     DispatchedJobMetaData data{Thread::ThreadId(),
                         string(WPEFramework::Core::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign()),
                         Time::Now().Ticks(), 0};
 
                     _parent.SaveDispatchedJobContext(data);
-                    #endif
 
                     IJob* job = _currentRequest.Process(_dispatcher);
 
-                    #ifdef __CORE_ACTIVE_JOB_MONITORING__
                     _parent.RemoveDispatchedJobContext(data);
-                    #endif
 
                     if (job != nullptr) {
                         // Maybe we need to reschedule this request....
@@ -562,7 +553,7 @@ POP_WARNING()
         ThreadPool(const uint8_t count, const uint32_t stackSize, const uint32_t queueSize, IDispatcher* dispatcher, IScheduler* scheduler, Minion* external, ICallback* callback) 
             : _queue(queueSize)
             , _scheduler(scheduler)
-            #ifdef __CORE_ACTIVE_JOB_MONITORING__
+            #ifdef __CORE_WARNING_REPORTING__
             , _dispatchedJobMonitor(nullptr)
             #endif
             , _external(external)
@@ -692,7 +683,7 @@ POP_WARNING()
 
             return allStopped;
         }
-        #ifdef __CORE_ACTIVE_JOB_MONITORING__
+        #ifdef __CORE_WARNING_REPORTING__
         void SetDispatchedJobMonitor(IDispatchedJobMonitor* dispatchedJobMonitor)
         {
             _dispatchedJobMonitor = dispatchedJobMonitor;
@@ -753,7 +744,7 @@ POP_WARNING()
         MessageQueue _queue;
         std::list<Executor> _units;
         IScheduler* _scheduler;
-        #ifdef __CORE_ACTIVE_JOB_MONITORING__
+        #ifdef __CORE_WARNING_REPORTING__
         IDispatchedJobMonitor* _dispatchedJobMonitor;
         #endif
         Minion* _external;

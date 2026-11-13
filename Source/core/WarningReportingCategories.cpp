@@ -41,7 +41,7 @@ namespace WarningReporting {
                 ANNOUNCE_PRIORITY_WARNING(JobTooLongToFinish);
                 ANNOUNCE_PRIORITY_WARNING(JobTooLongWaitingInQueue);
                 ANNOUNCE_WARNING(TooLongDecrypt);
-                ANNOUNCE_WARNING(JobActiveForTooLong);
+                ANNOUNCE_PRIORITY_WARNING(JobActiveForTooLong);
             }
         } ControlsRegistration;
 
