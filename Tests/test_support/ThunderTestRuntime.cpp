@@ -37,13 +37,65 @@ namespace TestCore {
         const string& params,
         string& response)
     {
+
+        return Invoke(method, params, string(), response);
+
+    }
+
+    uint32_t ThunderTestRuntime::JSONRPCLink::Invoke(const string& method,
+    const string& params,
+    const string& token,
+    string& response)
+    {
         uint32_t result = Core::ERROR_UNAVAILABLE;
         PluginHost::IDispatcher* dispatcher = Dispatcher();
 
         if (dispatcher != nullptr) {
             const string fullMethod = _callsign + '.' + method;
-            result = dispatcher->Invoke(0, 0, string(), fullMethod, params, response);
+            result = dispatcher->Invoke(0, 0, token, fullMethod, params, response);
             dispatcher->Release();
+        }
+
+        return result;
+    }
+
+    uint32_t ThunderTestRuntime::Invoke(
+    const string& method,
+    const string& params,
+    const string& token,
+    string& response)
+    {
+        uint32_t result = Core::ERROR_ILLEGAL_STATE;
+
+        if (_server != nullptr) {
+            const string callsign = Core::JSONRPC::Message::Callsign(method);
+
+            if (callsign.empty() == true) {
+                result = Core::ERROR_INVALID_SIGNATURE;
+            } else {
+                Core::ProxyType<PluginHost::IShell> shell;
+
+                result = _server->Services().FromIdentifier(callsign, shell);
+
+                if (result == Core::ERROR_NONE) {
+                    PluginHost::IDispatcher* dispatcher =
+                        shell->QueryInterface<PluginHost::IDispatcher>();
+
+                    if (dispatcher == nullptr) {
+                        result = Core::ERROR_UNAVAILABLE;
+                    } else {
+                        result = dispatcher->Invoke(
+                            0,
+                            0,
+                            token,
+                            method,
+                            params,
+                            response);
+
+                        dispatcher->Release();
+                    }
+                }
+            }
         }
 
         return result;
@@ -228,14 +280,15 @@ namespace TestCore {
 
     string ThunderTestRuntime::BuildConfigJSON(const std::vector<PluginConfig>& plugins,
         const string& systemPath,
-        const string& proxyStubPath) const
+        const string& proxyStubPath,
+        const uint16_t port) const
     {
         const string communicatorPath = _tempDir + "communicator|0777";
 
         JsonObject config;
         JsonArray pluginList;
 
-        config["port"] = 0;
+        config["port"] = port;
         config["binding"] = "127.0.0.1";
         config["idletime"] = 180;
         config["persistentpath"] = _tempDir + "persistent/";
@@ -268,9 +321,9 @@ namespace TestCore {
         return json;
     }
 
-    uint32_t ThunderTestRuntime::Initialize(const std::vector<PluginConfig>& plugins,
-        const string& systemPath,
-        const string& proxyStubPath)
+    uint32_t ThunderTestRuntime::Initialize(const std::vector<PluginConfig>& plugins, const string& systemPath,
+    const string& proxyStubPath,
+    const uint16_t port)
     {
         if (_server != nullptr) {
             return Core::ERROR_ALREADY_CONNECTED;
@@ -294,7 +347,7 @@ namespace TestCore {
             ? Core::Directory::Normalize(DEFAULT_PROXYSTUB_PATH)
             : Core::Directory::Normalize(proxyStubPath);
 
-        const string configJSON = BuildConfigJSON(plugins, sysPath, _proxyStubPath);
+        const string configJSON = BuildConfigJSON(plugins, sysPath, _proxyStubPath, port);
         if (configJSON.empty()) {
             CleanupDirectories();
             _tempDir.clear();
