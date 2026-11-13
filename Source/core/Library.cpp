@@ -95,7 +95,7 @@ namespace Core {
         : _refCountedHandle(nullptr)
         , _error()
     {
-#ifdef __LINUX__
+#if defined(__LINUX__) || defined(__APPLE__)
         void* handle = dlopen(fileName, RTLD_LAZY);
 #endif
 #ifdef __WINDOWS__
@@ -117,7 +117,7 @@ namespace Core {
                 TRACE_L1("Loaded library with global symbols of the program");
             }
         } else {
-#ifdef __LINUX__
+#if defined(__LINUX__) || defined(__APPLE__)
             _error = dlerror();
             TRACE_L1("Failed to load library: %s, error %s", (fileName != nullptr ? fileName : GlobalSymbols), _error.c_str());
 #endif
@@ -182,7 +182,7 @@ namespace Core {
 
         _error.clear();
 
-#ifdef __LINUX__
+#if defined(__LINUX__) || defined(__APPLE__)
         ASSERT(_refCountedHandle->_handle != nullptr);
 
         dlerror(); /* clear error code */
@@ -235,7 +235,7 @@ namespace Core {
         if (_refCountedHandle != nullptr) {
             ASSERT(_refCountedHandle->_referenceCount > 0);
             if (Core::InterlockedDecrement(_refCountedHandle->_referenceCount) == 0) {
-#ifdef __LINUX__
+#if defined(__LINUX__) || defined(__APPLE__)
                 dlclose(_refCountedHandle->_handle);
 #endif
 #ifdef __WINDOWS__

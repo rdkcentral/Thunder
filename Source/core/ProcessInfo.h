@@ -23,6 +23,10 @@
 #include "IIterator.h"
 #include "Portability.h"
 
+#ifndef __WINDOWS__
+#include <sched.h>
+#endif
+
 namespace Thunder {
 namespace Core {
 
@@ -50,7 +54,8 @@ namespace Core {
             FIFO = SCHED_FIFO,
             ROUNDROBIN = SCHED_RR,
             OTHER = SCHED_OTHER,
-            IDLE = SCHED_IDLE
+            IDLE = SCHED_IDLE,
+            UNKNOWN = -1
         };
 #endif
 
@@ -234,7 +239,7 @@ namespace Core {
         {
 #ifdef __WINDOWS__
             return (0);
-#else
+        #else
             errno = 0;
             int result = getpriority(PRIO_PROCESS, _pid);
 
@@ -249,25 +254,29 @@ namespace Core {
             }
 #endif
         }
-        inline scheduler Policy() const
-        {
-#ifdef __WINDOWS__
-            return (OTHER);
-#else
-            errno = 0;
-            int result = getpriority(PRIO_PROCESS, _pid);
+            inline scheduler Policy() const
+            {
+        #if defined(__WINDOWS__) || defined(__APPLE__)
+                return (OTHER);
+        #else
+                int result = sched_getscheduler(_pid);
 
-            return (errno != 0 ? OTHER : static_cast<scheduler>(result));
-#endif
-        }
-        inline void Policy(const scheduler priority)
-        {
-#ifndef __WINDOWS__
-            if (setpriority(PRIO_PROCESS, _pid, priority) == -1) {
-                TRACE_L1("Failed to set priority. Error: %d", errno);
+                return (result == -1 ? UNKNOWN : static_cast<scheduler>(result));
+        #endif
             }
-#endif
-        }
+            inline void Policy(const scheduler policy)
+            {
+        #if defined(__WINDOWS__) || defined(__APPLE__)
+                (void)policy;
+        #else
+                struct sched_param parameters = {};
+                parameters.sched_priority = ((policy == FIFO) || (policy == ROUNDROBIN)) ? 1 : 0;
+
+                if (sched_setscheduler(_pid, policy, &parameters) == -1) {
+                TRACE_L1("Failed to set scheduling policy. Error: %d", errno);
+            }
+        #endif
+            }
         inline int8_t OOMAdjust() const
         {
 #ifdef __WINDOWS__
