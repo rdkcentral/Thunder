@@ -67,7 +67,6 @@ namespace PluginHost {
 
     /* static */ Core::ProxyType<Web::Response> Server::Channel::_missingCallsign(Core::ProxyType<Web::Response>::Create());
     /* static */ Core::ProxyType<Web::Response> Server::Channel::_incorrectVersion(Core::ProxyType<Web::Response>::Create());
-    /* static */ Core::ProxyType<Web::Response> Server::Channel::WebRequestJob::_missingResponse(Core::ProxyType<Web::Response>::Create());
     /* static */ Core::ProxyType<Web::Response> Server::Channel::_unauthorizedRequest(Core::ProxyType<Web::Response>::Create());
     /* static */ Core::ProxyType<Web::Response> Server::Service::_missingHandler(Core::ProxyType<Web::Response>::Create());
     /* static */ Core::ProxyType<Web::Response> Server::Service::_unavailableHandler(Core::ProxyType<Web::Response>::Create());
@@ -1284,7 +1283,7 @@ namespace PluginHost {
     // -----------------------------------------------------------------------------------------------------------------------------------
     /* static */ bool Server::IsLoopbackOrigin(const string& origin)
     {
-        const size_t separator = origin.find("://");
+        const size_t separator = origin.find(_T("://"));
 
         if ((separator == string::npos) || (separator == 0)) {
             return false;
@@ -1296,39 +1295,39 @@ namespace PluginHost {
         }
 
         const size_t authorityStart = separator + 3;
-        if ((authorityStart == origin.length()) || (origin.find_first_of("/?#", authorityStart) != string::npos)) {
+        if ((authorityStart == origin.length()) || (origin.find_first_of(_T("/?#"), authorityStart) != string::npos)) {
             return false;
         }
 
         const string authority(origin, authorityStart);
-        if (authority.find('@') != string::npos) {
+        if (authority.find(_T('@')) != string::npos) {
             return false;
         }
 
         string host;
         string port;
 
-        if (authority.front() == '[') {
-            const size_t closingBracket = authority.find(']');
+        if (authority.front() == _T('[')) {
+            const size_t closingBracket = authority.find(_T(']'));
             if (closingBracket == string::npos) {
                 return false;
             }
 
             host.assign(authority, 0, closingBracket + 1);
             if ((closingBracket + 1) < authority.length()) {
-                if (authority[closingBracket + 1] != ':') {
+                if (authority[closingBracket + 1] != _T(':')) {
                     return false;
                 }
                 port.assign(authority, closingBracket + 2, string::npos);
             }
         }
         else {
-            const size_t portSeparator = authority.find(':');
+            const size_t portSeparator = authority.find(_T(':'));
             if (portSeparator == string::npos) {
                 host = authority;
             }
             else {
-                if (authority.find(':', portSeparator + 1) != string::npos) {
+                if (authority.find(_T(':'), portSeparator + 1) != string::npos) {
                     return false;
                 }
                 host.assign(authority, 0, portSeparator);
@@ -1345,19 +1344,19 @@ namespace PluginHost {
 
         if (port.empty() == false) {
             uint32_t value = 0;
-            for (const char digit : port) {
-                if ((digit < '0') || (digit > '9') ||
-                    (value > 6553) || ((value == 6553) && (digit > '5'))) {
+            for (const TCHAR digit : port) {
+                if ((digit < _T('0')) || (digit > _T('9')) ||
+                    (value > 6553) || ((value == 6553) && (digit > _T('5')))) {
                     return false;
                 }
-                value = (value * 10) + static_cast<uint32_t>(digit - '0');
+                value = (value * 10) + static_cast<uint32_t>(digit - _T('0'));
             }
 
             if (value == 0) {
                 return false;
             }
         }
-        else if (authority.back() == ':') {
+        else if (authority.back() == _T(':')) {
             return false;
         }
 

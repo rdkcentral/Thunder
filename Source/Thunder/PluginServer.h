@@ -4753,11 +4753,6 @@ namespace PluginHost {
                 }
 
             public:
-                static void Initialize()
-                {
-                    _missingResponse->ErrorCode = Web::STATUS_INTERNAL_SERVER_ERROR;
-                    _missingResponse->Message = _T("There is no response from the requested service.");
-                }
                 Core::ProxyType<Web::Response> Set(const uint32_t id, Server* server, Core::ProxyType<Service>& service, Core::ProxyType<Web::Request>& request, const string& token, const bool JSONRPC)
                 {
                     Core::ProxyType<Web::Response> response;
@@ -4836,7 +4831,9 @@ namespace PluginHost {
                     if (_jsonrpc == false) {
                         response = Job::Process(_request);
                         if (response.IsValid() == false) {
-                            response = _missingResponse;
+                            response = IFactories::Instance().Response();
+                            response->ErrorCode = Web::STATUS_INTERNAL_SERVER_ERROR;
+                            response->Message = _T("There is no response from the requested service.");
                         }
                     }
                     else {
@@ -4919,7 +4916,6 @@ namespace PluginHost {
                 string _token;
                 bool _jsonrpc;
 
-                static Core::ProxyType<Web::Response> _missingResponse;
             };
             class JSONElementJob : public Job {
             public:
@@ -5087,8 +5083,6 @@ namespace PluginHost {
             }
             static void Initialize(const string& serverPrefix)
             {
-                WebRequestJob::Initialize();
-
                 _missingCallsign->ErrorCode = Web::STATUS_BAD_REQUEST;
                 _missingCallsign->Message = _T("After the /") + serverPrefix + _T("/ URL a Callsign is expected.");
 
@@ -5124,9 +5118,7 @@ namespace PluginHost {
             {
                 if (State() == Channel::ChannelState::WEB) {
                     Core::ProxyType<Web::Response> response = IFactories::Instance().Response();
-
-                    // Security: Do not set wildcard ACAO on push responses.
-                    // Leave ACAO unset — the browser will enforce same-origin.
+                    
                     if (response->CacheControl.IsSet() == false)
                         response->CacheControl = _T("no-cache, private, no-store, must-revalidate, max-stale=0, post-check=0, pre-check=0");
 
