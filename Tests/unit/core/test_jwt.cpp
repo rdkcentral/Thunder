@@ -308,6 +308,17 @@ namespace Tests {
         EXPECT_EQ(decodedLen, static_cast<uint16_t>(~0));
     }
 
+    TEST(JWT_Decode, OversizedHeader_Fails)
+    {
+        Web::JSONWebToken jwt(Web::JSONWebToken::SHA256, sizeof(TestKey), TestKey);
+
+        const string token(4097, 'A');
+        uint8_t decoded[512] = {};
+        uint16_t decodedLen = jwt.Decode(token + ".payload.signature", sizeof(decoded), decoded);
+
+        EXPECT_EQ(decodedLen, static_cast<uint16_t>(~0));
+    }
+
     TEST(JWT_Decode, EmptyPayload_RoundTrip)
     {
         Web::JSONWebToken jwt(Web::JSONWebToken::SHA256, sizeof(TestKey), TestKey);

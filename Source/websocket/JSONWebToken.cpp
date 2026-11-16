@@ -112,38 +112,26 @@ namespace Web
     }
     uint16_t JSONWebToken::Decode(const string& token, const uint16_t maxLength, uint8_t payload[]) const
     {
-        uint16_t length = 0;
+        static constexpr size_t MAX_JWT_HEADER = 4096;
+
+        uint16_t length = ~0;
 
         // Check what method to use
         size_t pos = token.find_first_of('.');
 
-        if (pos == string::npos) {
-            length = ~0;
-        } else {
-
+        if ((pos != string::npos) && (pos <= MAX_JWT_HEADER)) {
             // Extract the header
             string header(token.substr(0, pos));
-
-            // Security: Cap the header size to prevent stack exhaustion via
-            // unbounded alloca on attacker-controlled JWT header segments.
-            // A legitimate JWT header is typically < 256 bytes.
-            static constexpr size_t MAX_JWT_HEADER = 4096;
-            if (header.length() > MAX_JWT_HEADER) {
-                return (~0);
-            }
-
             TCHAR* output = reinterpret_cast<TCHAR*>(ALLOCA(header.length() * sizeof(TCHAR)));
 
-            length = Core::URL::Base64Decode(
+            const uint16_t headerLength = Core::URL::Base64Decode(
                 header.c_str(),
                 static_cast<uint16_t>(header.length()),
                 reinterpret_cast<uint8_t*>(output),
                 static_cast<uint16_t>(header.length() * sizeof(TCHAR)),
                 nullptr);
 
-            JSONWebData info(output, length);
-
-            length = ~0;
+            JSONWebData info(output, headerLength);
 
             if ((info.Type.Value() == _T("JWT")) && (info.Algorithm.IsSet() == true) && (ValidSignature(info.Algorithm.Value(), token) == true)) {
 
