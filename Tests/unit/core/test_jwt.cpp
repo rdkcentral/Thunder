@@ -314,34 +314,37 @@ namespace Tests {
     {
         Web::JSONWebToken jwt(Web::JSONWebToken::SHA256, sizeof(TestKey), TestKey);
 
-        const string payload = "payload";
+        const string payload = _T("payload");
         const auto signedToken = [&payload](const size_t paddingLength) {
-            const string header = "{\"alg\":\"HS256\",\"typ\":\"JWT\",\"padding\":\"" + string(paddingLength, 'A') + "\"}";
-            const uint16_t headerBufferLength = static_cast<uint16_t>(((header.length() * 8) / 6) + 4);
+            const string header = _T("{\"alg\":\"HS256\",\"typ\":\"JWT\",\"padding\":\"") + string(paddingLength, _T('A')) + _T("\"}");
+            const uint16_t headerSourceLength = static_cast<uint16_t>(header.length() * sizeof(TCHAR));
+            const uint16_t headerBufferLength = static_cast<uint16_t>(((headerSourceLength * 8) / 6) + 4);
             std::vector<TCHAR> headerBuffer(headerBufferLength);
             const uint16_t headerLength = Core::URL::Base64Encode(
                 reinterpret_cast<const uint8_t*>(header.c_str()),
-                static_cast<uint16_t>(header.length()),
+                headerSourceLength,
                 headerBuffer.data(),
                 headerBufferLength);
 
-            TCHAR payloadBuffer[((payload.length() * 8) / 6) + 4];
+            const uint16_t payloadSourceLength = static_cast<uint16_t>(payload.length() * sizeof(TCHAR));
+            const uint16_t payloadBufferLength = static_cast<uint16_t>(((payloadSourceLength * 8) / 6) + 4);
+            std::vector<TCHAR> payloadBuffer(payloadBufferLength);
             const uint16_t payloadLength = Core::URL::Base64Encode(
                 reinterpret_cast<const uint8_t*>(payload.c_str()),
-                static_cast<uint16_t>(payload.length()),
-                payloadBuffer,
-                sizeof(payloadBuffer));
+                payloadSourceLength,
+                payloadBuffer.data(),
+                payloadBufferLength);
 
             string token(headerBuffer.data(), headerLength);
-            token += '.' + string(payloadBuffer, payloadLength);
+            token += _T('.') + string(payloadBuffer.data(), payloadLength);
 
             Crypto::SHA256HMAC hash(string(reinterpret_cast<const char*>(TestKey), sizeof(TestKey)));
-            hash.Input(reinterpret_cast<const uint8_t*>(token.c_str()), static_cast<uint16_t>(token.length()));
+            hash.Input(reinterpret_cast<const uint8_t*>(token.c_str()), static_cast<uint16_t>(token.length() * sizeof(TCHAR)));
 
             TCHAR signature[((Crypto::SHA256HMAC::Length * 8) / 6) + 4];
             const uint16_t signatureLength = Core::URL::Base64Encode(
                 hash.Result(), hash.Length, signature, sizeof(signature), false);
-            token += '.' + string(signature, signatureLength);
+            token += _T('.') + string(signature, signatureLength);
 
             return token;
         };
@@ -349,11 +352,11 @@ namespace Tests {
         uint8_t decoded[512] = {};
         const string validToken = signedToken(0);
         uint16_t decodedLen = jwt.Decode(validToken, sizeof(decoded), decoded);
-        ASSERT_EQ(decodedLen, payload.length());
-        EXPECT_EQ(string(reinterpret_cast<const char*>(decoded), decodedLen), payload);
+        ASSERT_EQ(decodedLen, payload.length() * sizeof(TCHAR));
+        EXPECT_EQ(::memcmp(decoded, payload.c_str(), decodedLen), 0);
 
         const string oversizedToken = signedToken(3072);
-        ASSERT_GT(oversizedToken.find('.'), 4096u);
+        ASSERT_GT(oversizedToken.find(_T('.')), 4096u);
         decodedLen = jwt.Decode(oversizedToken, sizeof(decoded), decoded);
         EXPECT_EQ(decodedLen, static_cast<uint16_t>(~0));
     }
