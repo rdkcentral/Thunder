@@ -1794,15 +1794,15 @@ namespace PluginHost {
 
             RPC::IStringIterator* GetLibrarySearchPaths(const string& locator) const override
             {
-                // we allow all paths for normal plugins but also extensions. Extensions are not secure by definition (anybody who can put a file into a folder and change some configuration can make ny plugin to be an extension). But it is good enough
-                // and one could make a plugin locator point direclty to the extension folder if needed, but okay it will at least not work out of the box
+                // Without an explicit allow-list, search the extension roots before the normal service roots.
+                // Configured linker plugin paths override all implicit roots, including extension roots.
 
-                if (Administrator().Configuration().LinkerPluginPaths().empty() == false) {
-                    return (Service::GetLibrarySearchPaths(locator));
+                std::vector<string> searchPaths;
+
+                if (Administrator().Configuration().LinkerPluginPaths().empty() == true) {
+                    const std::vector<string> extensionPaths{ ExtensionPath(), Administrator().Configuration().AppPath() + _T("Extensions/") };
+                    searchPaths = PluginHost::Service::BuildLibrarySearchPaths(PluginHost::Service::Configuration().SystemRootPath, locator, extensionPaths);
                 }
-
-                const std::vector<string> extensionPaths{ ExtensionPath(), Administrator().Configuration().AppPath() + _T("Extensions/") };
-                std::vector<string> searchPaths(PluginHost::Service::BuildLibrarySearchPaths(PluginHost::Service::Configuration().SystemRootPath, locator, extensionPaths));
 
                 RPC::IStringIterator* paths = Service::GetLibrarySearchPaths(locator);
 
