@@ -24,6 +24,11 @@
 #include "TraceFactory.h"
 #include "DirectOutput.h"
 
+#ifdef MESSAGING_EXTERNAL_OUTPUT
+    #include <map>
+    #include <tuple>
+#endif
+
 namespace Thunder {
 
     namespace Messaging {
@@ -70,6 +75,8 @@ namespace Thunder {
             };
 
             using OutputMode = Core::Messaging::OutputMode;
+
+            using OutputTargets = Core::Messaging::OutputTargets;
 
             class EXTERNAL Buffer : public Core::IPC::BufferType<static_cast<uint16_t>(~0)> {
             public:
@@ -867,7 +874,7 @@ namespace Thunder {
                                                 if ((type >= Core::Messaging::Metadata::type::TRACING) && (type <= Core::Messaging::Metadata::type::TELEMETRY)) {
                                                     Core::Messaging::Metadata info(static_cast<Core::Messaging::Metadata::type>(type), category, module);
                                                     const bool hasE = (hasEnabled != 0);
-                                                    const bool hasR = (hasRouting != 0) && (routeMode <= static_cast<uint8_t>(Core::Messaging::OutputMode::ALL));
+                                                    const bool hasR = (hasRouting != 0) && (routeMode <= static_cast<uint8_t>(Core::Messaging::OutputMode::EXTERNAL_DIRECT));
                                                     if ((hasE == true) && (hasR == true)) {
                                                         _settings.emplace_back(info, (enabled != 0), static_cast<OutputMode>(routeMode));
                                                     } else if (hasE == true) {
@@ -1291,6 +1298,10 @@ namespace Thunder {
                 , _dataBuffer()
                 , _settings()
                 , _direct()
+#ifdef MESSAGING_EXTERNAL_OUTPUT
+                , _externalInitialized(false)
+                , _externalControls()
+#endif
             {
             }
 
@@ -1331,13 +1342,23 @@ namespace Thunder {
 
             bool Default(const Core::Messaging::Metadata& control) const override;
             Core::Messaging::OutputMode DefaultOutput(const Core::Messaging::Metadata& metadata) const override;
+            void Announce(const Core::Messaging::Metadata& metadata) override;
             void Push(const Core::Messaging::MessageInfo& messageInfo, const Core::Messaging::IEvent* message, Core::Messaging::OutputMode outputMode) override;
+            void Push(const Core::Messaging::MessageInfo& messageInfo, const Core::Messaging::IEvent* message, const OutputTargets& targets);
+            OutputTargets Targets(const Core::Messaging::Metadata& metadata, Core::Messaging::OutputMode outputMode, bool localEnabled) const;
+#ifdef MESSAGING_EXTERNAL_OUTPUT
+            bool ExternalEnabled(const Core::Messaging::Metadata& metadata) const;
+#endif
 
         private:
             uint16_t Serialize(uint8_t* buffer, const uint16_t length, const string& module);
             uint16_t Serialize(uint8_t* buffer, const uint16_t length);
             void Update(const Core::Messaging::Metadata& control, const bool enable);
             void Update();
+#ifdef MESSAGING_EXTERNAL_OUTPUT
+            void InitializeExternal();
+            void DeinitializeExternal();
+#endif
 
         private:
             mutable Core::CriticalSection _adminLock;
@@ -1345,6 +1366,10 @@ namespace Thunder {
             std::unique_ptr<MessageDataBuffer> _dataBuffer;
             Settings _settings;
             DirectOutput _direct;
+#ifdef MESSAGING_EXTERNAL_OUTPUT
+            bool _externalInitialized;
+            mutable std::map<std::tuple<string, uint8_t, string>, bool> _externalControls;
+#endif
         };
 
     } // namespace Messaging
