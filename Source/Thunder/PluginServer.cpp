@@ -1282,6 +1282,88 @@ namespace PluginHost {
     //
     // class Server
     // -----------------------------------------------------------------------------------------------------------------------------------
+    /* static */ bool Server::IsLoopbackOrigin(const string& origin)
+    {
+        const size_t separator = origin.find("://");
+
+        if ((separator == string::npos) || (separator == 0)) {
+            return false;
+        }
+
+        const Core::TextFragment scheme(origin, 0, static_cast<uint32_t>(separator));
+        if ((scheme.EqualText(_T("http")) == false) && (scheme.EqualText(_T("https")) == false)) {
+            return false;
+        }
+
+        const size_t authorityStart = separator + 3;
+        if ((authorityStart == origin.length()) || (origin.find_first_of("/?#", authorityStart) != string::npos)) {
+            return false;
+        }
+
+        const string authority(origin, authorityStart);
+        if (authority.find('@') != string::npos) {
+            return false;
+        }
+
+        string host;
+        string port;
+
+        if (authority.front() == '[') {
+            const size_t closingBracket = authority.find(']');
+            if (closingBracket == string::npos) {
+                return false;
+            }
+
+            host.assign(authority, 0, closingBracket + 1);
+            if ((closingBracket + 1) < authority.length()) {
+                if (authority[closingBracket + 1] != ':') {
+                    return false;
+                }
+                port.assign(authority, closingBracket + 2, string::npos);
+            }
+        }
+        else {
+            const size_t portSeparator = authority.find(':');
+            if (portSeparator == string::npos) {
+                host = authority;
+            }
+            else {
+                if (authority.find(':', portSeparator + 1) != string::npos) {
+                    return false;
+                }
+                host.assign(authority, 0, portSeparator);
+                port.assign(authority, portSeparator + 1, string::npos);
+            }
+        }
+
+        const Core::TextFragment hostname(host);
+        if ((hostname.EqualText(_T("localhost")) == false) &&
+            (hostname.EqualText(_T("127.0.0.1")) == false) &&
+            (hostname.EqualText(_T("[::1]")) == false)) {
+            return false;
+        }
+
+        if (port.empty() == false) {
+            uint32_t value = 0;
+            for (const char digit : port) {
+                if ((digit < '0') || (digit > '9') ||
+                    (value > 6553) || ((value == 6553) && (digit > '5'))) {
+                    return false;
+                }
+                value = (value * 10) + static_cast<uint32_t>(digit - '0');
+            }
+
+            if (value == 0) {
+                return false;
+            }
+        }
+        else if (authority.back() == ':') {
+            return false;
+        }
+
+        return true;
+    }
+
     PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
     Server::Server(Config& configuration, const bool background)
         : _dispatcher(configuration.ThreadPoolCount(), configuration.StackSize(), configuration.QueueSize(), configuration.LowPriorityThreadCount(), configuration.MediumPriorityThreadCount())

@@ -1024,15 +1024,9 @@ namespace PluginHost {
                     result->Message = _T("No Content"); // Core::EnumerateType<Web::WebStatus>(_optionResponse->ErrorCode).Text();
                     result->Allowed = request.AccessControlMethod.Value();
                     result->AccessControlMethod = Request::HTTP_GET | Request::HTTP_POST | Request::HTTP_PUT | Request::HTTP_DELETE;
-                    // Security: Do not use wildcard ACAO — reflect the request
-                    // Origin only if it is a localhost variant; otherwise reject.
-                    if (request.Origin.IsSet() == true) {
+                    if ((request.Origin.IsSet() == true) && (IsLoopbackOrigin(request.Origin.Value()) == true)) {
                         const string& origin = request.Origin.Value();
-                        if ((origin.find("://127.0.0.1") != string::npos) ||
-                            (origin.find("://localhost") != string::npos) ||
-                            (origin.find("://[::1]") != string::npos)) {
-                            result->AccessControlOrigin = origin;
-                        }
+                        result->AccessControlOrigin = origin;
                     }
                     result->AccessControlHeaders = _T("Content-Type");
 
@@ -4852,17 +4846,10 @@ namespace PluginHost {
 
                     if (response.IsValid() == true) {
                         // Seems we can handle..
-                        // Security: Only set ACAO for localhost origins instead
-                        // of wildcard '*' which enables cross-origin attacks.
-                        if (response->AccessControlOrigin.IsSet() == false) {
-                            if (_request.IsValid() && _request->Origin.IsSet()) {
-                                const string& origin = _request->Origin.Value();
-                                if ((origin.find("://127.0.0.1") != string::npos) ||
-                                    (origin.find("://localhost") != string::npos) ||
-                                    (origin.find("://[::1]") != string::npos)) {
-                                    response->AccessControlOrigin = origin;
-                                }
-                            }
+                        if ((response->AccessControlOrigin.IsSet() == false) &&
+                            (_request.IsValid() == true) && (_request->Origin.IsSet() == true) &&
+                            (IsLoopbackOrigin(_request->Origin.Value()) == true)) {
+                            response->AccessControlOrigin = _request->Origin.Value();
                         }
 
                         if (response->CacheControl.IsSet() == false)
@@ -5960,6 +5947,7 @@ namespace PluginHost {
         }
 
     private:
+        static bool IsLoopbackOrigin(const string& origin);
         void InsertLoadPluginConfig(Core::JSON::ArrayType<Plugin::Config>::Iterator index, Plugin::Config& metaDataConfig, const bool thunderextension, const bool background);
 
     private:
