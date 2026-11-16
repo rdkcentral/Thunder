@@ -272,6 +272,8 @@ namespace Thunder {
 
         inline void DestroySocket(SOCKET& socket)
         {
+            ASSERT(socket != INVALID_SOCKET);
+
 #ifdef __LINUX__
             ::close(socket);
 #endif
@@ -609,11 +611,11 @@ namespace Thunder {
                 }
 
             }
-            else if (nStatus != Core::ERROR_ILLEGAL_STATE) {
+            else if ((nStatus != Core::ERROR_ILLEGAL_STATE) && (m_Socket != INVALID_SOCKET)) {
                 // ERROR_ILLEGAL_STATE is returned when the socket is already open and
                 // registered in the ResourceMonitor — destroying it here would corrupt
-                // the monitor's poll array. All other error paths constructed a new
-                // socket that failed before registration and must be cleaned up.
+                // the monitor's poll array.
+                // A socket that failed before registration must be cleaned up.
                 DestroySocket(m_Socket);
             }
             return (nStatus);
@@ -1349,7 +1351,11 @@ namespace Thunder {
             if (m_State != 0) {
                 result = false;
             } else {
-                DestroySocket(m_Socket);
+                // ... Unless listen failed and the socket was never properly created.
+                if (m_Socket != INVALID_SOCKET) {
+                    DestroySocket(m_Socket);
+                }
+
                 ResourceMonitor::Instance().Unregister(*this);
 
                 // Remove socket descriptor for UNIX domain datagram socket.

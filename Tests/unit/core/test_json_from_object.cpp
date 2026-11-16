@@ -251,8 +251,8 @@ namespace Core {
         EXPECT_FALSE(result);
     }
 
-    // 4.10: Empty source — default-constructed typed Container serialises to "{}".
-    TEST(JSONFromObject, EmptySource_ReturnsFalse)
+    // 4.10: Empty source serialises to valid "{}" and clears the target fields.
+    TEST(JSONFromObject, EmptySource_ReturnsTrue)
     {
         DeviceInfo source;
 
@@ -262,7 +262,7 @@ namespace Core {
 
         bool result = target.FromObject(source);
 
-        EXPECT_FALSE(result);
+        EXPECT_TRUE(result);
 
         EXPECT_FALSE(target.model.IsSet());
         EXPECT_FALSE(target.firmware.IsSet());
