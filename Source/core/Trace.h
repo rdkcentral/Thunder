@@ -158,7 +158,18 @@ namespace Thunder {
 #undef VERIFY
 #endif
 
-#if defined(__DEBUG__) || defined(_THUNDER_PRODUCTION)
+#if defined(__COVERITY__)
+
+    extern "C" {
+        void __coverity_panic__(void);
+    }
+
+    #define ASSERT(expr)                        do { if (!(expr)) __coverity_panic__(); } while(0)
+    #define ASSERT_VERBOSE(expr, format, ...)   do { if (!(expr)) __coverity_panic__(); } while(0)
+    #define INTERNAL_ASSERT(expr)               do { if (!(expr)) __coverity_panic__(); } while(0)
+    #define VERIFY(expr)                        do { if (!(expr)) __coverity_panic__(); } while(0)
+
+#elif defined(__DEBUG__) || defined(_THUNDER_PRODUCTION)
 
     #ifdef __DEBUG__
         #define ASSERT_ABORT abort();
