@@ -316,6 +316,44 @@ namespace Core {
         EXPECT_EQ(::unlink(bufferName.c_str()), 0);
         EXPECT_EQ(::rmdir(directory), 0);
     }
+
+    TEST(Core_SharedBuffer, NoFollowMetadataUsesOpenHandle)
+    {
+        char directoryTemplate[] = "/tmp/thunder-nofollow-metadata-XXXXXX";
+        char* directory = ::mkdtemp(directoryTemplate);
+        ASSERT_TRUE(directory != nullptr);
+
+        const std::string fileName = std::string(directory) + "/opened";
+        const std::string savedName = fileName + ".saved";
+        const std::string replacementName = std::string(directory) + "/replacement";
+        constexpr char openedContents[] = "open";
+        constexpr char replacementContents[] = "replacement-is-larger";
+
+        int descriptor = ::open(fileName.c_str(), O_CREAT | O_WRONLY | O_TRUNC, 0600);
+        ASSERT_TRUE(descriptor >= 0);
+        ASSERT_EQ(::write(descriptor, openedContents, sizeof(openedContents) - 1), static_cast<ssize_t>(sizeof(openedContents) - 1));
+        ASSERT_EQ(::close(descriptor), 0);
+
+        descriptor = ::open(replacementName.c_str(), O_CREAT | O_WRONLY | O_TRUNC, 0600);
+        ASSERT_TRUE(descriptor >= 0);
+        ASSERT_EQ(::write(descriptor, replacementContents, sizeof(replacementContents) - 1), static_cast<ssize_t>(sizeof(replacementContents) - 1));
+        ASSERT_EQ(::close(descriptor), 0);
+
+        {
+            ::Thunder::Core::File file(fileName);
+            ASSERT_TRUE(file.Open(true, true));
+            ASSERT_EQ(::rename(fileName.c_str(), savedName.c_str()), 0);
+            ASSERT_EQ(::symlink(replacementName.c_str(), fileName.c_str()), 0);
+
+            EXPECT_EQ(file.SizeOnHandle(), sizeof(openedContents) - 1);
+        }
+
+        EXPECT_EQ(::unlink(fileName.c_str()), 0);
+        EXPECT_EQ(::unlink(savedName.c_str()), 0);
+        EXPECT_EQ(::unlink(replacementName.c_str()), 0);
+        EXPECT_EQ(::rmdir(directory), 0);
+    }
+
 #endif
 
 } // Core

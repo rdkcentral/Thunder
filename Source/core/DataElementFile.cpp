@@ -78,11 +78,12 @@ namespace Core {
         }
 
         if (IsValid()) {
-            if ((requestedSize != 0) && (requestedSize > m_File.Size())) {
+            const uint64_t fileSize = FileSize();
+            if ((requestedSize != 0) && (requestedSize > fileSize)) {
                 m_File.SetSize(requestedSize);
                 OpenMemoryMappedFile(requestedSize);
             } else {
-                OpenMemoryMappedFile(static_cast<uint32_t>(m_File.Size()));
+                OpenMemoryMappedFile(static_cast<uint32_t>(fileSize));
             }
         }
     }
@@ -110,7 +111,7 @@ namespace Core {
             m_File.Open((m_Flags & File::USER_WRITE) == 0, NoFollow());
             if (m_File.IsOpen() == true) {
                 available = true;
-                OpenMemoryMappedFile(static_cast<uint32_t>(m_File.Size()));
+                OpenMemoryMappedFile(static_cast<uint32_t>(FileSize()));
             }
         }
         return (available);
@@ -241,7 +242,7 @@ namespace Core {
         if (IsValid())
             munmap(m_MemoryMappedFile, AllocatedSize());
 
-        OpenMemoryMappedFile(m_File.Size());
+        OpenMemoryMappedFile(FileSize());
     }
 
     void DataElementFile::Close()

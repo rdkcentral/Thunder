@@ -339,6 +339,7 @@ namespace Core {
         {
             return (_size);
         }
+        uint64_t SizeOnHandle() const;
         bool SetSize(const uint64_t size)
         {
             bool result;

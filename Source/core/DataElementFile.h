@@ -132,6 +132,11 @@ namespace Core {
             return ((m_Flags & NO_FOLLOW) != 0);
         }
 
+        uint64_t FileSize() const
+        {
+            return (NoFollow() == true ? m_File.SizeOnHandle() : m_File.Size());
+        }
+
         void OpenMemoryMappedFile(uint32_t requiredSize);
 
     private:

@@ -259,6 +259,16 @@ namespace Core {
 #endif
     }
 
+    uint64_t File::SizeOnHandle() const
+    {
+#ifdef __POSIX__
+        struct stat data;
+        return ((IsOpen() == true) && (fstat(_handle, &data) == 0) ? static_cast<uint64_t>(data.st_size) : 0);
+#else
+        return (Size());
+#endif
+    }
+
     uint32_t File::User(const string& userName) const
     {
         return AccessControl::OwnerShip(_name, userName, "");
