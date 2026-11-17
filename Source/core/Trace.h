@@ -158,24 +158,25 @@ namespace Thunder {
 #undef VERIFY
 #endif
 
-#if defined(__COVERITY__)
 
-    extern "C" {
-        void __coverity_panic__(void);
-    }
-
-    #define ASSERT(expr)                        do { if (!(expr)) __coverity_panic__(); } while(0)
-    #define ASSERT_VERBOSE(expr, format, ...)   do { if (!(expr)) __coverity_panic__(); } while(0)
-    #define INTERNAL_ASSERT(expr)               do { if (!(expr)) __coverity_panic__(); } while(0)
-    #define VERIFY(expr)                        do { if (!(expr)) __coverity_panic__(); } while(0)
-
-#elif defined(__DEBUG__) || defined(_THUNDER_PRODUCTION)
+#if defined(__DEBUG__) || defined(_THUNDER_PRODUCTION)
 
     #ifdef __DEBUG__
         #define ASSERT_ABORT abort();
     #else
         #define ASSERT_ABORT
     #endif
+
+    #ifdef __COVERITY__
+
+    extern "C" {
+        void __coverity_panic__(void);
+    }
+
+    #define DIRECT_ASSERT                                                                                   \
+        __coverity_panic__();
+
+    #else
 
     #define DIRECT_ASSERT                                                                                   \
         std::list<Thunder::Core::callstack_info> entries;                                                   \
@@ -185,6 +186,8 @@ namespace Thunder {
         }                                                                                                   \
         fflush(stderr);                                                                                     \
         ASSERT_ABORT
+
+    #endif
 
     #ifdef __CORE_MESSAGING__
 
