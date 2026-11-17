@@ -605,8 +605,6 @@ POP_WARNING()
                     while ((result < receivedSize) && (tooSmall == false)) {
                         uint16_t actualDataSize = receivedSize - result;
                         uint16_t headerSize = _handler.Decoder(const_cast<uint8_t*>(&dataFrame[result]), actualDataSize);
-                        uint64_t payloadSizeInControlFrame;
-
                         tooSmall = ((headerSize == 0) && (actualDataSize == 0));
 
                         if (tooSmall == false) {
@@ -614,12 +612,10 @@ POP_WARNING()
 
                                 TRACE_L1("Oops we received uncomprehensable data on the web socket 0x%X", _handler.FrameType());
 
-                                // Close() would re-enter SocketPort while Read() holds its
-                                // non-recursive m_syncAdmin lock.
+                                // Close() would re-enter SocketPort while Read() holds its lock.
                                 // ACTUALLINK::Close(0);
-
-                                // Nothing we can do with this shit..
                                 result = receivedSize;
+
                             } else if ((_handler.FrameType() & 0x08) != 0) {
                                 // Build the associated message with this..
                                 // _commandData += dataFrame
@@ -651,34 +647,8 @@ POP_WARNING()
                                     _commandData.clear();
                                 }
 
-                                payloadSizeInControlFrame = 0;
                                 // skip payload bytes for control frames:
-                                if (headerSize > 1) {
-                                    payloadSizeInControlFrame = dataFrame[result+1] & 0x7F;
-                                    if (payloadSizeInControlFrame == 126) {
-                                        if (headerSize > 3) {
-                                            payloadSizeInControlFrame = (dataFrame[result + 2]) << 8 | static_cast<uint64_t>(dataFrame[result + 3]);
-                                        } else {
-                                            TRACE_L1("Header too small for 16-bit extended payload size");
-                                            payloadSizeInControlFrame = 0;
-                                        }
-                                    } else if (payloadSizeInControlFrame == 127) {
-                                        if (headerSize > 9) {
-                                            payloadSizeInControlFrame = 0;
-                                            for (uint8_t i = 2; i <= 9; ++i) {
-                                                payloadSizeInControlFrame = (payloadSizeInControlFrame << 8) | static_cast<uint64_t>(dataFrame[result + i]);
-                                            }
-                                        } else {
-                                            TRACE_L1("Header too small for 64-bit jumbo payload size ");
-                                            payloadSizeInControlFrame = 0;
-                                        }
-                                    }
-                                }
-                                if (headerSize == 0) {
-                                    result += actualDataSize;
-                                } else {
-                                    result += static_cast<uint16_t>(headerSize + payloadSizeInControlFrame);
-                                }
+                                result += (headerSize + actualDataSize);
                             } else {
                                 if (actualDataSize != 0) {
                                    _parent.ReceiveData(&(dataFrame[result + headerSize]), actualDataSize);
