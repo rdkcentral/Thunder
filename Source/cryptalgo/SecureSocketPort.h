@@ -167,7 +167,14 @@ namespace Crypto {
             inline void StateChange() override {
                 Update();
             };
-            void Validate(const IValidate* callback);
+            inline void Validate(const IValidate*  callback) {
+                Core::SocketPort::Lock();
+
+                ASSERT((callback == nullptr) ^ (_callback == nullptr));
+
+                _callback = callback;
+                Core::SocketPort::Unlock();
+            }
             uint32_t Certificate(const Crypto::Certificate& certificate, const Crypto::Key& key);
             uint32_t Root(const CertificateStore& store);
 

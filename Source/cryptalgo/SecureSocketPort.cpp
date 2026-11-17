@@ -380,24 +380,8 @@ void SecureSocketPort::Handler::CreateContext(const struct ssl_method_st* method
             VARIABLE_IS_NOT_USED unsigned long bitmask = SSL_CTX_set_options(_context, options);
 
             ASSERT((bitmask & options) == options);
-            SSL_set_verify(_ssl, SSL_VERIFY_PEER, nullptr);
         }
     }
-}
-
-void SecureSocketPort::Handler::Validate(const IValidate* callback) {
-    Core::SocketPort::Lock();
-
-    ASSERT((callback == nullptr) ^ (_callback == nullptr));
-
-    _callback = callback;
-
-    // A custom validator takes responsibility for peer verification.
-    if (_ssl != nullptr) {
-        SSL_set_verify(_ssl, (callback == nullptr ? SSL_VERIFY_PEER : SSL_VERIFY_NONE), nullptr);
-    }
-
-    Core::SocketPort::Unlock();
 }
 
 uint32_t SecureSocketPort::Handler::Initialize() {
@@ -407,15 +391,18 @@ uint32_t SecureSocketPort::Handler::Initialize() {
     ASSERT(_ssl != nullptr);
 
     if ((_context != nullptr) && (_ssl != nullptr) && (SSL_set_fd(_ssl, static_cast<Core::IResource&>(*this).Descriptor()) == 1)) {
-        SSL_set_tlsext_host_name(_ssl, RemoteNode().HostName().c_str());
         if (IsOpen() == true) {
             SSL_set_accept_state(_ssl);
+            result = Core::SocketPort::Initialize();
         }
         else {
-            SSL_set_connect_state(_ssl);
-        }
+            const string hostname(RemoteNode().HostName());
 
-        result = Core::SocketPort::Initialize();
+            if ((SSL_set_tlsext_host_name(_ssl, hostname.c_str()) == 1) && (SSL_set1_host(_ssl, hostname.c_str()) == 1)) {
+                SSL_set_connect_state(_ssl);
+                result = Core::SocketPort::Initialize();
+            }
+        }
     }
 
     return (result);
@@ -428,21 +415,17 @@ int32_t SecureSocketPort::Handler::Read(uint8_t buffer[], const uint16_t length)
     if (_handShaking != OPEN) {
         const_cast<Handler&>(*this).Update();
     }
- 
-    return (SSL_read(_ssl, buffer, length));
+    return (_handShaking == OPEN ? SSL_read(_ssl, buffer, length) : SOCKET_ERROR);
 }
 
 int32_t SecureSocketPort::Handler::Write(const uint8_t buffer[], const uint16_t length) {
 
     ASSERT(_handShaking != ERROR);
 
-    int32_t result = SSL_write(_ssl, buffer, length);
-
     if (_handShaking != OPEN) {
         Update();
     }
-
-    return (result);
+    return (_handShaking == OPEN ? SSL_write(_ssl, buffer, length) : SOCKET_ERROR);
 }
 
 uint32_t SecureSocketPort::Handler::Open(const uint32_t waitTime) {
@@ -547,6 +530,8 @@ void SecureSocketPort::Handler::Update() {
                 }
                 else if (result != SSL_ERROR_WANT_READ) {
                     _handShaking = ERROR;
+                    SetError();
+                    _parent.StateChange();
                 }
             }
         }
