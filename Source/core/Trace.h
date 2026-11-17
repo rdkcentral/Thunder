@@ -167,7 +167,7 @@ namespace Thunder {
         #define ASSERT_ABORT
     #endif
 
-    #ifdef __COVERITY__
+    #if defined(__COVERITY__) && defined(__DEBUG__)
 
     extern "C" {
         void __coverity_panic__(void);
