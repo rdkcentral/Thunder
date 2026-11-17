@@ -269,6 +269,19 @@ namespace Core {
         return AccessControl::OwnerShip(_name, "", groupName);
     }
 
+    uint32_t File::OwnerShipOnHandle(const string& userName, const string& groupName) const
+    {
+#ifdef __POSIX__
+        uint32_t result = Core::ERROR_ILLEGAL_STATE;
+        if (IsOpen() == true) {
+            result = AccessControl::OwnerShip(_handle, userName, groupName);
+        }
+#else
+        uint32_t result = AccessControl::OwnerShip(_name, userName, groupName);
+#endif
+        return result;
+    }
+
     uint32_t File::Permission(uint16_t flags) const
     {
         return AccessControl::Permission(_name, flags);

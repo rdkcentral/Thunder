@@ -168,7 +168,7 @@ namespace Core {
             uint32_t result = Core::ERROR_UNAVAILABLE;
 
             if (IsValid() == true) {
-                result = _administrationBuffer.User(userName);
+                result = _administrationBuffer.Storage().OwnerShipOnHandle(userName, "");
             }
 
             if (result == Core::ERROR_NONE){
@@ -182,7 +182,7 @@ namespace Core {
             uint32_t result = Core::ERROR_UNAVAILABLE;
 
             if (IsValid() == true) {
-                result = _administrationBuffer.Group(groupName);
+                result = _administrationBuffer.Storage().OwnerShipOnHandle("", groupName);
             }
 
             if (result == Core::ERROR_NONE){

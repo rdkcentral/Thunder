@@ -625,6 +625,7 @@ POP_WARNING()
 
         uint32_t User(const string& userName) const;
         uint32_t Group(const string& groupName) const;
+        uint32_t OwnerShipOnHandle(const string& userName, const string& groupName) const;
         uint32_t Permission(uint16_t flags) const;
         uint32_t PermissionOnHandle(uint16_t flags) const;
 

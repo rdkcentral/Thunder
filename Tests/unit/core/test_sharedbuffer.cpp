@@ -29,6 +29,8 @@
 
 #ifdef __POSIX__
 #include <fcntl.h>
+#include <grp.h>
+#include <pwd.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #endif
@@ -276,6 +278,42 @@ namespace Core {
         EXPECT_EQ(::unlink(administrationName.c_str()), 0);
         EXPECT_EQ(::unlink(bufferName.c_str()), 0);
         EXPECT_EQ(::unlink(targetName.c_str()), 0);
+        EXPECT_EQ(::rmdir(directory), 0);
+    }
+
+    TEST(Core_SharedBuffer, OwnershipChangesUseOpenHandles)
+    {
+        char directoryTemplate[] = "/tmp/thunder-sharedbuffer-owner-XXXXXX";
+        char* directory = ::mkdtemp(directoryTemplate);
+        ASSERT_TRUE(directory != nullptr);
+
+        const std::string bufferName = std::string(directory) + "/buffer";
+        const std::string administrationName = bufferName + ".admin";
+        const std::string savedAdministrationName = administrationName + ".opened";
+        const std::string missingTargetName = std::string(directory) + "/missing";
+        constexpr uint32_t mode = ::Thunder::Core::File::USER_READ | ::Thunder::Core::File::USER_WRITE;
+
+        const struct group* currentGroup = ::getgrgid(::getgid());
+        ASSERT_TRUE(currentGroup != nullptr);
+        const std::string currentGroupName(currentGroup->gr_name);
+        const struct passwd* currentUser = ::getpwuid(::geteuid());
+        ASSERT_TRUE(currentUser != nullptr);
+        const std::string currentUserName(currentUser->pw_name);
+
+        {
+            ::Thunder::Core::SharedBuffer buffer(bufferName.c_str(), mode, 4096, 64);
+            ASSERT_TRUE(buffer.IsValid());
+
+            ASSERT_EQ(::rename(administrationName.c_str(), savedAdministrationName.c_str()), 0);
+            ASSERT_EQ(::symlink(missingTargetName.c_str(), administrationName.c_str()), 0);
+
+            EXPECT_EQ(buffer.Group(currentGroupName), ::Thunder::Core::ERROR_NONE);
+            EXPECT_EQ(buffer.User(currentUserName), ::Thunder::Core::ERROR_NONE);
+        }
+
+        EXPECT_EQ(::unlink(administrationName.c_str()), 0);
+        EXPECT_EQ(::unlink(savedAdministrationName.c_str()), 0);
+        EXPECT_EQ(::unlink(bufferName.c_str()), 0);
         EXPECT_EQ(::rmdir(directory), 0);
     }
 #endif
