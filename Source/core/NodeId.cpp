@@ -828,6 +828,8 @@ POP_WARNING()
             break;
         }
 
+        result.SetNamed(false);
+
         return (result);
     }
     bool
