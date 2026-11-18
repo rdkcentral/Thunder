@@ -53,7 +53,8 @@ static bool IsAddress(const TCHAR hostname[], const int family)
 #ifdef __WINDOWS__
     return (::InetPton(family, hostname, &address) == 1);
 #else
-    return (::inet_pton(family, hostname, &address) == 1);
+    const std::string converted(Core::ToString(string(hostname)));
+    return (::inet_pton(family, converted.c_str(), &address) == 1);
 #endif
 }
 
@@ -72,6 +73,20 @@ static bool IsIPv6Address(const TCHAR hostname[])
     }
 
     return (IsAddress(address.c_str(), AF_INET6));
+}
+
+static bool IsNamedAddress(const string& hostname)
+{
+    if (hostname.empty() == true) {
+        return (false);
+    }
+
+    string address(hostname);
+    if ((address.front() == '[') && (address.back() == ']')) {
+        address = address.substr(1, address.length() - 2);
+    }
+
+    return ((IsIPv4Address(address.c_str()) == false) && (IsIPv6Address(address.c_str()) == false));
 }
 
 #if !defined (__WINDOWS__) && !defined(__APPLE__)
@@ -324,6 +339,8 @@ static bool IsIPv6Address(const TCHAR hostname[])
                 m_hostName = strHostName;
             }
         }
+
+        SetNamed(IsNamedAddress(m_hostName));
     }
 
     NodeId::NodeId(
@@ -414,6 +431,8 @@ static bool IsIPv6Address(const TCHAR hostname[])
                 }
 
             }
+
+            SetNamed(IsNamedAddress(m_hostName));
         }
     }
 
@@ -521,6 +540,7 @@ static bool IsIPv6Address(const TCHAR hostname[])
 
         m_hostName.clear();
         m_group.clear();
+        SetNamed(false);
 
         // Give back our-selves.
         return (*this);
@@ -536,6 +556,7 @@ static bool IsIPv6Address(const TCHAR hostname[])
 
         m_hostName.clear();
         m_group.clear();
+        SetNamed(false);
 
         // Give back our-selves.
         return (*this);
@@ -643,6 +664,8 @@ static bool IsIPv6Address(const TCHAR hostname[])
             m_hostName.clear();
 #endif
 
+        SetNamed(false);
+
         // Give back our-selves.
         return (*this);
     }
@@ -681,23 +704,33 @@ static bool IsIPv6Address(const TCHAR hostname[])
     bool
     NodeId::IsNamed() const
     {
-        if (m_hostName.empty() == true) {
-            return (false);
+        bool result = false;
+
+        if (m_structInfo.IPV4Socket.sin_family == AF_INET) {
+            result = m_structInfo.IPV4Socket.in_named;
+        }
+        else if (m_structInfo.IPV6Socket.sin6_family == AF_INET6) {
+            result = m_structInfo.IPV6Socket.in_named;
         }
 
-        string hostname(m_hostName);
-        if ((hostname.front() == '[') && (hostname.back() == ']')) {
-            hostname = hostname.substr(1, hostname.length() - 2);
+        return (result);
+    }
+
+    void
+    NodeId::SetNamed(const bool named)
+    {
+        if (m_structInfo.IPV4Socket.sin_family == AF_INET) {
+            m_structInfo.IPV4Socket.in_named = named;
         }
-        return ((IsIPv4Address(hostname.c_str()) == false) && (IsIPv6Address(hostname.c_str()) == false));
+        else if (m_structInfo.IPV6Socket.sin6_family == AF_INET6) {
+            m_structInfo.IPV6Socket.in_named = named;
+        }
     }
 
     string
     NodeId::HostName() const
     {
-        string result(m_hostName);
-
-        if ((IsValid() == true) && (result.empty() == true)) {
+        if ((IsValid() == true) && (m_hostName.empty() == true)) {
             char host[NI_MAXHOST], service[NI_MAXSERV];
 
             int error = getnameinfo(
@@ -706,17 +739,17 @@ static bool IsIPv6Address(const TCHAR hostname[])
                 service, sizeof(service), NI_NUMERICSERV);
 
             if (error == 0) {
-                result = ToString(host);
+                m_hostName = ToString(host);
             } else {
                 TRACE_L1("Function getnameinfo failed, error: %s", gai_strerror(error));
             }
 
-            if (result.empty() == true) {
-                result = HostAddress();
+            if (m_hostName.empty() == true) {
+                m_hostName = HostAddress();
             }
         }
 
-        return (result);
+        return (m_hostName);
     }
 
     string
@@ -893,6 +926,8 @@ POP_WARNING()
         }
 #endif
 #endif
+
+        response.SetNamed(false);
 
         return (response);
     }

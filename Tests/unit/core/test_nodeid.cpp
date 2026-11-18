@@ -59,6 +59,13 @@ namespace Core {
         ::Thunder::Core::NodeId address("127.0.0.1", 443);
         address.HostName();
         EXPECT_FALSE(address.IsNamed());
+
+        const ::Thunder::Core::NodeId copy(address);
+        EXPECT_FALSE(copy.IsNamed());
+
+        ::Thunder::Core::NodeId assigned;
+        assigned = ::Thunder::Core::NodeId("localhost", 443);
+        EXPECT_TRUE(assigned.IsNamed());
     }
 
 } // Core
