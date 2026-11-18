@@ -3707,7 +3707,7 @@ namespace PluginHost {
                     }
 
                     if (allowed == false) {
-                        SYSLOG(Logging::Error, (_T("Toggling a non-controlled state is not allowed")));
+                        SYSLOG(Logging::Error, (_T("Toggling a non-controlled state %s is not allowed by plugin: %s"), Core::EnumerateType<ISubSystem::subsystem>(type).Data(), _service->Callsign().c_str()));
                         ASSERT(false && "Toggiling a non-controlled subsystem is not allowed");
                     }
                     else {

@@ -21,6 +21,8 @@ ethernetcard = '@ETHERNETCARD_NAME@'
 communicator = '@COMMUNICATOR@'
 if boolean('@DISABLEPLUGINAUTOACTIVATION@'):
   disablepluginautoactivation = '@DISABLEPLUGINAUTOACTIVATION@'
+if not boolean('@DISCOVERY@'):
+  discovery = '@DISCOVERY@'
 __authorizedextensions = '@AUTHORIZEDEXTENSIONS@'
 authorizedextensions = __authorizedextensions.split(';')
 
