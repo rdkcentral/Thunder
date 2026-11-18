@@ -48,14 +48,20 @@ namespace Core {
 
         inline void Lock()
         {
+#if defined(__LINUX__) && !defined(__CORE_CRITICAL_SECTION_LOG__)
+            REPORT_DURATION_WARNING({ LockWithoutWarnings(); }, WarningReporting::TooLongWaitingForLock);
+#else
+            LockWithoutWarnings();
+#endif
+        }
+
+        inline void LockWithoutWarnings()
+        {
 #ifdef __LINUX__
 #if defined(__CORE_CRITICAL_SECTION_LOG__)
             TryLock();
 #else
-
-            int result  = 0;
-
-            REPORT_DURATION_WARNING( { result = pthread_mutex_lock(&m_syncMutex); }, WarningReporting::TooLongWaitingForLock);
+            const int result = pthread_mutex_lock(&m_syncMutex);
             if (result != 0) {
                 TRACE_L1("Probably creating a deadlock situation or lock on already destroyed mutex. <%d>", result);
             }
