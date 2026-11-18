@@ -51,9 +51,14 @@ namespace Core {
     TEST(Core_NodeId, endpointIdentity)
     {
         EXPECT_TRUE(::Thunder::Core::NodeId("localhost", 443).IsNamed());
+        EXPECT_TRUE(::Thunder::Core::NodeId("123", 443).IsNamed());
         EXPECT_FALSE(::Thunder::Core::NodeId("127.0.0.1", 443).IsNamed());
         EXPECT_FALSE(::Thunder::Core::NodeId("127.0.0.1:443").IsNamed());
         EXPECT_FALSE(::Thunder::Core::NodeId("[::1]:443").IsNamed());
+
+        ::Thunder::Core::NodeId address("127.0.0.1", 443);
+        address.HostName();
+        EXPECT_FALSE(address.IsNamed());
     }
 
 } // Core

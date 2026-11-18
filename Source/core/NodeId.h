@@ -394,7 +394,7 @@ namespace Core {
         }
 
         string m_group;
-        mutable string m_hostName;
+        string m_hostName;
         SocketInfo m_structInfo;
         static bool m_isIPV6Enabled;
     };

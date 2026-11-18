@@ -327,7 +327,6 @@ SecureSocketPort::Handler::Handler(SecureSocketPort& parent,
     const uint32_t socketReceiveBufferSize)
     : SocketPort(socketType, localNode, remoteNode, sendBufferSize, receiveBufferSize, socketSendBufferSize, socketReceiveBufferSize)
     , _parent(parent)
-    , _verifyAsAddress(remoteNode.IsNamed() == false)
     , _context(nullptr)
     , _ssl(nullptr)
     , _callback(nullptr)
@@ -345,7 +344,6 @@ SecureSocketPort::Handler::Handler(SecureSocketPort& parent,
     const uint32_t socketReceiveBufferSize)
     : SocketPort(socketType, connector, remoteNode, sendBufferSize, receiveBufferSize, socketSendBufferSize, socketReceiveBufferSize)
     , _parent(parent)
-    , _verifyAsAddress(false)
     , _context(nullptr)
     , _ssl(nullptr)
     , _callback(nullptr)
@@ -386,6 +384,39 @@ void SecureSocketPort::Handler::CreateContext(const struct ssl_method_st* method
     }
 }
 
+bool SecureSocketPort::Handler::ConfigurePeerIdentity()
+{
+    X509_VERIFY_PARAM* parameters = SSL_get0_param(_ssl);
+    bool result = ((parameters != nullptr) &&
+        (X509_VERIFY_PARAM_set1_host(parameters, nullptr, 0) == 1) &&
+        (X509_VERIFY_PARAM_set1_ip(parameters, nullptr, 0) == 1) &&
+        (SSL_set_tlsext_host_name(_ssl, nullptr) == 1));
+
+    if ((result == true) && (RemoteNode().IsNamed() == false)) {
+        const Core::NodeId::SocketInfo& address = RemoteNode();
+        const unsigned char* data = nullptr;
+        size_t length = 0;
+
+        if (RemoteNode().Type() == Core::NodeId::TYPE_IPV4) {
+            data = reinterpret_cast<const unsigned char*>(&address.IPV4Socket.sin_addr);
+            length = sizeof(address.IPV4Socket.sin_addr);
+        }
+        else if (RemoteNode().Type() == Core::NodeId::TYPE_IPV6) {
+            data = reinterpret_cast<const unsigned char*>(&address.IPV6Socket.sin6_addr);
+            length = sizeof(address.IPV6Socket.sin6_addr);
+        }
+
+        result = ((data != nullptr) && (X509_VERIFY_PARAM_set1_ip(parameters, data, length) == 1));
+    }
+    else if (result == true) {
+        const string hostname(RemoteNode().HostName());
+        result = ((SSL_set_tlsext_host_name(_ssl, hostname.c_str()) == 1) &&
+            (SSL_set1_host(_ssl, hostname.c_str()) == 1));
+    }
+
+    return (result);
+}
+
 uint32_t SecureSocketPort::Handler::Initialize() {
     uint32_t result = Core::ERROR_OPENING_FAILED;
 
@@ -397,37 +428,9 @@ uint32_t SecureSocketPort::Handler::Initialize() {
             SSL_set_accept_state(_ssl);
             result = Core::SocketPort::Initialize();
         }
-        else {
-            bool identitySet = false;
-
-            if (_verifyAsAddress == true) {
-                const Core::NodeId::SocketInfo& address = RemoteNode();
-                const unsigned char* data = nullptr;
-                size_t length = 0;
-
-                if (RemoteNode().Type() == Core::NodeId::TYPE_IPV4) {
-                    data = reinterpret_cast<const unsigned char*>(&address.IPV4Socket.sin_addr);
-                    length = sizeof(address.IPV4Socket.sin_addr);
-                }
-                else if (RemoteNode().Type() == Core::NodeId::TYPE_IPV6) {
-                    data = reinterpret_cast<const unsigned char*>(&address.IPV6Socket.sin6_addr);
-                    length = sizeof(address.IPV6Socket.sin6_addr);
-                }
-
-                if (data != nullptr) {
-                    identitySet = (X509_VERIFY_PARAM_set1_ip(SSL_get0_param(_ssl), data, length) == 1);
-                }
-            }
-            else {
-                const string hostname(RemoteNode().HostName());
-                identitySet = ((SSL_set_tlsext_host_name(_ssl, hostname.c_str()) == 1) &&
-                    (SSL_set1_host(_ssl, hostname.c_str()) == 1));
-            }
-
-            if (identitySet == true) {
-                SSL_set_connect_state(_ssl);
-                result = Core::SocketPort::Initialize();
-            }
+        else if (ConfigurePeerIdentity() == true) {
+            SSL_set_connect_state(_ssl);
+            result = Core::SocketPort::Initialize();
         }
     }
 

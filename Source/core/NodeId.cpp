@@ -46,58 +46,32 @@
 namespace Thunder {
 namespace Core {
 
-static bool IsIPv4Address(const TCHAR hostname[]) {
-    bool result = true;
-    uint32_t index = 0;
-    uint16_t number = 0;
-    uint8_t delimiter = 0;
-    while ((result == true) && (hostname[index] != '\0')) {
-        if (isdigit(hostname[index])) {
-            number = (number * 10) + (hostname[index] - '0');
-            result = (number <= 0xFF);
-        }
-        else if (hostname[index] == '.') {
-            number = 0;
-            delimiter++;
-            result = (delimiter < 4);
-        }
-        else {
-            result = false;
-        }
-        index++;
-    }
+static bool IsAddress(const TCHAR hostname[], const int family)
+{
+    struct in6_addr address;
 
-    // last entry a dot and than no digit is not an IPv4 :-)
-    return (result && (index > 0) && (isdigit(hostname[index-1])));
+#ifdef __WINDOWS__
+    return (::InetPton(family, hostname, &address) == 1);
+#else
+    return (::inet_pton(family, hostname, &address) == 1);
+#endif
 }
 
-static bool IsIPv6Address(const TCHAR hostname[]) {
-    bool result = true;
-    uint32_t index = 0;
-    uint32_t number = 0;
-    uint8_t delimiter = 0;
-    while ((result == true) && (hostname[index] != '\0')) {
-        if (::isdigit(hostname[index])) {
-            number = (number * 16) + (hostname[index] - '0');
-            result = (number <= 0xFFFF);
-        }
-        else if (::isxdigit(hostname[index])) {
-            number = (number * 16) + ((::toupper(hostname[index]) - 'A') + 10);
-            result = (number <= 0xFFFF);
-        }
-        else if (hostname[index] == ':') {
-            number = 0;
-            delimiter++;
-            result = (delimiter < 8);
-        }
-        else {
-            result = false;
-        }
-        index++;
+static bool IsIPv4Address(const TCHAR hostname[])
+{
+    return (IsAddress(hostname, AF_INET));
+}
+
+static bool IsIPv6Address(const TCHAR hostname[])
+{
+    string address(hostname);
+    const size_t scope = address.find('%');
+
+    if (scope != string::npos) {
+        address.resize(scope);
     }
 
-    // last entry a dot and than no digit is not an IPv4 :-)
-    return (result);
+    return (IsAddress(address.c_str(), AF_INET6));
 }
 
 #if !defined (__WINDOWS__) && !defined(__APPLE__)
@@ -704,7 +678,9 @@ static bool IsIPv6Address(const TCHAR hostname[]) {
         return (m_hostName);
     }
 
-    bool NodeId::IsNamed() const {
+    bool
+    NodeId::IsNamed() const
+    {
         if (m_hostName.empty() == true) {
             return (false);
         }
@@ -719,7 +695,9 @@ static bool IsIPv6Address(const TCHAR hostname[]) {
     string
     NodeId::HostName() const
     {
-        if ((IsValid() == true) && (m_hostName.empty() == true)) {
+        string result(m_hostName);
+
+        if ((IsValid() == true) && (result.empty() == true)) {
             char host[NI_MAXHOST], service[NI_MAXSERV];
 
             int error = getnameinfo(
@@ -728,17 +706,17 @@ static bool IsIPv6Address(const TCHAR hostname[]) {
                 service, sizeof(service), NI_NUMERICSERV);
 
             if (error == 0) {
-                m_hostName = ToString(host);
+                result = ToString(host);
             } else {
                 TRACE_L1("Function getnameinfo failed, error: %s", gai_strerror(error));
             }
 
-            if (m_hostName.empty() == true) {
-                m_hostName = HostAddress();
+            if (result.empty() == true) {
+                result = HostAddress();
             }
         }
 
-        return (m_hostName);
+        return (result);
     }
 
     string
