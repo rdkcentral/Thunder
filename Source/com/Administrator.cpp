@@ -537,7 +537,9 @@ namespace RPC {
                     } while ((loop->Decrement(1)) && (result == Core::ERROR_NONE));
                 }
 
+#ifdef __DEBUG__
                 ASSERT (loop->Flushed() == true);
+#endif
                 loop++;
             }
             _channelReferenceMap.erase(remotes);

@@ -885,10 +885,11 @@ void SerialPort::Read(const uint16_t readBytes)
                 }
 
                 // Read the actual data from the port.
-                uint32_t size = ::read(_descriptor, reinterpret_cast<char*>(&_receiveBuffer[_readBytes]), _receiveBufferSize - _readBytes);
+                ssize_t size = ::read(_descriptor, reinterpret_cast<char*>(&_receiveBuffer[_readBytes]), _receiveBufferSize - _readBytes);
 
-                if ((size != static_cast<uint32_t>(~0)) && (size != 0)) {
-                    _readBytes += size;
+                if (size > 0) {
+                    ASSERT(_readBytes + static_cast<uint16_t>(size) <= _receiveBufferSize);
+                    _readBytes += static_cast<uint16_t>(size);
 
                     if (_readBytes != 0) {
                         uint16_t handledBytes = ReceiveData(_receiveBuffer, _readBytes);
