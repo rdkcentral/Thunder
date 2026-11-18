@@ -1423,12 +1423,15 @@ namespace PluginGap {
             (std::vector<string>{ "/usr/lib/thunder/libExample.so" }));
         EXPECT_EQ(PluginHost::Service::BuildLibrarySearchPaths("/rootfs/", "/opt/plugins/libExample.so", roots),
             (std::vector<string>{ "/rootfs/opt/plugins/libExample.so" }));
+        EXPECT_EQ(PluginHost::Service::BuildLibrarySearchPaths("", "/tmp/libExample.so", roots),
+            (std::vector<string>{ "/tmp/libExample.so" }));
+        EXPECT_EQ(PluginHost::Service::BuildLibrarySearchPaths("", "/usr/lib/thunder-other/libExample.so", roots),
+            (std::vector<string>{ "/usr/lib/thunder-other/libExample.so" }));
+        EXPECT_EQ(PluginHost::Service::BuildLibrarySearchPaths("", "/usr/lib/thunder/../../tmp/libExample.so", roots),
+            (std::vector<string>{ "/tmp/libExample.so" }));
 
         EXPECT_TRUE(PluginHost::Service::BuildLibrarySearchPaths("", "../libExample.so", roots).empty());
         EXPECT_TRUE(PluginHost::Service::BuildLibrarySearchPaths("", "plugins/../../libExample.so", roots).empty());
-        EXPECT_TRUE(PluginHost::Service::BuildLibrarySearchPaths("", "/tmp/libExample.so", roots).empty());
-        EXPECT_TRUE(PluginHost::Service::BuildLibrarySearchPaths("", "/usr/lib/thunder-other/libExample.so", roots).empty());
-        EXPECT_TRUE(PluginHost::Service::BuildLibrarySearchPaths("", "/usr/lib/thunder/../../tmp/libExample.so", roots).empty());
         EXPECT_TRUE(PluginHost::Service::BuildLibrarySearchPaths("/rootfs/", "libExample.so", { "" }).empty());
     }
 

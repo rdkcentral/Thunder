@@ -34,26 +34,14 @@ namespace PluginHost {
             if (normalized.empty() == false) {
                 const string rootPath(Core::Directory::Normalize(systemRoot));
                 const bool absolute(Core::File::IsPathAbsolute(locator));
-                const string candidate(absolute == true ? Core::File::Normalize(rootPath + normalized) : string());
 
-                for (const string& root : roots) {
-                    const string path(root.empty() == false ? Core::Directory::Normalize(rootPath + root) : string());
+                if (absolute == true) {
+                    result.emplace_back(Core::File::Normalize(rootPath + normalized));
+                } else {
+                    for (const string& root : roots) {
+                        const string path(root.empty() == false ? Core::Directory::Normalize(rootPath + root) : string());
 
-                    if (path.empty() == false) {
-                        bool contained = false;
-
-                        if (absolute == true) {
-#ifdef __WINDOWS__
-                            contained = (_tcsnicmp(candidate.c_str(), path.c_str(), path.length()) == 0);
-#else
-                            contained = (candidate.compare(0, path.length(), path) == 0);
-#endif
-                        }
-
-                        if (contained == true) {
-                            result.emplace_back(candidate);
-                            break;
-                        } else if (absolute == false) {
+                        if (path.empty() == false) {
                             result.emplace_back(path + normalized);
                         }
                     }
