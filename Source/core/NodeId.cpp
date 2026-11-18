@@ -704,6 +704,18 @@ static bool IsIPv6Address(const TCHAR hostname[]) {
         return (m_hostName);
     }
 
+    bool NodeId::IsNamed() const {
+        if (m_hostName.empty() == true) {
+            return (false);
+        }
+
+        string hostname(m_hostName);
+        if ((hostname.front() == '[') && (hostname.back() == ']')) {
+            hostname = hostname.substr(1, hostname.length() - 2);
+        }
+        return ((IsIPv4Address(hostname.c_str()) == false) && (IsIPv6Address(hostname.c_str()) == false));
+    }
+
     string
     NodeId::HostName() const
     {

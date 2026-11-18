@@ -185,6 +185,7 @@ namespace Crypto {
  
         private:
             SecureSocketPort& _parent;
+            const bool _verifyAsAddress;
             struct ssl_ctx_st* _context;
             struct ssl_st* _ssl;
             const IValidate* _callback;

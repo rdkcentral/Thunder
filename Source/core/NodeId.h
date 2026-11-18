@@ -348,7 +348,7 @@ namespace Core {
         {
             return (m_group);
         }
-
+        bool IsNamed() const;
         string HostName() const;
 
         NodeId AnyInterface() const;

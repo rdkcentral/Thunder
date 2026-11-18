@@ -48,6 +48,14 @@ namespace Core {
         std::cout << "DefaultMask:        " << static_cast<int>(nodeId.DefaultMask()) << std::endl;
     }
 
+    TEST(Core_NodeId, endpointIdentity)
+    {
+        EXPECT_TRUE(::Thunder::Core::NodeId("localhost", 443).IsNamed());
+        EXPECT_FALSE(::Thunder::Core::NodeId("127.0.0.1", 443).IsNamed());
+        EXPECT_FALSE(::Thunder::Core::NodeId("127.0.0.1:443").IsNamed());
+        EXPECT_FALSE(::Thunder::Core::NodeId("[::1]:443").IsNamed());
+    }
+
 } // Core
 } // Tests
 } // Thunder
