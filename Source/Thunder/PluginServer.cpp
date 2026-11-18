@@ -989,9 +989,11 @@ namespace PluginHost {
         if (Configuration().MetadataDiscovery() == false) {
             SYSLOG(Logging::Startup, (_T("Automatic metadata discovery and plugin versioning is DISABLED!!!")));
         }
-        else {
-            for (const auto& service : _services)
-            {
+        for (const auto& service : _services)
+        {
+            if (Configuration().MetadataDiscovery() == false) {
+                service.second->LoadMetadataFromConfig();
+            } else {
                 service.second->LoadMetadata();
                 for (const PluginHost::ISubSystem::subsystem& entry : service.second->SubSystemControl()) {
                     Core::EnumerateType<PluginHost::ISubSystem::subsystem> name(entry);
