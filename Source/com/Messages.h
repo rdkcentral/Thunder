@@ -92,9 +92,7 @@ namespace RPC {
                 frameWriter.Number(implementation);
                 frameWriter.Number(interfaceId);
                 frameWriter.Number(methodId);
-#ifdef __W3C_TRACE_CONTEXT__
                 frameWriter.Number<uint8_t>(0);
-#endif
             }
 #ifdef __W3C_TRACE_CONTEXT__
             void Set(Core::instance_id implementation, const uint32_t interfaceId, const uint8_t methodId, const string* const traceParent, const string* const traceState)
@@ -191,9 +189,6 @@ namespace RPC {
             }
             uint32_t HeaderSize() const
             {
-#ifndef __W3C_TRACE_CONTEXT__
-                return InitialHeaderSize();
-#else
                 uint32_t size = InitialHeaderSize();
                 uint8_t traceflags = 0;
                 _data.GetNumber<uint8_t>(size, traceflags);
@@ -211,7 +206,6 @@ namespace RPC {
                     }
                 }
                 return size;
-#endif
             }
 
         private:
