@@ -31,7 +31,12 @@ namespace RPC {
         struct has_reserve : std::false_type {};
 
         template<typename C>
-        struct has_reserve<C, std::void_t<decltype(std::declval<C>().reserve(std::declval<typename C::size_type>()))>> : std::true_type {};
+        struct has_reserve<C, typename std::conditional<false, decltype(std::declval<C>().reserve(std::declval<typename C::size_type>())), void>::type> : std::true_type {};
+
+        template<typename C>
+        static void Reserve(C& c, const size_t size, const std::true_type&) { c.reserve(size); }
+        template<typename C>
+        static void Reserve(C&, const size_t, const std::false_type&) {}
 
     public:
         IteratorType() = delete;
@@ -45,16 +50,14 @@ namespace RPC {
             _iterator = _container.begin();
         }
         template <typename T = typename INTERFACE::Element,
-                  std::enable_if_t<!std::is_same_v<CONTAINER, std::list<T>>, int> = 0>
+                  typename std::enable_if<!std::is_same<CONTAINER, std::list<T>>::value, int>::type = 0>
         IteratorType(std::list<T>&& container)
             : _container()
             , _index(0)
         {
             TRACE_L1("Thunder::RPC::IteratorType: Using std::list as a source container is less efficient.");
 
-            if constexpr (has_reserve<CONTAINER>::value == true) {
-                _container.reserve(container.size());
-            }
+            Reserve(_container, container.size(), has_reserve<CONTAINER>());
 
             std::move(
                 std::make_move_iterator(container.begin()),
