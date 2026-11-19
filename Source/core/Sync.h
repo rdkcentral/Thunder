@@ -26,30 +26,38 @@
 #include "WarningReportingCategories.h"
 
 #include <list>
+#ifdef __CORE_WARNING_REPORTING__
 #include <type_traits>
+#endif
 
 #ifdef __LINUX__
 #include <pthread.h>
 #endif
 
 namespace Thunder {
+#ifdef __CORE_WARNING_REPORTING__
 namespace WarningReporting {
     class WarningReportingUnitProxy;
 }
+#ifdef __CORE_MESSAGING__
 namespace Messaging {
     class MessageUnit;
 }
+#endif
+#endif
 namespace Core {
+#ifdef __CORE_WARNING_REPORTING__
     // Only reporting infrastructure can name the key, without access to CriticalSection internals.
     class WarningReportingLockAccess {
     private:
         friend class CriticalSection;
         friend class WarningReporting::WarningReportingUnitProxy;
+#ifdef __CORE_MESSAGING__
         friend class ::Thunder::Messaging::MessageUnit;
-
+#endif
         struct Key { };
     };
-
+#endif
     // ===========================================================================
     // class CriticalSection
     // ===========================================================================
@@ -72,6 +80,7 @@ namespace Core {
 #endif
         }
 
+#ifdef __CORE_WARNING_REPORTING__
         template <typename KEY>
         inline void LockWithoutWarnings()
         {
@@ -79,6 +88,7 @@ namespace Core {
                 "LockWithoutWarnings is restricted to warning reporting infrastructure");
             LockImplementation();
         }
+#endif
 
         inline void Unlock()
         {

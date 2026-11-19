@@ -441,6 +441,11 @@ and `Messaging::MessageUnit` can name this private key. The key is a template ar
 no token object or runtime argument is passed, and neither reporting class gains
 access to `CriticalSection` internals.
 
+The key holder and `LockWithoutWarnings` method are available only when
+`WARNING_REPORTING` is enabled. Access for `Messaging::MessageUnit` additionally
+requires `MESSAGING`. Without warning reporting, messaging uses the normal `Lock()`
+method, which already omits lock-warning instrumentation.
+
 ### Macros
 
 Within Thunder, at the moment there are four distinct macros dedicated to warning reporting, each with a slightly different use case scenario. You can find these macros inside `Source/core/WarningReportingControl.h`.
