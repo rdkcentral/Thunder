@@ -5107,6 +5107,13 @@ namespace PluginHost {
             }
 
         private:
+            bool DesignatorAllowed(const Core::JSONRPC::Message& message, const string& routedCallsign) const
+            {
+                const string designatorCallsign(Core::JSONRPC::Message::Callsign(message.Designator.Value()));
+                return ((routedCallsign == _parent.Services().ControllerCallsign()) || (designatorCallsign.empty() == true) ||
+                    (designatorCallsign == routedCallsign));
+            }
+
             bool Allowed(const string& pathParameter, const string& queryParameters)
             {
                 Core::URL::KeyValue options(queryParameters);
@@ -5212,9 +5219,15 @@ namespace PluginHost {
                         if (message.IsValid() == true) {
                             ASSERT(request->Service().IsValid() == true);
                             message->ImplicitCallsign(request->Service()->Callsign());
-                            if (security->Allowed(*message) == false) {
+
+                            bool allowed = security->Allowed(*message);
+                            if ((allowed == true) && (request->RestfulCall() == false)) {
+                                allowed = DesignatorAllowed(*message, request->Service()->Callsign());
+                            }
+
+                            if (allowed == false) {
                                 request->Unauthorized();
-                        }
+                            }
                         }
                     }
                 }
@@ -5353,33 +5366,18 @@ namespace PluginHost {
                         securityClearance = _security->Allowed(*message);
                         PluginHost::Channel::Unlock();
 
+                        if ((securityClearance == true) &&
+                            (DesignatorAllowed(*message, _service->Callsign()) == false)) {
+                            SYSLOG(Logging::Error, (_T("Security: JSON-RPC designator '%s' does not match URL service '%s'"),
+                                message->Designator.Value().c_str(), _service->Callsign().c_str()));
+                            securityClearance = false;
+                        }
+
                         if (securityClearance == false) {
                             // Oopsie daisy we are not allowed to handle this request.
                             // TODO: How shall we report back on this?
                             message->Error.SetError(Core::ERROR_PRIVILIGED_REQUEST);
                             Submit(Core::ProxyType<Core::JSON::IElement>(message));
-                        }
-                    }
-                }
-
-                if (securityClearance == true) {
-                    // Security: When security clearance was granted based on the
-                    // JSON-RPC designator callsign, verify it matches the URL-path
-                    // service that will actually handle the dispatch.  This prevents
-                    // ACL bypass by sending a designator for an allowed plugin while
-                    // the URL routes to a restricted one.
-                    if ((State() & Channel::JSONRPC) != 0) {
-                        Core::ProxyType<Core::JSONRPC::Message> msg(element);
-                        if (msg.IsValid() && _service.IsValid()) {
-                            const string designator(msg->Designator.Value());
-                            const size_t dot = designator.find('.');
-                            const string targetCallsign(dot != string::npos ? designator.substr(0, dot) : designator);
-                            if ((targetCallsign.empty() == false) && (targetCallsign != _service->Callsign())) {
-                                SYSLOG(Logging::Error, (_T("Security: JSON-RPC designator '%s' does not match URL service '%s'"), targetCallsign.c_str(), _service->Callsign().c_str()));
-                                msg->Error.SetError(Core::ERROR_PRIVILIGED_REQUEST);
-                                Submit(Core::ProxyType<Core::JSON::IElement>(msg));
-                                securityClearance = false;
-                            }
                         }
                     }
                 }
