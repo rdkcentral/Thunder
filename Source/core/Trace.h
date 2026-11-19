@@ -158,6 +158,7 @@ namespace Thunder {
 #undef VERIFY
 #endif
 
+
 #if defined(__DEBUG__) || defined(_THUNDER_PRODUCTION)
 
     #ifdef __DEBUG__
@@ -165,6 +166,17 @@ namespace Thunder {
     #else
         #define ASSERT_ABORT
     #endif
+
+    #if defined(__COVERITY__) && defined(__DEBUG__)
+
+    extern "C" {
+        void __coverity_panic__(void);
+    }
+
+    #define DIRECT_ASSERT                                                                                   \
+        __coverity_panic__();
+
+    #else
 
     #define DIRECT_ASSERT                                                                                   \
         std::list<Thunder::Core::callstack_info> entries;                                                   \
@@ -174,6 +186,8 @@ namespace Thunder {
         }                                                                                                   \
         fflush(stderr);                                                                                     \
         ASSERT_ABORT
+
+    #endif
 
     #ifdef __CORE_MESSAGING__
 
