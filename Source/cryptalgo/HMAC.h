@@ -56,6 +56,8 @@ namespace Crypto {
             const uint8_t* encryptionKey;
             HASHALGORITHM hashKey;
 
+            ASSERT(key.length() < 0x10000);
+
             if (key.length() > sizeof(_innerKeyPad)) {
                 keyLength = HASHALGORITHM::Length;
 
@@ -70,8 +72,11 @@ namespace Crypto {
             }
 
             // We have a suitable key, move it to the inner and outer pads
-            ::memset(&_innerKeyPad[keyLength], 0x36, sizeof(_innerKeyPad) - keyLength);
-            ::memset(&_outerKeyPad[keyLength], 0x5C, sizeof(_outerKeyPad) - keyLength);
+            const uint16_t remainder = (sizeof(_innerKeyPad) - keyLength);
+            if (remainder > 0) {
+                ::memset(&_innerKeyPad[keyLength], 0x36, remainder);
+                ::memset(&_outerKeyPad[keyLength], 0x5C, remainder);
+            }
 
             /* XOR key with inner keypad and outer key pad values */
             for (uint8_t index = 0; index < keyLength; index++) {

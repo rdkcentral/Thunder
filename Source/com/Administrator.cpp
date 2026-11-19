@@ -207,7 +207,7 @@ namespace RPC {
 
         if (stub != nullptr) {
             uint16_t methodId = message->Parameters().MethodId();
-            REPORT_DURATION_WARNING({ stub->Handle(methodId, channel, message); }, WarningReporting::TooLongInvokeRPC, interfaceId, methodId);
+            REPORT_PRIORITY_DURATION_WARNING({ stub->Handle(methodId, channel, message); }, WarningReporting::TooLongInvokeRPC, interfaceId, methodId);
         } 
     }
 
@@ -537,7 +537,9 @@ namespace RPC {
                     } while ((loop->Decrement(1)) && (result == Core::ERROR_NONE));
                 }
 
+#ifdef __DEBUG__
                 ASSERT (loop->Flushed() == true);
+#endif
                 loop++;
             }
             _channelReferenceMap.erase(remotes);
