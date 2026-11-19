@@ -78,19 +78,19 @@ namespace Telemetry {
         TRACE_L1("%s: %s", category.c_str(), value.c_str());
     }
 
-    template <typename VALUE, std::enable_if_t<std::is_integral_v<std::decay_t<VALUE>> && std::is_signed_v<std::decay_t<VALUE>>, int> = 0>
+    template <typename VALUE, typename std::enable_if<std::is_integral<typename std::decay<VALUE>::type>::value && std::is_signed<typename std::decay<VALUE>::type>::value, int>::type = 0>
     inline void ConsoleTelemetry(const string& category, const VALUE value)
     {
         TRACE_L1("%s: %" PRId64, category.c_str(), static_cast<int64_t>(value));
     }
 
-    template <typename VALUE, std::enable_if_t<std::is_integral_v<std::decay_t<VALUE>> && std::is_unsigned_v<std::decay_t<VALUE>>, int> = 0>
+    template <typename VALUE, typename std::enable_if<std::is_integral<typename std::decay<VALUE>::type>::value && std::is_unsigned<typename std::decay<VALUE>::type>::value, int>::type = 0>
     inline void ConsoleTelemetry(const string& category, const VALUE value)
     {
         TRACE_L1("%s: %" PRIu64, category.c_str(), static_cast<uint64_t>(value));
     }
 
-    template <typename VALUE, std::enable_if_t<std::is_floating_point_v<std::decay_t<VALUE>>, int> = 0>
+    template <typename VALUE, typename std::enable_if<std::is_floating_point<typename std::decay<VALUE>::type>::value, int>::type = 0>
     inline void ConsoleTelemetry(const string& category, const VALUE value)
     {
         TRACE_L1("%s: %g", category.c_str(), static_cast<double>(value));

@@ -168,7 +168,7 @@ namespace Core {
             }
 
             // Signed integral types
-            template<typename T, std::enable_if_t<std::is_integral_v<std::decay_t<T>> && std::is_signed_v<std::decay_t<T>> && !std::is_same_v<std::decay_t<T>, bool>, int> = 0>
+            template<typename T, typename std::enable_if<std::is_integral<typename std::decay<T>::type>::value && std::is_signed<typename std::decay<T>::type>::value && !std::is_same<typename std::decay<T>::type, bool>::value, int>::type = 0>
             explicit TelemetryMessage(const T value)
                 : _type(SignedTag<sizeof(T)>())
                 , _text()
@@ -179,7 +179,7 @@ namespace Core {
             }
 
             // Unsigned integral types
-            template<typename T, std::enable_if_t<std::is_integral_v<std::decay_t<T>> && std::is_unsigned_v<std::decay_t<T>> && !std::is_same_v<std::decay_t<T>, bool>, int> = 0>
+            template<typename T, typename std::enable_if<std::is_integral<typename std::decay<T>::type>::value && std::is_unsigned<typename std::decay<T>::type>::value && !std::is_same<typename std::decay<T>::type, bool>::value, int>::type = 0>
             explicit TelemetryMessage(const T value)
                 : _type(UnsignedTag<sizeof(T)>())
                 , _text()
