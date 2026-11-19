@@ -871,7 +871,7 @@ namespace Core {
                     }
                 }
 
-                ASSERT((_set >> 12) & 0xF <= 8);
+                ASSERT(((_set >> 12) & 0xF) <= 8);
                 // Loaded cannot overflow as it is incremented at most 8 times.
 
                 while ((loaded < maxLength) && (offset != 0)) {

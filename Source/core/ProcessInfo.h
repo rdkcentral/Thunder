@@ -293,12 +293,7 @@ namespace Core {
         {
             ASSERT(adjust >= -17 && adjust <= 15);
 
-            if (adjust < -17) {
-                adjust = -17;
-            }
-            else if (adjust > 15) {
-                adjust = 15;
-            }
+            int8_t normalized = (adjust < -17 ? -17 : (adjust > 15 ? 15 : adjust));
 
 #ifndef __WINDOWS__
             TCHAR buffer[128];
@@ -308,7 +303,7 @@ namespace Core {
             // /proc/[pid]/oom_adj is an existing virtual procfs node whose permissions are fixed by the kernel.
             FILE* fp = fopen(buffer, _T("w"));
             if (fp) {
-                fprintf(fp, "%d", adjust);
+                fprintf(fp, "%d", normalized);
                 fclose(fp);
             }
 #endif
