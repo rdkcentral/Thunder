@@ -4640,6 +4640,10 @@ resolving lock-warning targets. Only <code>WarningReporting::WarningReportingUni
 and <code>Messaging::MessageUnit</code> can name this private key. The key is a template argument:
 no token object or runtime argument is passed, and neither reporting class gains
 access to <code>CriticalSection</code> internals.</p>
+<p>The key holder and <code>LockWithoutWarnings</code> method are available only when
+<code>WARNING_REPORTING</code> is enabled. Access for <code>Messaging::MessageUnit</code> additionally
+requires <code>MESSAGING</code>. Without warning reporting, messaging uses the normal <code>Lock()</code>
+method, which already omits lock-warning instrumentation.</p>
 <h3 id="macros">Macros</h3>
 <p>Within Thunder, at the moment there are four distinct macros dedicated to warning reporting, each with a slightly different use case scenario. You can find these macros inside <code>Source/core/WarningReportingControl.h</code>.</p>
 <h4 id="report_warning">REPORT_WARNING</h4>
