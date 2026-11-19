@@ -432,6 +432,15 @@ By emphasizing the significance of these conditions, warning reporting enables p
 REPORT_OUTOFBOUNDS_WARNING(WarningReporting::SinkStillHasReference, _referenceCount);
 ```
 
+### Internal locking
+
+Normal callers must use `Core::CriticalSection::Lock()`. Warning-routing internals use
+`LockWithoutWarnings<Core::WarningReportingLockAccess::Key>()` to avoid recursively
+resolving lock-warning targets. Only `WarningReporting::WarningReportingUnitProxy`
+and `Messaging::MessageUnit` can name this private key. The key is a template argument:
+no token object or runtime argument is passed, and neither reporting class gains
+access to `CriticalSection` internals.
+
 ### Macros
 
 Within Thunder, at the moment there are four distinct macros dedicated to warning reporting, each with a slightly different use case scenario. You can find these macros inside `Source/core/WarningReportingControl.h`.

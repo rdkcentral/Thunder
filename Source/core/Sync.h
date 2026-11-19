@@ -26,13 +26,30 @@
 #include "WarningReportingCategories.h"
 
 #include <list>
+#include <type_traits>
 
 #ifdef __LINUX__
 #include <pthread.h>
 #endif
 
 namespace Thunder {
+namespace WarningReporting {
+    class WarningReportingUnitProxy;
+}
+namespace Messaging {
+    class MessageUnit;
+}
 namespace Core {
+    // Only reporting infrastructure can name the key, without access to CriticalSection internals.
+    class WarningReportingLockAccess {
+    private:
+        friend class CriticalSection;
+        friend class WarningReporting::WarningReportingUnitProxy;
+        friend class ::Thunder::Messaging::MessageUnit;
+
+        struct Key { };
+    };
+
     // ===========================================================================
     // class CriticalSection
     // ===========================================================================
@@ -49,29 +66,18 @@ namespace Core {
         inline void Lock()
         {
 #if defined(__LINUX__) && !defined(__CORE_CRITICAL_SECTION_LOG__)
-            REPORT_DURATION_WARNING({ LockWithoutWarnings(); }, WarningReporting::TooLongWaitingForLock);
+            REPORT_DURATION_WARNING({ LockImplementation(); }, WarningReporting::TooLongWaitingForLock);
 #else
-            LockWithoutWarnings();
+            LockImplementation();
 #endif
         }
 
+        template <typename KEY>
         inline void LockWithoutWarnings()
         {
-#ifdef __LINUX__
-#if defined(__CORE_CRITICAL_SECTION_LOG__)
-            TryLock();
-#else
-            const int result = pthread_mutex_lock(&m_syncMutex);
-            if (result != 0) {
-                TRACE_L1("Probably creating a deadlock situation or lock on already destroyed mutex. <%d>", result);
-            }
-
-#endif
-#endif
-
-#ifdef __WINDOWS__
-            ::EnterCriticalSection(&m_syncMutex);
-#endif
+            static_assert(std::is_same<KEY, WarningReportingLockAccess::Key>::value,
+                "LockWithoutWarnings is restricted to warning reporting infrastructure");
+            LockImplementation();
         }
 
         inline void Unlock()
@@ -97,6 +103,25 @@ namespace Core {
 #endif
 
     private:
+        inline void LockImplementation()
+        {
+#ifdef __LINUX__
+#if defined(__CORE_CRITICAL_SECTION_LOG__)
+            TryLock();
+#else
+            const int result = pthread_mutex_lock(&m_syncMutex);
+            if (result != 0) {
+                TRACE_L1("Probably creating a deadlock situation or lock on already destroyed mutex. <%d>", result);
+            }
+
+#endif
+#endif
+
+#ifdef __WINDOWS__
+            ::EnterCriticalSection(&m_syncMutex);
+#endif
+        }
+
 #ifdef __LINUX__
 #if defined(__CORE_CRITICAL_SECTION_LOG__)
         void TryLock();

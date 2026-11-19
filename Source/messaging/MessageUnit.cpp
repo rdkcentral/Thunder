@@ -278,7 +278,7 @@ ENUM_CONVERSION_END(Thunder::Core::Messaging::OutputMode)
         {
             bool enabled = false;
 
-            _adminLock.LockWithoutWarnings();
+            _adminLock.LockWithoutWarnings<Core::WarningReportingLockAccess::Key>();
             if (_externalInitialized == true) {
                 const string& module = metadata.Module();
                 const ThunderMessageType type = ExternalType(metadata);
