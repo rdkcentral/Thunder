@@ -846,7 +846,8 @@ namespace Core {
 
             uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, uint32_t& offset) override
             {
-                uint8_t loaded = 0;
+                uint16_t loaded = 0;
+
                 if (offset == 0) {
                     // First byte depicts a lot. Find out what we need to read
                     _value = 0;
@@ -869,6 +870,9 @@ namespace Core {
                         _set = ERROR;
                     }
                 }
+
+                ASSERT((_set >> 12) & 0xF <= 8);
+                // Loaded cannot overflow as it is incremented at most 8 times.
 
                 while ((loaded < maxLength) && (offset != 0)) {
                     _value = _value << 8;
@@ -930,7 +934,7 @@ namespace Core {
 
             uint16_t Convert(uint8_t stream[], const uint16_t maxLength, uint32_t& offset, const TemplateIntToType<false>& /* For compile time diffrentiation */) const
             {
-                uint8_t loaded = 0;
+                uint16_t loaded = 0;
                 uint8_t bytes = (_value <= 0x7F ? 0 : _value < 0xFF ? 1 : _value < 0xFFFF ? 2 : _value < 0xFFFFFFFF ? 4 : 8);
 
                 if (offset == 0) {
@@ -961,6 +965,9 @@ namespace Core {
                     }
                 }
 
+                ASSERT(bytes <= 8);
+                // Loaded cannot overflow as it is incremented at most 'bytes' times and bytes <= 8.
+
                 while ((loaded < maxLength) && (offset != 0)) {
                     TYPE value = _value >> (8 * (bytes - offset));
 
@@ -973,7 +980,7 @@ namespace Core {
 
             uint16_t Convert(uint8_t stream[], const uint16_t maxLength, uint32_t& offset, const TemplateIntToType<true>& /* For c ompile time diffrentiation */) const
             {
-                uint8_t loaded = 0;
+                uint16_t loaded = 0;
                 uint8_t bytes = (((_value < 16) && (_value > -15)) ? 0 : ((_value < 128) && (_value > -127)) ? 1 : ((_value < 32767) && (_value > -32766)) ? 2 : ((_value < 2147483647) && (_value > -2147483646)) ? 4 : 8);
 
                 if (offset == 0) {
@@ -999,6 +1006,9 @@ namespace Core {
                         offset = 1;
                     }
                 }
+
+                ASSERT(bytes <= 8);
+                // Loaded cannot overflow as it is incremented at most 'bytes' times and bytes <= 8.
 
                 while ((loaded < maxLength) && (offset != 0)) {
                     TYPE value = _value >> (8 * (bytes - offset));
