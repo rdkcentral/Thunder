@@ -4474,6 +4474,57 @@
 <p class="admonition-title">Warning</p>
 <p>Warning Reporting is only available if Thunder is compiled with the <code>WARNING_REPORTING</code> option, which can be found <a href="../../Source/addons/CMakeLists.txt">here</a>, and is disabled by default. Note that it should not be enabled in Production, since it not only leads to a higher CPU and memory usage, but also it does not add any value to have it turned on in Production.</p>
 </div>
+<p>For a reduced set of checks, build with <code>SLIM_WARNING_REPORTING=ON</code> (see <a href="../../Source/CMakeLists.txt">the CMake option</a>). This also enables <code>WARNING_REPORTING</code>, but limits reporting to priority checks such as Invoke-duration, WorkerPool and plugin activation warnings. Slim mode omits non-priority warning reports and periodic WorkerPool active-job monitoring.</p>
+<p>The default reporting and warning thresholds for the categories used in slim mode can also be configured at build time through CMake. Append <code>_REPORT_BOUND</code> or <code>_WARNING_BOUND</code> to the variable prefix below to set the corresponding threshold. All values are in milliseconds, and each warning bound must be greater than or equal to its report bound.</p>
+<table>
+<thead>
+<tr>
+<th>Category</th>
+<th>CMake variable prefix</th>
+<th>Default report bound</th>
+<th>Default warning bound</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>TooLongInvokeRPC</code></td>
+<td><code>WARNING_REPORTING_INVOKE_RPC</code></td>
+<td>250</td>
+<td>750</td>
+</tr>
+<tr>
+<td><code>TooLongInvokeMessage</code></td>
+<td><code>WARNING_REPORTING_INVOKE_MESSAGE</code></td>
+<td>500</td>
+<td>500</td>
+</tr>
+<tr>
+<td><code>JobTooLongToFinish</code></td>
+<td><code>WARNING_REPORTING_WORKERPOOL_FINISH</code></td>
+<td>5000</td>
+<td>7500</td>
+</tr>
+<tr>
+<td><code>JobTooLongWaitingInQueue</code></td>
+<td><code>WARNING_REPORTING_WORKERPOOL_QUEUE</code></td>
+<td>200</td>
+<td>400</td>
+</tr>
+<tr>
+<td><code>TooLongPluginState</code></td>
+<td><code>WARNING_REPORTING_PLUGIN_STATE</code></td>
+<td>5000</td>
+<td>5000</td>
+</tr>
+</tbody>
+</table>
+<p>In slim mode, <code>TooLongPluginState</code> measures plugin initialization during activation. Full Warning Reporting also measures deinitialization.</p>
+<p>For example:</p>
+<div class="highlight"><pre><span></span><code>cmake<span class="w"> </span>-DSLIM_WARNING_REPORTING<span class="o">=</span>ON<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-DWARNING_REPORTING_INVOKE_RPC_REPORT_BOUND<span class="o">=</span><span class="m">500</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-DWARNING_REPORTING_INVOKE_RPC_WARNING_BOUND<span class="o">=</span><span class="m">1000</span><span class="w"> </span>..
+</code></pre></div>
+<p>These build-time defaults also apply when using full Warning Reporting; per-category runtime configuration can override them.</p>
 <h3 id="runtime">Runtime</h3>
 <p>It is also possible to use the <code>MessageControl</code> plugin to edit the configuration values at runtime. At the moment, it is possible to enable/disable any category at runtime, either globally for logging and warning reporting, or individually per plugin for the tracing messages. This can be achieved by either using the ThunderUI or doing a simple JSON-RPC call. In the example below, there is a request to enable traces from the <code>Information</code> category in the <code>BluetoothControl</code> plugin.</p>
 <p><img alt="➡" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@16.0.1/assets/svg/27a1.svg" title=":arrow_right:" /> Request</p>
