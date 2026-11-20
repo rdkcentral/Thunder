@@ -44,7 +44,7 @@ namespace Core {
     {
         LoadFileInfo();
     }
-    File::File(const File& copy)
+    File::File(const File& copy)f
         : _name(copy._name)
         , _size(copy._size)
         , _attributes(copy._attributes)
@@ -103,8 +103,21 @@ namespace Core {
                     }
                     else if (result[index - 1] == '.') {
                         if ((index == 1) || (result[index - 2] == '/')) {
-                            // It is a dot, remove it... but not if starting with ./
-                            if (index > 1) {
+                            if (index == 1) {
+                                uint32_t next = 2;
+                                while ((next < result.length()) && ((result[next] == '/')
+#ifdef __WINDOWS__
+                                    || (result[next] == '\\')
+#endif
+                                    )) {
+                                    next++;
+                                }
+                                if (next < result.length()) {
+                                    result.erase(0, next);
+                                    index = 0;
+                                    continue;
+                                }
+                            } else {
                                 result.erase(index - 2, 2);
                                 index -= 2;
                             }
