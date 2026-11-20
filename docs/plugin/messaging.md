@@ -258,6 +258,30 @@ Warning Reporting enables various runtime checks for potentially erroneous condi
 !!! warning
 	Warning Reporting is only available if Thunder is compiled with the `WARNING_REPORTING` option, which can be found [here](../../Source/addons/CMakeLists.txt), and is disabled by default. Note that it should not be enabled in Production, since it not only leads to a higher CPU and memory usage, but also it does not add any value to have it turned on in Production.
 
+For a reduced set of checks, build with `SLIM_WARNING_REPORTING=ON` (see [the CMake option](../../Source/CMakeLists.txt)). This also enables `WARNING_REPORTING`, but limits reporting to priority checks such as Invoke-duration, WorkerPool and plugin activation warnings. Slim mode omits non-priority warning reports and periodic WorkerPool active-job monitoring.
+
+The default reporting and warning thresholds for the categories used in slim mode can also be configured at build time through CMake. Append `_REPORT_BOUND` or `_WARNING_BOUND` to the variable prefix below to set the corresponding threshold. All values are in milliseconds, and each warning bound must be greater than or equal to its report bound.
+
+| Category | CMake variable prefix | Default report bound | Default warning bound |
+|----------|-----------------------|----------------------|-----------------------|
+| `TooLongInvokeRPC` | `WARNING_REPORTING_INVOKE_RPC` | 250 | 750 |
+| `TooLongInvokeMessage` | `WARNING_REPORTING_INVOKE_MESSAGE` | 500 | 500 |
+| `JobTooLongToFinish` | `WARNING_REPORTING_WORKERPOOL_FINISH` | 5000 | 7500 |
+| `JobTooLongWaitingInQueue` | `WARNING_REPORTING_WORKERPOOL_QUEUE` | 200 | 400 |
+| `TooLongPluginState` | `WARNING_REPORTING_PLUGIN_STATE` | 5000 | 5000 |
+
+In slim mode, `TooLongPluginState` measures plugin initialization during activation. Full Warning Reporting also measures deinitialization.
+
+For example:
+
+```sh
+cmake -DSLIM_WARNING_REPORTING=ON \
+    -DWARNING_REPORTING_INVOKE_RPC_REPORT_BOUND=500 \
+    -DWARNING_REPORTING_INVOKE_RPC_WARNING_BOUND=1000 ..
+```
+
+These build-time defaults also apply when using full Warning Reporting; per-category runtime configuration can override them.
+
 ### Runtime
 
 It is also possible to use the `MessageControl` plugin to edit the configuration values at runtime. At the moment, it is possible to enable/disable any category at runtime, either globally for logging and warning reporting, or individually per plugin for the tracing messages. This can be achieved by either using the ThunderUI or doing a simple JSON-RPC call. In the example below, there is a request to enable traces from the `Information` category in the `BluetoothControl` plugin.
