@@ -20,6 +20,7 @@
 #include <algorithm>
 #include <atomic>
 #include <condition_variable>
+#include <functional>
 #include <mutex>
 #include <thread>
 #include <vector>
@@ -34,6 +35,7 @@
 #include "../IPTestAdministrator.h"
 
 #include <fcntl.h>
+#include <sys/un.h>
 #include <unistd.h>
 
 namespace Thunder {
@@ -1524,10 +1526,10 @@ TEST(test_socketport, open_tcp_ipv4_refused_connection_returns_error)
     }
 
     // =========================================================================
-    // State: IsSuspended() — remote_closed path
+    // State: IsSuspended() or IsClosed() — after remote close
     // =========================================================================
 
-    TEST(test_socketport, is_suspended_after_remote_close)
+    TEST(test_socketport, is_suspended_or_closed_after_remote_close)
     {
         constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 8,
                            maxWaitTimeMs = 8000, maxInitTime = 500;
@@ -1551,10 +1553,6 @@ TEST(test_socketport, open_tcp_ipv4_refused_connection_returns_error)
 
             // Close server — remote-close from client's perspective.
             ASSERT_EQ(server.Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
-
-            // Signal parent that server has closed.
-            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries),
-                      ::Thunder::Core::ERROR_NONE);
         };
 
         IPTestAdministrator::Callback callback_parent = [&](IPTestAdministrator& testAdmin) {
@@ -1569,21 +1567,15 @@ TEST(test_socketport, open_tcp_ipv4_refused_connection_returns_error)
             ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries),
                       ::Thunder::Core::ERROR_NONE);
 
-            // Wait for server closure.
-            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
-
-            // Wait for the remote-close to propagate.
+            // Poll for a settled state: the transient SHUTDOWN|REMOTE_CLOSED
+            // state between suspended and closed matches neither predicate.
             uint32_t waited = 0;
-            while (client.IsOpen() && waited < maxWaitTimeMs) {
-                SleepMs(50);
-                waited += 50;
+            while (!(client.IsSuspended() || client.IsClosed()) && waited < maxWaitTimeMs) {
+                SleepMs(10);
+                waited += 10;
             }
 
-            // After remote close, the socket should be in SUSPENDED or
-            // fully closed state depending on timing.
-            bool suspended = client.IsSuspended();
-            bool closed    = client.IsClosed();
-            EXPECT_TRUE(suspended || closed);
+            EXPECT_TRUE(client.IsSuspended() || client.IsClosed());
 
             client.Close(maxWaitTimeMs);
 
@@ -1597,6 +1589,154 @@ TEST(test_socketport, open_tcp_ipv4_refused_connection_returns_error)
 
         IPTestAdministrator testAdmin(callback_parent, callback_child,
                                       initHandshakeValue, maxWaitTime);
+        ::Thunder::Core::Singleton::Dispose();
+    }
+
+    // =========================================================================
+    // State: IsSuspended() observed during closure triggered by a peer half-close
+    // =========================================================================
+
+    // IsSuspended() is only stable inside StateChange(), which runs on the
+    // ResourceMonitor thread with the state locked; polling from the test misses it.
+    class SuspendProbe : public ::Thunder::Core::SocketStream {
+    public:
+        SuspendProbe() = delete;
+        SuspendProbe(const SuspendProbe&) = delete;
+        SuspendProbe& operator=(const SuspendProbe&) = delete;
+
+        SuspendProbe(const SOCKET connector, const ::Thunder::Core::NodeId& remote)
+            : ::Thunder::Core::SocketStream(false, connector, remote, 512, 512)
+            , _suspendedSeen(false)
+            , _remoteClosedSeen(false)
+        {
+        }
+        ~SuspendProbe() override = default;
+
+        // Runs on the ResourceMonitor thread right after data was read; set before Open().
+        void OnReceive(std::function<void()> hook) { _onReceive = std::move(hook); }
+
+        uint16_t SendData(uint8_t*, const uint16_t) override { return 0; }
+        uint16_t ReceiveData(uint8_t*, const uint16_t size) override
+        {
+            if (_onReceive) {
+                _onReceive();
+            }
+            return size;
+        }
+
+        void StateChange() override
+        {
+            if (IsSuspended() == true) {
+                _suspendedSeen.store(true, std::memory_order_relaxed);
+
+                if ((State() & ::Thunder::Core::SocketPort::REMOTE_CLOSED) != 0) {
+                    _remoteClosedSeen.store(true, std::memory_order_relaxed);
+                }
+            }
+        }
+
+        bool SuspendedSeen() const { return _suspendedSeen.load(std::memory_order_relaxed); }
+        bool RemoteClosedSeen() const { return _remoteClosedSeen.load(std::memory_order_relaxed); }
+
+    private:
+        std::function<void()> _onReceive;
+        std::atomic<bool> _suspendedSeen;
+        std::atomic<bool> _remoteClosedSeen;
+    };
+
+    TEST(test_socketport, is_suspended_observed_on_peer_half_close)
+    {
+        SOCKET listener = ::socket(AF_INET, SOCK_STREAM, 0);
+        ASSERT_NE(listener, INVALID_SOCKET);
+
+        sockaddr_in addr{};
+        addr.sin_family = AF_INET;
+        addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+        addr.sin_port = 0;
+
+        ASSERT_EQ(::bind(listener, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)), 0);
+        ASSERT_EQ(::listen(listener, 1), 0);
+
+        socklen_t addrLen = sizeof(addr);
+        ASSERT_EQ(::getsockname(listener, reinterpret_cast<sockaddr*>(&addr), &addrLen), 0);
+
+        SOCKET peer = ::socket(AF_INET, SOCK_STREAM, 0);
+        ASSERT_NE(peer, INVALID_SOCKET);
+        ASSERT_EQ(::connect(peer, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)), 0);
+
+        SOCKET accepted = ::accept(listener, nullptr, nullptr);
+        ASSERT_NE(accepted, INVALID_SOCKET);
+        ::close(listener);
+
+        ::Thunder::Core::NodeId remote("127.0.0.1", ntohs(addr.sin_port),
+                                       ::Thunder::Core::NodeId::TYPE_IPV4);
+        SuspendProbe probe(accepted, remote);
+        ASSERT_EQ(probe.Open(0), ::Thunder::Core::ERROR_NONE);
+
+        // FIN without a full close raises POLLRDHUP but not POLLHUP, so the port
+        // closes itself (SHUTDOWN) and Closed() reports StateChange() while suspended.
+        ASSERT_EQ(::shutdown(peer, SHUT_WR), 0);
+
+        uint32_t waited = 0;
+        while (!probe.IsClosed() && waited < 2000) {
+            SleepMs(10);
+            waited += 10;
+        }
+
+        EXPECT_TRUE(probe.IsClosed());
+        EXPECT_TRUE(probe.SuspendedSeen());
+
+        ::close(peer);
+        ::Thunder::Core::Singleton::Dispose();
+    }
+
+    // =========================================================================
+    // State: REMOTE_CLOSED set by Read() when EOF follows data in the same read loop
+    // =========================================================================
+
+    TEST(test_socketport, is_suspended_observed_on_remote_closed_read)
+    {
+        const string path = "/tmp/test_sp_remoteclosed.sock";
+        ::unlink(path.c_str());
+
+        sockaddr_un addr{};
+        addr.sun_family = AF_UNIX;
+        ::strncpy(addr.sun_path, path.c_str(), sizeof(addr.sun_path) - 1);
+
+        SOCKET listener = ::socket(AF_UNIX, SOCK_STREAM, 0);
+        ASSERT_NE(listener, INVALID_SOCKET);
+        ASSERT_EQ(::bind(listener, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)), 0);
+        ASSERT_EQ(::listen(listener, 1), 0);
+
+        SOCKET peer = ::socket(AF_UNIX, SOCK_STREAM, 0);
+        ASSERT_NE(peer, INVALID_SOCKET);
+        ASSERT_EQ(::connect(peer, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)), 0);
+
+        SOCKET accepted = ::accept(listener, nullptr, nullptr);
+        ASSERT_NE(accepted, INVALID_SOCKET);
+        ::close(listener);
+        ::unlink(path.c_str());
+
+        SuspendProbe probe(accepted, ::Thunder::Core::NodeId(path.c_str()));
+
+        // The peer shuts down from inside ReceiveData(): a domain socket applies it
+        // synchronously, so the next recv() in the same Read() loop returns EOF and
+        // POLLRDHUP never reaches Handle() before Read() sees it.
+        probe.OnReceive([peer]() { ::shutdown(peer, SHUT_WR); });
+        ASSERT_EQ(probe.Open(0), ::Thunder::Core::ERROR_NONE);
+
+        ASSERT_EQ(::send(peer, "x", 1, 0), 1);
+
+        uint32_t waited = 0;
+        while (!probe.IsClosed() && waited < 2000) {
+            SleepMs(10);
+            waited += 10;
+        }
+
+        EXPECT_TRUE(probe.IsClosed());
+        EXPECT_TRUE(probe.RemoteClosedSeen());
+
+        ::close(peer);
         ::Thunder::Core::Singleton::Dispose();
     }
 
