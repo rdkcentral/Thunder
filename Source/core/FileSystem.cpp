@@ -105,8 +105,9 @@ namespace Core {
                         if ((index == 1) || (result[index - 2] == '/')) {
                             if (result.length() != 2) {
                                 // It is a dot, remove it... but not if it's just ./
-                                result.erase(index - (index == 1 ? 1 : 2), 2);
-                                index -= 2;
+                                const uint32 count = (index == 1 ? 1 : 2); 
+                                result.erase(index - count, count);
+                                index -= count;
                             }
                         }
                         else if ((result[index - 2] == '.') && ((index == 2) || (result[index - 3] == '/'))) {
