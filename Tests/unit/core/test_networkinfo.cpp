@@ -40,6 +40,7 @@ namespace Core {
         while ((adapter.Next() == true) && (adapter.Name() == "lo"));
 
         if (adapter.IsValid() == false) {
+            ::Thunder::Core::Singleton::Dispose();
             GTEST_SKIP() << "No non-loopback adapter available on this machine";
         }
 
