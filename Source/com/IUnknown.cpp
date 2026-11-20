@@ -108,7 +108,7 @@ namespace ProxyStub {
         const RPC::Communicator::Client* server = ServerChannel(channel);
 
         return ((server != nullptr)
-            ? (string(_T("RemotePid: ")) + Core::NumberType<uint32_t>(server->Extension().RemotePid()).Text())
+            ? (string(_T("RemotePid: ")) + Core::NumberType<uint32_t>(server->Extension().RemotePid()).Text() + " ProcessName: " + Core::ProcessInfo(server->Extension().RemotePid()).Name())
             : string(_T("RemotePid: n/a")));
     }
 
