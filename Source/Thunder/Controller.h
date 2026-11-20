@@ -394,7 +394,7 @@ namespace Plugin {
         {
             Core::ProxyType<PluginHost::IShell> service;
 
-            _pluginServer->Services().FromIdentifier(callsign, service);
+            (void)_pluginServer->Services().FromIdentifier(callsign, service);
 
             return (service);
         }

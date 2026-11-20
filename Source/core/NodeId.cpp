@@ -956,8 +956,14 @@ POP_WARNING()
 
                 /* getaddrinfo() returns a list of address structures. */
                 /* Jut pick the first one.. */
-                memcpy(&(m_structInfo.IPV4Socket), result->ai_addr, (result->ai_family == AF_INET6 ? sizeof(struct sockaddr_in6) : sizeof(struct sockaddr_in)));
-                m_structInfo.IPV4Socket.sin_family = result->ai_family;
+
+                if (result->ai_family == AF_INET) {
+                    memcpy(&(m_structInfo.IPV4Socket), result->ai_addr, sizeof(struct sockaddr_in));
+                    m_structInfo.IPV4Socket.sin_family = result->ai_family;
+                } else if (result->ai_family == AF_INET6) {
+                    memcpy(&(m_structInfo.IPV6Socket), result->ai_addr, sizeof(struct sockaddr_in6));
+                    m_structInfo.IPV6Socket.sin6_family = result->ai_family;
+                }
 
             } else if (error == -2) {
                 m_structInfo.IPV4Socket.sin_family = TYPE_EMPTY;

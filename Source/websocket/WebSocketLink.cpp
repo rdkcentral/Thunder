@@ -99,7 +99,7 @@ namespace Web {
                     uint8_t* destination = &dataFrame[usedSize - 1 + 4 + result];
                     uint32_t bytesToMove = usedSize;
 
-                    while (bytesToMove != 0) {
+                    while (bytesToMove > 0) {
                         bytesToMove--;
                         *destination-- = (*source ^ maskKey[(bytesToMove & 0x3)]);
                         source--;
@@ -290,7 +290,7 @@ namespace Web {
 
                                 uint8_t* source = &dataFrame[actualHeader];
 
-                                while (bytesToMove != 0) {
+                                while (bytesToMove > 0) {
                                     *source = (*source ^ _scrambleKey[(_progressInfo & 0x3)]);
                                     source++;
                                     bytesToMove--;

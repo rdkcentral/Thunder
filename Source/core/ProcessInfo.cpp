@@ -83,6 +83,8 @@ namespace Core {
 
         if (maxLength > 0) {
             char procpath[48];
+
+            // %u syntactically prevents path traversal
             snprintf(procpath, sizeof(procpath), "/proc/%u/exe", pid);
             ssize_t length = readlink(procpath, buffer, maxLength - 1);
 
@@ -91,6 +93,7 @@ namespace Core {
             } else {
                 int fd;
 
+                // %u syntactically prevents path traversal
                 snprintf(procpath, sizeof(procpath), "/proc/%u/comm", pid);
 
                 if ((fd = open(procpath, O_RDONLY)) != -1) {

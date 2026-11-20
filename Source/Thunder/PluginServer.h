@@ -666,6 +666,7 @@ namespace PluginHost {
                     if (bitNr >= ISubSystem::NEGATIVE_START) {
                         // Its a NOT value, so this bit should *not* be set and this 0
                         bitNr -= ISubSystem::NEGATIVE_START;
+                        ASSERT(bitNr < 256);
 
                         ASSERT_VERBOSE(((_state & 0x1) == state::STATE_OR), "Must not use NOT_ in preconditions (subsystem 0x%08x)", input);
 
@@ -676,6 +677,7 @@ namespace PluginHost {
                     }
                     else {
                         ASSERT_VERBOSE(((_state & 0x1) == state::STATE_AND), "Must only use NOT_ in terminations (subsystem 0x%08x)", input);
+                        ASSERT(bitNr < 256);
 
                         // Make sure the event is only set once (POSITIVE or NEGATIVE)
                         if ((((_mask & (1u << bitNr)) != 0) && ((_events & (1u << bitNr)) == 0)) || ((_state & 0x1) != state::STATE_AND)) {
@@ -4421,6 +4423,7 @@ namespace PluginHost {
                         }
                         else {
                             result = *index;
+                            ASSERT(result != nullptr);
                             _channelObservers.erase(index);
                         }
                     }
@@ -4438,6 +4441,7 @@ namespace PluginHost {
                         }
                         else {
                             result = *index;
+                            ASSERT(result != nullptr);
                             _shellObservers.erase(index);
                         }
                     }
