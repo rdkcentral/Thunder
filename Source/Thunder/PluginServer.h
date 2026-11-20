@@ -4421,6 +4421,7 @@ namespace PluginHost {
                         }
                         else {
                             result = *index;
+                            ASSERT(result != nullptr);
                             _channelObservers.erase(index);
                         }
                     }
@@ -4438,6 +4439,7 @@ namespace PluginHost {
                         }
                         else {
                             result = *index;
+                            ASSERT(result != nullptr);
                             _shellObservers.erase(index);
                         }
                     }
