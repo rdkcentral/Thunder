@@ -1686,6 +1686,8 @@ TEST(test_socketport, open_tcp_ipv4_refused_connection_returns_error)
         EXPECT_TRUE(probe.IsClosed());
         EXPECT_TRUE(probe.SuspendedSeen());
 
+        EXPECT_EQ(probe.Close(2000), ::Thunder::Core::ERROR_NONE);
+
         ::close(peer);
         ::Thunder::Core::Singleton::Dispose();
     }
