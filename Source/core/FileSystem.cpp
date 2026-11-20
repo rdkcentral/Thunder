@@ -175,6 +175,10 @@ namespace Core {
                     if (allowDirs == false) {
                         result.clear();
                     }
+                    else if ((inScopeOnly == true) && (result == "..")) {
+                        // going out of scope is not allowed
+                        result.clear();
+                    }
                     else if ((result.length() >= 2) && (result[result.length() - 2] == '/')) {
                         // Ends with /.
                         result.erase(result.length() - 1, 1);

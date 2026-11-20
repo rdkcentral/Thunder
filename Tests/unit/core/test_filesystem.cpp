@@ -262,6 +262,9 @@ namespace Core {
         EXPECT_EQ(::Thunder::Core::File::Normalize(".////../secret.txt", true), "");
         EXPECT_EQ(::Thunder::Core::Directory::Normalize("./../", true), "");
         EXPECT_EQ(::Thunder::Core::Directory::Normalize("././..", true), "");
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("..", true), "");
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize(".////..", true), "");
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("././..", false), "../");
         EXPECT_EQ(::Thunder::Core::File::Normalize("./../foo", true), "");
         EXPECT_EQ(::Thunder::Core::File::Normalize("../foo", true), "");
         EXPECT_EQ(::Thunder::Core::File::Normalize("../../foo", true), "");
