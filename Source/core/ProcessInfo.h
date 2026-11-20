@@ -291,8 +291,6 @@ namespace Core {
         }
         inline void OOMAdjust(const int8_t adjust)
         {
-            ASSERT(adjust >= -17 && adjust <= 15);
-
             int8_t normalized = (adjust < -17 ? -17 : (adjust > 15 ? 15 : adjust));
 
 #ifndef __WINDOWS__
