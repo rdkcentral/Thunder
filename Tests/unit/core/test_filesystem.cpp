@@ -135,6 +135,7 @@ namespace Core {
         EXPECT_EQ(::Thunder::Core::Directory::Normalize("././././././././"), "./");
         EXPECT_EQ(::Thunder::Core::Directory::Normalize("./././././././."), "./");
         EXPECT_EQ(::Thunder::Core::Directory::Normalize(".////"), "./");
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize(".////foo"), "foo/");
 
         EXPECT_EQ(::Thunder::Core::Directory::Normalize(".."), "../");
         EXPECT_EQ(::Thunder::Core::Directory::Normalize("../"), "../");
@@ -205,7 +206,10 @@ namespace Core {
     TEST (test_file, file_normalize_path)
     {
         EXPECT_EQ(::Thunder::Core::File::Normalize("./foo"), "foo");
+        EXPECT_EQ(::Thunder::Core::File::Normalize(".////foo"), "foo");
+        EXPECT_EQ(::Thunder::Core::File::Normalize(".////"), "");
         EXPECT_EQ(::Thunder::Core::File::Normalize("./../foo"), "../foo");
+        EXPECT_EQ(::Thunder::Core::File::Normalize(".////../secret.txt"), "../secret.txt");
         EXPECT_EQ(::Thunder::Core::File::Normalize("foo///bar"), "foo/bar");
         EXPECT_EQ(::Thunder::Core::File::Normalize("/foo///bar"), "/foo/bar");
         EXPECT_EQ(::Thunder::Core::File::Normalize("foo/../bar"), "bar");
@@ -253,6 +257,11 @@ namespace Core {
         EXPECT_EQ(::Thunder::Core::File::Normalize("foo/bar///../..", true), "");
 
         // Negative test cases, all fail because they point past current dir
+        EXPECT_EQ(::Thunder::Core::File::Normalize("./../secret.txt", true), "");
+        EXPECT_EQ(::Thunder::Core::File::Normalize("././../secret.txt", true), "");
+        EXPECT_EQ(::Thunder::Core::File::Normalize(".////../secret.txt", true), "");
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("./../", true), "");
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("././..", true), "");
         EXPECT_EQ(::Thunder::Core::File::Normalize("./../foo", true), "");
         EXPECT_EQ(::Thunder::Core::File::Normalize("../foo", true), "");
         EXPECT_EQ(::Thunder::Core::File::Normalize("../../foo", true), "");

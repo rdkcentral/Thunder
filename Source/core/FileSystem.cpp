@@ -44,7 +44,7 @@ namespace Core {
     {
         LoadFileInfo();
     }
-    File::File(const File& copy)f
+    File::File(const File& copy)
         : _name(copy._name)
         , _size(copy._size)
         , _attributes(copy._attributes)
