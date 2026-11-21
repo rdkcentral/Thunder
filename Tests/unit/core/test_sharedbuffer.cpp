@@ -27,6 +27,14 @@
 
 #include "../IPTestAdministrator.h"
 
+#ifdef __POSIX__
+#include <fcntl.h>
+#include <grp.h>
+#include <pwd.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#endif
+
 namespace Thunder {
 namespace Tests {
 namespace Core {
@@ -186,6 +194,167 @@ namespace Core {
 
         ::Thunder::Core::Singleton::Dispose();
     }
+
+#ifdef __POSIX__
+    TEST(Core_SharedBuffer, RejectsSymlinkedAdministrationFile)
+    {
+        char directoryTemplate[] = "/tmp/thunder-sharedbuffer-admin-XXXXXX";
+        char* directory = ::mkdtemp(directoryTemplate);
+        ASSERT_TRUE(directory != nullptr);
+
+        const std::string bufferName = std::string(directory) + "/buffer";
+        const std::string administrationName = bufferName + ".admin";
+        const std::string targetName = std::string(directory) + "/target";
+        constexpr char targetContents[] = "protected";
+        constexpr uint32_t mode = ::Thunder::Core::File::USER_READ | ::Thunder::Core::File::USER_WRITE;
+
+        int target = ::open(targetName.c_str(), O_CREAT | O_WRONLY | O_TRUNC, 0600);
+        ASSERT_TRUE(target >= 0);
+        ASSERT_EQ(::write(target, targetContents, sizeof(targetContents) - 1), static_cast<ssize_t>(sizeof(targetContents) - 1));
+        ASSERT_EQ(::close(target), 0);
+        ASSERT_EQ(::symlink(targetName.c_str(), administrationName.c_str()), 0);
+
+        {
+            ::Thunder::Core::SharedBuffer buffer(bufferName.c_str(), mode, 4096, 64);
+
+            EXPECT_FALSE(buffer.IsValid());
+            EXPECT_EQ(buffer.RequestProduce(0), ::Thunder::Core::ERROR_UNAVAILABLE);
+            EXPECT_EQ(buffer.Produced(), ::Thunder::Core::ERROR_UNAVAILABLE);
+            EXPECT_EQ(buffer.RequestConsume(0), ::Thunder::Core::ERROR_UNAVAILABLE);
+            EXPECT_EQ(buffer.Consumed(), ::Thunder::Core::ERROR_UNAVAILABLE);
+            EXPECT_FALSE(buffer.Load());
+        }
+
+        struct stat targetStatus;
+        ASSERT_EQ(::stat(targetName.c_str(), &targetStatus), 0);
+        EXPECT_EQ(targetStatus.st_mode & 0777, 0600);
+
+        char contents[sizeof(targetContents)] = {};
+        target = ::open(targetName.c_str(), O_RDONLY);
+        ASSERT_TRUE(target >= 0);
+        ASSERT_EQ(::read(target, contents, sizeof(contents)), static_cast<ssize_t>(sizeof(targetContents) - 1));
+        ASSERT_EQ(::close(target), 0);
+        EXPECT_EQ(std::string(contents), targetContents);
+
+        EXPECT_EQ(::unlink(bufferName.c_str()), 0);
+        EXPECT_EQ(::unlink(administrationName.c_str()), 0);
+        EXPECT_EQ(::unlink(targetName.c_str()), 0);
+        EXPECT_EQ(::rmdir(directory), 0);
+    }
+
+    TEST(Core_SharedBuffer, PayloadSymlinkKeepsLegacyBehavior)
+    {
+        char directoryTemplate[] = "/tmp/thunder-sharedbuffer-payload-XXXXXX";
+        char* directory = ::mkdtemp(directoryTemplate);
+        ASSERT_TRUE(directory != nullptr);
+
+        const std::string bufferName = std::string(directory) + "/buffer";
+        const std::string administrationName = bufferName + ".admin";
+        const std::string targetName = std::string(directory) + "/target";
+        constexpr uint32_t mode = ::Thunder::Core::File::USER_READ | ::Thunder::Core::File::USER_WRITE;
+
+        int target = ::open(targetName.c_str(), O_CREAT | O_WRONLY | O_TRUNC, 0600);
+        ASSERT_TRUE(target >= 0);
+        ASSERT_EQ(::close(target), 0);
+        ASSERT_EQ(::symlink(targetName.c_str(), bufferName.c_str()), 0);
+
+        {
+            ::Thunder::Core::File file(bufferName);
+            EXPECT_TRUE(file.Create(mode));
+            file.Close();
+        }
+
+        {
+            ::Thunder::Core::SharedBuffer buffer(bufferName.c_str(), mode, 4096, 64);
+            EXPECT_TRUE(buffer.IsValid());
+            EXPECT_TRUE(buffer.Buffer() != nullptr);
+            EXPECT_EQ(buffer.Size(), 4096u);
+        }
+
+        struct stat targetStatus;
+        ASSERT_EQ(::stat(targetName.c_str(), &targetStatus), 0);
+        EXPECT_EQ(targetStatus.st_size, 4096);
+
+        EXPECT_EQ(::unlink(administrationName.c_str()), 0);
+        EXPECT_EQ(::unlink(bufferName.c_str()), 0);
+        EXPECT_EQ(::unlink(targetName.c_str()), 0);
+        EXPECT_EQ(::rmdir(directory), 0);
+    }
+
+    TEST(Core_SharedBuffer, OwnershipChangesUseOpenHandles)
+    {
+        char directoryTemplate[] = "/tmp/thunder-sharedbuffer-owner-XXXXXX";
+        char* directory = ::mkdtemp(directoryTemplate);
+        ASSERT_TRUE(directory != nullptr);
+
+        const std::string bufferName = std::string(directory) + "/buffer";
+        const std::string administrationName = bufferName + ".admin";
+        const std::string savedAdministrationName = administrationName + ".opened";
+        const std::string missingTargetName = std::string(directory) + "/missing";
+        constexpr uint32_t mode = ::Thunder::Core::File::USER_READ | ::Thunder::Core::File::USER_WRITE;
+
+        const struct group* currentGroup = ::getgrgid(::getgid());
+        ASSERT_TRUE(currentGroup != nullptr);
+        const std::string currentGroupName(currentGroup->gr_name);
+        const struct passwd* currentUser = ::getpwuid(::geteuid());
+        ASSERT_TRUE(currentUser != nullptr);
+        const std::string currentUserName(currentUser->pw_name);
+
+        {
+            ::Thunder::Core::SharedBuffer buffer(bufferName.c_str(), mode, 4096, 64);
+            ASSERT_TRUE(buffer.IsValid());
+
+            ASSERT_EQ(::rename(administrationName.c_str(), savedAdministrationName.c_str()), 0);
+            ASSERT_EQ(::symlink(missingTargetName.c_str(), administrationName.c_str()), 0);
+
+            EXPECT_EQ(buffer.Group(currentGroupName), ::Thunder::Core::ERROR_NONE);
+            EXPECT_EQ(buffer.User(currentUserName), ::Thunder::Core::ERROR_NONE);
+        }
+
+        EXPECT_EQ(::unlink(administrationName.c_str()), 0);
+        EXPECT_EQ(::unlink(savedAdministrationName.c_str()), 0);
+        EXPECT_EQ(::unlink(bufferName.c_str()), 0);
+        EXPECT_EQ(::rmdir(directory), 0);
+    }
+
+    TEST(Core_SharedBuffer, NoFollowMetadataUsesOpenHandle)
+    {
+        char directoryTemplate[] = "/tmp/thunder-nofollow-metadata-XXXXXX";
+        char* directory = ::mkdtemp(directoryTemplate);
+        ASSERT_TRUE(directory != nullptr);
+
+        const std::string fileName = std::string(directory) + "/opened";
+        const std::string savedName = fileName + ".saved";
+        const std::string replacementName = std::string(directory) + "/replacement";
+        constexpr char openedContents[] = "open";
+        constexpr char replacementContents[] = "replacement-is-larger";
+
+        int descriptor = ::open(fileName.c_str(), O_CREAT | O_WRONLY | O_TRUNC, 0600);
+        ASSERT_TRUE(descriptor >= 0);
+        ASSERT_EQ(::write(descriptor, openedContents, sizeof(openedContents) - 1), static_cast<ssize_t>(sizeof(openedContents) - 1));
+        ASSERT_EQ(::close(descriptor), 0);
+
+        descriptor = ::open(replacementName.c_str(), O_CREAT | O_WRONLY | O_TRUNC, 0600);
+        ASSERT_TRUE(descriptor >= 0);
+        ASSERT_EQ(::write(descriptor, replacementContents, sizeof(replacementContents) - 1), static_cast<ssize_t>(sizeof(replacementContents) - 1));
+        ASSERT_EQ(::close(descriptor), 0);
+
+        {
+            ::Thunder::Core::File file(fileName);
+            ASSERT_TRUE(file.Open(true, true));
+            ASSERT_EQ(::rename(fileName.c_str(), savedName.c_str()), 0);
+            ASSERT_EQ(::symlink(replacementName.c_str(), fileName.c_str()), 0);
+
+            EXPECT_EQ(file.SizeOnHandle(), sizeof(openedContents) - 1);
+        }
+
+        EXPECT_EQ(::unlink(fileName.c_str()), 0);
+        EXPECT_EQ(::unlink(savedName.c_str()), 0);
+        EXPECT_EQ(::unlink(replacementName.c_str()), 0);
+        EXPECT_EQ(::rmdir(directory), 0);
+    }
+
+#endif
 
 } // Core
 } // Tests

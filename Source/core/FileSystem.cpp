@@ -259,6 +259,16 @@ namespace Core {
 #endif
     }
 
+    uint64_t File::SizeOnHandle() const
+    {
+#ifdef __POSIX__
+        struct stat data;
+        return ((IsOpen() == true) && (fstat(_handle, &data) == 0) ? static_cast<uint64_t>(data.st_size) : 0);
+#else
+        return (Size());
+#endif
+    }
+
     uint32_t File::User(const string& userName) const
     {
         return AccessControl::OwnerShip(_name, userName, "");
@@ -269,9 +279,35 @@ namespace Core {
         return AccessControl::OwnerShip(_name, "", groupName);
     }
 
+    uint32_t File::OwnerShipOnHandle(const string& userName, const string& groupName) const
+    {
+#ifdef __POSIX__
+        uint32_t result = Core::ERROR_ILLEGAL_STATE;
+        if (IsOpen() == true) {
+            result = AccessControl::OwnerShip(_handle, userName, groupName);
+        }
+#else
+        uint32_t result = AccessControl::OwnerShip(_name, userName, groupName);
+#endif
+        return result;
+    }
+
     uint32_t File::Permission(uint16_t flags) const
     {
         return AccessControl::Permission(_name, flags);
+    }
+
+    uint32_t File::PermissionOnHandle(uint16_t flags) const
+    {
+#ifdef __POSIX__
+        uint32_t result = Core::ERROR_ILLEGAL_STATE;
+        if (IsOpen() == true) {
+            result = (::fchmod(_handle, flags) == 0 ? Core::ERROR_NONE : Core::ERROR_GENERAL);
+        }
+#else
+        uint32_t result = Permission(flags);
+#endif
+        return result;
     }
 
 
