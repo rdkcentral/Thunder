@@ -37,6 +37,7 @@ namespace TestCore {
             JSONRPCLink& operator=(const JSONRPCLink&) = delete;
 
             uint32_t Invoke(const string& method, const string& params, string& response);
+            uint32_t Invoke(const string& method, const string& params, const string& token, string& response);
             uint32_t Invoke(const string& method, const JsonObject& params, JsonObject& response);
             uint32_t Subscribe(const string& event, EventHandler handler, const string& index = string());
             uint32_t Unsubscribe(const string& event, const string& index = string());
@@ -82,10 +83,12 @@ namespace TestCore {
 
         uint32_t Initialize(const std::vector<PluginConfig>& plugins,
             const string& systemPath = "",
-            const string& proxyStubPath = "");
+            const string& proxyStubPath = "",
+            const uint16_t port = 0);
 
         Core::ProxyType<JSONRPCLink> CreateJSONRPCLink(const string& callsign);
         uint32_t Invoke(const string& method, const string& params, string& response);
+        uint32_t Invoke(const string& method, const string& params, const string& token, string& response);
         uint32_t Invoke(const string& method, const JsonObject& params, JsonObject& response);
 
         template <typename INTERFACE>
@@ -110,7 +113,8 @@ namespace TestCore {
     private:
         string BuildConfigJSON(const std::vector<PluginConfig>& plugins,
             const string& systemPath,
-            const string& proxyStubPath) const;
+            const string& proxyStubPath,
+            const uint16_t port) const;
         bool CreateDirectories() const;
         void CleanupDirectories() const;
 
