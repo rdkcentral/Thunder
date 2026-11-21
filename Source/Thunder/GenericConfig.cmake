@@ -56,6 +56,7 @@ set(UMASK "" CACHE STRING "Set the permission mask for the creation of new files
 set(COMMUNICATOR "" CACHE STRING "Define the ComRPC socket e.g. 127.0.0.1:62000 or /tmp/communicator|750")
 set(LOCATOR "/tmp/hibernator" CACHE STRING "Default hibernation service locator (e.g. /tmp/hibernator or 127.0.0.1:62000)")
 set(DISABLEPLUGINAUTOACTIVATION false CACHE STRING "Disable plugin auto activation (override plugin startmode)")
+set(DISCOVERY true CACHE STRING "Enable loading of the plugin metadata (discovery) on Thunder startup")
 set(AUTHORIZEDEXTENSIONS "*" CACHE STRING "List all authorized Thunder extensions, use * to allow all extensions, also determines order of Thunder extension activation/deactivation")
 
 
@@ -110,6 +111,9 @@ if(NOT COMMUNICATOR STREQUAL "")
 endif()
 if(DISABLEPLUGINAUTOACTIVATION)
     map_set(${CONFIG} disablepluginautoactivation true)
+endif()
+if(NOT DISCOVERY)
+    map_set(${CONFIG} discovery false)
 endif()
 list(LENGTH AUTHORIZEDEXTENSIONS AUTHORIZEDEXTENSIONS_LENGTH)
 if (AUTHORIZEDEXTENSIONS_LENGTH GREATER 0)

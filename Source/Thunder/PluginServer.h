@@ -716,6 +716,27 @@ namespace PluginHost {
                     , _versionHash() {
                 }
                 ~ControlData() = default;
+                ControlData& operator=(const Plugin::Config& config) {
+                    _precondition.clear();
+                    Core::JSON::ArrayType<Core::JSON::EnumType<Plugin::Configuration::subsystem>>::ConstIterator precondition(config.Precondition.Elements());
+                    while (precondition.Next() == true) {
+                        _precondition.emplace_back(static_cast<PluginHost::ISubSystem::subsystem>(precondition.Current().Value()));
+                    }
+
+                    _termination.clear();
+                    Core::JSON::ArrayType<Core::JSON::EnumType<Plugin::Configuration::subsystem>>::ConstIterator termination(config.Termination.Elements());
+                    while (termination.Next() == true) {
+                        _termination.emplace_back(static_cast<PluginHost::ISubSystem::subsystem>(termination.Current().Value()));
+                    }
+
+                    _control.clear();
+                    Core::JSON::ArrayType<Core::JSON::EnumType<Plugin::Configuration::subsystem>>::ConstIterator control(config.Control.Elements());
+                    while (control.Next() == true) {
+                        _control.emplace_back(static_cast<PluginHost::ISubSystem::subsystem>(control.Current().Value()));
+                    }
+
+                    return (*this);
+                }
 
                 ControlData& operator=(const Core::IService* info) {
                     if (info != nullptr) {
@@ -786,6 +807,28 @@ namespace PluginHost {
                 }
                 void Hash(const string& hash) {
                     _versionHash = hash;
+                }
+                string ToString() const {
+                    auto Subsystems = [](const std::vector<PluginHost::ISubSystem::subsystem>& list) {
+                        string text;
+                        for (const PluginHost::ISubSystem::subsystem& entry : list) {
+                            if (text.empty() == false) {
+                                text += _T(",");
+                            }
+                            text += Core::NumberType<uint32_t>(static_cast<uint32_t>(entry)).Text();
+                        }
+                        return (text);
+                    };
+
+                    return (Core::Format(_T("Version: %u.%u.%u, Module: %s, MaxRequests: %u, Extended: %s, Hash: %s, Precondition: [%s], Termination: [%s], Control: [%s]"),
+                        static_cast<uint32_t>(_major), static_cast<uint32_t>(_minor), static_cast<uint32_t>(_patch),
+                        _module.c_str(),
+                        static_cast<uint32_t>(_maxRequests),
+                        (_isExtended ? _T("true") : _T("false")),
+                        _versionHash.c_str(),
+                        Subsystems(_precondition).c_str(),
+                        Subsystems(_termination).c_str(),
+                        Subsystems(_control).c_str()));
                 }
 
             private:
@@ -1436,6 +1479,9 @@ namespace PluginHost {
                 return (_reason);
             }
 
+            void LoadMetadataFromConfig() {
+                _metadata = Configuration();
+            }
             void LoadMetadata() {
                 const string locator(PluginHost::Service::Configuration().Locator.Value());
                 if (locator.empty() == false) {
@@ -3661,7 +3707,7 @@ namespace PluginHost {
                     }
 
                     if (allowed == false) {
-                        SYSLOG(Logging::Error, (_T("Toggling a non-controlled state is not allowed")));
+                        SYSLOG(Logging::Error, (_T("Toggling a non-controlled state %s is not allowed by plugin: %s"), Core::EnumerateType<ISubSystem::subsystem>(type).Data(), _service->Callsign().c_str()));
                         ASSERT(false && "Toggiling a non-controlled subsystem is not allowed");
                     }
                     else {
