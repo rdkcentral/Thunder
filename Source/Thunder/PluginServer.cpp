@@ -1435,11 +1435,15 @@ namespace PluginHost {
         controller->SetServer(this, std::move(externallyControlled));
 
         if ((_services.SubSystemInfo().Value() & (1 << ISubSystem::SECURITY)) != 0) {
-            // The controller is in control of the security, so I guess all systems green
-            // as the controller does not know anything about security :-)
+            // A plugin has claimed the SECURITY subsystem — it will enforce
+            // authorization.  The default provider can step back.
             securityProvider->Security(false);
         } else {
-            SYSLOG(Logging::Startup, (_T("Security ENABLED, incoming requests need to be authorized!!!")));
+            // Security: When no plugin claims the SECURITY subsystem, keep the
+            // default security provider ACTIVE (secure-by-default).  Previously
+            // the absence of a SecurityAgent caused Security(false) to be
+            // called, leaving JSON-RPC/REST completely unauthenticated.
+            SYSLOG(Logging::Startup, (_T("WARNING: No SECURITY subsystem claimant — default security provider remains active (secure-by-default)")));
         }
 
         securityProvider->Release();
