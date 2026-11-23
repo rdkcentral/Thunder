@@ -102,25 +102,24 @@ namespace Core {
                         index--;
                     }
                     else if (result[index - 1] == '.') {
-                        if ((index == 1) || (result[index - 2] == '/')) {
-                            if (index == 1) {
-                                uint32_t next = 2;
-                                while ((next < result.length()) && ((result[next] == '/')
+                        if (index == 1) {
+                            uint32_t next = 2;
+                            while ((next < result.length()) && ((result[next] == '/')
 #ifdef __WINDOWS__
-                                    || (result[next] == '\\')
+                                || (result[next] == '\\')
 #endif
-                                    )) {
-                                    next++;
-                                }
-                                if (next < result.length()) {
-                                    result.erase(0, next);
-                                    index = 0;
-                                    continue;
-                                }
-                            } else {
-                                result.erase(index - 2, 2);
-                                index -= 2;
+                                )) {
+                                next++;
                             }
+                            if (next < result.length()) {
+                                result.erase(0, next);
+                                index = 0;
+                                continue;
+                            }
+                        }
+                        else if (result[index - 2] == '/') {
+                            result.erase(index - 2, 2);
+                            index -= 2;
                         }
                         else if ((result[index - 2] == '.') && ((index == 2) || (result[index - 3] == '/'))) {
                             if (index == 2) {
