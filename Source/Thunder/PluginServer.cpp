@@ -1225,7 +1225,6 @@ namespace PluginHost {
         , _security(_parent.Officer())
         , _service()
         , _requestClose(false)
-        , _accessControlOrigins()
         , _jobs()
         , _serviceCleanedUp(false)
     {

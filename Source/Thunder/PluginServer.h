@@ -4709,14 +4709,6 @@ namespace PluginHost {
                         channel->RequestClose();
                     }
                 }
-                void SetAccessControlOrigin(const uint32_t requestId, const string& origin)
-                {
-                    ASSERT(_server != nullptr);
-                    Core::ProxyType<Channel> channel(_server->Connection(_ID));
-                    if (channel.IsValid() == true) {
-                        channel->SetAccessControlOrigin(requestId, origin);
-                    }
-                }
                 string Callsign() const {
                     ASSERT(_service.IsValid() == true);
                     return _service->Callsign();
@@ -4756,14 +4748,12 @@ namespace PluginHost {
                 WebRequestJob()
                     : Job()
                     , _request()
-                    , _accessControlOrigin()
                     , _jsonrpc(false)
                 {
                 }
                 ~WebRequestJob() override
                 {
                     ASSERT(_request.IsValid() == false);
-                    ASSERT(_accessControlOrigin.empty() == true);
                 }
 
             public:
@@ -4830,10 +4820,6 @@ namespace PluginHost {
                         Job::Set(id, server, service);
 
                         _request = request;
-                        _accessControlOrigin.clear();
-                        if ((_request->Origin.IsSet() == true) && (IsLoopbackOrigin(_request->Origin.Value()) == true)) {
-                            _accessControlOrigin = _request->Origin.Value();
-                        }
                         _jsonrpc = JSONRPC;
                         _token = token;
                     }
@@ -4845,7 +4831,6 @@ namespace PluginHost {
                     ASSERT(Job::HasService() == true);
 
                     Core::ProxyType<Web::Response> response;
-                    Core::OptionalType<uint32_t> requestId;
 
                     if (_jsonrpc == false) {
                         response = Job::Process(_request);
@@ -4857,12 +4842,6 @@ namespace PluginHost {
                     }
                     else {
                         Core::ProxyType<Core::JSONRPC::Message> message(_request->Body< Core::JSONRPC::Message>());
-
-                        if (message->Id.IsSet() == true) {
-                            requestId = message->Id.Value();
-                            Job::SetAccessControlOrigin(requestId.Value(), _accessControlOrigin);
-                        }
-
                         Core::ProxyType<Core::JSONRPC::Message> body = Job::Process(_token, message);
 
                         // If we have no response body, it looks like an async-call...
@@ -4903,12 +4882,9 @@ namespace PluginHost {
                     if (response.IsValid() == true) {
                         // Seems we can handle..
                         if ((response->AccessControlOrigin.IsSet() == false) &&
-                            (_accessControlOrigin.empty() == false)) {
-                            response->AccessControlOrigin = _accessControlOrigin;
-                        }
-
-                        if (requestId.IsSet() == true) {
-                            Job::SetAccessControlOrigin(requestId.Value(), string());
+                            (_request.IsValid() == true) && (_request->Origin.IsSet() == true) &&
+                            (IsLoopbackOrigin(_request->Origin.Value()) == true)) {
+                            response->AccessControlOrigin = _request->Origin.Value();
                         }
 
                         if (response->CacheControl.IsSet() == false)
@@ -4923,7 +4899,6 @@ namespace PluginHost {
 
                     // We are done, clear all info
                     _request.Release();
-                    _accessControlOrigin.clear();
 
                     Job::Completed();
                 }
@@ -4942,7 +4917,6 @@ namespace PluginHost {
 
             private:
                 Core::ProxyType<Web::Request> _request;
-                string _accessControlOrigin;
                 string _token;
                 bool _jsonrpc;
 
@@ -5144,43 +5118,10 @@ namespace PluginHost {
             {
                 PluginHost::Channel::Submit(entry);
             }
-            void SetAccessControlOrigin(const uint32_t requestId, const string& origin)
-            {
-                PluginHost::Channel::Lock();
-                if (origin.empty() == false) {
-                    _accessControlOrigins[requestId] = origin;
-                }
-                else {
-                    _accessControlOrigins.erase(requestId);
-                }
-                PluginHost::Channel::Unlock();
-            }
-            string TakeAccessControlOrigin(const uint32_t requestId)
-            {
-                string result;
-
-                PluginHost::Channel::Lock();
-                std::map<uint32_t, string>::iterator index(_accessControlOrigins.find(requestId));
-                if (index != _accessControlOrigins.end()) {
-                    result = index->second;
-                    _accessControlOrigins.erase(index);
-                }
-                PluginHost::Channel::Unlock();
-
-                return (result);
-            }
             void Submit(const Core::ProxyType<Core::JSON::IElement>& entry)
             {
                 if (State() == Channel::ChannelState::WEB) {
                     Core::ProxyType<Web::Response> response = IFactories::Instance().Response();
-
-                    Core::ProxyType<Core::JSONRPC::Message> message(entry);
-                    if ((message.IsValid() == true) && (message->Id.IsSet() == true)) {
-                        const string accessControlOrigin(TakeAccessControlOrigin(message->Id.Value()));
-                        if (accessControlOrigin.empty() == false) {
-                            response->AccessControlOrigin = accessControlOrigin;
-                        }
-                    }
 
                     if (response->CacheControl.IsSet() == false)
                         response->CacheControl = _T("no-cache, private, no-store, must-revalidate, max-stale=0, post-check=0, pre-check=0");
@@ -5613,7 +5554,6 @@ namespace PluginHost {
             PluginHost::ISecurity* _security;
             Core::ProxyType<Service> _service;
             bool _requestClose;
-            std::map<uint32_t, string> _accessControlOrigins;
             Jobs _jobs;
             std::atomic<bool> _serviceCleanedUp;
 
