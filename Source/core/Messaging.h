@@ -41,6 +41,7 @@ namespace Core {
             BaseCategoryType(const string& formatter, Args... args)
                 : _text()
             {
+                // The formater string is trusted and does not come from user input.
                 Core::Format(_text, formatter.c_str(), args...);
             }
 

@@ -74,8 +74,11 @@ namespace Crypto {
             // We have a suitable key, move it to the inner and outer pads
             const uint16_t remainder = (sizeof(_innerKeyPad) - keyLength);
             if (remainder > 0) {
-                ::memset(&_innerKeyPad[keyLength], 0x36, remainder);
-                ::memset(&_outerKeyPad[keyLength], 0x5C, remainder);
+                // If remainder is non-zero, keyLength mathematically must be less than size of the key pad arrays.
+                ASSERT(keyLength < sizeof(_innerKeyPad));
+                ASSERT(keyLength < sizeof(_outerKeyPad));
+                ::memset(_innerKeyPad + keyLength, 0x36, remainder);
+                ::memset(_outerKeyPad + keyLength, 0x5C, remainder);
             }
 
             /* XOR key with inner keypad and outer key pad values */
