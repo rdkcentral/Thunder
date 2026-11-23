@@ -177,19 +177,6 @@ namespace ProxyStub {
         uint32_t ReferenceCount() const {
             return(_refCount);
         }
-        bool Invalidate() {
-            bool succeeded = false;
-            ASSERT(_refCount > 0);
-            _adminLock.Lock();
-            if (_channel.IsValid() == true) {
-                _refCount++;    // Take a reference on behalf of the _danglingProxies entry so the proxy is not
-                                // destroyed while still tracked; balanced by UnregisterUnknownProxy() -> Release().
-                _channel.Release();
-                succeeded = true;
-            }
-            _adminLock.Unlock();
-            return(succeeded);
-        }
         // -------------------------------------------------------------------------------------------------------------------------------
         // Proxy/Stub (both) environment calls
         // -------------------------------------------------------------------------------------------------------------------------------
@@ -308,10 +295,13 @@ namespace ProxyStub {
             else {
                 RPC::Data::Frame::Reader response(message->Response().Reader());
                 Core::instance_id impl = response.Number<Core::instance_id>();
+                _adminLock.Unlock();
+
+                // Lock order: the RPC::Administrator lock is always taken *before* the lock of a proxy, never the other way round.
+                // So, do not call the Administrator with the lock of this proxy held. The _channel is validated by the
+                // Administrator (under its lock), it is only reset by the Administrator, see Invalidate().
                 // From what is returned, we need to create a proxy
                 RPC::Administrator::Instance().ProxyInstance(_channel, impl, true, id, result);
-
-                _adminLock.Unlock();
             }
             return (result);
         }
@@ -319,22 +309,13 @@ namespace ProxyStub {
         {
             return (&_parent);
         }
-        uintptr_t LinkId() const
-        {
-            Core::SafeSyncType<Core::CriticalSection> lock(_adminLock);
-            return (_channel.IsValid() ? _channel->LinkId() : 0);
-        }
         const Core::SocketPort* Socket() const;
         void* Interface(const Core::instance_id& implementation, const uint32_t id) const
         {
             void* result = nullptr;
 
-            _adminLock.Lock();
-
-            if (_channel.IsValid() == true) {
-                RPC::Administrator::Instance().ProxyInstance(_channel, implementation, true, id, result);
-            }
-            _adminLock.Unlock();
+            // See RemoteInterface, no lock of this proxy is held when calling the Administrator.
+            RPC::Administrator::Instance().ProxyInstance(_channel, implementation, true, id, result);
 
             return (result);
         }
@@ -378,24 +359,20 @@ namespace ProxyStub {
             // This method is called from the stubs.
             uint32_t result = Core::ERROR_NONE;
 
-            _adminLock.Lock();
-
-            if (_channel.IsValid() == true) {
-                if (how == RPC::Data::Output::mode::CACHED_ADDREF) {
-                    // Just AddRef this implementation
-                    RPC::Administrator::Instance().AddRef(_channel, reinterpret_cast<void*>(impl), id);
-                }
-                else if (how == RPC::Data::Output::mode::CACHED_RELEASE) {
-                    // Just Release this implementation
-                    RPC::Administrator::Instance().Release(_channel, reinterpret_cast<void*>(impl), id, 1);
-                }
-                else {
-                    ASSERT(!"Invalid caching data");
-                    result = Core::ERROR_INVALID_RANGE;
-                }
+            // No lock of this proxy is held when calling the Administrator (see RemoteInterface). The Administrator
+            // validates the _channel under its own lock.
+            if (how == RPC::Data::Output::mode::CACHED_ADDREF) {
+                // Just AddRef this implementation
+                RPC::Administrator::Instance().AddRef(_channel, reinterpret_cast<void*>(impl), id);
             }
-
-            _adminLock.Unlock();
+            else if (how == RPC::Data::Output::mode::CACHED_RELEASE) {
+                // Just Release this implementation
+                RPC::Administrator::Instance().Release(_channel, reinterpret_cast<void*>(impl), id, 1);
+            }
+            else {
+                ASSERT(!"Invalid caching data");
+                result = Core::ERROR_INVALID_RANGE;
+            }
 
             return (result);
         }
@@ -406,17 +383,6 @@ namespace ProxyStub {
         // This method should only be called from the administrator from stub implementation methods
         // It should be called through the Administrator::Release(ProxyStub*, Message::Response) !!
 	    // Concurrent access trhough this code is prevented by the CriticalSection in the Administrator
-        template <typename ACTUAL_INTERFACE>
-        inline ACTUAL_INTERFACE* QueryInterface() const
-        {
-            return (reinterpret_cast<ACTUAL_INTERFACE*>(QueryInterface(ACTUAL_INTERFACE::ID)));
-        }
-        inline void* QueryInterface(const uint32_t id) const
-        {
-            ASSERT (_interfaceId == id);
-
-            return (_parent.QueryInterface(id));
-        }
         inline void Complete(RPC::Data::Output& response)
         {
             uint32_t result = Release();
@@ -474,6 +440,48 @@ namespace ProxyStub {
             if (result == Core::ERROR_DESTRUCTION_SUCCEEDED) {
                 delete &_parent;
             }
+        }
+
+    private:
+        // These are for the RPC::Administrator only. The Administrator calls them while holding its own lock.
+        //
+        // Lock order: the RPC::Administrator lock is *always* taken before the lock of a proxy (_adminLock) and the
+        // proxy never calls into the RPC::Administrator with its own lock held. The only member that is fluctuating
+        // and that is also used outside of the proxy lock is the _channel, and that one is only reset by Invalidate().
+        // Invalidate() is only called from the Administrator, under the Administrator lock, so using/checking the
+        // _channel from within the Administrator (like it does for the _channel passed in via ProxyInstance(), AddRef()
+        // or Release()) is safe.
+        friend class RPC::Administrator;
+
+        template <typename ACTUAL_INTERFACE>
+        inline ACTUAL_INTERFACE* QueryInterface() const
+        {
+            return (reinterpret_cast<ACTUAL_INTERFACE*>(QueryInterface(ACTUAL_INTERFACE::ID)));
+        }
+        inline void* QueryInterface(const uint32_t id) const
+        {
+            ASSERT (_interfaceId == id);
+
+            return (_parent.QueryInterface(id));
+        }
+        // The Administrator uses this to identify to what link this proxy belongs. It is always called within the lock
+        // of the RPC::Administrator.
+        uintptr_t LinkId() const
+        {
+            return (_channel.IsValid() ? _channel->LinkId() : 0);
+        }
+        bool Invalidate() {
+            bool succeeded = false;
+            ASSERT(_refCount > 0);
+            _adminLock.Lock();
+            if (_channel.IsValid() == true) {
+                _refCount++;    // Take a reference on behalf of the _danglingProxies entry so the proxy is not
+                                // destroyed while still tracked; balanced by UnregisterUnknownProxy() -> Release().
+                _channel.Release();
+                succeeded = true;
+            }
+            _adminLock.Unlock();
+            return(succeeded);
         }
 
     private:

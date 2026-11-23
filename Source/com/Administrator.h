@@ -104,9 +104,6 @@ namespace RPC {
             uint32_t _referenceCount;
         };
 
-        using ChannelMap = std::unordered_map<uintptr_t, Proxies>;
-        using ReferenceMap = std::unordered_map<uintptr_t, std::list< RecoverySet > >;
-
         struct EXTERNAL IMetadata {
             virtual ~IMetadata() = default;
 
@@ -129,6 +126,12 @@ namespace RPC {
                 return (new PROXY(channel, implementation, remoteRefCounted))->Administration();
             }
         };
+
+    public:
+        using ChannelMap = std::unordered_map<uintptr_t, Proxies>;
+        using ReferenceMap = std::unordered_map<uintptr_t, std::list< RecoverySet > >;
+        using Stubs = std::unordered_map<uint32_t, ProxyStub::UnknownStub*>;
+        using Factories = std::unordered_map<uint32_t, IMetadata*>;
 
     public:
         Administrator(Administrator&&) = delete;
@@ -187,7 +190,7 @@ namespace RPC {
         {
             _adminLock.Lock();
 
-            std::map<uint32_t, ProxyStub::UnknownStub*>::iterator stub(_stubs.find(ACTUALINTERFACE::ID));
+            Stubs::iterator stub(_stubs.find(ACTUALINTERFACE::ID));
             if (stub != _stubs.end()) {
                 delete stub->second;
                 _stubs.erase(ACTUALINTERFACE::ID);
@@ -195,7 +198,7 @@ namespace RPC {
                 TRACE_L1("Failed to find a Stub for %d.", ACTUALINTERFACE::ID);
             }
 
-            std::map<uint32_t, IMetadata*>::iterator proxy(_proxy.find(ACTUALINTERFACE::ID));
+            Factories::iterator proxy(_proxy.find(ACTUALINTERFACE::ID));
             if (proxy != _proxy.end()) {
                 delete proxy->second;
                 _proxy.erase(ACTUALINTERFACE::ID);
@@ -237,8 +240,10 @@ namespace RPC {
         // ----------------------------------------------------------------------------------------------------
         // Methods for the Proxy Environment
         // ----------------------------------------------------------------------------------------------------
-        void AddRef(Core::ProxyType<Core::IPCChannel>& channel, void* impl, const uint32_t interfaceId);
-        void Release(Core::ProxyType<Core::IPCChannel>& channel, void* impl, const uint32_t interfaceId, const uint32_t dropCount);
+        // Both are called with a channel that is expected to be valid (a proxy passes its _channel, that is reset by the
+        // Administrator, in DeleteChannel, under the Administrator lock). The validity is checked under the Administrator lock.
+        void AddRef(const Core::ProxyType<Core::IPCChannel>& channel, void* impl, const uint32_t interfaceId);
+        void Release(const Core::ProxyType<Core::IPCChannel>& channel, void* impl, const uint32_t interfaceId, const uint32_t dropCount);
 
         // ----------------------------------------------------------------------------------------------------
         // Methods for the Stub Environment
@@ -257,37 +262,25 @@ namespace RPC {
         }
         void RegisterInterface(Core::ProxyType<Core::IPCChannel>& channel, const void* source, const uint32_t id)
         {
-            RegisterUnknownInterface(channel, Convert(const_cast<void*>(source), id), id);
-        }
+            Core::IUnknown* converted = Convert(const_cast<void*>(source), id);
 
-        void UnregisterInterface(Core::ProxyType<Core::IPCChannel>& channel, const Core::IUnknown* source, const uint32_t interfaceId, const uint32_t dropCount)
+            if (converted != nullptr) {
+                _adminLock.Lock();
+                if (channel.IsValid() == true) {
+                    RegisterUnknown(channel, converted, id);
+                }
+                _adminLock.Unlock();
+            }
+            else {
+                TRACE_L1("Failed to find a Stub for interface 0x%08x!", id);
+            }
+        }
+        void UnregisterInterface(const Core::ProxyType<Core::IPCChannel>& channel, const Core::IUnknown* source, const uint32_t interfaceId, const uint32_t dropCount)
         {
             _adminLock.Lock();
 
-            ReferenceMap::iterator index(_channelReferenceMap.find(channel->LinkId()));
-
-            if (index != _channelReferenceMap.end()) {
-                std::list< RecoverySet >::iterator element(index->second.begin());
-
-                while ( (element != index->second.end()) && ((element->Id() != interfaceId) || (element->Unknown() != source)) ) {
-                    element++;
-                }
-
-                ASSERT(element != index->second.end());
-
-                if (element != index->second.end()) {
-                    if (element->Decrement(dropCount) == false) {
-                        index->second.erase(element);
-                        if (index->second.size() == 0) {
-                            _channelReferenceMap.erase(index);
-                            TRACE_L3("Unregistered interface %p(%u).", source, interfaceId);
-                        }
-                    }
-                } else {
-                    printf("====> Unregistering an interface [0x%x, %d] which has not been registered!!!\n", interfaceId, Core::ProcessInfo().Id());
-                }
-            } else {
-                printf("====> Unregistering an interface [0x%x, %d] from a non-existing channel!!!\n", interfaceId, Core::ProcessInfo().Id());
+            if (channel.IsValid() == true) {
+                UnregisterUnknown(channel, source, interfaceId, dropCount);
             }
 
             _adminLock.Unlock();
@@ -300,13 +293,15 @@ namespace RPC {
         // ----------------------------------------------------------------------------------------------------
         Core::IUnknown* Convert(void* rawImplementation, const uint32_t id);
         const Core::IUnknown* Convert(void* rawImplementation, const uint32_t id) const;
-        void RegisterUnknownInterface(Core::ProxyType<Core::IPCChannel>& channel, Core::IUnknown* source, const uint32_t id);
+        // Both are to be called with the Administrator lock held and with a valid channel.
+        void RegisterUnknown(const Core::ProxyType<Core::IPCChannel>& channel, Core::IUnknown* source, const uint32_t id);
+        void UnregisterUnknown(const Core::ProxyType<Core::IPCChannel>& channel, const Core::IUnknown* source, const uint32_t interfaceId, const uint32_t dropCount);
 
     private:
         // Seems like we have enough information, open up the Process communcication Channel.
         mutable Core::CriticalSection _adminLock;
-        std::map<uint32_t, ProxyStub::UnknownStub*> _stubs;
-        std::map<uint32_t, IMetadata*> _proxy;
+        Stubs _stubs;
+        Factories _proxy;
         Core::ProxyPoolType<InvokeMessage> _factory;
         ChannelMap _channelProxyMap;
         ReferenceMap _channelReferenceMap;
