@@ -3,6 +3,8 @@
 #include <core/core.h>
 #include <messaging/messaging.h>
 
+MODULE_NAME_DECLARATION(BUILD_REFERENCE)
+
 namespace WPEFramework {
 namespace Tests {
 namespace Messaging {
@@ -21,12 +23,15 @@ namespace Messaging {
                 }
             }
 
-            void Open()
+            void Open(const bool externalReporting = false)
             {
                 ::WPEFramework::Messaging::MessageUnit::Settings::Config configuration;
                 configuration.Path = _T("ExternalOutputTests");
                 configuration.Out = false;
                 configuration.Error = false;
+                if (externalReporting == true) {
+                    configuration.Reporting.Output = OutputMode::EXTERNAL_DIRECT;
+                }
 
                 ASSERT_EQ(Core::ERROR_NONE, ::WPEFramework::Messaging::MessageUnit::Instance().Open(
                     _T("/tmp/"), configuration, false, ::WPEFramework::Messaging::MessageUnit::OFF));
@@ -41,6 +46,34 @@ namespace Messaging {
         private:
             bool _opened { false };
         };
+
+#if defined(__CORE_WARNING_REPORTING__) && !defined(__CORE_SLIM_WARNING_REPORTING__)
+        TEST_F(ExternalOutputTest, RoutesLockWarningsExternallyWithoutRecursing)
+        {
+            ASSERT_NO_FATAL_FAILURE(Open(true));
+
+            const OutputTargets targets = Targets(
+                Metadata(Metadata::type::REPORTING, _T("TooLongWaitingForLock"), Core::Messaging::MODULE_REPORTING), OutputMode::EXTERNAL_DIRECT, false);
+
+            EXPECT_TRUE(targets.external);
+
+            Core::CriticalSection lock;
+            lock.Lock();
+            lock.Unlock();
+
+            class ResetReportingRouting : public Core::Messaging::IControl::IHandler {
+            public:
+                void Handle(Core::Messaging::IControl* control) override
+                {
+                    if (control->Metadata().Type() == Metadata::type::REPORTING) {
+                        control->Routing(OutputMode::HANDLER);
+                    }
+                }
+            } resetReportingRouting;
+
+            Core::Messaging::IControl::Iterate(resetReportingRouting);
+        }
+#endif
 
         TEST_F(ExternalOutputTest, RoutesHandlerAndDirectWithoutExternalOutput)
         {
