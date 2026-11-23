@@ -98,7 +98,8 @@ namespace Core {
                     ::memcpy(&buffer[SystemPrefixLength], DeviceId, KeyLength - SystemPrefixLength);
                 } else {
                     if (KeyLength > (DeviceIdLength + SystemPrefixLength)) {
-                        ::memset(&buffer[SystemPrefixLength], '0', KeyLength - (DeviceIdLength + SystemPrefixLength));
+                        // Fill the remaining space with char '0'
+                        ::memset(&buffer[SystemPrefixLength], 0x30, KeyLength - (DeviceIdLength + SystemPrefixLength));
                     }
 
                     ::memcpy(&buffer[SystemPrefixLength + (KeyLength - (DeviceIdLength + SystemPrefixLength))],
