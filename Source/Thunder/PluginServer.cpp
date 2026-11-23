@@ -1284,83 +1284,92 @@ namespace PluginHost {
     /* static */ bool Server::IsLoopbackOrigin(const string& origin)
     {
         const size_t separator = origin.find(_T("://"));
-
-        if ((separator == string::npos) || (separator == 0)) {
-            return false;
-        }
-
-        const Core::TextFragment scheme(origin, 0, static_cast<uint32_t>(separator));
-        if ((scheme.EqualText(_T("http")) == false) && (scheme.EqualText(_T("https")) == false)) {
-            return false;
-        }
-
-        const size_t authorityStart = separator + 3;
-        if ((authorityStart == origin.length()) || (origin.find_first_of(_T("/?#"), authorityStart) != string::npos)) {
-            return false;
-        }
-
-        const string authority(origin, authorityStart);
-        if (authority.find(_T('@')) != string::npos) {
-            return false;
-        }
-
+        bool result = ((separator != string::npos) && (separator != 0));
+        string authority;
         string host;
         string port;
 
-        if (authority.front() == _T('[')) {
-            const size_t closingBracket = authority.find(_T(']'));
-            if (closingBracket == string::npos) {
-                return false;
-            }
+        if (result == true) {
+            const Core::TextFragment scheme(origin, 0, static_cast<uint32_t>(separator));
+            result = ((scheme.EqualText(_T("http")) == true) || (scheme.EqualText(_T("https")) == true));
+        }
 
-            host.assign(authority, 0, closingBracket + 1);
-            if ((closingBracket + 1) < authority.length()) {
-                if (authority[closingBracket + 1] != _T(':')) {
-                    return false;
-                }
-                port.assign(authority, closingBracket + 2, string::npos);
+        if (result == true) {
+            const size_t authorityStart = separator + 3;
+            result = ((authorityStart < origin.length()) && (origin.find_first_of(_T("/?#"), authorityStart) == string::npos));
+
+            if (result == true) {
+                authority.assign(origin, authorityStart, string::npos);
+                result = (authority.find(_T('@')) == string::npos);
             }
         }
-        else {
-            const size_t portSeparator = authority.find(_T(':'));
-            if (portSeparator == string::npos) {
-                host = authority;
+
+        if (result == true) {
+            if (authority.front() == _T('[')) {
+                const size_t closingBracket = authority.find(_T(']'));
+                result = (closingBracket != string::npos);
+
+                if (result == true) {
+                    host.assign(authority, 0, closingBracket + 1);
+
+                    if ((closingBracket + 1) < authority.length()) {
+                        result = (authority[closingBracket + 1] == _T(':'));
+
+                        if (result == true) {
+                            port.assign(authority, closingBracket + 2, string::npos);
+                        }
+                    }
+                }
             }
             else {
-                if (authority.find(_T(':'), portSeparator + 1) != string::npos) {
-                    return false;
+                const size_t portSeparator = authority.find(_T(':'));
+
+                if (portSeparator == string::npos) {
+                    host = authority;
                 }
-                host.assign(authority, 0, portSeparator);
-                port.assign(authority, portSeparator + 1, string::npos);
-            }
-        }
+                else {
+                    result = (authority.find(_T(':'), portSeparator + 1) == string::npos);
 
-        const Core::TextFragment hostname(host);
-        if ((hostname.EqualText(_T("localhost")) == false) &&
-            (hostname.EqualText(_T("127.0.0.1")) == false) &&
-            (hostname.EqualText(_T("[::1]")) == false)) {
-            return false;
-        }
-
-        if (port.empty() == false) {
-            uint32_t value = 0;
-            for (const TCHAR digit : port) {
-                if ((digit < _T('0')) || (digit > _T('9')) ||
-                    (value > 6553) || ((value == 6553) && (digit > _T('5')))) {
-                    return false;
+                    if (result == true) {
+                        host.assign(authority, 0, portSeparator);
+                        port.assign(authority, portSeparator + 1, string::npos);
+                    }
                 }
-                value = (value * 10) + static_cast<uint32_t>(digit - _T('0'));
-            }
-
-            if (value == 0) {
-                return false;
             }
         }
-        else if (authority.back() == _T(':')) {
-            return false;
+
+        if (result == true) {
+            const Core::TextFragment hostname(host);
+            result = ((hostname.EqualText(_T("localhost")) == true) ||
+                (hostname.EqualText(_T("127.0.0.1")) == true) ||
+                (hostname.EqualText(_T("[::1]")) == true));
         }
 
-        return true;
+        if (result == true) {
+            if (port.empty() == false) {
+                uint32_t value = 0;
+                string::const_iterator index(port.cbegin());
+
+                while ((index != port.cend()) && (result == true)) {
+                    const TCHAR digit = *index;
+                    result = ((digit >= _T('0')) && (digit <= _T('9')) &&
+                        (value <= 6553) && ((value != 6553) || (digit <= _T('5'))));
+
+                    if (result == true) {
+                        value = (value * 10) + static_cast<uint32_t>(digit - _T('0'));
+                    }
+
+                    ++index;
+                }
+
+                result = ((result == true) && (value != 0));
+            }
+            else {
+                result = (authority.back() != _T(':'));
+            }
+        }
+
+        return (result);
     }
 
     PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
