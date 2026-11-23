@@ -278,7 +278,7 @@ ENUM_CONVERSION_END(WPEFramework::Core::Messaging::OutputMode)
         {
             bool enabled = false;
 
-            _adminLock.Lock();
+            _adminLock.RawLock();
             if (_externalInitialized == true) {
                 const string& module = metadata.Module();
                 const ThunderMessageType type = ExternalType(metadata);

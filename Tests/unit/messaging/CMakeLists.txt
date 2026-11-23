@@ -3,6 +3,9 @@ set(TEST_RUNNER_NAME "WPEFramework_test_messaging_external_output")
 add_executable(${TEST_RUNNER_NAME}
     test_external_output.cpp)
 
+target_compile_definitions(${TEST_RUNNER_NAME}
+    PRIVATE MODULE_NAME=TestMessagingExternalOutput)
+
 target_link_libraries(${TEST_RUNNER_NAME}
     ${GTEST_LIBRARY}
     ${GTEST_MAIN_LIBRARY}
