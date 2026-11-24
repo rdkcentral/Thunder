@@ -98,8 +98,10 @@ namespace Core {
                     ::memcpy(&buffer[SystemPrefixLength], DeviceId, KeyLength - SystemPrefixLength);
                 } else {
                     if (KeyLength > (DeviceIdLength + SystemPrefixLength)) {
-                        // Fill the remaining space with char '0'
-                        ::memset(&buffer[SystemPrefixLength], 0x30, KeyLength - (DeviceIdLength + SystemPrefixLength));
+                        // Fill the remaining space with char '0' (not nul!)
+                        std::fill_n(&buffer[SystemPrefixLength],
+                            KeyLength - (DeviceIdLength + SystemPrefixLength),
+                            static_cast<TCHAR>('0'));
                     }
 
                     ::memcpy(&buffer[SystemPrefixLength + (KeyLength - (DeviceIdLength + SystemPrefixLength))],

@@ -141,6 +141,8 @@ namespace Core {
                             else {
                                 // Seems like we are moving up a directory... execute that on the result... if we can...
                                 // there is data we can drop, drop it, drop it till the '/' is found
+                                ASSERT(index >= 4);
+
                                 uint32_t offset = index - 4;
                                 while ((offset > 0) && (result[offset] != '/')) {
                                     offset--;

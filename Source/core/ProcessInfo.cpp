@@ -144,12 +144,15 @@ namespace Core {
                 if ('\0' == endptr[0]) {
                     // We have a valid PID, Find, the parent of this process..
                     TCHAR buffer[512];
-                    memset(buffer, 0, sizeof(buffer));
                     int fd;
 
                     snprintf(buffer, sizeof(buffer), "/proc/%d/stat", pid);
                     if ((fd = open(buffer, O_RDONLY)) != -1) {
-                        if (read(fd, buffer, sizeof(buffer) - sizeof(buffer[0])) > 0) {
+                        ssize_t readAmount = 0;
+                        if ((readAmount = ::read(fd, buffer, sizeof(buffer) - sizeof(buffer[0]))) > 0) {
+                            ssize_t nulIndex = std::min(readAmount, static_cast<ssize_t>(sizeof(buffer) - 1));
+                            buffer[nulIndex] = '\0';
+
                             int ppid = 0;
                             sscanf(buffer, "%*d (%*[^)]) %*c %d", &ppid);
 
