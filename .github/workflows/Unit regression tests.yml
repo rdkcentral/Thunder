@@ -5,7 +5,7 @@ permissions:
 
 on:
   workflow_dispatch:
-  push:
+  pull_request:
     branches: ["Development/CTestFiltering"]
 
 jobs:
