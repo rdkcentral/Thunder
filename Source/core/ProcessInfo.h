@@ -291,13 +291,17 @@ namespace Core {
         }
         inline void OOMAdjust(const int8_t adjust)
         {
+            int8_t normalized = (adjust < -17 ? -17 : (adjust > 15 ? 15 : adjust));
+
 #ifndef __WINDOWS__
             TCHAR buffer[128];
             snprintf(buffer, sizeof(buffer), "/proc/%d/oom_adj", _pid);
 
+            // fopen("w") passes 0666 under the hood, which only applies when creating new files.
+            // /proc/[pid]/oom_adj is an existing virtual procfs node whose permissions are fixed by the kernel.
             FILE* fp = fopen(buffer, _T("w"));
             if (fp) {
-                fprintf(fp, "%d", adjust);
+                fprintf(fp, "%d", normalized);
                 fclose(fp);
             }
 #endif

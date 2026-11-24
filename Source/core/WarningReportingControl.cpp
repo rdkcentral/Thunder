@@ -97,7 +97,7 @@ namespace WarningReporting {
     {
         OutputTargets result = { false, false, false };
 
-        _adminLock->Lock();
+        _adminLock->RawLock();
         if (_handler != nullptr) {
             result = _handler->Targets(category, routing, enabled);
         }
