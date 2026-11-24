@@ -58,6 +58,7 @@ add_library(${TARGET} SHARED
         Thread.cpp
         Time.cpp
         Trace.cpp
+        WatchDog.cpp
         WorkerPool.cpp
         XGetopt.cpp
         ResourceMonitor.cpp
@@ -144,6 +145,7 @@ set(PUBLIC_HEADERS
         TriState.h
         TypeTraits.h
         ValueRecorder.h
+        WatchDog.h
         XGetopt.h
         WorkerPool.h
         AssertionControl.h
@@ -197,6 +199,14 @@ endif()
 
 if(WARNING_REPORTING OR EXCEPTION_CATCHING)
     target_sources(${TARGET} PRIVATE CallsignTLS.cpp)
+endif()
+
+if(THUNDER_CORE_RESOURCE_MONITOR_WATCHDOG)
+    target_compile_definitions(${TARGET} PUBLIC THUNDER_CORE_RESOURCE_MONITOR_WATCHDOG)
+endif()
+
+if(THUNDER_CORE_WORKERPOOL_WATCHDOG)
+    target_compile_definitions(${TARGET} PUBLIC THUNDER_CORE_WORKERPOOL_WATCHDOG)
 endif()
 
 if(DEADLOCK_DETECTION)

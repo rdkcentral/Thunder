@@ -55,6 +55,10 @@ option(W3C_TRACE_CONTEXT_ENABLED
         "allow propagation of W3C trace context" OFF)
 option(CUSTOM_ERROR_CODES_ENABLED
         "enable custom error codes (obsolete)" OFF)
+option(THUNDER_CORE_RESOURCE_MONITOR_WATCHDOG
+    "Compile in watchdog supervision of the ResourceMonitor" ON)
+option(THUNDER_CORE_WORKERPOOL_WATCHDOG
+    "Compile in watchdog supervision of the WorkerPool" ON)
 
 set(WARNING_REPORTING_INVOKE_RPC_REPORT_BOUND 250 CACHE STRING "COM Invoke reporting threshold in milliseconds")
 set(WARNING_REPORTING_INVOKE_RPC_WARNING_BOUND 750 CACHE STRING "COM Invoke warning threshold in milliseconds")

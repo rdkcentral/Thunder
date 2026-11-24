@@ -97,6 +97,7 @@
 #include "TriState.h"
 #include "TypeTraits.h"
 #include "ValueRecorder.h"
+#include "WatchDog.h"
 #include "XGetopt.h"
 #include "WorkerPool.h"
 #include "AssertionControl.h"
