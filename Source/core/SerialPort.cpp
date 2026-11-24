@@ -846,15 +846,14 @@ void SerialPort::Read(const uint16_t readBytes)
                 }
 
                 if (_sendOffset < _sendBytes) {
-                    ssize_t sendSize;
-
-                    sendSize = ::write(_descriptor, reinterpret_cast<const char*>(&_sendBuffer[_sendOffset]),
-                        _sendBytes - _sendOffset);
+                    const size_t pending = _sendBytes - _sendOffset;
+                    ssize_t sendSize = ::write(_descriptor, reinterpret_cast<const char*>(&_sendBuffer[_sendOffset]), pending);
 
                     if (sendSize >= 0) {
-                        ASSERT(sendSize <= (_sendBytes - _sendOffset));
+                        ASSERT(static_cast<size_t>(sendSize) <= pending);
                         _sendOffset += static_cast<uint16_t>(sendSize);
-                    } else {
+                    }
+                    else {
                         uint32_t result = ERRORRESULT;
 
                         if ((result == ERROR_WOULDBLOCK) || (result == ERROR_AGAIN)) {
@@ -886,10 +885,11 @@ void SerialPort::Read(const uint16_t readBytes)
                 }
 
                 // Read the actual data from the port.
-                ssize_t size = ::read(_descriptor, reinterpret_cast<char*>(&_receiveBuffer[_readBytes]), _receiveBufferSize - _readBytes);
+                const size_t available = _receiveBufferSize - _readBytes;
+                ssize_t size = ::read(_descriptor, reinterpret_cast<char*>(&_receiveBuffer[_readBytes]), available);
 
                 if (size > 0) {
-                    ASSERT(size <= _receiveBufferSize - _readBytes);
+                    ASSERT(static_cast<size_t>(size) <= available);
                     _readBytes += static_cast<uint16_t>(size);
 
                     if (_readBytes != 0) {

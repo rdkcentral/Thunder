@@ -2572,11 +2572,11 @@ namespace Core {
 
                             // See if we can still add a character
                             if (_index == _maxLength) {
-                                uint16_t maxLength = (2 * _maxLength);
-                                uint8_t* newBuffer = reinterpret_cast<uint8_t*>(::realloc(_buffer, maxLength));
+                                uint16_t maxLen = (2 * _maxLength);
+                                uint8_t* newBuffer = reinterpret_cast<uint8_t*>(::realloc(_buffer, maxLen));
                                 if (newBuffer != nullptr) {
                                     _buffer = newBuffer;
-                                    _maxLength = maxLength;
+                                    _maxLength = maxLen;
                                 }
                             }
 
@@ -2609,11 +2609,11 @@ namespace Core {
                         if (((_state & SET) == SET) && ((_state & 0xF) != 0)) {
 
                             if (_index == _maxLength) {
-                                uint16_t maxLength = (_maxLength + 0xFF);
-                                uint8_t* newBuffer = reinterpret_cast<uint8_t*>(::realloc(_buffer, maxLength));
+                                uint16_t maxLen = (_maxLength + 0xFF);
+                                uint8_t* newBuffer = reinterpret_cast<uint8_t*>(::realloc(_buffer, maxLen));
                                 if (newBuffer != nullptr) {
                                     _buffer = newBuffer;
-                                    _maxLength = maxLength;
+                                    _maxLength = maxLen;
                                 }
                             }
                             if (_index < _maxLength) {

@@ -4806,9 +4806,9 @@ namespace PluginHost {
                                     message->Error.Text = _T("Incomplete JSON send");
                                 }
                                 else {
-                                    uint32_t id = message->Id.Value();
+                                    uint32_t id_ = message->Id.Value();
                                     message->Clear();
-                                    message->Id = id;
+                                    message->Id = id_;
                                     message->Error.Text = _T("Incomplete JSON send");
                                 }
 
