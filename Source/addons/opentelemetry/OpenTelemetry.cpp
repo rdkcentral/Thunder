@@ -107,7 +107,7 @@ ENUM_CONVERSION_BEGIN(Telemetry::OpenTelemetry::SamplerType)
 
 ENUM_CONVERSION_BEGIN(Telemetry::OpenTelemetry::ProcessorType)
 
-    { Telemetry::OpenTelemetry::ProcessorType::SYMCHRONOUS, _TXT("Synchronous") },
+    { Telemetry::OpenTelemetry::ProcessorType::SYNCHRONOUS, _TXT("Synchronous") },
     { Telemetry::OpenTelemetry::ProcessorType::BATCH, _TXT("Batch") },
 
 ENUM_CONVERSION_END(Telemetry::OpenTelemetry::ProcessorType )
@@ -224,7 +224,7 @@ void OpenTelemetry::Initialize()
 
         switch (_processortype)
         {
-            case ProcessorType::SYMCHRONOUS:
+            case ProcessorType::SYNCHRONOUS:
                 processor = sdktrace::SimpleSpanProcessorFactory::Create(std::move(exporter)); 
                 break;
             case ProcessorType::BATCH:
@@ -287,7 +287,7 @@ void OpenTelemetry::Initialize()
             }
 
             switch (_processortype) {
-            case ProcessorType::SYMCHRONOUS:
+            case ProcessorType::SYNCHRONOUS:
                 logprocessor = sdklogs::SimpleLogRecordProcessorFactory::Create(std::move(logexporter));
                 break;
             case ProcessorType::BATCH:
@@ -385,16 +385,20 @@ OpenTelemetry::Span::~Span()
 
 void OpenTelemetry::Span::End()
 {
-    Deactivate();
-    _span->End();
-    Core::JobContext::Instance().TraceContextW3C().ClearTraceContext();
-    if (_hadTraceParent == true) {
-        Core::JobContext::Instance().TraceContextW3C().TraceParent(std::move(_traceParent));
-        _hadTraceParent = false;
-    }
-    if (_hadTraceState == true) {
-        Core::JobContext::Instance().TraceContextW3C().TraceState(std::move(_traceState));
-        _hadTraceState = false;
+    // OpenTelemetry does not expose whether a span has ended, so track that state locally.
+    if(_hasEnded == false) {
+        Deactivate();
+        _span->End();
+        Core::JobContext::Instance().TraceContextW3C().ClearTraceContext();
+        if (_hadTraceParent == true) {
+            Core::JobContext::Instance().TraceContextW3C().TraceParent(std::move(_traceParent));
+            _hadTraceParent = false;
+        }
+        if (_hadTraceState == true) {
+            Core::JobContext::Instance().TraceContextW3C().TraceState(std::move(_traceState));
+            _hadTraceState = false;
+        }
+        _hasEnded = true;
     }
 }
 

@@ -135,6 +135,7 @@ namespace Core {
         EXPECT_EQ(::Thunder::Core::Directory::Normalize("././././././././"), "./");
         EXPECT_EQ(::Thunder::Core::Directory::Normalize("./././././././."), "./");
         EXPECT_EQ(::Thunder::Core::Directory::Normalize(".////"), "./");
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize(".////foo"), "foo/");
 
         EXPECT_EQ(::Thunder::Core::Directory::Normalize(".."), "../");
         EXPECT_EQ(::Thunder::Core::Directory::Normalize("../"), "../");
@@ -165,6 +166,13 @@ namespace Core {
         EXPECT_EQ(::Thunder::Core::Directory::Normalize("foo////bar////././././"), "foo/bar/");
         EXPECT_EQ(::Thunder::Core::Directory::Normalize("foo////bar////././././."), "foo/bar/");
         EXPECT_EQ(::Thunder::Core::Directory::Normalize("/foo////bar////././././."), "/foo/bar/");
+
+        // Dot-prefixed names are regular path segments and can be collapsed by ..
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize(".hidden/.."), "./");
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("..hidden/../directory"), "directory/");
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("/..hidden/.."), "/");
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("/...name/../"), "/");
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("a.b/.."), "./");
 
         // Cases where navigating upwards compacts completely
         EXPECT_EQ(::Thunder::Core::Directory::Normalize("foo/bar/../.."), "./");
@@ -198,7 +206,10 @@ namespace Core {
     TEST (test_file, file_normalize_path)
     {
         EXPECT_EQ(::Thunder::Core::File::Normalize("./foo"), "foo");
+        EXPECT_EQ(::Thunder::Core::File::Normalize(".////foo"), "foo");
+        EXPECT_EQ(::Thunder::Core::File::Normalize(".////"), "");
         EXPECT_EQ(::Thunder::Core::File::Normalize("./../foo"), "../foo");
+        EXPECT_EQ(::Thunder::Core::File::Normalize(".////../secret.txt"), "../secret.txt");
         EXPECT_EQ(::Thunder::Core::File::Normalize("foo///bar"), "foo/bar");
         EXPECT_EQ(::Thunder::Core::File::Normalize("/foo///bar"), "/foo/bar");
         EXPECT_EQ(::Thunder::Core::File::Normalize("foo/../bar"), "bar");
@@ -227,6 +238,11 @@ namespace Core {
         EXPECT_EQ(::Thunder::Core::File::Normalize("foo/../bar", true), "bar");
         EXPECT_EQ(::Thunder::Core::File::Normalize("/foo/../bar", true), "/bar");
         EXPECT_EQ(::Thunder::Core::File::Normalize("/foo/.././././bar", true), "/bar");
+        EXPECT_EQ(::Thunder::Core::File::Normalize(".hidden/../file", true), "file");
+        EXPECT_EQ(::Thunder::Core::File::Normalize("..hidden/../file", true), "file");
+        EXPECT_EQ(::Thunder::Core::File::Normalize("/..hidden/../file", true), "/file");
+        EXPECT_EQ(::Thunder::Core::File::Normalize("/...name/../file", true), "/file");
+        EXPECT_EQ(::Thunder::Core::File::Normalize("a.b/../file", true), "file");
 
         // Negative test cases, all fail because they point to a directory
         EXPECT_EQ(::Thunder::Core::File::Normalize("/", true), "");
@@ -241,6 +257,14 @@ namespace Core {
         EXPECT_EQ(::Thunder::Core::File::Normalize("foo/bar///../..", true), "");
 
         // Negative test cases, all fail because they point past current dir
+        EXPECT_EQ(::Thunder::Core::File::Normalize("./../secret.txt", true), "");
+        EXPECT_EQ(::Thunder::Core::File::Normalize("././../secret.txt", true), "");
+        EXPECT_EQ(::Thunder::Core::File::Normalize(".////../secret.txt", true), "");
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("./../", true), "");
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("././..", true), "");
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("..", true), "");
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize(".////..", true), "");
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("././..", false), "../");
         EXPECT_EQ(::Thunder::Core::File::Normalize("./../foo", true), "");
         EXPECT_EQ(::Thunder::Core::File::Normalize("../foo", true), "");
         EXPECT_EQ(::Thunder::Core::File::Normalize("../../foo", true), "");

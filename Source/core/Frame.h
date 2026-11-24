@@ -214,7 +214,7 @@ namespace Core {
 
                 buffer = &(_container->operator[](_offset));
 
-                return (length < Length() ? Length() : length);
+                return (length);
             }
             template <typename TYPENAME>
             TYPENAME LockBuffer(const uint8_t*& buffer) const

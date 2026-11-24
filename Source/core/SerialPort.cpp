@@ -846,13 +846,14 @@ void SerialPort::Read(const uint16_t readBytes)
                 }
 
                 if (_sendOffset < _sendBytes) {
-                    uint32_t sendSize;
+                    ssize_t sendSize;
 
-                    sendSize = write(_descriptor, reinterpret_cast<const char*>(&_sendBuffer[_sendOffset]),
+                    sendSize = ::write(_descriptor, reinterpret_cast<const char*>(&_sendBuffer[_sendOffset]),
                         _sendBytes - _sendOffset);
 
-                    if (sendSize != static_cast<uint32_t>(-1)) {
-                        _sendOffset += sendSize;
+                    if (sendSize >= 0) {
+                        ASSERT(sendSize <= (_sendBytes - _sendOffset));
+                        _sendOffset += static_cast<uint16_t>(sendSize);
                     } else {
                         uint32_t result = ERRORRESULT;
 
@@ -885,10 +886,11 @@ void SerialPort::Read(const uint16_t readBytes)
                 }
 
                 // Read the actual data from the port.
-                uint32_t size = ::read(_descriptor, reinterpret_cast<char*>(&_receiveBuffer[_readBytes]), _receiveBufferSize - _readBytes);
+                ssize_t size = ::read(_descriptor, reinterpret_cast<char*>(&_receiveBuffer[_readBytes]), _receiveBufferSize - _readBytes);
 
-                if ((size != static_cast<uint32_t>(~0)) && (size != 0)) {
-                    _readBytes += size;
+                if (size > 0) {
+                    ASSERT(size <= _receiveBufferSize - _readBytes);
+                    _readBytes += static_cast<uint16_t>(size);
 
                     if (_readBytes != 0) {
                         uint16_t handledBytes = ReceiveData(_receiveBuffer, _readBytes);

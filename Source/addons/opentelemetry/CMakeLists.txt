@@ -49,18 +49,12 @@ target_link_libraries(${TARGET}
         CompileSettings::CompileSettings
         CompileSettingsDebug::CompileSettingsDebug
         opentelemetry-cpp::ostream_span_exporter
-        opentelemetry-cpp::ostream_span_exporter_builder
         opentelemetry-cpp::ostream_log_record_exporter
         opentelemetry-cpp::otlp_http_exporter
-        opentelemetry-cpp::otlp_http_exporter_builder
         opentelemetry-cpp::otlp_http_log_record_exporter
-        opentelemetry-cpp::otlp_http_log_record_exporter_builder
         opentelemetry-cpp::otlp_http_metric_exporter
-        opentelemetry-cpp::otlp_http_metric_exporter_builder
         opentelemetry-cpp::ostream_metrics_exporter
-        opentelemetry-cpp::ostream_metrics_exporter_builder
         opentelemetry-cpp::http_client_curl
-        opentelemetry-cpp::http_client
 )
 
 set_target_properties(${TARGET} PROPERTIES
