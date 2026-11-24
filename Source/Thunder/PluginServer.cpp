@@ -817,6 +817,10 @@ namespace PluginHost {
                     }
 
                     Lock();
+#else
+                    local->Release();
+                    result = Core::ERROR_NONE;
+#endif
 
                     if (result == Core::ERROR_NONE) {
                         if (State() == IShell::state::HIBERNATED) {
@@ -831,15 +835,10 @@ namespace PluginHost {
                         State(IShell::ACTIVATED);
                         SYSLOG(Logging::Startup, (_T("Hibernation error [%d] of [%s]:[%s]"), result, ClassName().c_str(), Callsign().c_str()));
                     }
-#else
-                    local->Release();
-                    result = Core::ERROR_NONE;
-#endif
                  }
             }
             Unlock();
         } else {
-        
             result = Core::ERROR_NOT_SUPPORTED;
         }
 
