@@ -290,6 +290,29 @@ namespace PluginHost {
         Core::JSON::String Value;
         Version AppVersion;
     };
+
+    namespace Details {
+        // Kept separate so subsystem metadata serialization can be unit tested.
+        static inline void AppendSubsystemMetadata(
+            Metadata::Service& metaData,
+            const bool readFromConfig,
+            const std::vector<PluginHost::ISubSystem::subsystem>& preconditions,
+            const std::vector<PluginHost::ISubSystem::subsystem>& terminations,
+            const std::vector<PluginHost::ISubSystem::subsystem>& controls)
+        {
+            if (readFromConfig == false) {
+                for (const PluginHost::ISubSystem::subsystem& entry : preconditions) {
+                    metaData.Precondition.Add() = static_cast<Thunder::Plugin::Configuration::subsystem>(entry);
+                }
+                for (const PluginHost::ISubSystem::subsystem& entry : terminations) {
+                    metaData.Termination.Add() = static_cast<Thunder::Plugin::Configuration::subsystem>(entry);
+                }
+                for (const PluginHost::ISubSystem::subsystem& entry : controls) {
+                    metaData.Control.Add() = static_cast<Thunder::Plugin::Configuration::subsystem>(entry);
+                }
+            }
+        }
+    }
 }
 
 namespace Plugin {

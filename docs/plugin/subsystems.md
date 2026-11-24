@@ -32,6 +32,8 @@ When the Thunder process starts, Controller will check to see which subsystems a
 
 If the subsystem is not provided by a plugin, then Controller will mark the subsystem as active at startup. The opposite happens at shutdown, with Controller marking the subsystems as inactive.
 
+Plugins can declare their subsystem `precondition`, `termination`, and `control` lists in their plugin configuration. The `control` list is also the runtime authorization list: a plugin may only set or unset subsystems declared as controlled by it. By default, Thunder discovers these lists from plugin library metadata at startup. Set the daemon's `discovery` option to `false` to use the lists in plugin configuration instead. In this mode, Thunder uses those configured lists for runtime control and includes each list once in metadata/status responses.
+
 ### Subsystem Metadata
 
 !!! warning

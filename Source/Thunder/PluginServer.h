@@ -1307,17 +1307,7 @@ namespace PluginHost {
                 if (_metadata.IsValid() == true) {
                     metaData.Module = string(_metadata.Module());
                 }
-                if (_metadata.ReadFromConfig() == false) {
-                    for (const PluginHost::ISubSystem::subsystem& entry : _metadata.Precondition()) {
-                        metaData.Precondition.Add() = static_cast<Thunder::Plugin::Configuration::subsystem>(entry);
-                    }
-                    for (const PluginHost::ISubSystem::subsystem& entry : _metadata.Termination()) {
-                        metaData.Termination.Add() = static_cast<Thunder::Plugin::Configuration::subsystem>(entry);
-                    }
-                    for (const PluginHost::ISubSystem::subsystem& entry : _metadata.Control()) {
-                        metaData.Control.Add() = static_cast<Thunder::Plugin::Configuration::subsystem>(entry);
-                    }
-                }
+                Details::AppendSubsystemMetadata(metaData, _metadata.ReadFromConfig(), _metadata.Precondition(), _metadata.Termination(), _metadata.Control());
 
                 _pluginHandling.Unlock();
             }
