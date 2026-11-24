@@ -110,6 +110,67 @@ cmake -DENABLE_TRACING_MODULES='Plugin_BluetoothControl Plugin_WebServer' \
 
 The resulting module and category entries are added to the tracing settings with `enabled` set to `true`.
 
+#### External Direct output
+
+Messaging can optionally send messages synchronously to an external output adapter in addition to its built-in handler and direct-output paths. Enable this support when configuring Thunder:
+
+```sh
+cmake -DMESSAGING_EXTERNAL_OUTPUT=ON ..
+```
+
+When no source directory is supplied, CMake fetches the adapter repository configured by `MESSAGING_EXTERNAL_OUTPUT_REPOSITORY` and checks out `MESSAGING_EXTERNAL_OUTPUT_VERSION`. Pin the adapter to a known revision for reproducible builds, for example:
+
+```sh
+cmake \
+    -DMESSAGING_EXTERNAL_OUTPUT=ON \
+    -DMESSAGING_EXTERNAL_OUTPUT_VERSION=<adapter-branch-or-tag> \
+    ..
+```
+
+An existing adapter checkout can be used instead of fetching the repository:
+
+```sh
+cmake \
+    -DMESSAGING_EXTERNAL_OUTPUT=ON \
+    -DMESSAGING_EXTERNAL_OUTPUT_SOURCE_DIR=/path/to/MessageControl/<adapter> \
+    ..
+```
+
+The adapter is built as a separate shared library. The default production adapter is selected from the configured external repository. For development or tests, `MESSAGING_EXTERNAL_OUTPUT_USE_MOCK=ON` selects a mock backend library when that adapter source provides it. The RDK Logger adapter still runs its production mapping, formatting, and enablement cache; only the RDK Logger API is mocked. The mock records backend calls and supports configurable initialization and enablement results for tests. It uses an installed `rdk_logger.h` or downloads a pinned upstream header; set `RDKLOGGER_INCLUDE_DIR` to an existing header directory for offline builds.
+
+After the feature is compiled in, set `output` to `external_direct` in the messaging configuration. The setting is available globally, per message type, or on an individual module/category entry. For example, this routes all messages to the external adapter:
+
+```json
+{
+    "messaging": {
+        "output": "external_direct"
+    }
+}
+```
+
+To route only selected messages, keep the global default and set `output` on a section or entry:
+
+```json
+{
+    "messaging": {
+        "output": "handler",
+        "logging": {
+            "output": "external_direct",
+            "settings": [
+                {
+                    "module": "Plugin_SamplePlugin",
+                    "category": "Information",
+                    "enabled": true,
+                    "output": "external_direct"
+                }
+            ]
+        }
+    }
+}
+```
+
+The supported routing values are `handler` (the messaging buffer), `direct` (Thunder's built-in direct output), `external_direct` (the external adapter), and `all` (all applicable destinations). An `external_direct` setting has no effect unless Thunder was built with `MESSAGING_EXTERNAL_OUTPUT=ON` and the adapter initializes successfully.
+
 Below is an example of the messaging section in the config:
 
 ```json
@@ -164,7 +225,7 @@ Below is an example of the messaging section in the config:
 }
 ```
 
-The global `output` setting controls the default destination for every message type. It can be overridden by a message-type or entry-level `output` setting. The legacy `flush` setting is still accepted for compatibility but is ignored; use `output: "direct"` instead.
+The global `output` setting controls the default destination for every message type. It can be overridden by a message-type or entry-level `output` setting. Supported values are `handler`, `direct`, `external_direct`, and `all`. The legacy `flush` setting is still accepted for compatibility but is ignored; use `output: "direct"` instead.
 
 1. Routing fallback for all message types. Entry-level `output` overrides the message-type setting, which overrides this global value. The default is `handler` during normal operation and `direct` in DirectOutput mode.
 
@@ -196,6 +257,30 @@ Warning Reporting enables various runtime checks for potentially erroneous condi
 
 !!! warning
 	Warning Reporting is only available if Thunder is compiled with the `WARNING_REPORTING` option, which can be found [here](../../Source/addons/CMakeLists.txt), and is disabled by default. Note that it should not be enabled in Production, since it not only leads to a higher CPU and memory usage, but also it does not add any value to have it turned on in Production.
+
+For a reduced set of checks, build with `SLIM_WARNING_REPORTING=ON` (see [the CMake option](../../Source/CMakeLists.txt)). This also enables `WARNING_REPORTING`, but limits reporting to priority checks such as Invoke-duration, WorkerPool and plugin activation warnings. Slim mode omits non-priority warning reports and periodic WorkerPool active-job monitoring.
+
+The default reporting and warning thresholds for the categories used in slim mode can also be configured at build time through CMake. Append `_REPORT_BOUND` or `_WARNING_BOUND` to the variable prefix below to set the corresponding threshold. All values are in milliseconds, and each warning bound must be greater than or equal to its report bound.
+
+| Category | CMake variable prefix | Default report bound | Default warning bound |
+|----------|-----------------------|----------------------|-----------------------|
+| `TooLongInvokeRPC` | `WARNING_REPORTING_INVOKE_RPC` | 250 | 750 |
+| `TooLongInvokeMessage` | `WARNING_REPORTING_INVOKE_MESSAGE` | 500 | 500 |
+| `JobTooLongToFinish` | `WARNING_REPORTING_WORKERPOOL_FINISH` | 5000 | 7500 |
+| `JobTooLongWaitingInQueue` | `WARNING_REPORTING_WORKERPOOL_QUEUE` | 200 | 400 |
+| `TooLongPluginState` | `WARNING_REPORTING_PLUGIN_STATE` | 5000 | 5000 |
+
+In slim mode, `TooLongPluginState` measures plugin initialization during activation. Full Warning Reporting also measures deinitialization.
+
+For example:
+
+```sh
+cmake -DSLIM_WARNING_REPORTING=ON \
+    -DWARNING_REPORTING_INVOKE_RPC_REPORT_BOUND=500 \
+    -DWARNING_REPORTING_INVOKE_RPC_WARNING_BOUND=1000 ..
+```
+
+These build-time defaults also apply when using full Warning Reporting; per-category runtime configuration can override them.
 
 ### Runtime
 

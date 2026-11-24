@@ -158,6 +158,7 @@ namespace Thunder {
 #undef VERIFY
 #endif
 
+
 #if defined(__DEBUG__) || defined(_THUNDER_PRODUCTION)
 
     #ifdef __DEBUG__
@@ -165,6 +166,17 @@ namespace Thunder {
     #else
         #define ASSERT_ABORT
     #endif
+
+    #if defined(__COVERITY__) && defined(__DEBUG__)
+
+    extern "C" {
+        void __coverity_panic__(void);
+    }
+
+    #define DIRECT_ASSERT                                                                                   \
+        __coverity_panic__();
+
+    #else
 
     #define DIRECT_ASSERT                                                                                   \
         std::list<Thunder::Core::callstack_info> entries;                                                   \
@@ -174,6 +186,8 @@ namespace Thunder {
         }                                                                                                   \
         fflush(stderr);                                                                                     \
         ASSERT_ABORT
+
+    #endif
 
     #ifdef __CORE_MESSAGING__
 
@@ -206,12 +220,16 @@ namespace Thunder {
             Thunder::Assertion::AssertionUnitProxy::Instance().AssertionEvent(                                  \
                 __assertMetadata__,                                                                             \
                 __message__,                                                                                    \
-                Thunder::Assertion::BaseAssertType::Routing());
+                __targets__);
 
         #define ASSERT(expr)                                                                                    \
             do {                                                                                                \
                 if (!(expr)) {                                                                                  \
-                    if (Thunder::Assertion::BaseAssertType::IsEnabled()) {                                      \
+                    const auto __targets__ = Thunder::Assertion::ResolveTargets(                             \
+                        Thunder::Assertion::BaseAssertType::Metadata(),                                         \
+                        Thunder::Assertion::BaseAssertType::Routing(),                                          \
+                        Thunder::Assertion::BaseAssertType::IsEnabled());                                       \
+                    if (__targets__.Any() == true) {                                                            \
                         ASSERT_METADATA                                                                         \
                         Thunder::Core::Messaging::TextMessage __message__(#expr);                               \
                         ASSERT_SENT                                                                             \
@@ -223,7 +241,11 @@ namespace Thunder {
         #define ASSERT_VERBOSE(expr, format, ...)                                                               \
             do {                                                                                                \
                 if (!(expr)) {                                                                                  \
-                    if (Thunder::Assertion::BaseAssertType::IsEnabled()) {                                      \
+                    const auto __targets__ = Thunder::Assertion::ResolveTargets(                             \
+                        Thunder::Assertion::BaseAssertType::Metadata(),                                         \
+                        Thunder::Assertion::BaseAssertType::Routing(),                                          \
+                        Thunder::Assertion::BaseAssertType::IsEnabled());                                       \
+                    if (__targets__.Any() == true) {                                                            \
                         ASSERT_METADATA                                                                         \
                         char __buffer__[256];                                                                   \
                         std::snprintf(__buffer__, sizeof(__buffer__), "%s: " #format, #expr, ##__VA_ARGS__);    \

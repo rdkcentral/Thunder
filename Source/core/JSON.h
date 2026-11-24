@@ -784,7 +784,7 @@ namespace Core {
                         overflow = __builtin_mul_overflow(_value, (_set & 0x1F), &_value) || __builtin_add_overflow(stream[loaded] - '0', _value, &_value);
 #endif
                         loaded++;
-                    } else if (isxdigit(stream[loaded])) {
+                    } else if (((_set & QUOTED) != 0) && ((_set & 0x1F) == HEXADECIMAL) && isxdigit(stream[loaded])) {
 #ifdef __WINDOWS__
                         _value *= 16;
                         _value += (::toupper(stream[loaded]) - 'A') + 10;
@@ -846,7 +846,8 @@ namespace Core {
 
             uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, uint32_t& offset) override
             {
-                uint8_t loaded = 0;
+                uint16_t loaded = 0;
+
                 if (offset == 0) {
                     // First byte depicts a lot. Find out what we need to read
                     _value = 0;
@@ -869,6 +870,9 @@ namespace Core {
                         _set = ERROR;
                     }
                 }
+
+                ASSERT(((_set >> 12) & 0xF) <= 8);
+                // Loaded cannot overflow as it is incremented at most 8 times.
 
                 while ((loaded < maxLength) && (offset != 0)) {
                     _value = _value << 8;
@@ -930,7 +934,7 @@ namespace Core {
 
             uint16_t Convert(uint8_t stream[], const uint16_t maxLength, uint32_t& offset, const TemplateIntToType<false>& /* For compile time diffrentiation */) const
             {
-                uint8_t loaded = 0;
+                uint16_t loaded = 0;
                 uint8_t bytes = (_value <= 0x7F ? 0 : _value < 0xFF ? 1 : _value < 0xFFFF ? 2 : _value < 0xFFFFFFFF ? 4 : 8);
 
                 if (offset == 0) {
@@ -961,6 +965,9 @@ namespace Core {
                     }
                 }
 
+                ASSERT(bytes <= 8);
+                // Loaded cannot overflow as it is incremented at most 'bytes' times and bytes <= 8.
+
                 while ((loaded < maxLength) && (offset != 0)) {
                     TYPE value = _value >> (8 * (bytes - offset));
 
@@ -973,7 +980,7 @@ namespace Core {
 
             uint16_t Convert(uint8_t stream[], const uint16_t maxLength, uint32_t& offset, const TemplateIntToType<true>& /* For c ompile time diffrentiation */) const
             {
-                uint8_t loaded = 0;
+                uint16_t loaded = 0;
                 uint8_t bytes = (((_value < 16) && (_value > -15)) ? 0 : ((_value < 128) && (_value > -127)) ? 1 : ((_value < 32767) && (_value > -32766)) ? 2 : ((_value < 2147483647) && (_value > -2147483646)) ? 4 : 8);
 
                 if (offset == 0) {
@@ -999,6 +1006,9 @@ namespace Core {
                         offset = 1;
                     }
                 }
+
+                ASSERT(bytes <= 8);
+                // Loaded cannot overflow as it is incremented at most 'bytes' times and bytes <= 8.
 
                 while ((loaded < maxLength) && (offset != 0)) {
                     TYPE value = _value >> (8 * (bytes - offset));
@@ -1819,8 +1829,17 @@ namespace Core {
 
             void Clear() override
             {
+                Clear(static_cast<uint32_t>(-1));
+            }
+
+            void Clear(const uint32_t retainedCapacity)
+            {
                 _flagsAndCounters = (_flagsAndCounters & QuotedSerializeBit);
                 _value.clear();
+
+                if ((retainedCapacity != static_cast<uint32_t>(-1)) && (_value.capacity() > retainedCapacity)) {
+                    _value.shrink_to_fit();
+                }
             }
 
             inline bool IsQuoted() const
@@ -1891,7 +1910,7 @@ namespace Core {
                             case '"': stream[result++] = '"'; break;
                             default: {
                                 uint16_t lowPart, highPart;
-                                int8_t codeSize = ToCodePoint(&(_value[offset - 1]), length, _storage);
+                                int8_t codeSize = ToCodePoint(&(_value[offset - 1]), static_cast<uint8_t>(std::min(length, static_cast<uint32_t>(0xFF))), _storage);
 
                                 if (codeSize < 0) {
                                     // Oops it is a bad code thingy, Skip it..
@@ -3771,7 +3790,8 @@ namespace Core {
             static constexpr uint16_t SKIP_BEFORE_VALUE = 4;
             static constexpr uint16_t SKIP_AFTER = 5;
             static constexpr uint16_t SKIP_AFTER_KEY = 6;
-            static constexpr uint16_t PARSE = 7;
+            static constexpr uint16_t SKIP_BEFORE_FIRST = 7;
+            static constexpr uint16_t PARSE = 8;
 
             typedef std::pair<const TCHAR*, IElement*> JSONLabelValue;
             typedef std::list<JSONLabelValue> JSONElementList;
@@ -4054,13 +4074,13 @@ namespace Core {
                     case ValueValidity::VALID:
                         loaded++;
                         _fieldName.Clear();
-                        offset = SKIP_BEFORE;
+                        offset = SKIP_BEFORE_FIRST;
                         break;
                     }
                 }
 
                 while ((offset != FIND_MARKER) && (loaded < maxLength)) {
-                    if ((offset == SKIP_BEFORE) || (offset == SKIP_AFTER) || offset == SKIP_BEFORE_VALUE || offset == SKIP_AFTER_KEY) {
+                    if ((offset == SKIP_BEFORE_FIRST) || (offset == SKIP_BEFORE) || (offset == SKIP_AFTER) || offset == SKIP_BEFORE_VALUE || offset == SKIP_AFTER_KEY) {
                         // Run till we find a character not a whitespace..
                         while ((loaded < maxLength) && (::isspace(static_cast<uint8_t>(stream[loaded])))) {
                             loaded++;
@@ -4069,7 +4089,7 @@ namespace Core {
                         if (loaded < maxLength) {
                             switch (stream[loaded]) {
                             case '}':
-                                if (offset == SKIP_BEFORE && !_data.empty()) {
+                                if (offset == SKIP_BEFORE) {
                                     _state = ERROR;
                                     error = Error{ "Expected new element, \"}\" found." };
                                 } else if (offset == SKIP_BEFORE_VALUE || offset == SKIP_AFTER_KEY) {
@@ -4081,7 +4101,7 @@ namespace Core {
                                 loaded++;
                                 break;
                             case ',':
-                                if (offset == SKIP_BEFORE) {
+                                if (offset == SKIP_BEFORE_FIRST || offset == SKIP_BEFORE) {
                                     _state = ERROR;
                                     error = Error{ "Expected new element \",\" found." };
                                     offset = FIND_MARKER;
@@ -4095,7 +4115,7 @@ namespace Core {
                                 loaded++;
                                 break;
                             case ':':
-                                if (offset == SKIP_BEFORE || offset == SKIP_BEFORE_VALUE) {
+                                if (offset == SKIP_BEFORE_FIRST || offset == SKIP_BEFORE || offset == SKIP_BEFORE_VALUE) {
                                     _state = ERROR;
                                     error = Error{ "Expected " + std::string{ offset == SKIP_BEFORE_VALUE ? "value" : "new element" } + ", \":\" found." };
                                     offset = FIND_MARKER;

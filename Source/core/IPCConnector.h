@@ -112,6 +112,8 @@ namespace Core {
                     }
 
                     if (result < maxLength) {
+                        ASSERT(_offset >= 8);
+
                         // Write the command, Same structure as length..
                         uint16_t handled = _current->Serialize(&stream[result], maxLength - result, _offset - 8);
 
