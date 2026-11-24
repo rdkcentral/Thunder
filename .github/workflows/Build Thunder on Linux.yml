@@ -10,13 +10,13 @@ concurrency:
 on:
   workflow_dispatch:
   push:
-    branches: ["master"]
+    branches: ["master", "R*"]
     paths-ignore:
       - 'doc/**'
       - 'docs/**'
       - 'ReleaseNotes/**'
   pull_request:
-    branches: ["master"]
+    branches: ["master", "R*"]
     paths-ignore:
       - 'doc/**'
       - 'docs/**'
@@ -25,6 +25,8 @@ on:
 jobs:
   Thunder:
     uses: ./.github/workflows/Linux build template.yml
+    with:
+      source-repository: ${{ github.repository }}
 
   Test:
     needs: Thunder
@@ -74,6 +76,10 @@ jobs:
   ThunderLibraries:
     needs: Thunder
     uses: WebPlatformForEmbedded/ThunderLibraries/.github/workflows/Linux build template.yml@main
+
+  ThunderPluginActivator:
+    needs: Thunder
+    uses: rdkcentral/ThunderPluginActivator/.github/workflows/Linux build template.yml@main
 
   ThunderClientLibraries:
     needs: ThunderInterfaces

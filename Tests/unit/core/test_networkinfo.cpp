@@ -34,10 +34,15 @@ namespace Core {
         ::Thunder::Core::AdapterIterator adapters;
         ::Thunder::Core::AdapterIterator adapters2;
 
-        ::Thunder::Core::AdapterIterator adapter("eth0");
+        ::Thunder::Core::AdapterIterator adapter;
         ::Thunder::Core::IPV4AddressIterator result;
 
-        ASSERT_TRUE(adapter.IsValid());
+        while ((adapter.Next() == true) && (adapter.Name() == "lo"));
+
+        if (adapter.IsValid() == false) {
+            ::Thunder::Core::Singleton::Dispose();
+            GTEST_SKIP() << "No non-loopback adapter available on this machine";
+        }
 
         result.Next();
         //EXPECT_EQ(adapters.Index(),adapters.Index()); TODO

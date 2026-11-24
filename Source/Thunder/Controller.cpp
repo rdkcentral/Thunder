@@ -206,7 +206,7 @@ namespace Plugin {
             Core::TextSegmentIterator index(Core::TextFragment(request.Path, _skipURL, static_cast<uint32_t>(request.Path.length()) - _skipURL), false, '/');
 
             // Always skip the first one, it is an empty part because we start with a '/' if there are more parameters.
-            index.Next();
+            (void)index.Next();
 
             if ( (index.Next() == true) && (index.Current() == _T("Configuration")) ) {
                 request.Body(Core::ProxyType<Web::IBody>(jsonBodyTextFactory.Element()));
@@ -224,7 +224,7 @@ namespace Plugin {
         Core::TextSegmentIterator index(Core::TextFragment(request.Path, _skipURL, static_cast<uint32_t>(request.Path.length()) - _skipURL), false, '/');
 
         // Always skip the first one, it is an empty part because we start with a '/' if there are more parameters.
-        index.Next();
+        (void)index.Next();
 
         // For now, whatever the URL, we will just, on a get, drop all info we have
         if (request.Verb == Web::Request::HTTP_POST) {

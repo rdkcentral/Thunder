@@ -84,7 +84,7 @@ namespace Core {
         uint32_t crc = 0xffffffff;
 
         for (uint32_t index = 0; index < static_cast<uint32_t>(size); ++index) {
-            crc = (crc << 8) ^ g_CRCtable[((crc >> 24) ^ m_Buffer[static_cast<uint32_t>(offset) + index]) & 0xff];
+            crc = ((crc & 0x00FFFFFF) << 8) ^ g_CRCtable[((crc >> 24) ^ m_Buffer[static_cast<uint32_t>(offset) + index]) & 0xff];
         }
 
         return (crc);
