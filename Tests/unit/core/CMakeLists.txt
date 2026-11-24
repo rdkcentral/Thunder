@@ -36,6 +36,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_dec2strserialization.cpp
    #test_ipc.cpp
    test_ipcclient.cpp
+    test_ipcframing.cpp
    test_iso639.cpp
    test_iterator.cpp
    test_json_from_object.cpp
@@ -126,6 +127,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_frametype.cpp
    test_hash.cpp
    test_hex2strserialization.cpp
+    test_ipcframing.cpp
    test_iso639.cpp
    test_iterator.cpp
    test_json_from_object.cpp
