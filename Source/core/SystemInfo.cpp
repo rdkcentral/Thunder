@@ -98,7 +98,7 @@ namespace Core {
                     ::memcpy(&buffer[SystemPrefixLength], DeviceId, KeyLength - SystemPrefixLength);
                 } else {
                     if (KeyLength > (DeviceIdLength + SystemPrefixLength)) {
-                        // Fill the remaining space with char '0' (not nul!)
+                        // Fill the remaining space with char '0' (not NUL!)
                         std::fill_n(&buffer[SystemPrefixLength],
                             KeyLength - (DeviceIdLength + SystemPrefixLength),
                             static_cast<TCHAR>('0'));

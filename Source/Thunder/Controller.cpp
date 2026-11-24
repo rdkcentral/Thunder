@@ -1671,7 +1671,9 @@ namespace Plugin {
             extensions |= IMetadata::Data::BuildInfo::PROCESS_CONTAINERS;
         #endif
 
-        buildInfo.Extensions = static_cast<IMetadata::Data::BuildInfo::extensiontype>(extensions);
+        if (extensions != 0) {
+            buildInfo.Extensions = static_cast<IMetadata::Data::BuildInfo::extensiontype>(extensions);
+        }
 
         #ifdef __CORE_MESSAGING__
             buildInfo.Messaging = true;

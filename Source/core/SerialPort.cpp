@@ -846,13 +846,12 @@ void SerialPort::Read(const uint16_t readBytes)
                 }
 
                 if (_sendOffset < _sendBytes) {
-                    const uint16_t pending = static_cast<uint16_t>(_sendBytes - _sendOffset);
+                    const size_t pending = _sendBytes - _sendOffset;
                     ssize_t sendSize = ::write(_descriptor, reinterpret_cast<const char*>(&_sendBuffer[_sendOffset]), pending);
 
                     if (sendSize >= 0) {
-                        ASSERT(sendSize <= pending);
-                        // Never accept more than what was offered, so _sendOffset can not overflow.
-                        _sendOffset += static_cast<uint16_t>((sendSize > pending) ? pending : sendSize);
+                        ASSERT(static_cast<size_t>(sendSize) <= pending);
+                        _sendOffset += static_cast<uint16_t>(sendSize);
                     }
                     else {
                         uint32_t result = ERRORRESULT;
@@ -886,13 +885,12 @@ void SerialPort::Read(const uint16_t readBytes)
                 }
 
                 // Read the actual data from the port.
-                const uint16_t available = static_cast<uint16_t>(_receiveBufferSize - _readBytes);
+                const size_t available = _receiveBufferSize - _readBytes;
                 ssize_t size = ::read(_descriptor, reinterpret_cast<char*>(&_receiveBuffer[_readBytes]), available);
 
                 if (size > 0) {
-                    ASSERT(size <= available);
-                    // Never accept more than the space we offered, so _readBytes can not overflow.
-                    _readBytes += static_cast<uint16_t>((size > available) ? available : size);
+                    ASSERT(static_cast<size_t>(size) <= available);
+                    _readBytes += static_cast<uint16_t>(size);
 
                     if (_readBytes != 0) {
                         uint16_t handledBytes = ReceiveData(_receiveBuffer, _readBytes);
