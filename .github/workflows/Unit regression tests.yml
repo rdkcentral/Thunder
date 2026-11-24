@@ -1,0 +1,62 @@
+name: Unit regression tests
+
+permissions:
+  contents: read
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["Development/CTestFiltering"]
+
+jobs:
+  UnitRegression:
+    runs-on: ubuntu-24.04
+
+    env:
+      INSTALL_PREFIX: ${{ github.workspace }}/install/usr
+
+    steps:
+    - name: Install system dependencies
+      uses: rdkcentral/ThunderTools/.github/actions/apt-dependencies@master
+
+    - name: Set up Python environment
+      run: |
+        python3 -m venv venv
+        venv/bin/pip install --upgrade pip jsonref
+        echo "${{ github.workspace }}/venv/bin" >> "$GITHUB_PATH"
+
+    - name: Checkout Thunder
+      uses: actions/checkout@v5
+      with:
+        path: Thunder
+
+    - name: Checkout ThunderTools
+      uses: actions/checkout@v5
+      with:
+        repository: rdkcentral/ThunderTools
+        path: ThunderTools
+
+    - name: Build and install ThunderTools
+      run: |
+        cmake -G Ninja -S ThunderTools -B build/ThunderTools \
+          -DCMAKE_INSTALL_PREFIX="$INSTALL_PREFIX"
+        cmake --build build/ThunderTools --target install
+
+    - name: Build Thunder with tests
+      run: |
+        cmake -G Ninja -S Thunder -B build/Thunder \
+          -DBUILD_TESTS=ON \
+          -DCMAKE_BUILD_TYPE=Debug \
+          -DENABLE_STRICT_COMPILER_SETTINGS=OFF \
+          -DBINDING="127.0.0.1" \
+          -DPORT="55555" \
+          -DCMAKE_INSTALL_PREFIX="$INSTALL_PREFIX"
+        cmake --build build/Thunder
+
+    - name: Run Unit regression tests
+      env:
+        LD_LIBRARY_PATH: ${{ env.INSTALL_PREFIX }}/lib
+      run: |
+        ctest --test-dir build/Thunder/Tests/unit/core \
+          -L '^scope:Unit$' -L '^purpose:Regression$' \
+          --no-tests=error --output-on-failure
