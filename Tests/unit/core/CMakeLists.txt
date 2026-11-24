@@ -15,6 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
 set(TEST_RUNNER_NAME "Thunder_test_core")
 
 if(LINUX)
@@ -212,4 +213,43 @@ install(
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/testdata COMPONENT ${NAMESPACE}_Test)
 
 
-add_test(NAME ${TEST_RUNNER_NAME} COMMAND ${TEST_RUNNER_NAME})
+set(TEST_INVENTORY
+    "${CMAKE_CURRENT_SOURCE_DIR}/test_inventory.csv"
+)
+
+set(TEST_LABEL_GENERATOR
+    "${CMAKE_CURRENT_SOURCE_DIR}/generate_ctest_labels.py"
+)
+
+set(GENERATED_TEST_LABELS
+    "${CMAKE_CURRENT_BINARY_DIR}/test-labels.cmake"
+)
+
+# Generate CTest labels from CSV
+execute_process(
+    COMMAND
+        ${Python3_EXECUTABLE}
+        ${TEST_LABEL_GENERATOR}
+        ${TEST_INVENTORY}
+        ${GENERATED_TEST_LABELS}
+        ${TEST_RUNNER_NAME}_TESTS
+    RESULT_VARIABLE GENERATOR_RESULT
+    OUTPUT_VARIABLE GENERATOR_OUTPUT
+    ERROR_VARIABLE GENERATOR_ERROR
+)
+
+if(NOT GENERATOR_RESULT EQUAL 0)
+    message(FATAL_ERROR
+        "Failed to generate CTest labels:\n${GENERATOR_ERROR}"
+    )
+endif()
+
+message(STATUS "${GENERATOR_OUTPUT}")
+
+gtest_discover_tests(${TEST_RUNNER_NAME})
+
+set_property(
+    DIRECTORY APPEND
+    PROPERTY TEST_INCLUDE_FILES
+    "${GENERATED_TEST_LABELS}"
+)
