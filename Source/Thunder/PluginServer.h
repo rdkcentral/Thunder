@@ -705,6 +705,7 @@ namespace PluginHost {
 
                 ControlData(const uint8_t maxRequests)
                     : _isExtended(false)
+                    , _readFromConfig(false)
                     , _maxRequests(maxRequests)
                     , _major(~0)
                     , _minor(~0)
@@ -716,7 +717,9 @@ namespace PluginHost {
                     , _versionHash() {
                 }
                 ~ControlData() = default;
+
                 ControlData& operator=(const Plugin::Config& config) {
+                    _readFromConfig = true;
                     _precondition.clear();
                     Core::JSON::ArrayType<Core::JSON::EnumType<Plugin::Configuration::subsystem>>::ConstIterator precondition(config.Precondition.Elements());
                     while (precondition.Next() == true) {
@@ -778,6 +781,9 @@ namespace PluginHost {
                 bool IsExtended() const {
                     return (_isExtended);
                 }
+                bool ReadFromConfig() const {
+                    return (_readFromConfig);
+                }
                 bool IsValid() const {
                     return ((_major != static_cast<uint8_t>(~0)) && (_minor != static_cast<uint8_t>(~0)) && (_patch != static_cast<uint8_t>(~0)));
                 }
@@ -833,6 +839,7 @@ namespace PluginHost {
 
             private:
                 bool _isExtended;
+                bool _readFromConfig;
                 uint8_t _maxRequests;
                 uint8_t _major;
                 uint8_t _minor;
@@ -1298,14 +1305,16 @@ namespace PluginHost {
                 if (_metadata.IsValid() == true) {
                     metaData.Module = string(_metadata.Module());
                 }
-                for (const PluginHost::ISubSystem::subsystem& entry : _metadata.Precondition()) {
-                    metaData.Precondition.Add() = static_cast<Thunder::Plugin::Configuration::subsystem>(entry);
-                }
-                for (const PluginHost::ISubSystem::subsystem& entry : _metadata.Termination()) {
-                    metaData.Termination.Add() = static_cast<Thunder::Plugin::Configuration::subsystem>(entry);
-                }
-                for (const PluginHost::ISubSystem::subsystem& entry : _metadata.Control()) {
-                    metaData.Control.Add() = static_cast<Thunder::Plugin::Configuration::subsystem>(entry);
+                if (_metadata.ReadFromConfig() == false) {
+                    for (const PluginHost::ISubSystem::subsystem& entry : _metadata.Precondition()) {
+                        metaData.Precondition.Add() = static_cast<Thunder::Plugin::Configuration::subsystem>(entry);
+                    }
+                    for (const PluginHost::ISubSystem::subsystem& entry : _metadata.Termination()) {
+                        metaData.Termination.Add() = static_cast<Thunder::Plugin::Configuration::subsystem>(entry);
+                    }
+                    for (const PluginHost::ISubSystem::subsystem& entry : _metadata.Control()) {
+                        metaData.Control.Add() = static_cast<Thunder::Plugin::Configuration::subsystem>(entry);
+                    }
                 }
 
                 _pluginHandling.Unlock();

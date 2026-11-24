@@ -22,7 +22,7 @@ communicator = '@COMMUNICATOR@'
 if boolean('@DISABLEPLUGINAUTOACTIVATION@'):
   disablepluginautoactivation = '@DISABLEPLUGINAUTOACTIVATION@'
 if not boolean('@DISCOVERY@'):
-  discovery = '@DISCOVERY@'
+  discovery = 'false'
 __authorizedextensions = '@AUTHORIZEDEXTENSIONS@'
 authorizedextensions = __authorizedextensions.split(';')
 
