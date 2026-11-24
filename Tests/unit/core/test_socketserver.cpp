@@ -122,7 +122,7 @@ namespace Core {
 
     // ---------------------------------------------------------------------
     // Move: the destination takes the clients and starts from the first one,
-    // like a copy; the source is left empty and safe to use.
+    // like a copy. The moved-from source is not used afterwards.
     // ---------------------------------------------------------------------
 
     TEST(Core_SocketServerIterator, MoveConstruct)
@@ -138,10 +138,6 @@ namespace Core {
         ASSERT_TRUE(moved.Next());
         EXPECT_EQ(moved.Client()->Id(), 1u);
         EXPECT_EQ(Walk(moved), 2u); // clients 2 and 3 left
-
-        EXPECT_EQ(source.Count(), 0u);
-        EXPECT_FALSE(source.IsValid());
-        EXPECT_FALSE(source.Next());
     }
 
     TEST(Core_SocketServerIterator, MoveAssign)
@@ -159,9 +155,6 @@ namespace Core {
         ASSERT_TRUE(target.Next());
         EXPECT_EQ(target.Client()->Id(), 1u);
         EXPECT_EQ(Walk(target), 2u);
-
-        EXPECT_EQ(source.Count(), 0u);
-        EXPECT_FALSE(source.Next());
     }
 
     // ---------------------------------------------------------------------

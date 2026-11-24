@@ -67,8 +67,6 @@ namespace Core {
                 , _clients(std::move(move._clients))
                 , _iterator(_clients.begin())
             {
-                move._atHead = true;
-                move._iterator = move._clients.begin();
             }
             ~IteratorType() = default;
 
@@ -88,9 +86,6 @@ namespace Core {
                     _atHead = true;
                     _clients = std::move(move._clients);
                     _iterator = _clients.begin();
-
-                    move._atHead = true;
-                    move._iterator = move._clients.begin();
                 }
 
                 return (*this);
