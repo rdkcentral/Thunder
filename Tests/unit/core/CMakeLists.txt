@@ -71,6 +71,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_sharedbuffer.cpp
    test_singleton.cpp
    test_socketport.cpp
+   test_socketserver.cpp
    test_socketstreamjson.cpp
    test_socketstreamtext.cpp
    test_statetrigger.cpp
@@ -155,6 +156,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_rectangle.cpp
    test_semaphore.cpp
    test_singleton.cpp
+   test_socketserver.cpp
    test_statetrigger.cpp
    test_stopwatch.cpp
    test_synchronize.cpp

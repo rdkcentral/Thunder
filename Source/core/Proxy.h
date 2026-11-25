@@ -155,14 +155,6 @@ POP_WARNING()
             inline operator const IReferenceCounted* () const {
                 return (this);
             }
-            inline operator CONTEXT& ()
-            {
-                return (*this);
-            }
-            inline operator const CONTEXT& () const
-            {
-                return (*this);
-            }
             inline uint32_t Size() const
             {
                 size_t alignedSize = ((sizeof(ProxyObject<CONTEXT>) + (sizeof(void*) - 1)) & (static_cast<size_t>(~(sizeof(void*) - 1))));

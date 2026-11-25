@@ -827,10 +827,18 @@ namespace Thunder {
             inline uint32_t Length() const
             {
                 uint32_t length = 0;
+
+                _adminLock.Lock();
+
                 for (const auto& category : _categories) {
                     length += static_cast<uint32_t>(category.Length());
                 }
-                return (static_cast<uint32_t>(_queue.size() + length));
+
+                length += static_cast<uint32_t>(_queue.size());
+
+                _adminLock.Unlock();
+
+                return (length);
             }
             inline bool HasEntry(const CONTEXT& entry) const {
                 bool found = false;
@@ -839,7 +847,7 @@ namespace Thunder {
                 _adminLock.Lock();
 
                 typename Entries::const_iterator index(_queue.begin());
-                
+
                 while ((index != _queue.end()) && (index->second != entry)) {
                     ++index;
                 }

@@ -820,17 +820,13 @@ namespace PluginHost {
 
             if (method.empty() == false) {
 
-                string callsign;
                 string prefix;
                 string instanceId;
                 string methodName;
                 string index;
 
-                Core::JSONRPC::Message::Split(method, &callsign, nullptr, &prefix, &instanceId, &methodName, &index);
-
+                Core::JSONRPC::Message::Split(method, nullptr, nullptr, &prefix, &instanceId, &methodName, &index);
                 const string realMethod = Core::JSONRPC::Message::Join(prefix, methodName);
-
-                ASSERT((callsign.empty() == true) || (callsign == _callsign));
 
                 result = Core::ERROR_NONE;
                 Core::JSONRPC::Handler* handler(nullptr);
@@ -966,11 +962,11 @@ namespace PluginHost {
 
         Core::hresult Attach(IShell::IConnectionServer::INotification*& sink /* @out */, IShell* service) override
         {
-            ASSERT(_service == nullptr);
             ASSERT(service != nullptr);
 
             _adminLock.Lock();
 
+            ASSERT(_service == nullptr);
             _service = service;
             _service->AddRef();
             _callsign = _service->Callsign();
