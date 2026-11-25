@@ -88,8 +88,8 @@ if boolean('@MESSAGING@'):
   messaging.add("stdout", '@MESSAGING_STDOUT@')
   messaging.add("stderr", '@MESSAGING_STDERR@')
   messaging.add("datasize", '@MESSAGING_DATASIZE@')
-  if boolean('@DIRECT_OUTPUT@'):
-    messaging.add("output", "direct")
+  if '@MESSAGING_OUTPUT@':
+    messaging.add("output", '@MESSAGING_OUTPUT@')
   direct = JSON()
   direct.add("abbreviated", '@DIRECT_OUTPUT_ABBREVIATION@')
   direct.add("time", '@DIRECT_OUTPUT_TIME@')
