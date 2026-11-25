@@ -33,10 +33,11 @@
 
 #define MAX_EXTERNAL_WAITS 2000 /* Wait for 2 Seconds */
 
+#ifdef HIBERNATE_SUPPORT_ENABLED
 #ifndef HIBERNATE_WAKEUP_TIMEOUT
 #define HIBERNATE_WAKEUP_TIMEOUT 10000 /* ms */
 #endif
-
+#endif // HIBERNATE_SUPPORT_ENABLED
 
 namespace Thunder {
 
@@ -1074,17 +1075,19 @@ namespace PluginHost {
                 Lock();
 
                 if ( (_jsonrpc == nullptr) || (IsActive() == false) ) {
-                    bool isHibernated = IsHibernated();
+#ifdef HIBERNATE_SUPPORT_ENABLED
+                    const bool isHibernated = IsHibernated();
+#endif
                     Unlock();
 
                     response = Core::ProxyType<Core::JSONRPC::Message>(IFactories::Instance().JSONRPC());
-                    if (isHibernated == true) {
-                        response->Error.SetError(Core::ERROR_HIBERNATED);
-                    }
-                    else {
-                        response->Error.SetError(Core::ERROR_UNAVAILABLE);
-                    }
                     response->Id = message.Id;
+
+#ifdef HIBERNATE_SUPPORT_ENABLED
+                    response->Error.SetError(isHibernated == true? Core::ERROR_HIBERNATED : Core::ERROR_UNAVAILABLE);
+#else
+                    response->Error.SetError(Core::ERROR_UNAVAILABLE);
+#endif
                 }
                 else {
                     Unlock();
@@ -1492,12 +1495,12 @@ namespace PluginHost {
             }
 
         private:
-            uint32_t Wakeup(const uint32_t timeout = HIBERNATE_WAKEUP_TIMEOUT);
 
-            #ifdef HIBERNATE_SUPPORT_ENABLED
+ #ifdef HIBERNATE_SUPPORT_ENABLED
+            uint32_t Wakeup(const uint32_t timeout = HIBERNATE_WAKEUP_TIMEOUT);
             uint32_t HibernateChildren(const pid_t parentPID, const uint32_t timeout);
             uint32_t WakeupChildren(const pid_t parentPID, const uint32_t timeout);
-            #endif
+#endif
 
         public: // do not restrict visibility for a virtual in a derived class
 
@@ -3889,10 +3892,12 @@ namespace PluginHost {
             {
                 _notifiers.Notify(callsign, entry, &PluginHost::IPlugin::INotification::CancelableUnavailable);
             }
+#ifdef HIBERNATE_SUPPORT_ENABLED
             void Hibernated(const string& callsign, PluginHost::IShell* entry)
             {
                 _extendedNotifiers.Notify(callsign, entry, &PluginHost::IPlugin::INotificationExtended::CancelableHibernated);
             }
+#endif // HIBERNATE_SUPPORT_ENABLED
             void Destroyed(const string& callsign, PluginHost::IShell* entry)
             {
                 _extendedNotifiers.Notify(callsign, entry, &PluginHost::IPlugin::INotificationExtended::CancelableDestroyed);

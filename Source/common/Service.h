@@ -281,10 +281,12 @@ namespace PluginHost {
         {
             return (_state == ACTIVATED);
         }
+#ifdef HIBERNATE_SUPPORT_ENABLED
         inline bool IsHibernated() const
         {
             return (_state == HIBERNATED);
         }
+#endif // HIBERNATE_SUPPORT_ENABLED
         inline bool HasError() const
         {
             return (_errorMessage.empty() == false);
