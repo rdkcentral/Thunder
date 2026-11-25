@@ -606,7 +606,7 @@ namespace PluginHost {
                 }
                 currentState = ACTIVATED;
             }
-#endif // HIBERNATE_SUPPORT_ENABLEDs
+#endif // HIBERNATE_SUPPORT_ENABLED
 
             if ( (currentState == IShell::ACTIVATION) || (currentState == IShell::ACTIVATED)) {
                 ASSERT(_handler != nullptr);
