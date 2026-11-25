@@ -178,12 +178,10 @@ namespace Core {
                         Code = ApplicationErrorCodeBase - Core::ERROR_FAILED_UNREGISTERED;
                         Text = _T("Unregister failed.");
                         break;
-#ifdef HIBERNATE_SUPPORT_ENABLED
                     case Core::ERROR_HIBERNATED:
                         Code = ApplicationErrorCodeBase - Core::ERROR_HIBERNATED;
                         Text = _T("The service is hibernated.");
                         break;
-#endif // HIBERNATE_SUPPORT_ENABLED
                     case Core::ERROR_UNAVAILABLE:
                         Code = ApplicationErrorCodeBase - Core::ERROR_UNAVAILABLE;
                         Text = _T("The service is not active.");
