@@ -1496,7 +1496,7 @@ namespace PluginHost {
 
         private:
 
- #ifdef HIBERNATE_SUPPORT_ENABLED
+#ifdef HIBERNATE_SUPPORT_ENABLED
             uint32_t Wakeup(const uint32_t timeout = HIBERNATE_WAKEUP_TIMEOUT);
             uint32_t HibernateChildren(const pid_t parentPID, const uint32_t timeout);
             uint32_t WakeupChildren(const pid_t parentPID, const uint32_t timeout);
