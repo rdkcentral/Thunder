@@ -67,7 +67,6 @@ namespace PluginHost {
 
     /* static */ Core::ProxyType<Web::Response> Server::Channel::_missingCallsign(Core::ProxyType<Web::Response>::Create());
     /* static */ Core::ProxyType<Web::Response> Server::Channel::_incorrectVersion(Core::ProxyType<Web::Response>::Create());
-    /* static */ Core::ProxyType<Web::Response> Server::Channel::WebRequestJob::_missingResponse(Core::ProxyType<Web::Response>::Create());
     /* static */ Core::ProxyType<Web::Response> Server::Channel::_unauthorizedRequest(Core::ProxyType<Web::Response>::Create());
     /* static */ Core::ProxyType<Web::Response> Server::Service::_missingHandler(Core::ProxyType<Web::Response>::Create());
     /* static */ Core::ProxyType<Web::Response> Server::Service::_unavailableHandler(Core::ProxyType<Web::Response>::Create());
@@ -1280,6 +1279,97 @@ namespace PluginHost {
     //
     // class Server
     // -----------------------------------------------------------------------------------------------------------------------------------
+    /* static */ bool Server::IsLoopbackOrigin(const string& origin)
+    {
+        const size_t separator = origin.find(_T("://"));
+        bool result = ((separator != string::npos) && (separator != 0));
+        string authority;
+        string host;
+        string port;
+
+        if (result == true) {
+            const Core::TextFragment scheme(origin, 0, static_cast<uint32_t>(separator));
+            result = ((scheme.EqualText(_T("http")) == true) || (scheme.EqualText(_T("https")) == true));
+        }
+
+        if (result == true) {
+            const size_t authorityStart = separator + 3;
+            result = ((authorityStart < origin.length()) && (origin.find_first_of(_T("/?#"), authorityStart) == string::npos));
+
+            if (result == true) {
+                authority.assign(origin, authorityStart, string::npos);
+                result = (authority.find(_T('@')) == string::npos);
+            }
+        }
+
+        if (result == true) {
+            if (authority.front() == _T('[')) {
+                const size_t closingBracket = authority.find(_T(']'));
+                result = (closingBracket != string::npos);
+
+                if (result == true) {
+                    host.assign(authority, 0, closingBracket + 1);
+
+                    if ((closingBracket + 1) < authority.length()) {
+                        result = (authority[closingBracket + 1] == _T(':'));
+
+                        if (result == true) {
+                            port.assign(authority, closingBracket + 2, string::npos);
+                        }
+                    }
+                }
+            }
+            else {
+                const size_t portSeparator = authority.find(_T(':'));
+
+                if (portSeparator == string::npos) {
+                    host = authority;
+                }
+                else {
+                    result = (authority.find(_T(':'), portSeparator + 1) == string::npos);
+
+                    if (result == true) {
+                        host.assign(authority, 0, portSeparator);
+                        port.assign(authority, portSeparator + 1, string::npos);
+                    }
+                }
+            }
+        }
+
+        if (result == true) {
+            const Core::TextFragment hostname(host);
+            result = ((hostname.EqualText(_T("localhost")) == true) ||
+                (hostname.EqualText(_T("127.0.0.1")) == true) ||
+                (hostname.EqualText(_T("[::1]")) == true));
+        }
+
+        if (result == true) {
+            if (port.empty() == false) {
+                uint32_t value = 0;
+                string::const_iterator index(port.cbegin());
+
+                while ((index != port.cend()) && (result == true)) {
+                    const TCHAR digit = *index;
+                    result = ((digit >= _T('0')) && (digit <= _T('9')) &&
+                        (value <= 6553) && ((value != 6553) || (digit <= _T('5'))));
+
+                    if (result == true) {
+                        value = (value * 10) + static_cast<uint32_t>(digit - _T('0'));
+                    }
+
+                    ++index;
+                }
+
+                result = ((result == true) && (value != 0));
+            }
+            else {
+                result = (authority.back() != _T(':'));
+            }
+        }
+
+        return (result);
+    }
+
     PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
     Server::Server(Config& configuration, const bool background)
         : _dispatcher(configuration.ThreadPoolCount(), configuration.StackSize(), configuration.QueueSize(), configuration.LowPriorityThreadCount(), configuration.MediumPriorityThreadCount())
