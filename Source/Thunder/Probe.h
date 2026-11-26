@@ -311,7 +311,6 @@ namespace Plugin {
             string _model;
             bool _secure;
         };
-        typedef Core::IteratorType<const std::list<Instance>, const Instance&, std::list<Instance>::const_iterator> Iterator;
 
     public:
 PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
@@ -335,9 +334,14 @@ POP_WARNING()
         {
             _broadcast.Ping(timeToLive == 0 ? _timeToLive : timeToLive);
         }
-        inline Iterator Instances() const
+        // Returns a snapshot, the list is modified from the socket thread.
+        inline std::vector<Instance> Instances() const
         {
-            return (Iterator(_partners));
+            _adminLock.Lock();
+            std::vector<Instance> result(_partners);
+            _adminLock.Unlock();
+
+            return (result);
         }
 
     private:
@@ -351,8 +355,8 @@ POP_WARNING()
         void Report(const Core::URL& remote, const uint32_t latencyinUs, const string& model, const bool secure);
 
     private:
-        Core::CriticalSection _adminLock;
-        std::list<Instance> _partners;
+        mutable Core::CriticalSection _adminLock;
+        std::vector<Instance> _partners;
         Listener _probe;
         Broadcaster _broadcast;
         uint8_t _timeToLive;

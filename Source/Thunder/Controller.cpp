@@ -590,16 +590,14 @@ namespace Plugin {
             else {
                 Core::ProxyType<Web::JSONBodyType<PluginHost::Metadata>> response(jsonBodyMetadataFactory.Element());
 
-                Probe::Iterator index(_probe->Instances());
-
-                while (index.Next() == true) {
+                for (const Probe::Instance& instance : _probe->Instances()) {
                     PluginHost::Metadata::Bridge newElement;
-                    newElement.Locator = (*index).URL().Text();
-                    newElement.Latency = (*index).Latency();
-                    if ((*index).Model().empty() == false) {
-                        newElement.Model = (*index).Model();
+                    newElement.Locator = instance.URL().Text();
+                    newElement.Latency = instance.Latency();
+                    if (instance.Model().empty() == false) {
+                        newElement.Model = instance.Model();
                     }
-                    newElement.Secure = (*index).IsSecure();
+                    newElement.Secure = instance.IsSecure();
                     response->Bridges.Add(newElement);
                 }
 
@@ -1221,16 +1219,16 @@ namespace Plugin {
         std::vector<IDiscovery::Data::DiscoveryResult> results;
 
         if (_probe != nullptr) {
-            Probe::Iterator index(_probe->Instances());
-            results.reserve(_probe->Instances().Count());
+            const std::vector<Probe::Instance> partners(_probe->Instances());
+            results.reserve(partners.size());
 
-            while (index.Next() == true) {
+            for (const Probe::Instance& instance : partners) {
                 IDiscovery::Data::DiscoveryResult result;
-                result.Locator = (*index).URL().Text();
-                result.Latency = (*index).Latency();
-                result.Secure = (*index).IsSecure();
-                if ((*index).Model().empty() == false) {
-                    result.Model = (*index).Model();
+                result.Locator = instance.URL().Text();
+                result.Latency = instance.Latency();
+                result.Secure = instance.IsSecure();
+                if (instance.Model().empty() == false) {
+                    result.Model = instance.Model();
                 }
 
                 results.push_back(std::move(result));
