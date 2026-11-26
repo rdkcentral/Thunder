@@ -6,6 +6,15 @@
 #include <fstream>
 #include <common/Configuration.h>
 
+#if defined(__unix__) || defined(__APPLE__)
+#include <arpa/inet.h>
+#include <cerrno>
+#include <cstring>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <unistd.h>
+#endif
+
 namespace Thunder {
 namespace TestCore {
 
@@ -226,18 +235,91 @@ namespace TestCore {
         return false;
     }
 
-    string ThunderTestRuntime::BuildConfigJSON(const std::vector<PluginConfig>& plugins,
+#if defined(__unix__) || defined(__APPLE__)
+    // Probes whether the listener port can be bound. Server::Open() discards
+    // the listener-open result, so every probe failure is returned from here
+    // instead of being left for the server to report:
+    //   ERROR_NONE               - the port is free
+    //   ERROR_UNAVAILABLE        - the port is in use (EADDRINUSE)
+    //   ERROR_PRIVILIGED_REQUEST - no permission to bind the port (EACCES/EPERM)
+    //   ERROR_OPENING_FAILED     - any other socket()/bind() failure
+    static uint32_t ProbeListenerPort(const uint16_t port)
+    {
+        const int fd = ::socket(AF_INET, SOCK_STREAM, 0);
+        if (fd < 0) {
+            TRACE_L1("ThunderTestRuntime: socket() failed while probing port %u: %s (errno %d)",
+                static_cast<uint32_t>(port), ::strerror(errno), errno);
+            return Core::ERROR_OPENING_FAILED;
+        }
+
+        // SO_REUSEADDR matches the listener Thunder creates, so ports left in
+        // TIME_WAIT by a previous run are treated as available, as they are
+        // for the server.
+        const int enable = 1;
+        if (::setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(enable)) < 0) {
+            TRACE_L1("ThunderTestRuntime: setsockopt(SO_REUSEADDR) failed for port probe (errno %d)", errno);
+        }
+
+        sockaddr_in address {};
+        address.sin_family = AF_INET;
+        address.sin_port = htons(port);
+        address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+
+        const bool bound = (::bind(fd, reinterpret_cast<sockaddr*>(&address), sizeof(address)) == 0);
+        const int bindErrno = bound ? 0 : errno;
+        ::close(fd);
+
+        if (bound == true) {
+            return Core::ERROR_NONE;
+        }
+
+        if (bindErrno == EADDRINUSE) {
+            TRACE_L1("ThunderTestRuntime: Listener port %u is already in use", static_cast<uint32_t>(port));
+            return Core::ERROR_UNAVAILABLE;
+        }
+
+        if ((bindErrno == EACCES) || (bindErrno == EPERM)) {
+            TRACE_L1("ThunderTestRuntime: No permission to bind listener port %u: %s (errno %d)",
+                static_cast<uint32_t>(port), ::strerror(bindErrno), bindErrno);
+            return Core::ERROR_PRIVILIGED_REQUEST;
+        }
+
+        TRACE_L1("ThunderTestRuntime: bind() probe on port %u failed: %s (errno %d)",
+            static_cast<uint32_t>(port), ::strerror(bindErrno), bindErrno);
+        return Core::ERROR_OPENING_FAILED;
+    }
+#else
+    // No POSIX socket API: skip the up-front port probe.
+    static uint32_t ProbeListenerPort(const uint16_t)
+    {
+        return Core::ERROR_NONE;
+    }
+#endif
+
+    string ThunderTestRuntime::BuildConfigJSON(
+        const std::vector<PluginConfig>& plugins,
         const string& systemPath,
-        const string& proxyStubPath) const
+        const string& proxyStubPath,
+        const uint16_t port,
+        const Core::OptionalType<uint8_t>& channelThrottle) const
     {
         const string communicatorPath = _tempDir + "communicator|0777";
 
         JsonObject config;
         JsonArray pluginList;
+        JsonObject process;
 
-        config["port"] = 0;
+        config["port"] = port;
         config["binding"] = "127.0.0.1";
         config["idletime"] = 180;
+
+        // Without a "process" block Thunder falls back to 4 workers and ignores THREADPOOL_COUNT.
+        process["threadpoolcount"] = static_cast<uint32_t>(THREADPOOL_COUNT);
+        config["process"] = process;
+
+        if (channelThrottle.IsSet() == true) {
+            config["channel_throttle"] = channelThrottle.Value();
+        }
         config["persistentpath"] = _tempDir + "persistent/";
         config["volatilepath"] = _tempDir + "volatile/";
         config["datapath"] = _tempDir + "data/";
@@ -268,12 +350,23 @@ namespace TestCore {
         return json;
     }
 
-    uint32_t ThunderTestRuntime::Initialize(const std::vector<PluginConfig>& plugins,
+    uint32_t ThunderTestRuntime::StartServer(
+        const std::vector<PluginConfig>& plugins,
         const string& systemPath,
-        const string& proxyStubPath)
+        const string& proxyStubPath,
+        const uint16_t port,
+        const Core::OptionalType<uint8_t>& channelThrottle)
     {
         if (_server != nullptr) {
             return Core::ERROR_ALREADY_CONNECTED;
+        }
+
+        // Server::Open() ignores listener failures, so fail on any probe error up front.
+        if (port != 0) {
+            const uint32_t probeResult = ProbeListenerPort(port);
+            if (probeResult != Core::ERROR_NONE) {
+                return probeResult;
+            }
         }
 
         if (CreateUniqueTemporaryDirectory(_tempDir) == false) {
@@ -294,7 +387,13 @@ namespace TestCore {
             ? Core::Directory::Normalize(DEFAULT_PROXYSTUB_PATH)
             : Core::Directory::Normalize(proxyStubPath);
 
-        const string configJSON = BuildConfigJSON(plugins, sysPath, _proxyStubPath);
+        const string configJSON =
+            BuildConfigJSON(
+                plugins,
+                sysPath,
+                _proxyStubPath,
+                port,
+                channelThrottle);
         if (configJSON.empty()) {
             CleanupDirectories();
             _tempDir.clear();
@@ -342,6 +441,45 @@ namespace TestCore {
         _initialized = true;
 
         return Core::ERROR_NONE;
+    }
+
+    uint32_t ThunderTestRuntime::Initialize(const std::vector<PluginConfig>& plugins,
+        const string& systemPath,
+        const string& proxyStubPath,
+        const uint16_t port,
+        const uint8_t channelThrottle)
+    {
+        return StartServer(
+            plugins,
+            systemPath,
+            proxyStubPath,
+            port,
+            Core::OptionalType<uint8_t>(channelThrottle));
+    }
+
+    uint32_t ThunderTestRuntime::Initialize(const std::vector<PluginConfig>& plugins,
+        const string& systemPath,
+        const string& proxyStubPath,
+        const uint16_t port)
+    {
+        return StartServer(
+            plugins,
+            systemPath,
+            proxyStubPath,
+            port,
+            Core::OptionalType<uint8_t>());
+    }
+
+    uint32_t ThunderTestRuntime::Initialize(const std::vector<PluginConfig>& plugins,
+        const string& systemPath,
+        const string& proxyStubPath)
+    {
+        return StartServer(
+            plugins,
+            systemPath,
+            proxyStubPath,
+            0,
+            Core::OptionalType<uint8_t>());
     }
 
     Core::ProxyType<ThunderTestRuntime::JSONRPCLink> ThunderTestRuntime::CreateJSONRPCLink(const string& callsign)

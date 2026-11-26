@@ -83,6 +83,16 @@ namespace TestCore {
         uint32_t Initialize(const std::vector<PluginConfig>& plugins,
             const string& systemPath = "",
             const string& proxyStubPath = "");
+        uint32_t Initialize(const std::vector<PluginConfig>& plugins,
+                        const string& systemPath,
+                        const string& proxyStubPath,
+                        const uint16_t port,
+                        const uint8_t channelThrottle);
+        // Starts the server on a custom port without a channel_throttle entry.
+        uint32_t Initialize(const std::vector<PluginConfig>& plugins,
+                        const string& systemPath,
+                        const string& proxyStubPath,
+                        const uint16_t port);
 
         Core::ProxyType<JSONRPCLink> CreateJSONRPCLink(const string& callsign);
         uint32_t Invoke(const string& method, const string& params, string& response);
@@ -108,9 +118,18 @@ namespace TestCore {
         void Deinitialize();
 
     private:
-        string BuildConfigJSON(const std::vector<PluginConfig>& plugins,
+        uint32_t StartServer(
+            const std::vector<PluginConfig>& plugins,
             const string& systemPath,
-            const string& proxyStubPath) const;
+            const string& proxyStubPath,
+            const uint16_t port,
+            const Core::OptionalType<uint8_t>& channelThrottle);
+        string BuildConfigJSON(
+            const std::vector<PluginConfig>& plugins,
+            const string& systemPath,
+            const string& proxyStubPath,
+            const uint16_t port,
+            const Core::OptionalType<uint8_t>& channelThrottle) const;
         bool CreateDirectories() const;
         void CleanupDirectories() const;
 

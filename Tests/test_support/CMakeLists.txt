@@ -11,7 +11,19 @@ find_package(Threads REQUIRED)
 
 set(THUNDER_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../Source/Thunder")
 
-set(THREADPOOL_COUNT "4" CACHE STRING "The number of threads in the thread pool for test runtime")
+# THREADPOOL_COUNT is declared by Source/Thunder, which is skipped when
+# EXECUTABLE=OFF. Fall back to 4 then, but still honor a count passed with
+# -DTHREADPOOL_COUNT=<n>.
+if(DEFINED THREADPOOL_COUNT AND NOT "${THREADPOOL_COUNT}" STREQUAL "")
+    set(_test_runtime_threadpool_default "${THREADPOOL_COUNT}")
+else()
+    set(_test_runtime_threadpool_default "4")
+endif()
+set(TEST_RUNTIME_THREADPOOL_COUNT "${_test_runtime_threadpool_default}" CACHE STRING "The number of threads in the thread pool for test runtime (defaults to THREADPOOL_COUNT, or 4 if that is unset)")
+
+if(NOT TEST_RUNTIME_THREADPOOL_COUNT MATCHES "^[1-9][0-9]*$" OR TEST_RUNTIME_THREADPOOL_COUNT GREATER 255)
+    message(FATAL_ERROR "TEST_RUNTIME_THREADPOOL_COUNT must be an integer between 1 and 255, got '${TEST_RUNTIME_THREADPOOL_COUNT}'")
+endif()
 
 set(TARGET thunder_test_support)
 
@@ -40,7 +52,7 @@ target_compile_definitions(${TARGET}
         NAMESPACE=${NAMESPACE}
         APPLICATION_NAME=ThunderTestRuntime
         MODULE_NAME=ThunderTestRuntime
-        THREADPOOL_COUNT=${THREADPOOL_COUNT}
+        THREADPOOL_COUNT=${TEST_RUNTIME_THREADPOOL_COUNT}
         DEFAULT_SYSTEM_PATH="${SYSTEM_PATH}"
         DEFAULT_PROXYSTUB_PATH="${PROXYSTUB_PATH}"
         THUNDER_POSTMORTEM_WORKERPOOL_SINK_DEFAULT=1
