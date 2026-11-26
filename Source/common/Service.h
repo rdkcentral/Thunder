@@ -283,7 +283,11 @@ namespace PluginHost {
         }
         inline bool IsHibernated() const
         {
+#ifdef HIBERNATE_SUPPORT_ENABLED
             return (_state == HIBERNATED);
+#else
+            return (false);
+#endif
         }
         inline bool HasError() const
         {
