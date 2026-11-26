@@ -4277,8 +4277,8 @@
 <td>Type alias for <code>Plugin::Config</code>. Key fields: <code>Callsign</code>, <code>Locator</code>, <code>ClassName</code>, <code>StartupOrder</code>, <code>StartMode</code>, <code>Configuration</code>.</td>
 </tr>
 <tr>
-<td><code>Initialize()</code></td>
-<td>Boots the embedded server with given plugins, system path, and proxy stub path.</td>
+<td><code>Initialize(plugins, systemPath = "", proxyStubPath = "", port = 0)</code></td>
+<td>Boots the embedded server with the given plugins. <code>systemPath</code> and <code>proxyStubPath</code> default to the built-in locations when empty. <code>port</code> is the listener port written to the server config (bound on <code>127.0.0.1</code>); <code>0</code> (default) passes port 0 through to the socket layer, so the OS assigns an ephemeral port. See <a href="#why-port-0">Why port 0?</a>.</td>
 </tr>
 <tr>
 <td><code>Deinitialize()</code></td>
@@ -4295,6 +4295,10 @@
 <tr>
 <td><code>Invoke(method, params, response)</code></td>
 <td>JsonObject overload — handles serialization/deserialization automatically and forwards an empty token string.</td>
+</tr>
+<tr>
+<td><code>Invoke(method, params, token, response)</code></td>
+<td>JsonObject overload with token — handles serialization/deserialization automatically and forwards the token.</td>
 </tr>
 <tr>
 <td><code>CreateJSONRPCLink()</code></td>
@@ -4345,6 +4349,10 @@
 <td>JsonObject overload — handles serialization/deserialization automatically and forwards an empty token string.</td>
 </tr>
 <tr>
+<td><code>Invoke(method, params, token, response)</code></td>
+<td>JsonObject overload with token — handles serialization/deserialization automatically and forwards the token.</td>
+</tr>
+<tr>
 <td><code>Subscribe(event, handler, index)</code></td>
 <td>Subscribe to a JSON-RPC event by name with a <code>std::function&lt;void(const string&amp; designator, const string&amp; index, const string&amp; params)&gt;</code> callback. Optional <code>index</code> parameter for indexed events.</td>
 </tr>
@@ -4359,31 +4367,42 @@
 </tbody>
 </table>
 <h4 id="json-rpc-invocation-flow">JSON-RPC invocation flow</h4>
-<div class="highlight"><pre><span></span><code>Runtime-level Invoke:
-Invoke("Callsign.method", params, response)
-    ├── Parse designator → callsign, method
-    ├── Services().FromIdentifier()         → IShell proxy
+<div class="highlight"><pre><span></span><code>Terms:
+  designator  = full "Callsign.method" string supplied by the caller
+  callsign    = the part of designator before the first "."
+  methodName  = the bare method name (Message::Method(designator))
+  fullMethod  = the string passed as the 'method' argument to IDispatcher::Invoke()
+                (always the full "Callsign.method" designator)
+
+Runtime-level Invoke:
+Invoke(designator = "Callsign.method", params, response)
+    ├── callsign = parse(designator)                 // "Callsign"
+    ├── Services().FromIdentifier(callsign)          → IShell proxy
     ├── shell-&gt;QueryInterface&lt;IDispatcher&gt;()
-    └── dispatcher-&gt;Invoke(0, 0, "", method, params, response)
+    └── dispatcher-&gt;Invoke(0, 0, "", designator, params, response)
+                                     ^ 'method' arg = fullMethod = "Callsign.method"
 
 With authentication token:
-Invoke("Callsign.method", params, token, response)
-    ├── Parse designator → callsign, method
-    ├── Services().FromIdentifier()         → IShell proxy
+Invoke(designator = "Callsign.method", params, token, response)
+    ├── callsign = parse(designator)                 // "Callsign"
+    ├── Services().FromIdentifier(callsign)          → IShell proxy
     ├── shell-&gt;QueryInterface&lt;IDispatcher&gt;()
-    └── dispatcher-&gt;Invoke(0, 0, token, method, params, response)  ← token passed through
+    └── dispatcher-&gt;Invoke(0, 0, token, designator, params, response)  ← token passed through
+                                     ^ 'method' arg = fullMethod = "Callsign.method"
 
 Callsign-bound Invoke:
-link-&gt;Invoke("method", params, response)
-    ├── Use pre-bound callsign
+link-&gt;Invoke(methodName = "method", params, response)
+    ├── fullMethod = _callsign + "." + methodName    // "Callsign.method"
     ├── shell-&gt;QueryInterface&lt;IDispatcher&gt;()
-    └── dispatcher-&gt;Invoke(0, 0, "", method, params, response)
+    └── dispatcher-&gt;Invoke(0, 0, "", fullMethod, params, response)
+                                     ^ 'method' arg = fullMethod = "Callsign.method"
 
 With authentication token (callsign-bound):
-link-&gt;Invoke("method", params, token, response)
-    ├── Use pre-bound callsign
+link-&gt;Invoke(methodName = "method", params, token, response)
+    ├── fullMethod = _callsign + "." + methodName    // "Callsign.method"
     ├── shell-&gt;QueryInterface&lt;IDispatcher&gt;()
-    └── dispatcher-&gt;Invoke(0, 0, token, method, params, response)  ← token passed through
+    └── dispatcher-&gt;Invoke(0, 0, token, fullMethod, params, response)  ← token passed through
+                                     ^ 'method' arg = fullMethod = "Callsign.method"
 </code></pre></div>
 <h4 id="com-rpc-interface-access">COM-RPC interface access</h4>
 <div class="highlight"><pre><span></span><code>QueryInterfaceByCallsign&lt;Exchange::IMyInterface&gt;("Callsign")
