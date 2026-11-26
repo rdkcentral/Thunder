@@ -765,9 +765,10 @@ namespace Core {
     // Open() on already-open socket — must return ERROR_ILLEGAL_STATE
     // =========================================================================
 
-    // Datagram that records the size handed to every ReceiveData() call. The first call consumes
-    // nothing, so the bytes stay pending in the receive buffer and are reported again, together
-    // with the next datagram, on the following call.
+    // Datagram that records the size handed to ReceiveData(). It only consumes the data once the
+    // full 6 bytes of this test are present, until then the bytes stay pending in the receive
+    // buffer. ReceiveData() is also called again for the same pending data, so repeated sizes
+    // are recorded once.
     class PendingDatagram : public ::Thunder::Core::SocketDatagram {
     public:
         PendingDatagram() = delete;
@@ -785,9 +786,11 @@ namespace Core {
         uint16_t ReceiveData(uint8_t*, const uint16_t size) override
         {
             std::unique_lock<std::mutex> lk(_mutex);
-            _sizes.push_back(size);
-            _cv.notify_all();
-            return (_sizes.size() == 1 ? 0 : size);
+            if (_sizes.empty() || (_sizes.back() != size)) {
+                _sizes.push_back(size);
+                _cv.notify_all();
+            }
+            return (size == 6 ? size : 0);
         }
 
         void StateChange() override {}
