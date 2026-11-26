@@ -21,8 +21,8 @@ else()
 endif()
 set(TEST_RUNTIME_THREADPOOL_COUNT "${_test_runtime_threadpool_default}" CACHE STRING "The number of threads in the thread pool for test runtime (defaults to THREADPOOL_COUNT, or 4 if that is unset)")
 
-if(NOT TEST_RUNTIME_THREADPOOL_COUNT MATCHES "^[1-9][0-9]*$")
-    message(FATAL_ERROR "TEST_RUNTIME_THREADPOOL_COUNT must be a positive integer, got '${TEST_RUNTIME_THREADPOOL_COUNT}'")
+if(NOT TEST_RUNTIME_THREADPOOL_COUNT MATCHES "^[1-9][0-9]*$" OR TEST_RUNTIME_THREADPOOL_COUNT GREATER 255)
+    message(FATAL_ERROR "TEST_RUNTIME_THREADPOOL_COUNT must be an integer between 1 and 255, got '${TEST_RUNTIME_THREADPOOL_COUNT}'")
 endif()
 
 set(TARGET thunder_test_support)
