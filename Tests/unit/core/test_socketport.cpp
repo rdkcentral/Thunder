@@ -824,6 +824,24 @@ namespace Core {
         const string path = "/tmp/test_sp_dblopen.sock";
         ::unlink(path.c_str());
         PendingDatagram sock(::Thunder::Core::NodeId(path.c_str()));
+        int client = -1;
+
+        // Runs on every exit path, including a failing ASSERT_*, and before 'sock' is destructed,
+        // as a SocketPort must be closed before it is destructed.
+        struct Teardown {
+            PendingDatagram& _sock;
+            const string& _path;
+            int& _client;
+            ~Teardown()
+            {
+                if (_client >= 0) {
+                    ::close(_client);
+                }
+                _sock.Close(1000);
+                ::unlink(_path.c_str());
+                ::Thunder::Core::Singleton::Dispose();
+            }
+        } teardown { sock, path, client };
 
         ASSERT_EQ(sock.Open(1000), ::Thunder::Core::ERROR_NONE);
 
@@ -832,7 +850,7 @@ namespace Core {
         addr.sun_family = AF_UNIX;
         strncpy(addr.sun_path, path.c_str(), sizeof(addr.sun_path) - 1);
 
-        int client = ::socket(AF_UNIX, SOCK_DGRAM, 0);
+        client = ::socket(AF_UNIX, SOCK_DGRAM, 0);
         ASSERT_GE(client, 0);
 
         // Leave 4 bytes pending in the receive buffer.
@@ -849,13 +867,9 @@ namespace Core {
         ASSERT_TRUE(sock.WaitForCalls(2, 2000));
 
         const std::vector<uint16_t> sizes = sock.Sizes();
+        ASSERT_GE(sizes.size(), 2u);
         EXPECT_EQ(sizes[0], 4u);
         EXPECT_EQ(sizes[1], 6u);
-
-        ::close(client);
-        sock.Close(1000);
-        ::unlink(path.c_str());
-        ::Thunder::Core::Singleton::Dispose();
     }
 
     // =========================================================================
