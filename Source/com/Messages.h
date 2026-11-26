@@ -291,10 +291,10 @@ namespace RPC {
 
         private:
             static constexpr uint8_t IMPLEMENTATION_OFFSET = 0;
-            static constexpr uint8_t ID_OFFSET = (IMPLEMENTATION_OFFSET + sizeof(Core::instance_id));
-            static constexpr uint8_t INTERFACEID_OFFSET = (ID_OFFSET + sizeof(uint32_t));
-            static constexpr uint8_t EXCHANGEID_OFFSET = (INTERFACEID_OFFSET + sizeof(uint32_t));
-            static constexpr uint8_t VERSIONID_OFFSET = (EXCHANGEID_OFFSET + sizeof(uint32_t));
+            static constexpr uint8_t PROCESSID_OFFSET = (IMPLEMENTATION_OFFSET + sizeof(Core::instance_id));
+            static constexpr uint8_t INTERFACEID_OFFSET = (PROCESSID_OFFSET + sizeof(uint32_t));
+            static constexpr uint8_t CONNECTIONID_OFFSET = (INTERFACEID_OFFSET + sizeof(uint32_t));
+            static constexpr uint8_t VERSIONID_OFFSET = (CONNECTIONID_OFFSET + sizeof(uint32_t));
             static constexpr uint8_t TYPE_OFFSET = (VERSIONID_OFFSET + sizeof(uint32_t));
             static constexpr uint8_t STRINGS_OFFSET = (TYPE_OFFSET + sizeof(type));
 
@@ -318,10 +318,10 @@ namespace RPC {
 
                 return (result);
             }
-            void Set(const uint32_t myId, const string& className, const Core::instance_id implementation,
-                     const uint32_t interfaceId, const uint32_t myExchangeId, const uint32_t versionId, const type whatKind)
+            void Set(const uint32_t processId, const string& className, const Core::instance_id implementation,
+                     const uint32_t interfaceId, const uint32_t myConnectionId, const uint32_t versionId, const type whatKind)
             {
-                uint32_t exchangeId = myExchangeId;
+                uint32_t connectionId = myConnectionId;
                 string callsign;
 
                 string parentInfo;
@@ -330,8 +330,8 @@ namespace RPC {
                 if (parentInfo.empty() == false) {
                     const size_t delimiter = std::min(parentInfo.find(','), parentInfo.length());
 
-                    if (exchangeId == static_cast<uint32_t>(~0UL)) {
-                        exchangeId = Core::NumberType<uint32_t>(parentInfo.c_str(), static_cast<uint32_t>(delimiter)).Value();
+                    if (connectionId == static_cast<uint32_t>(~0UL)) {
+                        connectionId = Core::NumberType<uint32_t>(parentInfo.c_str(), static_cast<uint32_t>(delimiter)).Value();
                     }
 
                     if (delimiter != parentInfo.length()) {
@@ -340,9 +340,9 @@ namespace RPC {
                 }
 
                 _data.SetNumber<Core::instance_id>(IMPLEMENTATION_OFFSET, implementation);
-                _data.SetNumber<uint32_t>(ID_OFFSET, myId);
+                _data.SetNumber<uint32_t>(PROCESSID_OFFSET, processId);
                 _data.SetNumber<uint32_t>(INTERFACEID_OFFSET, interfaceId);
-                _data.SetNumber<uint32_t>(EXCHANGEID_OFFSET, exchangeId);
+                _data.SetNumber<uint32_t>(CONNECTIONID_OFFSET, connectionId);
                 _data.SetNumber<uint32_t>(VERSIONID_OFFSET, versionId);
                 _data.SetNumber<type>(TYPE_OFFSET, whatKind);
                 const uint16_t classNameLength = _data.SetText(STRINGS_OFFSET, className);
@@ -375,27 +375,27 @@ namespace RPC {
             {
                 return (Type() == ACQUIRE);
             }
-            void Set(const uint32_t myId)
+            void Set(const uint32_t processId)
             {
-                Set(myId, _T(""), 0, ~0, ~0, ~0, ACQUIRE);
+                Set(processId, _T(""), 0, ~0, ~0, ~0, ACQUIRE);
             }
-            void Set(const uint32_t myId, const uint32_t interfaceId, Core::instance_id implementation, const uint32_t exchangeId)
+            void Set(const uint32_t processId, const uint32_t interfaceId, Core::instance_id implementation, const uint32_t connectionId)
             {
-                ASSERT(exchangeId != 0);
-                Set(myId, _T(""), implementation, interfaceId, exchangeId, 0, REQUEST);
+                ASSERT(connectionId != 0);
+                Set(processId, _T(""), implementation, interfaceId, connectionId, 0, REQUEST);
             }
-            void Set(const uint32_t myId, const uint32_t interfaceId, Core::instance_id implementation, const type whatKind)
+            void Set(const uint32_t processId, const uint32_t interfaceId, Core::instance_id implementation, const type whatKind)
             {
                 ASSERT((whatKind != ACQUIRE) && (whatKind != REQUEST));
-                Set(myId, _T(""), implementation, interfaceId, ~0, 0, whatKind);
+                Set(processId, _T(""), implementation, interfaceId, ~0, 0, whatKind);
             }
-            void Set(const uint32_t myId, const string& className, const uint32_t interfaceId, const uint32_t versionId)
+            void Set(const uint32_t processId, const string& className, const uint32_t interfaceId, const uint32_t versionId)
             {
-                Set(myId, className, 0, interfaceId, ~0, versionId, ACQUIRE);
+                Set(processId, className, 0, interfaceId, ~0, versionId, ACQUIRE);
             }
-            uint32_t Id() const
+            uint32_t ProcessId() const
             {
-                return (GetNumber<uint32_t>(ID_OFFSET));
+                return (GetNumber<uint32_t>(PROCESSID_OFFSET));
             }
             Core::instance_id Implementation() const
             {
@@ -405,9 +405,9 @@ namespace RPC {
             {
                 return (GetNumber<uint32_t>(INTERFACEID_OFFSET));
             }
-            uint32_t ExchangeId() const
+            uint32_t ConnectionId() const
             {
-                return (GetNumber<uint32_t>(EXCHANGEID_OFFSET));
+                return (GetNumber<uint32_t>(CONNECTIONID_OFFSET));
             }
             uint32_t VersionId() const
             {
@@ -454,11 +454,11 @@ namespace RPC {
             {
                 _data.Clear();
             }
-            void Set(Core::instance_id implementation, const uint32_t sequenceNumber,const string& proxyStubPath, const string& messagingSettings, const string& warningReportingSettings)
+            void Set(Core::instance_id implementation, const uint32_t connectionId, const string& proxyStubPath, const string& messagingSettings, const string& warningReportingSettings)
             {
                 uint16_t length = 0;
                 _data.SetNumber<Core::instance_id>(0, implementation);
-                _data.SetNumber<uint32_t>(sizeof(Core::instance_id), sequenceNumber);
+                _data.SetNumber<uint32_t>(sizeof(Core::instance_id), connectionId);
 
                 length = _data.SetText(sizeof(Core::instance_id) + sizeof(uint32_t) + sizeof(Output::mode), proxyStubPath);
                 length += _data.SetText(sizeof(Core::instance_id)+ sizeof(uint32_t) + sizeof(Output::mode) + length, messagingSettings);
@@ -467,7 +467,7 @@ namespace RPC {
             inline bool IsSet() const {
                 return (_data.Size() > 0);
             }
-            uint32_t SequenceNumber() const
+            uint32_t ConnectionId() const
             {
                 uint32_t result;
                 _data.GetNumber<uint32_t>(sizeof(Core::instance_id), result);
@@ -487,7 +487,7 @@ namespace RPC {
             {
                 string value;
 
-                uint16_t length = sizeof(Core::instance_id) + sizeof(uint32_t) + sizeof(Output::mode); // skip implementation and sequence number
+                uint16_t length = sizeof(Core::instance_id) + sizeof(uint32_t) + sizeof(Output::mode); // skip implementation and connection id
 
                 _data.GetText(length, value);
 
@@ -497,7 +497,7 @@ namespace RPC {
             {
                 string value;
 
-                uint16_t length = sizeof(Core::instance_id) + sizeof(uint32_t) + sizeof(Output::mode); // skip implementation and sequence number
+                uint16_t length = sizeof(Core::instance_id) + sizeof(uint32_t) + sizeof(Output::mode); // skip implementation and connection id
                 length += _data.GetText(length, value);  // skip proxyStub path
 
                 _data.GetText(length, value);
@@ -508,7 +508,7 @@ namespace RPC {
             {
                 string value;
 
-                uint16_t length = sizeof(Core::instance_id) + sizeof(uint32_t) + sizeof(Output::mode); // skip implementation and sequence number
+                uint16_t length = sizeof(Core::instance_id) + sizeof(uint32_t) + sizeof(Output::mode); // skip implementation and connection id
                 length += _data.GetText(length, value);  // skip proxyStub path
                 length += _data.GetText(length, value);  // skip messaging categories
 

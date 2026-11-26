@@ -513,6 +513,8 @@ namespace RPC {
         ~IMonitorableProcess() override = default;
 
         virtual string Callsign() const = 0;
+        // Process id (as seen by this process) of the process hosting the connection, i.e. the parent of any
+        // process it spawns itself. For local processes this equals IRemoteConnection::RemoteId().
         virtual Core::instance_id ParentPID() const = 0;
     };
 
@@ -550,7 +552,8 @@ namespace RPC {
             ChannelLink(Core::IPCChannelType<Core::SocketPort, ChannelLink>* channel)
                 : _channel(channel->Source())
                 , _connectionMap(nullptr)
-                , _id(0)
+                , _connectionId(0)
+                , _remoteProcessId(0)
             {
                 // We are a composit of the Channel, no need (and do not for cyclic references) not maintain a reference...
                 ASSERT(channel != nullptr);
@@ -558,22 +561,24 @@ namespace RPC {
             ~ChannelLink() = default;
 
         public:
-            inline void Link(RemoteConnectionMap& connectionMap, const uint32_t id)
+            inline void Link(RemoteConnectionMap& connectionMap, const uint32_t connectionId, const uint32_t remoteProcessId)
             {
                 _connectionMap = &connectionMap;
-                _id = id;
+                _connectionId = connectionId;
+                _remoteProcessId = remoteProcessId;
             }
             inline void StateChange()
             {
                 // If the connection closes, we need to clean up....
                 if ((_channel.IsOpen() == false) && (_connectionMap != nullptr)) {
-                    _connectionMap->Closed(_id);
+                    _connectionMap->Closed(_connectionId);
                 }
             }
             inline bool IsRegistered() const
             {
                 return (_connectionMap != nullptr);
             }
+            // Channel id: identifies the socket this channel runs over.
             inline uint32_t Id() const
             {
                 return (_channel.Descriptor());
@@ -581,15 +586,22 @@ namespace RPC {
             inline string Origin() const {
                 return (_connectionMap->Origin());
             }
-            inline uint32_t ExchangeId() const {
-                return (_id);
+            // Connection id: the IRemoteConnection::Id() of the connection this channel is linked to.
+            inline uint32_t ConnectionId() const {
+                return (_connectionId);
             }
+            // Process id of the remote side: the IRemoteConnection::RemoteId() of the connection this channel is linked to.
+            inline uint32_t RemoteProcessId() const {
+                return (_remoteProcessId);
+            }
+            void Disconnect();
 
         private:
             // Non ref-counted reference to our parent, of which we are a composit :-)
             Core::SocketPort& _channel;
             RemoteConnectionMap* _connectionMap;
-            uint32_t _id;
+            uint32_t _connectionId;
+            uint32_t _remoteProcessId;
         };
         using Client = Core::IPCChannelServerType<ChannelLink, true>::Client;
 
@@ -601,7 +613,7 @@ namespace RPC {
             Process& operator=(Process&&) = delete;
             Process& operator=(const Process&) = delete;
 
-            Process(const uint32_t sequenceNumber, const Config& config, const Object& instance)
+            Process(const uint32_t connectionId, const Config& config, const Object& instance)
                 : _options(config.HostApplication())
                 , _id(0)
             {
@@ -614,7 +626,7 @@ namespace RPC {
                 _options.Add(_T("-C")).Add(instance.Callsign());
                 _options.Add(_T("-r")).Add(config.Connector());
                 _options.Add(_T("-i")).Add(Core::NumberType<uint32_t>(instance.Interface()).Text());
-                _options.Add(_T("-x")).Add(Core::NumberType<uint32_t>(sequenceNumber).Text());
+                _options.Add(_T("-x")).Add(Core::NumberType<uint32_t>(connectionId).Text());
 
                 if (instance.Version() != static_cast<uint32_t>(~0)) {
                     _options.Add(_T("-V")).Add(Core::NumberType<uint32_t>(instance.Version()).Text());
@@ -672,7 +684,7 @@ namespace RPC {
             {
                 return (_options.Get());
             }
-            uint32_t Launch(uint32_t& id)
+            uint32_t Launch(uint32_t& pid)
             {
                 string oldLDLibraryPaths;
                 _ldLibLock.Lock();
@@ -690,8 +702,8 @@ namespace RPC {
                 // Start the external process launch..
                 Core::Process fork(false);
 
-                uint32_t result = fork.Launch(_options, &id);
-                _id = id;
+                uint32_t result = fork.Launch(_options, &pid);
+                _id = pid;
 
                 //restore the original value
                 if (_systemRootPath.empty() == false) {
@@ -701,7 +713,7 @@ namespace RPC {
                 _ldLibLock.Unlock();
 
                 if ((result == Core::ERROR_NONE) && (_priority != 0)) {
-                    Core::ProcessInfo newProcess(id);
+                    Core::ProcessInfo newProcess(pid);
                     newProcess.Priority(newProcess.Priority() + _priority);
                 }
 
@@ -756,13 +768,13 @@ namespace RPC {
         protected:
             RemoteConnection()
                 : _channel()
-                , _id(_sequenceId++)
-                , _remoteId(0) {
+                , _connectionId(_nextConnectionId++)
+                , _reportedProcessId(0) {
             }
-            RemoteConnection(Core::ProxyType<Client>& channel, const uint32_t remoteId)
+            RemoteConnection(Core::ProxyType<Client>& channel, const uint32_t reportedProcessId)
                 : _channel(channel)
-                , _id(_sequenceId++)
-                , _remoteId(remoteId) {
+                , _connectionId(_nextConnectionId++)
+                , _reportedProcessId(reportedProcessId) {
             }
 
         public:
@@ -792,7 +804,7 @@ namespace RPC {
 
                 return (Core::ProxyType<Core::IPCChannel>(_channel));
             }
-            void Open(Core::ProxyType<Client>& channel, const uint32_t id)
+            void Open(Core::ProxyType<Client>& channel, const uint32_t reportedProcessId)
             {
                 ASSERT(_channel.IsValid() == false);
 
@@ -800,7 +812,7 @@ namespace RPC {
                 TRACE_L1("Link announced. All up and running %d, has announced itself.", Id());
 
                 _channel = channel;
-                _remoteId = id;
+                _reportedProcessId = reportedProcessId;
             }
             void Close()
             {
@@ -815,9 +827,13 @@ namespace RPC {
 
         private:
             Core::ProxyType<Core::IPCChannelType<Core::SocketPort, ChannelLink>> _channel;
-            uint32_t _id;
-            uint32_t _remoteId;
-            static std::atomic<uint32_t> _sequenceId;
+            // Unique (per Thunder instance) id of this connection, handed to a spawned process (-x) so it can identify
+            // itself when it announces, see IRemoteConnection::Id().
+            uint32_t _connectionId;
+            // Process id of the remote side as reported by the remote side (so valid in its namespace), see
+            // IRemoteConnection::RemoteId(). Spawned processes override RemoteId() with the pid known on this side.
+            uint32_t _reportedProcessId;
+            static std::atomic<uint32_t> _nextConnectionId;
         };
 
     private:
@@ -915,7 +931,6 @@ namespace RPC {
 
             LocalProcess(const Config& config, const Object& instance, RemoteConnectionMap& parent)
                 : MonitorableProcess(instance.Callsign(), parent)
-                , _id(0)
                 , _process(RemoteConnection::Id(), config, instance)
             {
             }
@@ -924,7 +939,8 @@ namespace RPC {
         public:
             uint32_t Launch() override
             {
-                return (_process.Launch(_id));
+                uint32_t pid = 0;
+                return (_process.Launch(pid));
             }
             const string& Command() const
             {
@@ -935,7 +951,7 @@ namespace RPC {
                 return (_process.Options());
             }
             Core::instance_id ParentPID() const override {
-                return (static_cast<Core::instance_id>(_id));
+                return (static_cast<Core::instance_id>(_process.Id()));
             }
             uint32_t EndProcess() override {
                 uint32_t nextinterval = 0;
@@ -966,7 +982,6 @@ namespace RPC {
             END_INTERFACE_MAP
 
         private:
-            uint32_t _id;
             Process _process;
         };
 
@@ -1142,9 +1157,9 @@ namespace RPC {
                 Info& operator=(Info&&) = delete;
                 Info& operator=(const Info&) = delete;
 
-                Info(Core::Event& event, const uint32_t id)
+                Info(Core::Event& event, const uint32_t interfaceId)
                     : _event(event)
-                    , _id(id)
+                    , _interfaceId(interfaceId)
                     , _interface(nullptr) {
                 }
                 ~Info() = default;
@@ -1156,7 +1171,7 @@ namespace RPC {
 
                     // Get the interface pointer that was stored during the triggering of the event...
                     // It is reference counted so it has to be dereferenced by the caller.
-                    RPC::Administrator::Instance().ProxyInstance(channel, implementation, true, _id, _interface);
+                    RPC::Administrator::Instance().ProxyInstance(channel, implementation, true, _interfaceId, _interface);
 
                     _event.SetEvent();
                 }
@@ -1167,7 +1182,7 @@ namespace RPC {
 
             private:
                 Core::Event& _event;
-                uint32_t _id;
+                uint32_t _interfaceId;
                 void* _interface;
             };
 
@@ -1256,11 +1271,11 @@ namespace RPC {
                     _adminLock.Unlock();
                 }
             }
-            inline void* Create(uint32_t& id, const Object& instance, const Config& config, const uint32_t waitTime)
+            inline void* Create(uint32_t& connectionId, const Object& instance, const Config& config, const uint32_t waitTime)
             {
                 void* interfaceReturned = nullptr;
 
-                id = 0;
+                connectionId = 0;
 
                 _adminLock.Lock();
 
@@ -1292,7 +1307,7 @@ namespace RPC {
                         interfaceReturned = locator.first->second.Interface();
 
                         if (interfaceReturned != nullptr) {
-                            id = result->Id();
+                            connectionId = result->Id();
                         }
 
                     } else {
@@ -1406,10 +1421,10 @@ namespace RPC {
                         // This is an announce message from a process that wasn't created by us. So typically this is
                         // An RPC client reaching out to an RPC server. The RPCServer does not spawn processes it just
                         // listens for clients requesting service.
-                        Communicator::RemoteConnection* remoteConnection = Core::ServiceType<RemoteConnection>::Create<RemoteConnection>(channel, info.Id());
-
-                        channel->Extension().Link(*this, remoteConnection->Id());
+                        Communicator::RemoteConnection* remoteConnection = Core::ServiceType<RemoteConnection>::Create<RemoteConnection>(channel, info.ProcessId());
                         ASSERT(remoteConnection != nullptr);
+
+                        channel->Extension().Link(*this, remoteConnection->Id(), remoteConnection->RemoteId());
 
                         // Add ref is done during the creation, no need to take another reference unless we also would release it after
                         // insertion :-)
@@ -1450,15 +1465,17 @@ namespace RPC {
             }
             void Request(Core::ProxyType<Client>& channel, const Data::Init& info)
             {
-               RemoteConnections::iterator index(_connections.find(info.ExchangeId()));
+               RemoteConnections::iterator index(_connections.find(info.ConnectionId()));
 
                 ASSERT(index != _connections.end());
                 ASSERT(index->second->IsOperational() == false);
 
                 // This is when we requested this interface/object to be created, there must be already an
                 // administration, it is just not complete.... yet!!!!
-                index->second->Open(channel, info.Id());
-                channel->Extension().Link(*this, index->second->Id());
+                index->second->Open(channel, info.ProcessId());
+                // Use RemoteId() rather than the reported process id, as for spawned processes we know the pid
+                // ourselves, which is the one valid in our namespace (e.g. if the process runs in a container).
+                channel->Extension().Link(*this, index->second->Id(), index->second->RemoteId());
 
                 Activated(index->second);
 
@@ -1583,7 +1600,7 @@ namespace RPC {
 
                         void* result = _parent.Announce(proxyChannel, message->Parameters(), message->Response());
 
-                        message->Response().Set(instance_cast<void*>(result), proxyChannel->Extension().ExchangeId(), _parent.ProxyStubPath(), jsonDefaultMessagingSettings, jsonDefaultWarningReportingSettings);
+                        message->Response().Set(instance_cast<void*>(result), proxyChannel->Extension().ConnectionId(), _parent.ProxyStubPath(), jsonDefaultMessagingSettings, jsonDefaultWarningReportingSettings);
 
                         // We are done, report completion
                         channel.ReportResponse(data);
@@ -1746,9 +1763,9 @@ POP_WARNING()
         {
             return (_connectionMap.Connection(id));
         }
-        inline void* Create(uint32_t& pid, const Object& instance, const Config& config, const uint32_t waitTime)
+        inline void* Create(uint32_t& connectionId, const Object& instance, const Config& config, const uint32_t waitTime)
         {
-            return (_connectionMap.Create(pid, instance, config, waitTime));
+            return (_connectionMap.Create(connectionId, instance, config, waitTime));
         }
         void Destroy()
         {
@@ -1900,7 +1917,7 @@ POP_WARNING()
         }
 
         // Open and offer the requested interface (Applicable if the ThunderPlugin starts the RPCClient)
-        uint32_t Open(const uint32_t waitTime, const uint32_t interfaceId, void* implementation, const uint32_t exchangeId);
+        uint32_t Open(const uint32_t waitTime, const uint32_t interfaceId, void* implementation, const uint32_t connectionId);
 
         template <typename INTERFACE>
         INTERFACE* Acquire(const uint32_t waitTime, const string& className, const uint32_t versionId)

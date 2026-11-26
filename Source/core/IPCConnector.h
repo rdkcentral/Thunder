@@ -785,9 +785,13 @@ POP_WARNING()
 
         virtual uint32_t Id() const = 0;
         virtual string Origin() const = 0;
+        // Process id of the other side of this channel, if the channel knows it, 0 otherwise.
+        virtual uint32_t RemoteProcessId() const = 0;
         virtual uint32_t ReportResponse(Core::ProxyType<IIPC>& inbound) = 0;
         virtual bool IsOpen() const = 0;
         virtual bool IsClosed() const = 0;
+        // Forcefully drop the connection. It is up to the channel to decide if it honors this request.
+        virtual void Disconnect() = 0;
 
     private:
         virtual uint32_t Execute(const ProxyType<IIPC>& command, IDispatchType<IIPC>* completed) = 0;
@@ -942,6 +946,12 @@ POP_WARNING()
         inline string Origin() const override {
             return (__Origin());
         }
+        inline uint32_t RemoteProcessId() const override {
+            return (__RemoteProcessId());
+        }
+        inline void Disconnect() override {
+            __Disconnect();
+        }
         inline uint32_t ReportResponse(Core::ProxyType<IIPC>& inbound) override
         {
             // We got the event, start the invoke, wait for the event to be set again..
@@ -1010,6 +1020,37 @@ POP_WARNING()
         {
             static string unknown(_T("Unknown"));
             return (unknown);
+        }
+
+        IS_MEMBER_AVAILABLE(RemoteProcessId, hasRemoteProcessId);
+
+        template <typename T = EXTENSION>
+        typename Core::TypeTraits::enable_if<hasRemoteProcessId<const T, uint32_t> ::value, uint32_t>::type
+            __RemoteProcessId() const
+        {
+            return (_extension.RemoteProcessId());
+        }
+
+        template <typename T = EXTENSION>
+        typename Core::TypeTraits::enable_if<!hasRemoteProcessId<const T, uint32_t> ::value, uint32_t>::type
+            __RemoteProcessId() const
+        {
+            return (0);
+        }
+
+        IS_MEMBER_AVAILABLE(Disconnect, hasDisconnect);
+
+        template <typename T = EXTENSION>
+        typename Core::TypeTraits::enable_if<hasDisconnect<T, void> ::value, void>::type
+            __Disconnect()
+        {
+            _extension.Disconnect();
+        }
+
+        template <typename T = EXTENSION>
+        typename Core::TypeTraits::enable_if<!hasDisconnect<T, void> ::value, void>::type
+            __Disconnect()
+        {
         }
 
         uint32_t Execute(const ProxyType<IIPC>& command, IDispatchType<IIPC>* completed) override

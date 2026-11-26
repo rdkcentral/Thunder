@@ -159,7 +159,7 @@ namespace ProxyStub {
             if (result != Core::ERROR_NONE) {
 
                 if (result == Core::ERROR_TIMEDOUT) {
-                Shutdown();
+                    TimedOut(message->Parameters().InterfaceId(), message->Parameters().MethodId(), true);
                 }
 
                 result |= COM_ERROR;
@@ -181,17 +181,23 @@ namespace ProxyStub {
         return (id);
     }
 
-    void UnknownProxy::Shutdown() const
+    void UnknownProxy::TimedOut(const uint32_t interfaceId, const uint32_t methodId, const bool disconnect) const
     {
         _adminLock.Lock();
-        if (_channel.IsValid() == true) {
-            RPC::Communicator::Client* comchannel = dynamic_cast<RPC::Communicator::Client*>(_channel.operator->());
-            if (comchannel != nullptr) {
-                SYSLOG(Logging::Error, (_T("Shutting down the socket to avoid side-effects likely because an IPC method Invoke failed due to timeout. Execution of code may or may not have happened.")));
-                comchannel->Source().Close(0);
+        Core::ProxyType<Core::IPCChannel> channel(_channel);
+        _adminLock.Unlock();
+
+        if (channel.IsValid() == true) {
+            const uint32_t remoteProcessId = channel->RemoteProcessId();
+            const string remote = (remoteProcessId != 0 ? Core::NumberType<uint32_t>(remoteProcessId).Text() : string(_T("unknown")));
+
+            SYSLOG(Logging::Error, (_T("COM-RPC call timed out, interface [0x%X], method [%u], remote process [%s]. Execution of the call may or may not have happened."),
+                interfaceId, methodId, remote.c_str()));
+
+            if (disconnect == true) {
+                channel->Disconnect();
             }
         }
-        _adminLock.Unlock();
     }
 
     static class UnknownInstantiation {
