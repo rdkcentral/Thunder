@@ -765,23 +765,93 @@ namespace Core {
     // Open() on already-open socket — must return ERROR_ILLEGAL_STATE
     // =========================================================================
 
+    // Datagram that records the size handed to every ReceiveData() call. The first call consumes
+    // nothing, so the bytes stay pending in the receive buffer and are reported again, together
+    // with the next datagram, on the following call.
+    class PendingDatagram : public ::Thunder::Core::SocketDatagram {
+    public:
+        PendingDatagram() = delete;
+        PendingDatagram(const PendingDatagram&) = delete;
+        PendingDatagram& operator=(const PendingDatagram&) = delete;
+
+        explicit PendingDatagram(const ::Thunder::Core::NodeId& local)
+            : ::Thunder::Core::SocketDatagram(false, local, ::Thunder::Core::NodeId(), 512, 512)
+        {
+        }
+        ~PendingDatagram() override = default;
+
+        uint16_t SendData(uint8_t*, const uint16_t) override { return 0; }
+
+        uint16_t ReceiveData(uint8_t*, const uint16_t size) override
+        {
+            std::unique_lock<std::mutex> lk(_mutex);
+            _sizes.push_back(size);
+            _cv.notify_all();
+            return (_sizes.size() == 1 ? 0 : size);
+        }
+
+        void StateChange() override {}
+
+        bool WaitForCalls(const size_t count, const uint32_t ms)
+        {
+            std::unique_lock<std::mutex> lk(_mutex);
+            return _cv.wait_for(lk, std::chrono::milliseconds(ms),
+                                [this, count] { return _sizes.size() >= count; });
+        }
+
+        std::vector<uint16_t> Sizes() const
+        {
+            std::unique_lock<std::mutex> lk(_mutex);
+            return _sizes;
+        }
+
+    private:
+        mutable std::mutex _mutex;
+        std::condition_variable _cv;
+        std::vector<uint16_t> _sizes;
+    };
+
     // Second Open() on an already-open socket returns ERROR_ILLEGAL_STATE.
     // Previously this triggered an ASSERT abort — the source fix adds an
     // else-if guard that catches non-zero state before the ASSERT.
+    // The rejected Open() must also have no side effects: bytes that were received but not
+    // yet consumed must still be pending afterwards.
     TEST(test_socketport, open_on_already_open_socket_returns_illegal_state)
     {
         const string path = "/tmp/test_sp_dblopen.sock";
         ::unlink(path.c_str());
-        TestDatagram sock(::Thunder::Core::NodeId(path.c_str()));
+        PendingDatagram sock(::Thunder::Core::NodeId(path.c_str()));
 
         ASSERT_EQ(sock.Open(1000), ::Thunder::Core::ERROR_NONE);
 
+        struct sockaddr_un addr;
+        memset(&addr, 0, sizeof(addr));
+        addr.sun_family = AF_UNIX;
+        strncpy(addr.sun_path, path.c_str(), sizeof(addr.sun_path) - 1);
+
+        int client = ::socket(AF_UNIX, SOCK_DGRAM, 0);
+        ASSERT_GE(client, 0);
+
+        // Leave 4 bytes pending in the receive buffer.
+        ASSERT_EQ(::sendto(client, "AAAA", 4, 0, reinterpret_cast<const sockaddr*>(&addr), sizeof(addr)), 4);
+        ASSERT_TRUE(sock.WaitForCalls(1, 2000));
+
         // Second Open() while still open must not succeed.
         uint32_t result = sock.Open(1000);
-        EXPECT_NE(result, ::Thunder::Core::ERROR_NONE);
+        EXPECT_EQ(result, ::Thunder::Core::ERROR_ILLEGAL_STATE);
         EXPECT_TRUE(sock.IsOpen());
 
+        // The pending bytes must have survived the rejected Open(): the next call reports 4 + 2.
+        ASSERT_EQ(::sendto(client, "BB", 2, 0, reinterpret_cast<const sockaddr*>(&addr), sizeof(addr)), 2);
+        ASSERT_TRUE(sock.WaitForCalls(2, 2000));
+
+        const std::vector<uint16_t> sizes = sock.Sizes();
+        EXPECT_EQ(sizes[0], 4u);
+        EXPECT_EQ(sizes[1], 6u);
+
+        ::close(client);
         sock.Close(1000);
+        ::unlink(path.c_str());
         ::Thunder::Core::Singleton::Dispose();
     }
 
