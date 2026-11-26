@@ -108,11 +108,12 @@ Defined in `ThunderTestRuntime.h` under `Thunder::TestCore`.
 | Member | Description |
 |--------|-------------|
 | `PluginConfig` | Type alias for `Plugin::Config`. Key fields: `Callsign`, `Locator`, `ClassName`, `StartupOrder`, `StartMode`, `Configuration`. |
-| `Initialize()` | Boots the embedded server with given plugins, system path, and proxy stub path. |
+| `Initialize(plugins, systemPath = "", proxyStubPath = "", port = 0)` | Boots the embedded server with the given plugins. `systemPath` and `proxyStubPath` default to the built-in locations when empty. `port` is the listener port written to the server config (bound on `127.0.0.1`); `0` (default) passes port 0 through to the socket layer, so the OS assigns an ephemeral port. See [Why port 0?](#why-port-0). |
 | `Deinitialize()` | Stops the server, closes messaging, releases config, cleans up temp directories. |
 | `Invoke(method, params, response)` | Calls a JSON-RPC method synchronously via in-process `IDispatcher::Invoke()`. Method format: `"Callsign.method"`. Passes an empty token string. |
 | `Invoke(method, params, token, response)` | Calls a JSON-RPC method with an authentication token. String variant. Token is passed to the plugin's method handler for authorization checks. |
 | `Invoke(method, params, response)` | JsonObject overload — handles serialization/deserialization automatically and forwards an empty token string. |
+| `Invoke(method, params, token, response)` | JsonObject overload with token — handles serialization/deserialization automatically and forwards the token. |
 | `CreateJSONRPCLink()` | Returns a callsign-bound `Core::ProxyType<JSONRPCLink>` for repeated calls and event subscriptions. The proxy releases its reference when it goes out of scope. |
 | `Exists()` | Checks whether a JSON-RPC method is registered on a plugin, using the framework's built-in `"exists"` endpoint. |
 | `QueryInterfaceByCallsign<T>()` | Template: obtains a COM-RPC interface from a plugin via `QueryInterface<T>()`. Caller must `Release()` when done. |
@@ -129,6 +130,7 @@ Callsign-bound helper for JSON-RPC invocations and event subscriptions. Implemen
 | `Invoke(method, params, response)` | Invoke a method by bare name (for example `"echo"`), without repeating the callsign. Passes an empty token string. |
 | `Invoke(method, params, token, response)` | Invoke a method with an authentication token. String variant. Token is passed to the plugin's method handler for authorization checks. |
 | `Invoke(method, params, response)` | JsonObject overload — handles serialization/deserialization automatically and forwards an empty token string. |
+| `Invoke(method, params, token, response)` | JsonObject overload with token — handles serialization/deserialization automatically and forwards the token. |
 | `Subscribe(event, handler, index)` | Subscribe to a JSON-RPC event by name with a `std::function<void(const string& designator, const string& index, const string& params)>` callback. Optional `index` parameter for indexed events. |
 | `Unsubscribe(event, index)` | Unsubscribe from a previously subscribed event. Optional `index` parameter for indexed events. |
 | `Callsign()` | Returns the callsign this link is bound to. |
@@ -136,31 +138,42 @@ Callsign-bound helper for JSON-RPC invocations and event subscriptions. Implemen
 #### JSON-RPC invocation flow
 
 ```
+Terms:
+  designator  = full "Callsign.method" string supplied by the caller
+  callsign    = the part of designator before the first "."
+  methodName  = the bare method name (Message::Method(designator))
+  fullMethod  = the string passed as the 'method' argument to IDispatcher::Invoke()
+                (always the full "Callsign.method" designator)
+
 Runtime-level Invoke:
-Invoke("Callsign.method", params, response)
-    ├── Parse designator → callsign, method
-    ├── Services().FromIdentifier()         → IShell proxy
+Invoke(designator = "Callsign.method", params, response)
+    ├── callsign = parse(designator)                 // "Callsign"
+    ├── Services().FromIdentifier(callsign)          → IShell proxy
     ├── shell->QueryInterface<IDispatcher>()
-    └── dispatcher->Invoke(0, 0, "", method, params, response)
+    └── dispatcher->Invoke(0, 0, "", designator, params, response)
+                                     ^ 'method' arg = fullMethod = "Callsign.method"
 
 With authentication token:
-Invoke("Callsign.method", params, token, response)
-    ├── Parse designator → callsign, method
-    ├── Services().FromIdentifier()         → IShell proxy
+Invoke(designator = "Callsign.method", params, token, response)
+    ├── callsign = parse(designator)                 // "Callsign"
+    ├── Services().FromIdentifier(callsign)          → IShell proxy
     ├── shell->QueryInterface<IDispatcher>()
-    └── dispatcher->Invoke(0, 0, token, method, params, response)  ← token passed through
+    └── dispatcher->Invoke(0, 0, token, designator, params, response)  ← token passed through
+                                     ^ 'method' arg = fullMethod = "Callsign.method"
 
 Callsign-bound Invoke:
-link->Invoke("method", params, response)
-    ├── Use pre-bound callsign
+link->Invoke(methodName = "method", params, response)
+    ├── fullMethod = _callsign + "." + methodName    // "Callsign.method"
     ├── shell->QueryInterface<IDispatcher>()
-    └── dispatcher->Invoke(0, 0, "", method, params, response)
+    └── dispatcher->Invoke(0, 0, "", fullMethod, params, response)
+                                     ^ 'method' arg = fullMethod = "Callsign.method"
 
 With authentication token (callsign-bound):
-link->Invoke("method", params, token, response)
-    ├── Use pre-bound callsign
+link->Invoke(methodName = "method", params, token, response)
+    ├── fullMethod = _callsign + "." + methodName    // "Callsign.method"
     ├── shell->QueryInterface<IDispatcher>()
-    └── dispatcher->Invoke(0, 0, token, method, params, response)  ← token passed through
+    └── dispatcher->Invoke(0, 0, token, fullMethod, params, response)  ← token passed through
+                                     ^ 'method' arg = fullMethod = "Callsign.method"
 ```
 
 #### COM-RPC interface access

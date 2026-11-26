@@ -105,11 +105,19 @@ namespace TestCore {
         const JsonObject& params,
         JsonObject& response)
     {
+        return Invoke(method, params, string(), response);
+    }
+
+    uint32_t ThunderTestRuntime::JSONRPCLink::Invoke(const string& method,
+        const JsonObject& params,
+        const string& token,
+        JsonObject& response)
+    {
         string serializedParams;
         params.ToString(serializedParams);
 
         string serializedResponse;
-        const uint32_t result = Invoke(method, serializedParams, serializedResponse);
+        const uint32_t result = Invoke(method, serializedParams, token, serializedResponse);
 
         if (serializedResponse.empty() == false) {
             response.FromString(serializedResponse);
@@ -436,11 +444,17 @@ namespace TestCore {
     uint32_t ThunderTestRuntime::Invoke(const string& method,
         const JsonObject& params, JsonObject& response)
     {
+        return Invoke(method, params, string(), response);
+    }
+
+    uint32_t ThunderTestRuntime::Invoke(const string& method,
+        const JsonObject& params, const string& token, JsonObject& response)
+    {
         string serializedParams;
         params.ToString(serializedParams);
 
         string serializedResponse;
-        const uint32_t result = Invoke(method, serializedParams, serializedResponse);
+        const uint32_t result = Invoke(method, serializedParams, token, serializedResponse);
 
         if (serializedResponse.empty() == false) {
             response.FromString(serializedResponse);

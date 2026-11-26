@@ -39,6 +39,7 @@ namespace TestCore {
             uint32_t Invoke(const string& method, const string& params, string& response);
             uint32_t Invoke(const string& method, const string& params, const string& token, string& response);
             uint32_t Invoke(const string& method, const JsonObject& params, JsonObject& response);
+            uint32_t Invoke(const string& method, const JsonObject& params, const string& token, JsonObject& response);
             uint32_t Subscribe(const string& event, EventHandler handler, const string& index = string());
             uint32_t Unsubscribe(const string& event, const string& index = string());
 
@@ -90,6 +91,7 @@ namespace TestCore {
         uint32_t Invoke(const string& method, const string& params, string& response);
         uint32_t Invoke(const string& method, const string& params, const string& token, string& response);
         uint32_t Invoke(const string& method, const JsonObject& params, JsonObject& response);
+        uint32_t Invoke(const string& method, const JsonObject& params, const string& token, JsonObject& response);
 
         template <typename INTERFACE>
         INTERFACE* QueryInterfaceByCallsign(const string& callsign)
