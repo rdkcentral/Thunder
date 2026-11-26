@@ -179,6 +179,7 @@ namespace Crypto {
             uint32_t Root(const CertificateStore& store);
 
         private:
+            bool ConfigurePeerIdentity();
             void Update();
             void ValidateHandShake();
             void CreateContext(const struct ssl_method_st* method);

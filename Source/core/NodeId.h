@@ -75,9 +75,11 @@ namespace Core {
 #endif
         struct ipv4_extended : public sockaddr_in {
             uint16_t in_protocol;
+            bool in_named;
         };
         struct ipv6_extended : public sockaddr_in6 {
             uint16_t in_protocol;
+            bool in_named;
         };
 #ifdef __CORE_BLUETOOTH_SUPPORT__
         struct bluetooth_extended : public sockaddr_l2 {
@@ -348,7 +350,7 @@ namespace Core {
         {
             return (m_group);
         }
-
+        bool IsNamed() const;
         string HostName() const;
 
         NodeId AnyInterface() const;
@@ -388,6 +390,7 @@ namespace Core {
 
     private:
         friend class IPNode;
+        void SetNamed(const bool named);
         inline operator struct sockaddr*()
         {
             return (reinterpret_cast<struct sockaddr*>(&(m_structInfo)));

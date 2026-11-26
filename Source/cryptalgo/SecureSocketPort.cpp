@@ -384,6 +384,39 @@ void SecureSocketPort::Handler::CreateContext(const struct ssl_method_st* method
     }
 }
 
+bool SecureSocketPort::Handler::ConfigurePeerIdentity()
+{
+    X509_VERIFY_PARAM* parameters = SSL_get0_param(_ssl);
+    bool result = ((parameters != nullptr) &&
+        (X509_VERIFY_PARAM_set1_host(parameters, nullptr, 0) == 1) &&
+        (X509_VERIFY_PARAM_set1_ip(parameters, nullptr, 0) == 1) &&
+        (SSL_set_tlsext_host_name(_ssl, nullptr) == 1));
+
+    if ((result == true) && (RemoteNode().IsNamed() == false)) {
+        const Core::NodeId::SocketInfo& address = RemoteNode();
+        const unsigned char* data = nullptr;
+        size_t length = 0;
+
+        if (RemoteNode().Type() == Core::NodeId::TYPE_IPV4) {
+            data = reinterpret_cast<const unsigned char*>(&address.IPV4Socket.sin_addr);
+            length = sizeof(address.IPV4Socket.sin_addr);
+        }
+        else if (RemoteNode().Type() == Core::NodeId::TYPE_IPV6) {
+            data = reinterpret_cast<const unsigned char*>(&address.IPV6Socket.sin6_addr);
+            length = sizeof(address.IPV6Socket.sin6_addr);
+        }
+
+        result = ((data != nullptr) && (X509_VERIFY_PARAM_set1_ip(parameters, data, length) == 1));
+    }
+    else if (result == true) {
+        const string hostname(RemoteNode().HostName());
+        result = ((SSL_set_tlsext_host_name(_ssl, hostname.c_str()) == 1) &&
+            (SSL_set1_host(_ssl, hostname.c_str()) == 1));
+    }
+
+    return (result);
+}
+
 uint32_t SecureSocketPort::Handler::Initialize() {
     uint32_t result = Core::ERROR_OPENING_FAILED;
 
@@ -391,15 +424,14 @@ uint32_t SecureSocketPort::Handler::Initialize() {
     ASSERT(_ssl != nullptr);
 
     if ((_context != nullptr) && (_ssl != nullptr) && (SSL_set_fd(_ssl, static_cast<Core::IResource&>(*this).Descriptor()) == 1)) {
-        SSL_set_tlsext_host_name(_ssl, RemoteNode().HostName().c_str());
         if (IsOpen() == true) {
             SSL_set_accept_state(_ssl);
+            result = Core::SocketPort::Initialize();
         }
-        else {
+        else if (ConfigurePeerIdentity() == true) {
             SSL_set_connect_state(_ssl);
+            result = Core::SocketPort::Initialize();
         }
-
-        result = Core::SocketPort::Initialize();
     }
 
     return (result);
@@ -412,21 +444,17 @@ int32_t SecureSocketPort::Handler::Read(uint8_t buffer[], const uint16_t length)
     if (_handShaking != OPEN) {
         const_cast<Handler&>(*this).Update();
     }
- 
-    return (SSL_read(_ssl, buffer, length));
+    return (_handShaking == OPEN ? SSL_read(_ssl, buffer, length) : SOCKET_ERROR);
 }
 
 int32_t SecureSocketPort::Handler::Write(const uint8_t buffer[], const uint16_t length) {
 
     ASSERT(_handShaking != ERROR);
 
-    int32_t result = SSL_write(_ssl, buffer, length);
-
     if (_handShaking != OPEN) {
         Update();
     }
-
-    return (result);
+    return (_handShaking == OPEN ? SSL_write(_ssl, buffer, length) : SOCKET_ERROR);
 }
 
 uint32_t SecureSocketPort::Handler::Open(const uint32_t waitTime) {
@@ -531,6 +559,8 @@ void SecureSocketPort::Handler::Update() {
                 }
                 else if (result != SSL_ERROR_WANT_READ) {
                     _handShaking = ERROR;
+                    SetError();
+                    _parent.StateChange();
                 }
             }
         }

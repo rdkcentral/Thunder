@@ -46,58 +46,47 @@
 namespace Thunder {
 namespace Core {
 
-static bool IsIPv4Address(const TCHAR hostname[]) {
-    bool result = true;
-    uint32_t index = 0;
-    uint16_t number = 0;
-    uint8_t delimiter = 0;
-    while ((result == true) && (hostname[index] != '\0')) {
-        if (isdigit(hostname[index])) {
-            number = (number * 10) + (hostname[index] - '0');
-            result = (number <= 0xFF);
-        }
-        else if (hostname[index] == '.') {
-            number = 0;
-            delimiter++;
-            result = (delimiter < 4);
-        }
-        else {
-            result = false;
-        }
-        index++;
-    }
+static bool IsAddress(const TCHAR hostname[], const int family)
+{
+    struct in6_addr address;
 
-    // last entry a dot and than no digit is not an IPv4 :-)
-    return (result && (index > 0) && (isdigit(hostname[index-1])));
+#ifdef __WINDOWS__
+    return (::InetPton(family, hostname, &address) == 1);
+#else
+    const std::string converted(Core::ToString(string(hostname)));
+    return (::inet_pton(family, converted.c_str(), &address) == 1);
+#endif
 }
 
-static bool IsIPv6Address(const TCHAR hostname[]) {
-    bool result = true;
-    uint32_t index = 0;
-    uint32_t number = 0;
-    uint8_t delimiter = 0;
-    while ((result == true) && (hostname[index] != '\0')) {
-        if (::isdigit(hostname[index])) {
-            number = (number * 16) + (hostname[index] - '0');
-            result = (number <= 0xFFFF);
-        }
-        else if (::isxdigit(hostname[index])) {
-            number = (number * 16) + ((::toupper(hostname[index]) - 'A') + 10);
-            result = (number <= 0xFFFF);
-        }
-        else if (hostname[index] == ':') {
-            number = 0;
-            delimiter++;
-            result = (delimiter < 8);
-        }
-        else {
-            result = false;
-        }
-        index++;
+static bool IsIPv4Address(const TCHAR hostname[])
+{
+    return (IsAddress(hostname, AF_INET));
+}
+
+static bool IsIPv6Address(const TCHAR hostname[])
+{
+    string address(hostname);
+    const size_t scope = address.find('%');
+
+    if (scope != string::npos) {
+        address.resize(scope);
     }
 
-    // last entry a dot and than no digit is not an IPv4 :-)
-    return (result);
+    return (IsAddress(address.c_str(), AF_INET6));
+}
+
+static bool IsNamedAddress(const string& hostname)
+{
+    if (hostname.empty() == true) {
+        return (false);
+    }
+
+    string address(hostname);
+    if ((address.front() == '[') && (address.back() == ']')) {
+        address = address.substr(1, address.length() - 2);
+    }
+
+    return ((IsIPv4Address(address.c_str()) == false) && (IsIPv6Address(address.c_str()) == false));
 }
 
 #if !defined (__WINDOWS__) && !defined(__APPLE__)
@@ -350,6 +339,8 @@ static bool IsIPv6Address(const TCHAR hostname[]) {
                 m_hostName = strHostName;
             }
         }
+
+        SetNamed(IsNamedAddress(m_hostName));
     }
 
     NodeId::NodeId(
@@ -440,6 +431,8 @@ static bool IsIPv6Address(const TCHAR hostname[]) {
                 }
 
             }
+
+            SetNamed(IsNamedAddress(m_hostName));
         }
     }
 
@@ -547,6 +540,7 @@ static bool IsIPv6Address(const TCHAR hostname[]) {
 
         m_hostName.clear();
         m_group.clear();
+        SetNamed(false);
 
         // Give back our-selves.
         return (*this);
@@ -562,6 +556,7 @@ static bool IsIPv6Address(const TCHAR hostname[]) {
 
         m_hostName.clear();
         m_group.clear();
+        SetNamed(false);
 
         // Give back our-selves.
         return (*this);
@@ -669,6 +664,8 @@ static bool IsIPv6Address(const TCHAR hostname[]) {
             m_hostName.clear();
 #endif
 
+        SetNamed(false);
+
         // Give back our-selves.
         return (*this);
     }
@@ -702,6 +699,32 @@ static bool IsIPv6Address(const TCHAR hostname[]) {
         }
 
         return (m_hostName);
+    }
+
+    bool
+    NodeId::IsNamed() const
+    {
+        bool result = false;
+
+        if (m_structInfo.IPV4Socket.sin_family == AF_INET) {
+            result = m_structInfo.IPV4Socket.in_named;
+        }
+        else if (m_structInfo.IPV6Socket.sin6_family == AF_INET6) {
+            result = m_structInfo.IPV6Socket.in_named;
+        }
+
+        return (result);
+    }
+
+    void
+    NodeId::SetNamed(const bool named)
+    {
+        if (m_structInfo.IPV4Socket.sin_family == AF_INET) {
+            m_structInfo.IPV4Socket.in_named = named;
+        }
+        else if (m_structInfo.IPV6Socket.sin6_family == AF_INET6) {
+            m_structInfo.IPV6Socket.in_named = named;
+        }
     }
 
     string
@@ -805,6 +828,8 @@ POP_WARNING()
             break;
         }
 
+        result.SetNamed(false);
+
         return (result);
     }
     bool
@@ -903,6 +928,8 @@ POP_WARNING()
         }
 #endif
 #endif
+
+        response.SetNamed(false);
 
         return (response);
     }
