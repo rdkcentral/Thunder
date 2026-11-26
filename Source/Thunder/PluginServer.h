@@ -5150,6 +5150,13 @@ namespace PluginHost {
             }
 
         private:
+            bool DesignatorAllowed(const Core::JSONRPC::Message& message, const string& routedCallsign) const
+            {
+                const string designatorCallsign(Core::JSONRPC::Message::Callsign(message.Designator.Value()));
+                return ((routedCallsign == _parent.Services().ControllerCallsign()) || (designatorCallsign.empty() == true) ||
+                    (designatorCallsign == routedCallsign));
+            }
+
             bool Allowed(const string& pathParameter, const string& queryParameters)
             {
                 Core::URL::KeyValue options(queryParameters);
@@ -5255,9 +5262,15 @@ namespace PluginHost {
                         if (message.IsValid() == true) {
                             ASSERT(request->Service().IsValid() == true);
                             message->ImplicitCallsign(request->Service()->Callsign());
-                            if (security->Allowed(*message) == false) {
+
+                            bool allowed = security->Allowed(*message);
+                            if ((allowed == true) && (request->RestfulCall() == false)) {
+                                allowed = DesignatorAllowed(*message, request->Service()->Callsign());
+                            }
+
+                            if (allowed == false) {
                                 request->Unauthorized();
-                        }
+                            }
                         }
                     }
                 }
@@ -5395,6 +5408,13 @@ namespace PluginHost {
                         PluginHost::Channel::Lock();
                         securityClearance = _security->Allowed(*message);
                         PluginHost::Channel::Unlock();
+
+                        if ((securityClearance == true) &&
+                            (DesignatorAllowed(*message, _service->Callsign()) == false)) {
+                            SYSLOG(Logging::Error, (_T("Security: JSON-RPC designator '%s' does not match URL service '%s'"),
+                                message->Designator.Value().c_str(), _service->Callsign().c_str()));
+                            securityClearance = false;
+                        }
 
                         if (securityClearance == false) {
                             // Oopsie daisy we are not allowed to handle this request.
