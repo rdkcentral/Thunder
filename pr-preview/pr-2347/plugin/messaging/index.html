@@ -1583,6 +1583,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#build-time-output-selection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Build-time output selection
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#external-direct-output" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3805,6 +3816,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#build-time-output-selection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Build-time output selection
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#external-direct-output" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4337,6 +4359,10 @@
 <span class="w">    </span>-DENABLE_TRACING_CATEGORIES<span class="o">=</span><span class="s1">'Information Warning'</span><span class="w"> </span>..
 </code></pre></div>
 <p>The resulting module and category entries are added to the tracing settings with <code>enabled</code> set to <code>true</code>.</p>
+<h4 id="build-time-output-selection">Build-time output selection</h4>
+<p>Set the <code>MESSAGING_OUTPUT</code> CMake cache variable to <code>handler</code>, <code>direct</code>, <code>external_direct</code>, or <code>all</code> to select the global <code>messaging.output</code> value in the generated configuration. For example, pass <code>-DMESSAGING_OUTPUT=all</code> when configuring the build.</p>
+<p>The default is empty, preserving the existing behavior: <code>DIRECT_OUTPUT=ON</code> selects <code>direct</code>; otherwise <code>output</code> is omitted and messaging defaults to <code>handler</code>. An explicit <code>MESSAGING_OUTPUT</code> value takes precedence over <code>DIRECT_OUTPUT</code>. Invalid values fail CMake configuration.</p>
+<p>This option does not compile out any destinations or change runtime routing precedence. The generated configuration can still be edited, and per-type or module/category <code>output</code> settings override the global value. To use the external adapter, also build with <code>MESSAGING_EXTERNAL_OUTPUT=ON</code>.</p>
 <h4 id="external-direct-output">External Direct output</h4>
 <p>Messaging can optionally send messages synchronously to an external output adapter in addition to its built-in handler and direct-output paths. Enable this support when configuring Thunder:</p>
 <div class="highlight"><pre><span></span><code>cmake<span class="w"> </span>-DMESSAGING_EXTERNAL_OUTPUT<span class="o">=</span>ON<span class="w"> </span>..
