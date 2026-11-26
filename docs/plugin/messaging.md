@@ -110,6 +110,14 @@ cmake -DENABLE_TRACING_MODULES='Plugin_BluetoothControl Plugin_WebServer' \
 
 The resulting module and category entries are added to the tracing settings with `enabled` set to `true`.
 
+#### Build-time output selection
+
+Set the `MESSAGING_OUTPUT` CMake cache variable to `handler`, `direct`, `external_direct`, or `all` to select the global `messaging.output` value in the generated configuration. For example, pass `-DMESSAGING_OUTPUT=all` when configuring the build.
+
+The default is empty, preserving the existing behavior: `DIRECT_OUTPUT=ON` selects `direct`; otherwise `output` is omitted and messaging defaults to `handler`. An explicit `MESSAGING_OUTPUT` value takes precedence over `DIRECT_OUTPUT`. Invalid values fail CMake configuration.
+
+This option does not compile out any destinations or change runtime routing precedence. The generated configuration can still be edited, and per-type or module/category `output` settings override the global value. To use the external adapter, also build with `MESSAGING_EXTERNAL_OUTPUT=ON`.
+
 #### External Direct output
 
 Messaging can optionally send messages synchronously to an external output adapter in addition to its built-in handler and direct-output paths. Enable this support when configuring Thunder:
