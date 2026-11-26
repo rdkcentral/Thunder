@@ -9,6 +9,7 @@
 #if defined(__unix__) || defined(__APPLE__)
 #include <arpa/inet.h>
 #include <cerrno>
+#include <cstring>
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -235,15 +236,20 @@ namespace TestCore {
     }
 
 #if defined(__unix__) || defined(__APPLE__)
-    // Returns false only when the port is definitively in use (EADDRINUSE).
-    // Any other failure is not a busy port, so it is logged and the check
-    // passes through and lets the server report the real error.
-    static bool PortAvailable(const uint16_t port)
+    // Probes whether the listener port can be bound. Server::Open() discards
+    // the listener-open result, so every probe failure is returned from here
+    // instead of being left for the server to report:
+    //   ERROR_NONE               - the port is free
+    //   ERROR_UNAVAILABLE        - the port is in use (EADDRINUSE)
+    //   ERROR_PRIVILIGED_REQUEST - no permission to bind the port (EACCES/EPERM)
+    //   ERROR_OPENING_FAILED     - any other socket()/bind() failure
+    static uint32_t ProbeListenerPort(const uint16_t port)
     {
         const int fd = ::socket(AF_INET, SOCK_STREAM, 0);
         if (fd < 0) {
-            TRACE_L1("ThunderTestRuntime: socket() failed for port probe (errno %d), skipping check", errno);
-            return true;
+            TRACE_L1("ThunderTestRuntime: socket() failed while probing port %u: %s (errno %d)",
+                static_cast<uint32_t>(port), ::strerror(errno), errno);
+            return Core::ERROR_OPENING_FAILED;
         }
 
         // SO_REUSEADDR matches the listener Thunder creates, so ports left in
@@ -263,20 +269,30 @@ namespace TestCore {
         const int bindErrno = bound ? 0 : errno;
         ::close(fd);
 
-        if ((bound == false) && (bindErrno != EADDRINUSE)) {
-            TRACE_L1("ThunderTestRuntime: bind() probe on port %u failed (errno %d), not treating as busy",
-                static_cast<uint32_t>(port), bindErrno);
-            return true;
+        if (bound == true) {
+            return Core::ERROR_NONE;
         }
 
-        return bound;
+        if (bindErrno == EADDRINUSE) {
+            TRACE_L1("ThunderTestRuntime: Listener port %u is already in use", static_cast<uint32_t>(port));
+            return Core::ERROR_UNAVAILABLE;
+        }
+
+        if ((bindErrno == EACCES) || (bindErrno == EPERM)) {
+            TRACE_L1("ThunderTestRuntime: No permission to bind listener port %u: %s (errno %d)",
+                static_cast<uint32_t>(port), ::strerror(bindErrno), bindErrno);
+            return Core::ERROR_PRIVILIGED_REQUEST;
+        }
+
+        TRACE_L1("ThunderTestRuntime: bind() probe on port %u failed: %s (errno %d)",
+            static_cast<uint32_t>(port), ::strerror(bindErrno), bindErrno);
+        return Core::ERROR_OPENING_FAILED;
     }
 #else
-    // No POSIX socket API: skip the up-front port probe. Server::Open() still
-    // reports listener failures on its own.
-    static bool PortAvailable(const uint16_t)
+    // No POSIX socket API: skip the up-front port probe.
+    static uint32_t ProbeListenerPort(const uint16_t)
     {
-        return true;
+        return Core::ERROR_NONE;
     }
 #endif
 
@@ -345,10 +361,12 @@ namespace TestCore {
             return Core::ERROR_ALREADY_CONNECTED;
         }
 
-        // Server::Open() ignores listener failures, so reject a busy port up front.
-        if ((port != 0) && (PortAvailable(port) == false)) {
-            TRACE_L1("ThunderTestRuntime: Listener port %u is already in use", static_cast<uint32_t>(port));
-            return Core::ERROR_UNAVAILABLE;
+        // Server::Open() ignores listener failures, so fail on any probe error up front.
+        if (port != 0) {
+            const uint32_t probeResult = ProbeListenerPort(port);
+            if (probeResult != Core::ERROR_NONE) {
+                return probeResult;
+            }
         }
 
         if (CreateUniqueTemporaryDirectory(_tempDir) == false) {
