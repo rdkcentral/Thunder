@@ -43,9 +43,9 @@ namespace TestCore {
     }
 
     uint32_t ThunderTestRuntime::JSONRPCLink::Invoke(const string& method,
-    const string& params,
-    const string& token,
-    string& response)
+        const string& params,
+        const string& token,
+        string& response)
     {
         uint32_t result = Core::ERROR_UNAVAILABLE;
         PluginHost::IDispatcher* dispatcher = Dispatcher();
