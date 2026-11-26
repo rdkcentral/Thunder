@@ -279,10 +279,10 @@ namespace RPC {
     void Communicator::ChannelLink::Disconnect()
     {
 #ifdef COMRPC_ABORT_ON_TIMEOUT
-        SYSLOG(Logging::Fatal, (_T("Aborting instead of disconnecting the COM-RPC channel to process [%u], connection [%u] (COMRPC_ABORT_ON_TIMEOUT)"), _remoteProcessId, _connectionId));
+        SYSLOG(Logging::Fatal, (_T("Aborting instead of disconnecting the COM-RPC channel to process [%u], connection [%u] (COMRPC_ABORT_ON_TIMEOUT)"), RemoteProcessId(), _connectionId));
         std::abort();
 #else
-        SYSLOG(Logging::Error, (_T("Disconnecting the COM-RPC channel to process [%u], connection [%u], to avoid side-effects of a late response"), _remoteProcessId, _connectionId));
+        SYSLOG(Logging::Error, (_T("Disconnecting the COM-RPC channel to process [%u], connection [%u], to avoid side-effects of a late response"), RemoteProcessId(), _connectionId));
 
         // Do not wait for the close to complete, the caller might be on the thread that has to process it.
         _channel.Close(0);

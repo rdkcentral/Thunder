@@ -592,7 +592,10 @@ namespace RPC {
             }
             // Process id of the remote side: the IRemoteConnection::RemoteId() of the connection this channel is linked to.
             inline uint32_t RemoteProcessId() const {
-                return (_remoteProcessId);
+                return (_remoteProcessId.load());
+            }
+            inline void RemoteProcessId(const uint32_t remoteProcessId) {
+                _remoteProcessId.store(remoteProcessId);
             }
             void Disconnect();
 
@@ -601,7 +604,7 @@ namespace RPC {
             Core::SocketPort& _channel;
             RemoteConnectionMap* _connectionMap;
             uint32_t _connectionId;
-            uint32_t _remoteProcessId;
+            std::atomic<uint32_t> _remoteProcessId;
         };
         using Client = Core::IPCChannelServerType<ChannelLink, true>::Client;
 
@@ -1160,7 +1163,8 @@ namespace RPC {
                 Info(Core::Event& event, const uint32_t interfaceId)
                     : _event(event)
                     , _interfaceId(interfaceId)
-                    , _interface(nullptr) {
+                    , _interface(nullptr)
+                    , _launchCompleted(false) {
                 }
                 ~Info() = default;
 
@@ -1179,11 +1183,20 @@ namespace RPC {
                 {
                     return (_interface);
                 }
+                bool IsLaunchCompleted() const
+                {
+                    return (_launchCompleted);
+                }
+                void CompleteLaunch()
+                {
+                    _launchCompleted = true;
+                }
 
             private:
                 Core::Event& _event;
                 uint32_t _interfaceId;
                 void* _interface;
+                bool _launchCompleted;
             };
 
             using RemoteConnections = std::unordered_map<uint32_t, RemoteConnection*>;
@@ -1296,9 +1309,17 @@ namespace RPC {
                         std::forward_as_tuple(result->Id()),
                         std::forward_as_tuple(trigger, instance.Interface()));
 
-                    // Publish the host-side PID before Request() can link the announcing child.
+                    // Distributed launches can wait for IPC handled by the ResourceMonitor.
+                    _adminLock.Unlock();
+
                     uint32_t launchResult = result->Launch();
 
+                    _adminLock.Lock();
+                    _announcements.find(result->Id())->second.CompleteLaunch();
+                    if (result->_channel.IsValid() == true) {
+                        // An early announce linked this channel before the host-side PID was published.
+                        result->_channel->Extension().RemoteProcessId(result->RemoteId());
+                    }
                     _adminLock.Unlock();
 
                     // wait for the announce message to be exchanged
@@ -1473,9 +1494,12 @@ namespace RPC {
                 // This is when we requested this interface/object to be created, there must be already an
                 // administration, it is just not complete.... yet!!!!
                 index->second->Open(channel, info.ProcessId());
+                const auto pendingLaunch = _announcements.find(index->second->Id());
                 // Use RemoteId() rather than the reported process id, as for spawned processes we know the pid
-                // ourselves, which is the one valid in our namespace (e.g. if the process runs in a container).
-                channel->Extension().Link(*this, index->second->Id(), index->second->RemoteId());
+                // ourselves. Do not read it during Launch(); Create() refreshes the PID once launch completes.
+                const uint32_t remoteProcessId = ((pendingLaunch == _announcements.end()) || (pendingLaunch->second.IsLaunchCompleted() == true))
+                    ? index->second->RemoteId() : 0;
+                channel->Extension().Link(*this, index->second->Id(), remoteProcessId);
 
                 Activated(index->second);
 

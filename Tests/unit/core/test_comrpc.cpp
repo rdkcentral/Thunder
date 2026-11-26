@@ -1086,8 +1086,8 @@ namespace COMRPC {
                     const uint32_t result = _parent._announced.Lock(2000);
                     EXPECT_EQ(result, ::Thunder::Core::ERROR_NONE);
                     if (result == ::Thunder::Core::ERROR_NONE) {
-                        // Give the announce handler time to run while the host-side PID is still unpublished.
-                        EXPECT_EQ(_parent._observer.WaitForActivation(100), ::Thunder::Core::ERROR_TIMEDOUT);
+                        // Announcing must not wait for Launch(): distributed launches can themselves wait for socket traffic.
+                        EXPECT_EQ(_parent._observer.WaitForActivation(2000), ::Thunder::Core::ERROR_NONE);
                         _pid = _parent._hostPid;
                     }
                     return (result);
@@ -1191,11 +1191,15 @@ namespace COMRPC {
         const uint32_t hostPid = static_cast<uint32_t>(::Thunder::Core::ProcessInfo().Id()) + 1;
         ::Thunder::Core::NodeId node("/tmp/comrpc_gap_launch");
         ::Thunder::Core::SinkType<ConnectionObserver> observer;
+        ::Thunder::Core::SinkType<ConnectionObserver> closingObserver;
         LaunchingServer server(node, observer, hostPid);
-        server.Register(&observer);
+        server.Register(&closingObserver);
         ASSERT_EQ(server.Open(waitTime), ::Thunder::Core::ERROR_NONE);
 
         auto engine = ::Thunder::Core::ProxyType<::Thunder::RPC::InvokeServerType<1, 0, 1, 1, 1>>::Create();
+        auto unrelatedClient = ::Thunder::Core::ProxyType<DisconnectAwareClient>::Create(
+            node, ::Thunder::Core::ProxyType<::Thunder::Core::IIPCServer>(engine));
+        ASSERT_EQ(unrelatedClient->Open(waitTime), ::Thunder::Core::ERROR_NONE);
         auto client = ::Thunder::Core::ProxyType<AnnouncingClient>::Create(
             node, ::Thunder::Core::ProxyType<::Thunder::Core::IIPCServer>(engine), server.Announced());
         Exchange::ISlow* slow = ::Thunder::Core::Service<Slow>::Create<Exchange::ISlow>();
@@ -1211,6 +1215,13 @@ namespace COMRPC {
         const uint32_t launched = server.WaitForLaunch(waitTime);
         EXPECT_EQ(launched, ::Thunder::Core::ERROR_NONE);
         if (launched == ::Thunder::Core::ERROR_NONE) {
+            // Closing a registered channel during launch must not block the ResourceMonitor.
+            EXPECT_EQ(unrelatedClient->Close(waitTime), ::Thunder::Core::ERROR_NONE);
+            EXPECT_EQ(closingObserver.WaitForDeactivation(waitTime), ::Thunder::Core::ERROR_NONE);
+        }
+        server.Unregister(&closingObserver);
+        server.Register(&observer);
+        if (launched == ::Thunder::Core::ERROR_NONE) {
             // The requested interface transfers a reference to the server.
             slow->AddRef();
             EXPECT_EQ(client->Open(waitTime, Exchange::ISlow::ID, slow, server.StartingConnectionId()), ::Thunder::Core::ERROR_NONE);
@@ -1218,7 +1229,8 @@ namespace COMRPC {
         creator.join();
 
         EXPECT_NE(remote, nullptr);
-        EXPECT_EQ(observer.RemoteId(), hostPid);
+        // Activation precedes publication, but the channel must learn the PID when Launch() returns.
+        EXPECT_EQ(observer.RemoteId(), 0u);
         uint32_t channelCount = 0;
         server.Visit([&](const ::Thunder::RPC::Communicator::Client& channel) {
             ++channelCount;
