@@ -88,6 +88,11 @@ namespace TestCore {
                         const string& proxyStubPath,
                         const uint16_t port,
                         const uint8_t channelThrottle);
+        // Starts the server on a custom port without a channel_throttle entry.
+        uint32_t Initialize(const std::vector<PluginConfig>& plugins,
+                        const string& systemPath,
+                        const string& proxyStubPath,
+                        const uint16_t port);
 
         Core::ProxyType<JSONRPCLink> CreateJSONRPCLink(const string& callsign);
         uint32_t Invoke(const string& method, const string& params, string& response);

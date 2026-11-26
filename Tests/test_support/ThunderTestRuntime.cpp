@@ -6,10 +6,13 @@
 #include <fstream>
 #include <common/Configuration.h>
 
+#if defined(__unix__) || defined(__APPLE__)
 #include <arpa/inet.h>
+#include <cerrno>
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#endif
 
 namespace Thunder {
 namespace TestCore {
@@ -231,24 +234,51 @@ namespace TestCore {
         return false;
     }
 
+#if defined(__unix__) || defined(__APPLE__)
+    // Returns false only when the port is definitively in use (EADDRINUSE).
+    // Any other failure is not a busy port, so it is logged and the check
+    // passes through and lets the server report the real error.
     static bool PortAvailable(const uint16_t port)
     {
-        bool available = false;
         const int fd = ::socket(AF_INET, SOCK_STREAM, 0);
-        if (fd >= 0) {
-            const int enable = 1;
-            ::setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(enable));
-
-            sockaddr_in address {};
-            address.sin_family = AF_INET;
-            address.sin_port = htons(port);
-            address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-
-            available = (::bind(fd, reinterpret_cast<sockaddr*>(&address), sizeof(address)) == 0);
-            ::close(fd);
+        if (fd < 0) {
+            TRACE_L1("ThunderTestRuntime: socket() failed for port probe (errno %d), skipping check", errno);
+            return true;
         }
-        return available;
+
+        // SO_REUSEADDR matches the listener Thunder creates, so ports left in
+        // TIME_WAIT by a previous run are treated as available, as they are
+        // for the server.
+        const int enable = 1;
+        if (::setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(enable)) < 0) {
+            TRACE_L1("ThunderTestRuntime: setsockopt(SO_REUSEADDR) failed for port probe (errno %d)", errno);
+        }
+
+        sockaddr_in address {};
+        address.sin_family = AF_INET;
+        address.sin_port = htons(port);
+        address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+
+        const bool bound = (::bind(fd, reinterpret_cast<sockaddr*>(&address), sizeof(address)) == 0);
+        const int bindErrno = bound ? 0 : errno;
+        ::close(fd);
+
+        if ((bound == false) && (bindErrno != EADDRINUSE)) {
+            TRACE_L1("ThunderTestRuntime: bind() probe on port %u failed (errno %d), not treating as busy",
+                static_cast<uint32_t>(port), bindErrno);
+            return true;
+        }
+
+        return bound;
     }
+#else
+    // No POSIX socket API: skip the up-front port probe. Server::Open() still
+    // reports listener failures on its own.
+    static bool PortAvailable(const uint16_t)
+    {
+        return true;
+    }
+#endif
 
     string ThunderTestRuntime::BuildConfigJSON(
         const std::vector<PluginConfig>& plugins,
@@ -407,6 +437,19 @@ namespace TestCore {
             proxyStubPath,
             port,
             Core::OptionalType<uint8_t>(channelThrottle));
+    }
+
+    uint32_t ThunderTestRuntime::Initialize(const std::vector<PluginConfig>& plugins,
+        const string& systemPath,
+        const string& proxyStubPath,
+        const uint16_t port)
+    {
+        return StartServer(
+            plugins,
+            systemPath,
+            proxyStubPath,
+            port,
+            Core::OptionalType<uint8_t>());
     }
 
     uint32_t ThunderTestRuntime::Initialize(const std::vector<PluginConfig>& plugins,
