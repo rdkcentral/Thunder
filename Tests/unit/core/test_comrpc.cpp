@@ -955,6 +955,7 @@ namespace COMRPC {
         public:
             ConnectionObserver()
                 : _remoteId(0)
+                , _activated(false, true)
                 , _deactivated(false, true)
             {
             }
@@ -962,6 +963,7 @@ namespace COMRPC {
             void Activated(::Thunder::RPC::IRemoteConnection* connection) override
             {
                 _remoteId = connection->RemoteId();
+                _activated.SetEvent();
             }
             void Deactivated(::Thunder::RPC::IRemoteConnection*) override
             {
@@ -976,6 +978,10 @@ namespace COMRPC {
             {
                 return (_deactivated.Lock(waitTime));
             }
+            uint32_t WaitForActivation(const uint32_t waitTime)
+            {
+                return (_activated.Lock(waitTime));
+            }
 
             BEGIN_INTERFACE_MAP(ConnectionObserver)
                 INTERFACE_ENTRY(::Thunder::RPC::IRemoteConnection::INotification)
@@ -983,6 +989,7 @@ namespace COMRPC {
 
         private:
             std::atomic<uint32_t> _remoteId;
+            ::Thunder::Core::Event _activated;
             ::Thunder::Core::Event _deactivated;
         };
 
@@ -1040,6 +1047,100 @@ namespace COMRPC {
             }
         };
 
+        class AnnouncingClient : public DisconnectAwareClient {
+        public:
+            AnnouncingClient(const ::Thunder::Core::NodeId& node,
+                const ::Thunder::Core::ProxyType<::Thunder::Core::IIPCServer>& handler,
+                ::Thunder::Core::Event& announced)
+                : DisconnectAwareClient(node, handler)
+                , _announced(announced)
+            {
+            }
+
+        private:
+            void StateChange() override
+            {
+                DisconnectAwareClient::StateChange();
+                if (Source().IsOpen() == true) {
+                    _announced.SetEvent();
+                }
+            }
+
+            ::Thunder::Core::Event& _announced;
+        };
+
+        class LaunchingServer : public ::Thunder::RPC::Communicator {
+        public:
+            class DelayedProcess : public RemoteConnection {
+            public:
+                DelayedProcess(LaunchingServer& parent)
+                    : _parent(parent)
+                    , _pid(0)
+                {
+                }
+
+                uint32_t Launch() override
+                {
+                    _parent._startingConnectionId = Id();
+                    _parent._started.SetEvent();
+                    const uint32_t result = _parent._announced.Lock(2000);
+                    EXPECT_EQ(result, ::Thunder::Core::ERROR_NONE);
+                    if (result == ::Thunder::Core::ERROR_NONE) {
+                        // Give the announce handler time to run while the host-side PID is still unpublished.
+                        EXPECT_EQ(_parent._observer.WaitForActivation(100), ::Thunder::Core::ERROR_TIMEDOUT);
+                        _pid = _parent._hostPid;
+                    }
+                    return (result);
+                }
+                uint32_t RemoteId() const override
+                {
+                    return (_pid);
+                }
+                void Terminate() override
+                {
+                }
+
+            private:
+                LaunchingServer& _parent;
+                std::atomic<uint32_t> _pid;
+            };
+
+            LaunchingServer(const ::Thunder::Core::NodeId& node, ConnectionObserver& observer, const uint32_t hostPid)
+                : ::Thunder::RPC::Communicator(node, _T(""), _T("@comrpc_gap_launch"))
+                , _observer(observer)
+                , _hostPid(hostPid)
+                , _startingConnectionId(0)
+                , _started(false, true)
+                , _announced(false, true)
+            {
+            }
+
+            uint32_t WaitForLaunch(const uint32_t waitTime)
+            {
+                return (_started.Lock(waitTime));
+            }
+            uint32_t StartingConnectionId() const
+            {
+                return (_startingConnectionId);
+            }
+            ::Thunder::Core::Event& Announced()
+            {
+                return (_announced);
+            }
+
+        private:
+            RemoteConnection* CreateStarter(const ::Thunder::RPC::Config&, const ::Thunder::RPC::Object&) override
+            {
+                return (::Thunder::Core::ServiceType<DelayedProcess>::Create<RemoteConnection>(*this));
+            }
+
+            ConnectionObserver& _observer;
+            const uint32_t _hostPid;
+            uint32_t _startingConnectionId;
+            ::Thunder::Core::Event _started;
+            ::Thunder::Core::Event _announced;
+        };
+
         class SlowServer : public ::Thunder::RPC::Communicator {
         public:
             SlowServer() = delete;
@@ -1083,6 +1184,58 @@ namespace COMRPC {
             Exchange::ISlow* _slow;
         };
     } // namespace
+
+    TEST(COMRPC_Gap, EarlyAnnounce_UsesPublishedHostProcessId)
+    {
+        constexpr uint32_t waitTime = 2000;
+        const uint32_t hostPid = static_cast<uint32_t>(::Thunder::Core::ProcessInfo().Id()) + 1;
+        ::Thunder::Core::NodeId node("/tmp/comrpc_gap_launch");
+        ::Thunder::Core::SinkType<ConnectionObserver> observer;
+        LaunchingServer server(node, observer, hostPid);
+        server.Register(&observer);
+        ASSERT_EQ(server.Open(waitTime), ::Thunder::Core::ERROR_NONE);
+
+        auto engine = ::Thunder::Core::ProxyType<::Thunder::RPC::InvokeServerType<1, 0, 1, 1, 1>>::Create();
+        auto client = ::Thunder::Core::ProxyType<AnnouncingClient>::Create(
+            node, ::Thunder::Core::ProxyType<::Thunder::Core::IIPCServer>(engine), server.Announced());
+        Exchange::ISlow* slow = ::Thunder::Core::Service<Slow>::Create<Exchange::ISlow>();
+        ::Thunder::RPC::Object object(_T("test"), _T("Slow"), _T("early-announce"),
+            Exchange::ISlow::ID, static_cast<uint32_t>(~0), _T(""), _T(""), 1, 0,
+            ::Thunder::RPC::Object::HostType::LOCAL, _T(""), _T(""), _T(""), {});
+        uint32_t connectionId = 0;
+        Exchange::ISlow* remote = nullptr;
+        std::thread creator([&]() {
+            remote = static_cast<Exchange::ISlow*>(server.Create(connectionId, object, ::Thunder::RPC::Config(), waitTime));
+        });
+
+        const uint32_t launched = server.WaitForLaunch(waitTime);
+        EXPECT_EQ(launched, ::Thunder::Core::ERROR_NONE);
+        if (launched == ::Thunder::Core::ERROR_NONE) {
+            // The requested interface transfers a reference to the server.
+            slow->AddRef();
+            EXPECT_EQ(client->Open(waitTime, Exchange::ISlow::ID, slow, server.StartingConnectionId()), ::Thunder::Core::ERROR_NONE);
+        }
+        creator.join();
+
+        EXPECT_NE(remote, nullptr);
+        EXPECT_EQ(observer.RemoteId(), hostPid);
+        uint32_t channelCount = 0;
+        server.Visit([&](const ::Thunder::RPC::Communicator::Client& channel) {
+            ++channelCount;
+            EXPECT_EQ(channel.RemoteProcessId(), hostPid);
+        });
+        EXPECT_EQ(channelCount, 1u);
+
+        if (remote != nullptr) {
+            remote->Release();
+        }
+        EXPECT_EQ(client->Close(waitTime), ::Thunder::Core::ERROR_NONE);
+        EXPECT_EQ(observer.WaitForDeactivation(waitTime), ::Thunder::Core::ERROR_NONE);
+        slow->Release();
+        EXPECT_EQ(Slow::Instances(), 0u);
+        server.Unregister(&observer);
+        EXPECT_EQ(server.Close(waitTime), ::Thunder::Core::ERROR_NONE);
+    }
 
     TEST(COMRPC_Gap, InvokeTimeout_DisconnectsServerChannel)
     {

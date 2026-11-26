@@ -1296,10 +1296,10 @@ namespace RPC {
                         std::forward_as_tuple(result->Id()),
                         std::forward_as_tuple(trigger, instance.Interface()));
 
-                    _adminLock.Unlock();
-
-                    // Start the process, and....
+                    // Publish the host-side PID before Request() can link the announcing child.
                     uint32_t launchResult = result->Launch();
+
+                    _adminLock.Unlock();
 
                     // wait for the announce message to be exchanged
                     if ((launchResult == Core::ERROR_NONE) && (trigger.Lock(waitTime) == Core::ERROR_NONE)) {
