@@ -83,6 +83,8 @@ namespace Core {
 
         if (maxLength > 0) {
             char procpath[48];
+
+            // %u syntactically prevents path traversal
             snprintf(procpath, sizeof(procpath), "/proc/%u/exe", pid);
             ssize_t length = readlink(procpath, buffer, maxLength - 1);
 
@@ -91,6 +93,7 @@ namespace Core {
             } else {
                 int fd;
 
+                // %u syntactically prevents path traversal
                 snprintf(procpath, sizeof(procpath), "/proc/%u/comm", pid);
 
                 if ((fd = open(procpath, O_RDONLY)) != -1) {
@@ -141,12 +144,15 @@ namespace Core {
                 if ('\0' == endptr[0]) {
                     // We have a valid PID, Find, the parent of this process..
                     TCHAR buffer[512];
-                    memset(buffer, 0, sizeof(buffer));
                     int fd;
 
                     snprintf(buffer, sizeof(buffer), "/proc/%d/stat", pid);
                     if ((fd = open(buffer, O_RDONLY)) != -1) {
-                        if (read(fd, buffer, sizeof(buffer) - sizeof(buffer[0])) > 0) {
+                        ssize_t readAmount = 0;
+                        if ((readAmount = ::read(fd, buffer, sizeof(buffer) - sizeof(buffer[0]))) > 0) {
+                            ssize_t nulIndex = std::min(readAmount, static_cast<ssize_t>(sizeof(buffer) - 1));
+                            buffer[nulIndex] = '\0';
+
                             int ppid = 0;
                             sscanf(buffer, "%*d (%*[^)]) %*c %d", &ppid);
 

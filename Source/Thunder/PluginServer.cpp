@@ -456,7 +456,7 @@ namespace PluginHost {
 
                 Unlock();
 
-                REPORT_DURATION_WARNING( { ErrorMessage(_handler->Initialize(this)); }, WarningReporting::TooLongPluginState, WarningReporting::TooLongPluginState::StateChange::ACTIVATION, callSign.c_str());
+                REPORT_PRIORITY_DURATION_WARNING( { ErrorMessage(_handler->Initialize(this)); }, WarningReporting::TooLongPluginState, WarningReporting::TooLongPluginState::StateChange::ACTIVATION, callSign.c_str());
 
                 if (HasError() == true) {
                     result = Core::ERROR_GENERAL;
@@ -821,6 +821,7 @@ namespace PluginHost {
                     local->Release();
                     result = Core::ERROR_NONE;
 #endif
+
                     if (result == Core::ERROR_NONE) {
                         if (State() == IShell::state::HIBERNATED) {
                             _administrator.Hibernated(Callsign(), this);
@@ -834,11 +835,10 @@ namespace PluginHost {
                         State(IShell::ACTIVATED);
                         SYSLOG(Logging::Startup, (_T("Hibernation error [%d] of [%s]:[%s]"), result, ClassName().c_str(), Callsign().c_str()));
                     }
-                }
+                 }
             }
             Unlock();
         } else {
-        
             result = Core::ERROR_NOT_SUPPORTED;
         }
 

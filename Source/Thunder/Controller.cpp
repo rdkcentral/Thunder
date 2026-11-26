@@ -206,7 +206,7 @@ namespace Plugin {
             Core::TextSegmentIterator index(Core::TextFragment(request.Path, _skipURL, static_cast<uint32_t>(request.Path.length()) - _skipURL), false, '/');
 
             // Always skip the first one, it is an empty part because we start with a '/' if there are more parameters.
-            index.Next();
+            (void)index.Next();
 
             if ( (index.Next() == true) && (index.Current() == _T("Configuration")) ) {
                 request.Body(Core::ProxyType<Web::IBody>(jsonBodyTextFactory.Element()));
@@ -224,7 +224,7 @@ namespace Plugin {
         Core::TextSegmentIterator index(Core::TextFragment(request.Path, _skipURL, static_cast<uint32_t>(request.Path.length()) - _skipURL), false, '/');
 
         // Always skip the first one, it is an empty part because we start with a '/' if there are more parameters.
-        index.Next();
+        (void)index.Next();
 
         // For now, whatever the URL, we will just, on a get, drop all info we have
         if (request.Verb == Web::Request::HTTP_POST) {
@@ -610,12 +610,12 @@ namespace Plugin {
             PluginHost::ISubSystem* subSystem = _service->SubSystems();
             Core::ProxyType<Web::JSONBodyType<PluginHost::Metadata>> response(jsonBodyMetadataFactory.Element());
 
-            uint8_t index(0);
+            uint8_t idx(0);
             if (subSystem != nullptr) {
-                while (index < PluginHost::ISubSystem::END_LIST) {
-                    PluginHost::ISubSystem::subsystem current(static_cast<PluginHost::ISubSystem::subsystem>(index));
+                while (idx < PluginHost::ISubSystem::END_LIST) {
+                    PluginHost::ISubSystem::subsystem current(static_cast<PluginHost::ISubSystem::subsystem>(idx));
                     response->SubSystems.Add(current, subSystem->IsActive(current));
-                    ++index;
+                    ++idx;
                 }
                 subSystem->Release();
             }
@@ -1626,7 +1626,7 @@ namespace Plugin {
     }
 
     Core::hresult Controller::BuildInfo(IMetadata::Data::BuildInfo& buildInfo) const
-    {   
+    {
         #if defined(__WINDOWS__)
             buildInfo.SystemType = IMetadata::Data::BuildInfo::SYSTEM_WINDOWS;
         #elif defined(__LINUX__)
@@ -1670,7 +1670,7 @@ namespace Plugin {
         #ifdef PROCESSCONTAINERS_ENABLED
             extensions |= IMetadata::Data::BuildInfo::PROCESS_CONTAINERS;
         #endif
-        
+
         if (extensions != 0) {
             buildInfo.Extensions = static_cast<IMetadata::Data::BuildInfo::extensiontype>(extensions);
         }
@@ -1688,7 +1688,7 @@ namespace Plugin {
         #endif
 
         buildInfo.InstanceIDBits = (sizeof(Core::instance_id) * 8);
-       
+
         #ifdef __CORE_CRITICAL_SECTION_LOG__
             buildInfo.DeadlockDetection = true;
         #else

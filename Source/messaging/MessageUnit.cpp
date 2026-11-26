@@ -76,10 +76,10 @@ ENUM_CONVERSION_END(Thunder::Core::Messaging::OutputMode)
                 Handler& operator=(Handler&&) = delete;
                 Handler& operator=(const Handler&) = delete;
 
-                Handler(uint8_t* buffer, const uint16_t length, const string& module)
-                    : _buffer(buffer)
-                    , _length(length)
-                    , _module(module)
+                Handler(uint8_t* buffer_, const uint16_t length_, const string& module_)
+                    : _buffer(buffer_)
+                    , _length(length_)
+                    , _module(module_)
                     , _offset(0)
                 {
                 }
@@ -119,7 +119,7 @@ ENUM_CONVERSION_END(Thunder::Core::Messaging::OutputMode)
 
             return (handler.Offset());
         }
-        
+
         uint16_t MessageUnit::Serialize(uint8_t* buffer, const uint16_t length)
         {
             std::vector<string> modules;
@@ -175,9 +175,9 @@ ENUM_CONVERSION_END(Thunder::Core::Messaging::OutputMode)
                 Handler& operator=(Handler&&) = delete;
                 Handler& operator=(const Handler&) = delete;
 
-                Handler(const Core::Messaging::Metadata& info, const bool enable)
+                Handler(const Core::Messaging::Metadata& info, const bool enabled)
                     : _info(info)
-                    , _enable(enable)
+                    , _enable(enabled)
                 {
                 }
                 ~Handler() override = default;
@@ -278,7 +278,7 @@ ENUM_CONVERSION_END(Thunder::Core::Messaging::OutputMode)
         {
             bool enabled = false;
 
-            _adminLock.Lock();
+            _adminLock.RawLock();
             if (_externalInitialized == true) {
                 const string& module = metadata.Module();
                 const ThunderMessageType type = ExternalType(metadata);

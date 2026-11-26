@@ -666,6 +666,7 @@ namespace PluginHost {
                     if (bitNr >= ISubSystem::NEGATIVE_START) {
                         // Its a NOT value, so this bit should *not* be set and this 0
                         bitNr -= ISubSystem::NEGATIVE_START;
+                        ASSERT(bitNr < 32);
 
                         ASSERT_VERBOSE(((_state & 0x1) == state::STATE_OR), "Must not use NOT_ in preconditions (subsystem 0x%08x)", input);
 
@@ -676,6 +677,7 @@ namespace PluginHost {
                     }
                     else {
                         ASSERT_VERBOSE(((_state & 0x1) == state::STATE_AND), "Must only use NOT_ in terminations (subsystem 0x%08x)", input);
+                        ASSERT(bitNr < 32);
 
                         // Make sure the event is only set once (POSITIVE or NEGATIVE)
                         if ((((_mask & (1u << bitNr)) != 0) && ((_events & (1u << bitNr)) == 0)) || ((_state & 0x1) != state::STATE_AND)) {
@@ -4421,6 +4423,7 @@ namespace PluginHost {
                         }
                         else {
                             result = *index;
+                            ASSERT(result != nullptr);
                             _channelObservers.erase(index);
                         }
                     }
@@ -4438,6 +4441,7 @@ namespace PluginHost {
                         }
                         else {
                             result = *index;
+                            ASSERT(result != nullptr);
                             _shellObservers.erase(index);
                         }
                     }
@@ -4641,7 +4645,7 @@ namespace PluginHost {
                 {
                     string result;
                     ASSERT(_service.IsValid() == true);
-                    REPORT_DURATION_WARNING( { result = _service->Inbound(_ID, message); }, WarningReporting::TooLongInvokeMessage, message);
+                    REPORT_PRIORITY_DURATION_WARNING( { result = _service->Inbound(_ID, message); }, WarningReporting::TooLongInvokeMessage, message);
                     return result;
                 }
                 Core::ProxyType<Core::JSONRPC::Message> Process(const string& token, const Core::ProxyType<Core::JSONRPC::Message>& message)
@@ -4659,7 +4663,7 @@ namespace PluginHost {
                     tracking->Dispatch();
                     #endif
 
-                    REPORT_DURATION_WARNING( { result = _service->Invoke(_ID, token, *message); }, WarningReporting::TooLongInvokeMessage, *message);
+                    REPORT_PRIORITY_DURATION_WARNING( { result = _service->Invoke(_ID, token, *message); }, WarningReporting::TooLongInvokeMessage, *message);
 
                     #if THUNDER_PERFORMANCE
                     tracking->Execution();
@@ -4673,7 +4677,7 @@ namespace PluginHost {
                     ASSERT(_service.IsValid() == true);
 
                     Core::ProxyType<Web::Response> result;
-                    REPORT_DURATION_WARNING( { result = _service->Process(*message); }, WarningReporting::TooLongInvokeMessage, *message);
+                    REPORT_PRIORITY_DURATION_WARNING( { result = _service->Process(*message); }, WarningReporting::TooLongInvokeMessage, *message);
                     return result;
                 }
                 Core::ProxyType<Core::JSON::IElement> Process(const Core::ProxyType<Core::JSON::IElement>& message)
@@ -4682,7 +4686,7 @@ namespace PluginHost {
                     ASSERT(_service.IsValid() == true);
 
                     Core::ProxyType<Core::JSON::IElement> result;
-                    REPORT_DURATION_WARNING( { result = _service->Inbound(_ID, message); }, WarningReporting::TooLongInvokeMessage, *message);
+                    REPORT_PRIORITY_DURATION_WARNING( { result = _service->Inbound(_ID, message); }, WarningReporting::TooLongInvokeMessage, *message);
                     return result;
                 }
                 template <typename PACKAGE>
@@ -4802,9 +4806,9 @@ namespace PluginHost {
                                     message->Error.Text = _T("Incomplete JSON send");
                                 }
                                 else {
-                                    uint32_t id = message->Id.Value();
+                                    uint32_t id_ = message->Id.Value();
                                     message->Clear();
-                                    message->Id = id;
+                                    message->Id = id_;
                                     message->Error.Text = _T("Incomplete JSON send");
                                 }
 

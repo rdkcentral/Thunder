@@ -131,7 +131,8 @@ Controller Configuration interface methods:
 
 | Method | Description |
 | :-------- | :-------- |
-| [persist](#method_persist) / [storeconfig](#method_persist) | Stores all configuration to the persistent memory |
+| [persist](#method_persist) / [storeconfig](#method_persist) | Stores configuration to the persistent memory |
+| [restore](#method_restore) | Restores configuration back to default |
 
 Controller LifeTime interface methods:
 
@@ -172,7 +173,7 @@ This method takes no parameters.
 {
   "jsonrpc": "2.0",
   "id": 42,
-  "method": "Controller.1.versions"
+  "method": "Controller.versions"
 }
 ```
 
@@ -200,7 +201,7 @@ Checks if a JSON-RPC method or property exists.
 
 ### Description
 
-This method will return *True* for the following methods/properties: *environment, discoveryresults, configuration, subsystems, services, links, proxies, framework, threads, pendingrequests, callstack, buildinfo, versions, exists, register, unregister, reboot, delete, clone, destroy, startdiscovery, persist, activate, deactivate, unavailable, hibernate, suspend, resume*.
+This method will return *True* for the following methods/properties: *environment, discoveryresults, configuration, attribute, subsystems, services, links, proxies, framework, threads, pendingrequests, callstack, buildinfo, versions, exists, register, unregister, reboot, delete, clone, destroy, startdiscovery, persist, restore, activate, deactivate, unavailable, hibernate, suspend, resume*.
 
 ### Parameters
 
@@ -223,7 +224,7 @@ This method will return *True* for the following methods/properties: *environmen
 {
   "jsonrpc": "2.0",
   "id": 42,
-  "method": "Controller.1.exists",
+  "method": "Controller.exists",
   "params": {
     "method": "methodName"
   }
@@ -277,7 +278,7 @@ This method supports the following event names: *[statechange](#notification_sta
 {
   "jsonrpc": "2.0",
   "id": 42,
-  "method": "Controller.1.register",
+  "method": "Controller.register",
   "params": {
     "event": "eventName",
     "id": "myapp"
@@ -332,7 +333,7 @@ This method supports the following event names: *[statechange](#notification_sta
 {
   "jsonrpc": "2.0",
   "id": 42,
-  "method": "Controller.1.unregister",
+  "method": "Controller.unregister",
   "params": {
     "event": "eventName",
     "id": "myapp"
@@ -379,7 +380,7 @@ This method takes no parameters.
 {
   "jsonrpc": "2.0",
   "id": 42,
-  "method": "Controller.1.reboot"
+  "method": "Controller.reboot"
 }
 ```
 
@@ -419,7 +420,7 @@ Removes contents of a directory from the persistent storage.
 {
   "jsonrpc": "2.0",
   "id": 42,
-  "method": "Controller.1.delete",
+  "method": "Controller.delete",
   "params": {
     "path": "..."
   }
@@ -463,7 +464,7 @@ Creates a clone of given plugin with a new callsign.
 {
   "jsonrpc": "2.0",
   "id": 42,
-  "method": "Controller.1.clone",
+  "method": "Controller.clone",
   "params": {
     "callsign": "...",
     "newcallsign": "..."
@@ -507,7 +508,7 @@ Destroy given plugin.
 {
   "jsonrpc": "2.0",
   "id": 42,
-  "method": "Controller.1.destroy",
+  "method": "Controller.destroy",
   "params": {
     "callsign": "..."
   }
@@ -550,7 +551,7 @@ Starts SSDP network discovery.
 {
   "jsonrpc": "2.0",
   "id": 42,
-  "method": "Controller.1.startdiscovery",
+  "method": "Controller.startdiscovery",
   "params": {
     "ttl": 1
   }
@@ -570,13 +571,20 @@ Starts SSDP network discovery.
 <a id="method_persist"></a>
 ## *persist [<sup>method</sup>](#head_Methods)*
 
-Stores all configuration to the persistent memory.
+Stores configuration to the persistent memory.
 
 > ``storeconfig`` is an alternative name for this method.
 
+### Description
+
+If callsign is not provided, configuration for all plugins is persisted. If callsign is provided but empty, only the Controller configuration is persisted. If callsign is provided with a specific value, only that plugin's configuration is persisted.
+
 ### Parameters
 
-This method takes no parameters.
+| Name | Type | M/O | Description |
+| :-------- | :-------- | :-------- | :-------- |
+| params | object | mandatory | *...* |
+| params?.callsign | string | optional | Plugin callsign to persist (omit for all plugins, empty string for Controller only) |
 
 ### Result
 
@@ -592,7 +600,57 @@ This method takes no parameters.
 {
   "jsonrpc": "2.0",
   "id": 42,
-  "method": "Controller.1.persist"
+  "method": "Controller.persist",
+  "params": {
+    "callsign": "..."
+  }
+}
+```
+
+#### Response
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 42,
+  "result": null
+}
+```
+
+<a id="method_restore"></a>
+## *restore [<sup>method</sup>](#head_Methods)*
+
+Restores configuration back to default.
+
+### Description
+
+If callsign is not provided, persisted configuration overrides for all plugins are removed. If callsign is provided but empty, only the Controller's overrides are removed. If callsign is provided with a specific value, only that plugin's overrides are removed. Running configuration is unchanged; restart Thunder to load the default configuration.
+
+### Parameters
+
+| Name | Type | M/O | Description |
+| :-------- | :-------- | :-------- | :-------- |
+| params | object | mandatory | *...* |
+| params?.callsign | string | optional | Plugin callsign to restore (omit for all plugins, empty string for Controller only) |
+
+### Result
+
+| Name | Type | M/O | Description |
+| :-------- | :-------- | :-------- | :-------- |
+| result | null | mandatory | Always null |
+
+### Example
+
+#### Request
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 42,
+  "method": "Controller.restore",
+  "params": {
+    "callsign": "..."
+  }
 }
 ```
 
@@ -636,7 +694,7 @@ Use this method to activate a plugin, i.e. move from Deactivated, via Activating
 {
   "jsonrpc": "2.0",
   "id": 42,
-  "method": "Controller.1.activate",
+  "method": "Controller.activate",
   "params": {
     "callsign": "..."
   }
@@ -683,7 +741,7 @@ Use this method to deactivate a plugin, i.e. move from Activated, via Deactivati
 {
   "jsonrpc": "2.0",
   "id": 42,
-  "method": "Controller.1.deactivate",
+  "method": "Controller.deactivate",
   "params": {
     "callsign": "..."
   }
@@ -730,7 +788,7 @@ Use this method to mark a plugin as unavailable, i.e. move from Deactivated to U
 {
   "jsonrpc": "2.0",
   "id": 42,
-  "method": "Controller.1.unavailable",
+  "method": "Controller.unavailable",
   "params": {
     "callsign": "..."
   }
@@ -784,7 +842,7 @@ Use *activate* to wake up a hibernated plugin. In a Hibernated state the plugin 
 {
   "jsonrpc": "2.0",
   "id": 42,
-  "method": "Controller.1.hibernate",
+  "method": "Controller.hibernate",
   "params": {
     "callsign": "...",
     "timeout": 0
@@ -832,7 +890,7 @@ This is a more intelligent method, compared to *deactivate*, to move a plugin to
 {
   "jsonrpc": "2.0",
   "id": 42,
-  "method": "Controller.1.suspend",
+  "method": "Controller.suspend",
   "params": {
     "callsign": "..."
   }
@@ -879,7 +937,7 @@ This is a more intelligent method, compared to *activate*, to move a plugin to a
 {
   "jsonrpc": "2.0",
   "id": 42,
-  "method": "Controller.1.resume",
+  "method": "Controller.resume",
   "params": {
     "callsign": "..."
   }
@@ -918,6 +976,7 @@ Controller Configuration interface properties:
 | Property | R/W | Description |
 | :-------- | :-------- | :-------- |
 | [configuration](#property_configuration) | read/write | Service configuration |
+| [attribute](#property_attribute) | read/write | Framework attributes |
 
 Controller Subsystems interface properties:
 
@@ -967,7 +1026,7 @@ Provides access to the environment variable value.
 {
   "jsonrpc": "2.0",
   "id": 42,
-  "method": "Controller.1.environment@xyz"
+  "method": "Controller.environment@xyz"
 }
 ```
 
@@ -1007,7 +1066,7 @@ Provides access to the SSDP network discovery results.
 {
   "jsonrpc": "2.0",
   "id": 42,
-  "method": "Controller.1.discoveryresults"
+  "method": "Controller.discoveryresults"
 }
 ```
 
@@ -1039,7 +1098,7 @@ Provides access to the service configuration.
 
 | Name | Type | M/O | Description |
 | :-------- | :-------- | :-------- | :-------- |
-| callsign | string | mandatory | *...* |
+| callsign | string | optional | *...* |
 
 ### Index (Set)
 
@@ -1065,7 +1124,7 @@ Provides access to the service configuration.
 {
   "jsonrpc": "2.0",
   "id": 42,
-  "method": "Controller.1.configuration@xyz"
+  "method": "Controller.configuration@xyz"
 }
 ```
 
@@ -1085,7 +1144,7 @@ Provides access to the service configuration.
 {
   "jsonrpc": "2.0",
   "id": 42,
-  "method": "Controller.1.configuration@xyz",
+  "method": "Controller.configuration@xyz",
   "params": {}
 }
 ```
@@ -1094,9 +1153,95 @@ Provides access to the service configuration.
 
 ```json
 {
-    "jsonrpc": "2.0",
-    "id": 42,
-    "result": "null"
+  "jsonrpc": "2.0",
+  "id": 42,
+  "result": "null"
+}
+```
+
+<a id="property_attribute"></a>
+## *attribute [<sup>property</sup>](#head_Properties)*
+
+Provides access to the framework attributes.
+
+### Description
+
+Changes are not persisted automatically. Call Persist("PluginHost") to retain them.
+
+> The *attribute* parameter shall be passed as the index to the property, i.e. ``attribute@<attribute>``.
+
+### Index (Get)
+
+| Name | Type | M/O | Description |
+| :-------- | :-------- | :-------- | :-------- |
+| attribute | string | optional | Attribute name (omit to retrieve all) (must be one of the following: *idletime, prefix*) |
+
+### Index (Set)
+
+| Name | Type | M/O | Description |
+| :-------- | :-------- | :-------- | :-------- |
+| attribute | string | mandatory | Attribute name (omit to retrieve all) (must be one of the following: *idletime, prefix*) |
+
+### Value
+
+| Name | Type | M/O | Description |
+| :-------- | :-------- | :-------- | :-------- |
+| (property) | opaque object | mandatory | Framework attributes |
+
+| Name | Type | M/O | Description |
+| :-------- | :-------- | :-------- | :-------- |
+| (property) | opaque object | mandatory | Framework attributes |
+
+### Errors
+
+| Message | Description |
+| :-------- | :-------- |
+| ```ERROR_NONE``` | Attribute was retrieved or matches the active value |
+| ```ERROR_UNKNOWN_KEY``` | Attribute does not exist |
+| ```ERROR_BAD_REQUEST``` | Attribute value is invalid |
+| ```ERROR_NOT_SUPPORTED``` | Attribute cannot be changed in current framework configuration |
+| ```ERROR_REQUEST_SUBMITTED``` | Attribute will take effect after framework restart |
+
+### Example
+
+#### Get Request
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 42,
+  "method": "Controller.attribute@prefix"
+}
+```
+
+#### Get Response
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 42,
+  "result": {}
+}
+```
+
+#### Set Request
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 42,
+  "method": "Controller.attribute@prefix",
+  "params": {}
+}
+```
+
+#### Set Response
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 42,
+  "result": "null"
 }
 ```
 
@@ -1124,7 +1269,7 @@ Provides access to the subsystems status.
 {
   "jsonrpc": "2.0",
   "id": 42,
-  "method": "Controller.1.subsystems"
+  "method": "Controller.subsystems"
 }
 ```
 
@@ -1162,7 +1307,7 @@ If callsign is omitted, metadata of all services is returned.
 
 | Name | Type | M/O | Description |
 | :-------- | :-------- | :-------- | :-------- |
-| callsign | string | mandatory | *...* |
+| callsign | string | optional | *...* |
 
 ### Value
 
@@ -1202,7 +1347,7 @@ If callsign is omitted, metadata of all services is returned.
 {
   "jsonrpc": "2.0",
   "id": 42,
-  "method": "Controller.1.services@xyz"
+  "method": "Controller.services@xyz"
 }
 ```
 
@@ -1270,7 +1415,7 @@ Provides access to the connections list of Thunder connections.
 {
   "jsonrpc": "2.0",
   "id": 42,
-  "method": "Controller.1.links"
+  "method": "Controller.links"
 }
 ```
 
@@ -1305,7 +1450,7 @@ Provides access to the proxies list.
 
 | Name | Type | M/O | Description |
 | :-------- | :-------- | :-------- | :-------- |
-| linkid | string | mandatory | *...* |
+| linkid | string | optional | *...* |
 
 ### Value
 
@@ -1327,7 +1472,7 @@ Provides access to the proxies list.
 {
   "jsonrpc": "2.0",
   "id": 42,
-  "method": "Controller.1.proxies@xyz"
+  "method": "Controller.proxies@xyz"
 }
 ```
 
@@ -1376,7 +1521,7 @@ Provides access to the framework version.
 {
   "jsonrpc": "2.0",
   "id": 42,
-  "method": "Controller.1.framework"
+  "method": "Controller.framework"
 }
 ```
 
@@ -1420,7 +1565,7 @@ Provides access to the workerpool threads.
 {
   "jsonrpc": "2.0",
   "id": 42,
-  "method": "Controller.1.threads"
+  "method": "Controller.threads"
 }
 ```
 
@@ -1462,7 +1607,7 @@ Provides access to the pending requests.
 {
   "jsonrpc": "2.0",
   "id": 42,
-  "method": "Controller.1.pendingrequests"
+  "method": "Controller.pendingrequests"
 }
 ```
 
@@ -1512,7 +1657,7 @@ Provides access to the thread callstack.
 {
   "jsonrpc": "2.0",
   "id": 42,
-  "method": "Controller.1.callstack@0"
+  "method": "Controller.callstack@0"
 }
 ```
 
@@ -1548,7 +1693,7 @@ Provides access to the build information.
 | (property).systemtype | string | mandatory | System type (must be one of the following: *Linux, MacOS, Windows*) |
 | (property).buildtype | string | mandatory | Build type (must be one of the following: *Debug, DebugOptimized, Production, Release, ReleaseWithDebugInfo*) |
 | (property)?.extensions | array | optional | *...* |
-| (property)?.extensions[#] | string | mandatory | *...* (must be one of the following: *Bluetooth, Hiberbate, ProcessContainers, WarningReporting*) |
+| (property)?.extensions[#] | string | optional | *...* (must be one of the following: *Bluetooth, Hibernate, ProcessContainers, WarningReporting*) |
 | (property).messaging | boolean | mandatory | Denotes whether Messaging is enabled |
 | (property).exceptioncatching | boolean | mandatory | Denotes whether there is an exception |
 | (property).deadlockdetection | boolean | mandatory | Denotes whether deadlock detection is enabled |
@@ -1566,7 +1711,7 @@ Provides access to the build information.
 {
   "jsonrpc": "2.0",
   "id": 42,
-  "method": "Controller.1.buildinfo"
+  "method": "Controller.buildinfo"
 }
 ```
 
@@ -1652,7 +1797,7 @@ If registered for empty callsign, notifications for all services will be sent.
 {
   "jsonrpc": "2.0",
   "id": 42,
-  "method": "Controller.1.register@Messenger",
+  "method": "Controller.register@Messenger",
   "params": {
     "event": "statechange",
     "id": "myid"
@@ -1709,7 +1854,7 @@ If registered for empty callsign, notifications for all services will be sent.
 {
   "jsonrpc": "2.0",
   "id": 42,
-  "method": "Controller.1.register@Messenger",
+  "method": "Controller.register@Messenger",
   "params": {
     "event": "statecontrolstatechange",
     "id": "myid"
@@ -1756,7 +1901,7 @@ Notifies a subsystem change.
 {
   "jsonrpc": "2.0",
   "id": 42,
-  "method": "Controller.1.register",
+  "method": "Controller.register",
   "params": {
     "event": "subsystemchange",
     "id": "myid"
@@ -1807,7 +1952,7 @@ The Controller plugin is an aggregator of all the events triggered by a specific
 {
   "jsonrpc": "2.0",
   "id": 42,
-  "method": "Controller.1.register",
+  "method": "Controller.register",
   "params": {
     "event": "all",
     "id": "myid"
