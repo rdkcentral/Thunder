@@ -870,16 +870,38 @@ namespace COMRPC {
 
         class Slow : public Exchange::ISlow {
         public:
+            Slow(const Slow&) = delete;
+            Slow& operator=(const Slow&) = delete;
+
+            Slow()
+            {
+                _instances++;
+            }
+            ~Slow() override
+            {
+                _instances--;
+            }
+
             uint32_t Wait(const uint32_t timeMs) override
             {
                 ::SleepMs(timeMs);
                 return (::Thunder::Core::ERROR_NONE);
             }
 
+            static uint32_t Instances()
+            {
+                return (_instances);
+            }
+
             BEGIN_INTERFACE_MAP(Slow)
                 INTERFACE_ENTRY(Exchange::ISlow)
             END_INTERFACE_MAP
+
+        private:
+            static std::atomic<uint32_t> _instances;
         };
+
+        std::atomic<uint32_t> Slow::_instances(0);
 
         ::Thunder::ProxyStub::MethodHandler SlowStubMethods[] = {
             // (0) Wait()
@@ -984,6 +1006,40 @@ namespace COMRPC {
             ::Thunder::Core::Event _event;
         };
 
+        // A plain CommunicatorClient does not clean up the administration of its channel when it gets closed, so the
+        // references the other side held (e.g. the one cached by Offer()) stay registered under the descriptor of the
+        // channel. Clean it up like the server side Communicator does.
+        class DisconnectAwareClient : public ::Thunder::RPC::CommunicatorClient {
+        public:
+            DisconnectAwareClient() = delete;
+            DisconnectAwareClient(const DisconnectAwareClient&) = delete;
+            DisconnectAwareClient& operator=(const DisconnectAwareClient&) = delete;
+
+            DisconnectAwareClient(const ::Thunder::Core::NodeId& remoteNode, const ::Thunder::Core::ProxyType<::Thunder::Core::IIPCServer>& handler)
+                : ::Thunder::RPC::CommunicatorClient(remoteNode, handler)
+            {
+            }
+            ~DisconnectAwareClient() override = default;
+
+        protected:
+            void StateChange() override
+            {
+                ::Thunder::RPC::CommunicatorClient::StateChange();
+
+                if (Source().IsOpen() == false) {
+                    // Called before the socket is destroyed, so Id() is still the descriptor everything was registered under.
+                    ::Thunder::Core::ProxyType<::Thunder::Core::IPCChannel> channel(*this);
+                    ::Thunder::RPC::Administrator::Danglings danglings;
+
+                    ::Thunder::RPC::Administrator::Instance().DeleteChannel(channel, danglings);
+
+                    for (const auto& dangling : danglings) {
+                        dangling.second->Release();
+                    }
+                }
+            }
+        };
+
         class SlowServer : public ::Thunder::RPC::Communicator {
         public:
             SlowServer() = delete;
@@ -1046,8 +1102,8 @@ namespace COMRPC {
 
         ::Thunder::Core::ProxyType<::Thunder::RPC::InvokeServerType<1, 0, 1, 1, 1>> engine =
             ::Thunder::Core::ProxyType<::Thunder::RPC::InvokeServerType<1, 0, 1, 1, 1>>::Create();
-        ::Thunder::Core::ProxyType<::Thunder::RPC::CommunicatorClient> client =
-            ::Thunder::Core::ProxyType<::Thunder::RPC::CommunicatorClient>::Create(
+        ::Thunder::Core::ProxyType<DisconnectAwareClient> client =
+            ::Thunder::Core::ProxyType<DisconnectAwareClient>::Create(
                 node, ::Thunder::Core::ProxyType<::Thunder::Core::IIPCServer>(engine));
         ASSERT_EQ(client->Open(waitTime), ::Thunder::Core::ERROR_NONE);
 
@@ -1082,6 +1138,9 @@ namespace COMRPC {
         client->Close(waitTime);
         server.Unregister(&observer);
         EXPECT_EQ(server.Close(waitTime), ::Thunder::Core::ERROR_NONE);
+
+        // Nothing may keep the offered object alive once the channel is gone.
+        EXPECT_EQ(Slow::Instances(), 0u);
 #endif
     }
 
