@@ -378,10 +378,14 @@ namespace PluginHost {
         else if ((currentState == IShell::state::UNAVAILABLE) || (currentState == IShell::state::DEACTIVATION) || (currentState == IShell::state::DESTROYED) ) {
             Unlock();
             result = Core::ERROR_ILLEGAL_STATE;
-        } else if (currentState == IShell::state::HIBERNATED) {
+        }
+#ifdef HIBERNATE_SUPPORT_ENABLED
+        else if (currentState == IShell::state::HIBERNATED) {
             result = Wakeup();
             Unlock();
-        } else if ((currentState == IShell::state::DEACTIVATED) || (currentState == IShell::state::PRECONDITION)) {
+        }
+#endif
+        else if ((currentState == IShell::state::DEACTIVATED) || (currentState == IShell::state::PRECONDITION)) {
 
             _reason = why;
 
@@ -591,6 +595,7 @@ namespace PluginHost {
 
             _reason = why;
 
+#ifdef HIBERNATE_SUPPORT_ENABLED
             if(currentState == IShell::state::HIBERNATED)
             {
                 uint32_t wakeupResult = Wakeup();
@@ -601,6 +606,7 @@ namespace PluginHost {
                 }
                 currentState = ACTIVATED;
             }
+#endif // HIBERNATE_SUPPORT_ENABLED
 
             if ( (currentState == IShell::ACTIVATION) || (currentState == IShell::ACTIVATED)) {
                 ASSERT(_handler != nullptr);
@@ -771,11 +777,12 @@ namespace PluginHost {
 
     }
 
-    Core::hresult Server::Service::Hibernate(const uint32_t timeout VARIABLE_IS_NOT_USED) /* override */ {
-        Core::hresult result = Core::ERROR_NONE;
+    Core::hresult Server::Service::Hibernate(const uint32_t timeout VARIABLE_IS_NOT_USED) /* override */
+    {
+        Core::hresult result = Core::ERROR_NOT_SUPPORTED;
 
+#ifdef HIBERNATE_SUPPORT_ENABLED
         if (AllowedHibernate() == true) {
-
             Lock();
 
             IShell::state currentState(State());
@@ -792,7 +799,7 @@ namespace PluginHost {
                     result = Core::ERROR_BAD_REQUEST;
                 } else {
                     State(IShell::HIBERNATED);
-#ifdef HIBERNATE_SUPPORT_ENABLED
+
                     pid_t parentPID = local->ParentPID();
                     local->Release();
                     Unlock();
@@ -817,10 +824,6 @@ namespace PluginHost {
                     }
 
                     Lock();
-#else
-                    local->Release();
-                    result = Core::ERROR_NONE;
-#endif
 
                     if (result == Core::ERROR_NONE) {
                         if (State() == IShell::state::HIBERNATED) {
@@ -838,14 +841,13 @@ namespace PluginHost {
                  }
             }
             Unlock();
-        } else {
-            result = Core::ERROR_NOT_SUPPORTED;
         }
+#endif // HIBERNATE_SUPPORT_ENABLED
 
         return (result);
-
     }
 
+#ifdef HIBERNATE_SUPPORT_ENABLED
     uint32_t Server::Service::Wakeup(const uint32_t timeout VARIABLE_IS_NOT_USED) {
         Core::hresult result = Core::ERROR_NONE;
 
@@ -864,7 +866,6 @@ namespace PluginHost {
                 result = Core::ERROR_BAD_REQUEST;
             }
             else {
-#ifdef HIBERNATE_SUPPORT_ENABLED
                 pid_t parentPID = local->ParentPID();
 
                 // There is no recovery path while doing Wakeup, don't care about errors
@@ -872,9 +873,7 @@ namespace PluginHost {
 
                 TRACE(Activity, (_T("Wakeup of plugin [%s] process [%u]"), Callsign().c_str(), parentPID));
                 result = WakeupProcess(timeout, parentPID, _administrator.Configuration().HibernateLocator().c_str(), _T(""), &_hibernateStorage);
-#else
-                result = Core::ERROR_NONE;
-#endif
+
                 if (result == Core::ERROR_NONE) {
                     State(ACTIVATED);
                     SYSLOG(Logging::Startup, (_T("Activated plugin from hibernation [%s]:[%s]"), ClassName().c_str(), Callsign().c_str()));
@@ -886,7 +885,6 @@ namespace PluginHost {
         return (result);
     }
 
-#ifdef HIBERNATE_SUPPORT_ENABLED
     uint32_t Server::Service::HibernateChildren(const pid_t parentPID, const uint32_t timeout)
     {
         Core::hresult result = Core::ERROR_NONE;
@@ -957,7 +955,7 @@ namespace PluginHost {
 
         return result;
     }
-#endif
+#endif // HIBERNATE_SUPPORT_ENABLED
 
     uint32_t Server::Service::Submit(const uint32_t id, const Core::ProxyType<Core::JSON::IElement>& response) /* override */
     {

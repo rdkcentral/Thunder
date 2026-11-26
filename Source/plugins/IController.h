@@ -185,6 +185,7 @@ namespace Controller {
         //          In a Hibernated state the plugin will not respond to any JSON-RPC requests.
         // @param timeout: Allowed time
         // @retval ERROR_INPROC The plugin is running in-process and thus cannot be hibernated
+        // @retval ERROR_NOT_SUPPORTED The service does not support hibernation
         virtual Core::hresult Hibernate(const string& callsign, const uint32_t timeout) = 0;
 
         // @brief Suspends a plugin
