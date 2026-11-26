@@ -21,7 +21,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.2">
     
     
       
@@ -1583,6 +1583,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#build-time-output-selection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Build-time output selection
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#external-direct-output" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2158,6 +2169,62 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../opentelemetry/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Open Telemetry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rich-errors/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rich Errors
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
     
     
     
@@ -2169,10 +2236,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_14" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_16" >
         
           
-          <label class="md-nav__link" for="__nav_3_14" id="__nav_3_14_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3_16" id="__nav_3_16_label" tabindex="0">
             
   
   
@@ -2190,8 +2257,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_14_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_14">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_16_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_16">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -2854,34 +2921,6 @@
           </ul>
         </nav>
       
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../utils/customcodes/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Custom Codes
-  
-
-    
-  </span>
-  
-  
-
-      </a>
     </li>
   
 
@@ -3777,6 +3816,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#build-time-output-selection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Build-time output selection
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#external-direct-output" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4309,6 +4359,10 @@
 <span class="w">    </span>-DENABLE_TRACING_CATEGORIES<span class="o">=</span><span class="s1">'Information Warning'</span><span class="w"> </span>..
 </code></pre></div>
 <p>The resulting module and category entries are added to the tracing settings with <code>enabled</code> set to <code>true</code>.</p>
+<h4 id="build-time-output-selection">Build-time output selection</h4>
+<p>Set the <code>MESSAGING_OUTPUT</code> CMake cache variable to <code>handler</code>, <code>direct</code>, <code>external_direct</code>, or <code>all</code> to select the global <code>messaging.output</code> value in the generated configuration. For example, pass <code>-DMESSAGING_OUTPUT=all</code> when configuring the build.</p>
+<p>The default is empty, preserving the existing behavior: <code>DIRECT_OUTPUT=ON</code> selects <code>direct</code>; otherwise <code>output</code> is omitted and messaging defaults to <code>handler</code>. An explicit <code>MESSAGING_OUTPUT</code> value takes precedence over <code>DIRECT_OUTPUT</code>. Invalid values fail CMake configuration.</p>
+<p>This option does not compile out any destinations or change runtime routing precedence. The generated configuration can still be edited, and per-type or module/category <code>output</code> settings override the global value. To use the external adapter, also build with <code>MESSAGING_EXTERNAL_OUTPUT=ON</code>.</p>
 <h4 id="external-direct-output">External Direct output</h4>
 <p>Messaging can optionally send messages synchronously to an external output adapter in addition to its built-in handler and direct-output paths. Enable this support when configuring Thunder:</p>
 <div class="highlight"><pre><span></span><code>cmake<span class="w"> </span>-DMESSAGING_EXTERNAL_OUTPUT<span class="o">=</span>ON<span class="w"> </span>..
@@ -4446,6 +4500,57 @@
 <p class="admonition-title">Warning</p>
 <p>Warning Reporting is only available if Thunder is compiled with the <code>WARNING_REPORTING</code> option, which can be found <a href="../../Source/addons/CMakeLists.txt">here</a>, and is disabled by default. Note that it should not be enabled in Production, since it not only leads to a higher CPU and memory usage, but also it does not add any value to have it turned on in Production.</p>
 </div>
+<p>For a reduced set of checks, build with <code>SLIM_WARNING_REPORTING=ON</code> (see <a href="../../Source/CMakeLists.txt">the CMake option</a>). This also enables <code>WARNING_REPORTING</code>, but limits reporting to priority checks such as Invoke-duration, WorkerPool and plugin activation warnings. Slim mode omits non-priority warning reports and periodic WorkerPool active-job monitoring.</p>
+<p>The default reporting and warning thresholds for the categories used in slim mode can also be configured at build time through CMake. Append <code>_REPORT_BOUND</code> or <code>_WARNING_BOUND</code> to the variable prefix below to set the corresponding threshold. All values are in milliseconds, and each warning bound must be greater than or equal to its report bound.</p>
+<table>
+<thead>
+<tr>
+<th>Category</th>
+<th>CMake variable prefix</th>
+<th>Default report bound</th>
+<th>Default warning bound</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>TooLongInvokeRPC</code></td>
+<td><code>WARNING_REPORTING_INVOKE_RPC</code></td>
+<td>250</td>
+<td>750</td>
+</tr>
+<tr>
+<td><code>TooLongInvokeMessage</code></td>
+<td><code>WARNING_REPORTING_INVOKE_MESSAGE</code></td>
+<td>500</td>
+<td>500</td>
+</tr>
+<tr>
+<td><code>JobTooLongToFinish</code></td>
+<td><code>WARNING_REPORTING_WORKERPOOL_FINISH</code></td>
+<td>5000</td>
+<td>7500</td>
+</tr>
+<tr>
+<td><code>JobTooLongWaitingInQueue</code></td>
+<td><code>WARNING_REPORTING_WORKERPOOL_QUEUE</code></td>
+<td>200</td>
+<td>400</td>
+</tr>
+<tr>
+<td><code>TooLongPluginState</code></td>
+<td><code>WARNING_REPORTING_PLUGIN_STATE</code></td>
+<td>5000</td>
+<td>5000</td>
+</tr>
+</tbody>
+</table>
+<p>In slim mode, <code>TooLongPluginState</code> measures plugin initialization during activation. Full Warning Reporting also measures deinitialization.</p>
+<p>For example:</p>
+<div class="highlight"><pre><span></span><code>cmake<span class="w"> </span>-DSLIM_WARNING_REPORTING<span class="o">=</span>ON<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-DWARNING_REPORTING_INVOKE_RPC_REPORT_BOUND<span class="o">=</span><span class="m">500</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-DWARNING_REPORTING_INVOKE_RPC_WARNING_BOUND<span class="o">=</span><span class="m">1000</span><span class="w"> </span>..
+</code></pre></div>
+<p>These build-time defaults also apply when using full Warning Reporting; per-category runtime configuration can override them.</p>
 <h3 id="runtime">Runtime</h3>
 <p>It is also possible to use the <code>MessageControl</code> plugin to edit the configuration values at runtime. At the moment, it is possible to enable/disable any category at runtime, either globally for logging and warning reporting, or individually per plugin for the tracing messages. This can be achieved by either using the ThunderUI or doing a simple JSON-RPC call. In the example below, there is a request to enable traces from the <code>Information</code> category in the <code>BluetoothControl</code> plugin.</p>
 <p><img alt="➡" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@16.0.1/assets/svg/27a1.svg" title=":arrow_right:" /> Request</p>
@@ -5391,7 +5496,7 @@ Enable the category (e.g. via MessageControl configuration / JSON-RPC) before ex
       <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.footer", "navigation.sections", "toc.follow", "navigation.top", "content.code.copy", "content.code.annotate"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.c21346df.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>
