@@ -180,6 +180,11 @@ target_compile_definitions(${TEST_RUNNER_NAME}
    PRIVATE BUILD_DIR=\"${CMAKE_CURRENT_BINARY_DIR}\"
 )
 
+if(COMRPC_ABORT_ON_TIMEOUT)
+    target_compile_definitions(${TEST_RUNNER_NAME}
+        PRIVATE COMRPC_ABORT_ON_TIMEOUT)
+endif()
+
 if (APPLE)
     set(GTEST_LIBRARY GTest::gtest GTest::gtest_main)
 else()

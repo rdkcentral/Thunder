@@ -193,7 +193,7 @@ POP_WARNING()
             , RemoteChannel(nullptr)
             , InterfaceId(Core::IUnknown::ID)
             , Version(~0)
-            , Exchange(0)
+            , ConnectionId(0)
             , PersistentPath()
             , SystemPath()
             , ExtensionPath()
@@ -219,7 +219,7 @@ POP_WARNING()
         const TCHAR* RemoteChannel;
         uint32_t InterfaceId;
         uint32_t Version;
-        uint32_t Exchange;
+        uint32_t ConnectionId;
         string PersistentPath;
         string SystemPath;
         string ExtensionPath;
@@ -309,7 +309,7 @@ POP_WARNING()
                 Version = Core::NumberType<uint32_t>(Core::TextFragment(argument)).Value();
                 break;
             case 'x':
-                Exchange = Core::NumberType<uint32_t>(Core::TextFragment(argument)).Value();
+                ConnectionId = Core::NumberType<uint32_t>(Core::TextFragment(argument)).Value();
                 break;
             case 't':
                 Threads = Core::NumberType<uint8_t>(Core::TextFragment(argument)).Value();
@@ -526,7 +526,7 @@ public:
 
         _server = (Core::ProxyType<RPC::CommunicatorClient>::Create(remoteNode, Core::ProxyType<Core::IIPCServer>(_engine)));
     }
-    void Run(const string& pathName, const uint32_t interfaceId, void* base, const uint32_t sequenceId)
+    void Run(const string& pathName, const uint32_t interfaceId, void* base, const uint32_t connectionId)
     {
         uint32_t result;
         uint32_t waitTime (RPC::CommunicationTimeOut != Core::infinite ? 2 * RPC::CommunicationTimeOut : RPC::CommunicationTimeOut);
@@ -551,7 +551,7 @@ public:
             }
         }
  
-        if ((result = _server->Open(waitTime, interfaceId, base, sequenceId)) == Core::ERROR_NONE) {
+        if ((result = _server->Open(waitTime, interfaceId, base, connectionId)) == Core::ERROR_NONE) {
             TRACE_L1("Process up and running: %d.", Core::ProcessInfo().Id());
             _engine->Run();
         } else {
@@ -615,13 +615,13 @@ int main(int argc, char** argv)
         ::setvbuf(stdout, NULL, _IONBF, 0);
     }
 
-    if ((options.RequestUsage() == true) || (options.Locator == nullptr) || (options.ClassName == nullptr) || (options.RemoteChannel == nullptr) || (options.Exchange == 0)) {
+    if ((options.RequestUsage() == true) || (options.Locator == nullptr) || (options.ClassName == nullptr) || (options.RemoteChannel == nullptr) || (options.ConnectionId == 0)) {
         printf("Process [-h] \n");
         printf("         -l <locator>\n");
         printf("         -c <classname>\n");
         printf("         -C <callsign>\n");
         printf("         -r <communication channel>\n");
-        printf("         -x <eXchange identifier>\n");
+        printf("         -x <connection identifier>\n");
         printf("        [-i <interface ID>]\n");
         printf("        [-t <thread count>\n");
         printf("        [-V <version>]\n");
@@ -679,8 +679,8 @@ int main(int argc, char** argv)
             NULL, true, -1);
         #endif
 
-        // Any remote connection that will be spawned from here, will have this ExchangeId as its parent ID.
-        string parentInfo(Core::NumberType<uint32_t>(options.Exchange).Text());
+        // Any process spawned from here that connects over COM-RPC, reports the connection id of this process as its parent.
+        string parentInfo(Core::NumberType<uint32_t>(options.ConnectionId).Text());
 
         if (callsign.empty() == false) {
             parentInfo += ("," + callsign);
@@ -700,11 +700,11 @@ int main(int argc, char** argv)
 
         Core::NodeId remoteNode(options.RemoteChannel);
 
-        TRACE_L1("Opening a message file with ID: [%d].", options.Exchange);
+        TRACE_L1("Opening a message file with ID: [%d].", options.ConnectionId);
 
 #ifdef __CORE_MESSAGING__
         // Due to the LXC container support all ID's get mapped. For the MessageBuffer, use the host given ID.
-        Messaging::MessageUnit::Instance().Open(options.Exchange);
+        Messaging::MessageUnit::Instance().Open(options.ConnectionId);
 #endif
 
         if (remoteNode.IsValid()) {
@@ -727,7 +727,7 @@ int main(int argc, char** argv)
             if ((base = Process::AcquireInterfaces(options)) != nullptr) {
 
                 TRACE_L1("Allright time to start running");
-                process.Run(options.ProxyStubPath, options.InterfaceId, base, options.Exchange);
+                process.Run(options.ProxyStubPath, options.InterfaceId, base, options.ConnectionId);
             }
         }
 

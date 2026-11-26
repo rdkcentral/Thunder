@@ -272,7 +272,7 @@ namespace ProxyStub {
 
                         if (result != Core::ERROR_NONE) {
                             if (result == Core::ERROR_TIMEDOUT) {
-                                Shutdown();
+                                TimedOut(_interfaceId, static_cast<uint8_t>(UnknownStub::StubMethodsIndexType::RELEASE), true);
                             }
                             SYSLOG(Logging::Error, (_T("Could not remote release the Proxy for Interface [0x%X]"), message->Parameters().InterfaceId()));
                         }
@@ -314,8 +314,14 @@ namespace ProxyStub {
 
             _adminLock.Lock();
 
-            if ((_channel.IsValid() == false) || (_channel->Invoke(message, RPC::CommunicationTimeOut) != Core::ERROR_NONE)) {
+            uint32_t outcome = Core::ERROR_UNAVAILABLE;
+
+            if ((_channel.IsValid() == false) || ((outcome = _channel->Invoke(message, RPC::CommunicationTimeOut)) != Core::ERROR_NONE)) {
                 _adminLock.Unlock();
+
+                if (outcome == Core::ERROR_TIMEDOUT) {
+                    TimedOut(_interfaceId, static_cast<uint8_t>(UnknownStub::StubMethodsIndexType::QUERYINTERFACE), false);
+                }
             }
             else {
                 RPC::Data::Frame::Reader response(message->Response().Reader());
@@ -511,7 +517,9 @@ namespace ProxyStub {
             return(succeeded);
         }
 
-        void Shutdown() const;
+        // Reports a call that did not get a response in time and, if requested, drops the channel so a late
+        // response can not be mistaken for the response of a subsequent call.
+        void TimedOut(const uint32_t interfaceId, const uint32_t methodId, const bool disconnect) const;
 
     private:
         mutable Core::CriticalSection _adminLock;

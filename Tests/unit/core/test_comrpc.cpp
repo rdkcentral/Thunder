@@ -274,7 +274,7 @@ namespace COMRPC {
     // GAP 3: InvokeMessage / AnnounceMessage serialization format
     //
     //  - InvokeMessage Input: Set(implementation, interfaceId, methodId) -> round-trip
-    //  - AnnounceMessage Init: Set(id, className, interfaceId, versionId) -> round-trip
+    //  - AnnounceMessage Init: Set(processId, className, interfaceId, versionId) -> round-trip
     //  - Serialization/deserialization via Serialize()/Deserialize()
     //  - Fragmentation boundary (message exceeding IPC_BLOCK_SIZE)
     // ==========================================================================
@@ -375,15 +375,15 @@ namespace COMRPC {
         ::Thunder::Core::ProxyType<::Thunder::RPC::AnnounceMessage> msg =
             ::Thunder::Core::ProxyType<::Thunder::RPC::AnnounceMessage>::Create();
 
-        const uint32_t myId = 1001;
+        const uint32_t processId = 1001;
         const string className = "TestPlugin";
         const uint32_t interfaceId = 0x80000010;
         const uint32_t versionId = 1;
 
-        msg->Parameters().Set(myId, className, interfaceId, versionId);
+        msg->Parameters().Set(processId, className, interfaceId, versionId);
 
         EXPECT_TRUE(msg->Parameters().IsValid());
-        EXPECT_EQ(msg->Parameters().Id(), myId);
+        EXPECT_EQ(msg->Parameters().ProcessId(), processId);
         EXPECT_EQ(msg->Parameters().ClassName(), className);
         EXPECT_EQ(msg->Parameters().InterfaceId(), interfaceId);
         EXPECT_EQ(msg->Parameters().VersionId(), versionId);
@@ -406,7 +406,7 @@ namespace COMRPC {
         uint16_t deserialized = fresh.Deserialize(buffer, serialized, 0);
         EXPECT_EQ(deserialized, serialized);
         EXPECT_TRUE(fresh.IsValid());
-        EXPECT_EQ(fresh.Id(), 42u);
+        EXPECT_EQ(fresh.ProcessId(), 42u);
         EXPECT_EQ(fresh.ClassName(), "SomeClass");
         EXPECT_EQ(fresh.InterfaceId(), 0x1234u);
         EXPECT_EQ(fresh.VersionId(), 2u);
@@ -520,7 +520,7 @@ namespace COMRPC {
         EXPECT_EQ(consumed, sizeof(garbage));
 
         // Should not crash when querying fields from garbage data
-        (void)init.Id();
+        (void)init.ProcessId();
         (void)init.InterfaceId();
         (void)init.VersionId();
         (void)init.Implementation();
@@ -825,13 +825,13 @@ namespace COMRPC {
     {
         ::Thunder::RPC::Data::Setup setup;
         const ::Thunder::Core::instance_id impl = 0xBEEF;
-        const uint32_t seqNum = 42;
+        const uint32_t connectionId = 42;
 
-        setup.Set(impl, seqNum, "/usr/lib/wpeframework/proxystubs", "{}", "{}");
+        setup.Set(impl, connectionId, "/usr/lib/wpeframework/proxystubs", "{}", "{}");
 
         EXPECT_TRUE(setup.IsSet());
         EXPECT_EQ(setup.Implementation(), impl);
-        EXPECT_EQ(setup.SequenceNumber(), seqNum);
+        EXPECT_EQ(setup.ConnectionId(), connectionId);
         EXPECT_EQ(setup.ProxyStubPath(), "/usr/lib/wpeframework/proxystubs");
         EXPECT_EQ(setup.MessagingCategories(), "{}");
         EXPECT_EQ(setup.WarningReportingCategories(), "{}");
@@ -846,8 +846,467 @@ namespace COMRPC {
         EXPECT_EQ(deserialized, serialized);
         EXPECT_TRUE(fresh.IsSet());
         EXPECT_EQ(fresh.Implementation(), impl);
-        EXPECT_EQ(fresh.SequenceNumber(), seqNum);
+        EXPECT_EQ(fresh.ConnectionId(), connectionId);
         EXPECT_EQ(fresh.ProxyStubPath(), "/usr/lib/wpeframework/proxystubs");
+    }
+
+    // ==========================================================================
+    // Invoke timeout handling
+    //
+    //  - The server side channel knows the process id of the client, the client side does not
+    //  - A server side call that times out disconnects the channel to the client
+    // ==========================================================================
+
+    namespace Exchange {
+        struct ISlow : virtual public ::Thunder::Core::IUnknown {
+            enum { ID = 0x80000011 };
+            virtual uint32_t Wait(const uint32_t timeMs) = 0;
+        };
+    } // namespace Exchange
+
+    namespace {
+        // Shorter than the time the slow call takes, but long enough for a fast call to complete.
+        constexpr uint32_t SlowProxyTimeOut = 500;
+
+        class Slow : public Exchange::ISlow {
+        public:
+            Slow(const Slow&) = delete;
+            Slow& operator=(const Slow&) = delete;
+
+            Slow()
+            {
+                _instances++;
+            }
+            ~Slow() override
+            {
+                _instances--;
+            }
+
+            uint32_t Wait(const uint32_t timeMs) override
+            {
+                ::SleepMs(timeMs);
+                return (::Thunder::Core::ERROR_NONE);
+            }
+
+            static uint32_t Instances()
+            {
+                return (_instances);
+            }
+
+            BEGIN_INTERFACE_MAP(Slow)
+                INTERFACE_ENTRY(Exchange::ISlow)
+            END_INTERFACE_MAP
+
+        private:
+            static std::atomic<uint32_t> _instances;
+        };
+
+        std::atomic<uint32_t> Slow::_instances(0);
+
+        ::Thunder::ProxyStub::MethodHandler SlowStubMethods[] = {
+            // (0) Wait()
+            [](::Thunder::Core::ProxyType<::Thunder::Core::IPCChannel>& channel VARIABLE_IS_NOT_USED,
+               ::Thunder::Core::ProxyType<::Thunder::RPC::InvokeMessage>& message) {
+                ::Thunder::RPC::Data::Input& input(message->Parameters());
+                Exchange::ISlow* impl = reinterpret_cast<Exchange::ISlow*>(input.Implementation());
+                ASSERT(impl != nullptr);
+                ::Thunder::RPC::Data::Frame::Reader reader(input.Reader());
+                const uint32_t timeMs = reader.Number<uint32_t>();
+                ::Thunder::RPC::Data::Frame::Writer writer(message->Response().Writer());
+                writer.Number<uint32_t>(impl->Wait(timeMs));
+            },
+            nullptr
+        };
+
+        class SlowProxy final : public ::Thunder::ProxyStub::UnknownProxyType<Exchange::ISlow> {
+        public:
+            SlowProxy(const ::Thunder::Core::ProxyType<::Thunder::Core::IPCChannel>& channel,
+                      ::Thunder::Core::instance_id implementation, const bool otherSideInformed)
+                : ::Thunder::ProxyStub::UnknownProxyType<Exchange::ISlow>::BaseClass(channel, implementation, otherSideInformed)
+            {
+            }
+
+            uint32_t Wait(const uint32_t timeMs) override
+            {
+                ::Thunder::ProxyStub::UnknownProxyType<Exchange::ISlow>::IPCMessage newMessage(
+                    static_cast<const ::Thunder::ProxyStub::UnknownProxy&>(*this).Message(0));
+                ::Thunder::RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+                writer.Number<uint32_t>(timeMs);
+                uint32_t output{};
+                if ((output = static_cast<const ::Thunder::ProxyStub::UnknownProxy&>(*this).Invoke(newMessage, SlowProxyTimeOut)) == ::Thunder::Core::ERROR_NONE) {
+                    ::Thunder::RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+                    output = reader.Number<uint32_t>();
+                }
+                return output;
+            }
+        };
+
+        typedef ::Thunder::ProxyStub::UnknownStubType<Exchange::ISlow, SlowStubMethods> SlowStub;
+
+        static class SlowRegistration {
+        public:
+            SlowRegistration()
+            {
+                ::Thunder::RPC::Administrator::Instance().Announce<Exchange::ISlow, SlowProxy, SlowStub>();
+            }
+        } _slowProxyStubRegistration;
+
+        class ConnectionObserver : public ::Thunder::RPC::IRemoteConnection::INotification {
+        public:
+            ConnectionObserver()
+                : _remoteId(0)
+                , _activated(false, true)
+                , _deactivated(false, true)
+            {
+            }
+
+            void Activated(::Thunder::RPC::IRemoteConnection* connection) override
+            {
+                _remoteId = connection->RemoteId();
+                _activated.SetEvent();
+            }
+            void Deactivated(::Thunder::RPC::IRemoteConnection*) override
+            {
+                _deactivated.SetEvent();
+            }
+
+            uint32_t RemoteId() const
+            {
+                return (_remoteId);
+            }
+            uint32_t WaitForDeactivation(const uint32_t waitTime)
+            {
+                return (_deactivated.Lock(waitTime));
+            }
+            uint32_t WaitForActivation(const uint32_t waitTime)
+            {
+                return (_activated.Lock(waitTime));
+            }
+
+            BEGIN_INTERFACE_MAP(ConnectionObserver)
+                INTERFACE_ENTRY(::Thunder::RPC::IRemoteConnection::INotification)
+            END_INTERFACE_MAP
+
+        private:
+            std::atomic<uint32_t> _remoteId;
+            ::Thunder::Core::Event _activated;
+            ::Thunder::Core::Event _deactivated;
+        };
+
+        class Drained : public ::Thunder::Core::IDispatch {
+        public:
+            Drained()
+                : _event(false, true)
+            {
+            }
+
+            void Dispatch() override
+            {
+                _event.SetEvent();
+            }
+            uint32_t Wait(const uint32_t waitTime)
+            {
+                return (_event.Lock(waitTime));
+            }
+
+        private:
+            ::Thunder::Core::Event _event;
+        };
+
+        // A plain CommunicatorClient does not clean up the administration of its channel when it gets closed, so the
+        // references the other side held (e.g. the one cached by Offer()) stay registered under the descriptor of the
+        // channel. Clean it up like the server side Communicator does.
+        class DisconnectAwareClient : public ::Thunder::RPC::CommunicatorClient {
+        public:
+            DisconnectAwareClient() = delete;
+            DisconnectAwareClient(const DisconnectAwareClient&) = delete;
+            DisconnectAwareClient& operator=(const DisconnectAwareClient&) = delete;
+
+            DisconnectAwareClient(const ::Thunder::Core::NodeId& remoteNode, const ::Thunder::Core::ProxyType<::Thunder::Core::IIPCServer>& handler)
+                : ::Thunder::RPC::CommunicatorClient(remoteNode, handler)
+            {
+            }
+            ~DisconnectAwareClient() override = default;
+
+        protected:
+            void StateChange() override
+            {
+                ::Thunder::RPC::CommunicatorClient::StateChange();
+
+                if (Source().IsOpen() == false) {
+                    // Called before the socket is destroyed, so Id() is still the descriptor everything was registered under.
+                    ::Thunder::Core::ProxyType<::Thunder::Core::IPCChannel> channel(*this);
+                    ::Thunder::RPC::Administrator::Danglings danglings;
+
+                    ::Thunder::RPC::Administrator::Instance().DeleteChannel(channel, danglings);
+
+                    for (const auto& dangling : danglings) {
+                        dangling.second->Release();
+                    }
+                }
+            }
+        };
+
+        class AnnouncingClient : public DisconnectAwareClient {
+        public:
+            AnnouncingClient(const ::Thunder::Core::NodeId& node,
+                const ::Thunder::Core::ProxyType<::Thunder::Core::IIPCServer>& handler,
+                ::Thunder::Core::Event& announced)
+                : DisconnectAwareClient(node, handler)
+                , _announced(announced)
+            {
+            }
+
+        private:
+            void StateChange() override
+            {
+                DisconnectAwareClient::StateChange();
+                if (Source().IsOpen() == true) {
+                    _announced.SetEvent();
+                }
+            }
+
+            ::Thunder::Core::Event& _announced;
+        };
+
+        class LaunchingServer : public ::Thunder::RPC::Communicator {
+        public:
+            class DelayedProcess : public RemoteConnection {
+            public:
+                DelayedProcess(LaunchingServer& parent)
+                    : _parent(parent)
+                    , _pid(0)
+                {
+                }
+
+                uint32_t Launch() override
+                {
+                    _parent._startingConnectionId = Id();
+                    _parent._started.SetEvent();
+                    const uint32_t result = _parent._announced.Lock(2000);
+                    EXPECT_EQ(result, ::Thunder::Core::ERROR_NONE);
+                    if (result == ::Thunder::Core::ERROR_NONE) {
+                        // Announcing must not wait for Launch(): distributed launches can themselves wait for socket traffic.
+                        EXPECT_EQ(_parent._observer.WaitForActivation(2000), ::Thunder::Core::ERROR_NONE);
+                        _pid = _parent._hostPid;
+                    }
+                    return (result);
+                }
+                uint32_t RemoteId() const override
+                {
+                    return (_pid);
+                }
+                void Terminate() override
+                {
+                }
+
+            private:
+                LaunchingServer& _parent;
+                std::atomic<uint32_t> _pid;
+            };
+
+            LaunchingServer(const ::Thunder::Core::NodeId& node, ConnectionObserver& observer, const uint32_t hostPid)
+                : ::Thunder::RPC::Communicator(node, _T(""), _T("@comrpc_gap_launch"))
+                , _observer(observer)
+                , _hostPid(hostPid)
+                , _startingConnectionId(0)
+                , _started(false, true)
+                , _announced(false, true)
+            {
+            }
+
+            uint32_t WaitForLaunch(const uint32_t waitTime)
+            {
+                return (_started.Lock(waitTime));
+            }
+            uint32_t StartingConnectionId() const
+            {
+                return (_startingConnectionId);
+            }
+            ::Thunder::Core::Event& Announced()
+            {
+                return (_announced);
+            }
+
+        private:
+            RemoteConnection* CreateStarter(const ::Thunder::RPC::Config&, const ::Thunder::RPC::Object&) override
+            {
+                return (::Thunder::Core::ServiceType<DelayedProcess>::Create<RemoteConnection>(*this));
+            }
+
+            ConnectionObserver& _observer;
+            const uint32_t _hostPid;
+            uint32_t _startingConnectionId;
+            ::Thunder::Core::Event _started;
+            ::Thunder::Core::Event _announced;
+        };
+
+        class SlowServer : public ::Thunder::RPC::Communicator {
+        public:
+            SlowServer() = delete;
+            SlowServer(const SlowServer&) = delete;
+            SlowServer& operator=(const SlowServer&) = delete;
+
+            SlowServer(const ::Thunder::Core::NodeId& source)
+                : ::Thunder::RPC::Communicator(source, _T(""), _T("@comrpc_gap_timeout"))
+                , _offered(false, true)
+                , _slow(nullptr)
+            {
+            }
+            ~SlowServer() override
+            {
+                ASSERT(_slow == nullptr);
+            }
+
+            uint32_t WaitForOffer(const uint32_t waitTime)
+            {
+                return (_offered.Lock(waitTime));
+            }
+            Exchange::ISlow* Remote()
+            {
+                Exchange::ISlow* result = _slow;
+                _slow = nullptr;
+                return (result);
+            }
+
+        private:
+            void Offer(::Thunder::Core::IUnknown* remote, const uint32_t interfaceId) override
+            {
+                if (interfaceId == Exchange::ISlow::ID) {
+                    ASSERT(_slow == nullptr);
+                    _slow = remote->QueryInterface<Exchange::ISlow>();
+                    _offered.SetEvent();
+                }
+            }
+
+        private:
+            ::Thunder::Core::Event _offered;
+            Exchange::ISlow* _slow;
+        };
+    } // namespace
+
+    TEST(COMRPC_Gap, EarlyAnnounce_UsesPublishedHostProcessId)
+    {
+        constexpr uint32_t waitTime = 2000;
+        const uint32_t hostPid = static_cast<uint32_t>(::Thunder::Core::ProcessInfo().Id()) + 1;
+        ::Thunder::Core::NodeId node("/tmp/comrpc_gap_launch");
+        ::Thunder::Core::SinkType<ConnectionObserver> observer;
+        ::Thunder::Core::SinkType<ConnectionObserver> closingObserver;
+        LaunchingServer server(node, observer, hostPid);
+        server.Register(&closingObserver);
+        ASSERT_EQ(server.Open(waitTime), ::Thunder::Core::ERROR_NONE);
+
+        auto engine = ::Thunder::Core::ProxyType<::Thunder::RPC::InvokeServerType<1, 0, 1, 1, 1>>::Create();
+        auto unrelatedClient = ::Thunder::Core::ProxyType<DisconnectAwareClient>::Create(
+            node, ::Thunder::Core::ProxyType<::Thunder::Core::IIPCServer>(engine));
+        ASSERT_EQ(unrelatedClient->Open(waitTime), ::Thunder::Core::ERROR_NONE);
+        auto client = ::Thunder::Core::ProxyType<AnnouncingClient>::Create(
+            node, ::Thunder::Core::ProxyType<::Thunder::Core::IIPCServer>(engine), server.Announced());
+        Exchange::ISlow* slow = ::Thunder::Core::Service<Slow>::Create<Exchange::ISlow>();
+        ::Thunder::RPC::Object object(_T("test"), _T("Slow"), _T("early-announce"),
+            Exchange::ISlow::ID, static_cast<uint32_t>(~0), _T(""), _T(""), 1, 0,
+            ::Thunder::RPC::Object::HostType::LOCAL, _T(""), _T(""), _T(""), {});
+        uint32_t connectionId = 0;
+        Exchange::ISlow* remote = nullptr;
+        std::thread creator([&]() {
+            remote = static_cast<Exchange::ISlow*>(server.Create(connectionId, object, ::Thunder::RPC::Config(), waitTime));
+        });
+
+        const uint32_t launched = server.WaitForLaunch(waitTime);
+        EXPECT_EQ(launched, ::Thunder::Core::ERROR_NONE);
+        if (launched == ::Thunder::Core::ERROR_NONE) {
+            // Closing a registered channel during launch must not block the ResourceMonitor.
+            EXPECT_EQ(unrelatedClient->Close(waitTime), ::Thunder::Core::ERROR_NONE);
+            EXPECT_EQ(closingObserver.WaitForDeactivation(waitTime), ::Thunder::Core::ERROR_NONE);
+        }
+        server.Unregister(&closingObserver);
+        server.Register(&observer);
+        if (launched == ::Thunder::Core::ERROR_NONE) {
+            // The requested interface transfers a reference to the server.
+            slow->AddRef();
+            EXPECT_EQ(client->Open(waitTime, Exchange::ISlow::ID, slow, server.StartingConnectionId()), ::Thunder::Core::ERROR_NONE);
+        }
+        creator.join();
+
+        EXPECT_NE(remote, nullptr);
+        // Activation precedes publication, but the channel must learn the PID when Launch() returns.
+        EXPECT_EQ(observer.RemoteId(), 0u);
+        uint32_t channelCount = 0;
+        server.Visit([&](const ::Thunder::RPC::Communicator::Client& channel) {
+            ++channelCount;
+            EXPECT_EQ(channel.RemoteProcessId(), hostPid);
+        });
+        EXPECT_EQ(channelCount, 1u);
+
+        if (remote != nullptr) {
+            remote->Release();
+        }
+        EXPECT_EQ(client->Close(waitTime), ::Thunder::Core::ERROR_NONE);
+        EXPECT_EQ(observer.WaitForDeactivation(waitTime), ::Thunder::Core::ERROR_NONE);
+        slow->Release();
+        EXPECT_EQ(Slow::Instances(), 0u);
+        server.Unregister(&observer);
+        EXPECT_EQ(server.Close(waitTime), ::Thunder::Core::ERROR_NONE);
+    }
+
+    TEST(COMRPC_Gap, InvokeTimeout_DisconnectsServerChannel)
+    {
+#ifdef COMRPC_ABORT_ON_TIMEOUT
+        GTEST_SKIP() << "Built with COMRPC_ABORT_ON_TIMEOUT, a timeout would abort the test runner";
+#else
+        constexpr uint32_t waitTime = 2000;
+
+        const std::string connector{"/tmp/comrpc_gap_timeout"};
+        ::Thunder::Core::NodeId node(connector.c_str());
+
+        ::Thunder::Core::SinkType<ConnectionObserver> observer;
+
+        SlowServer server(node);
+        server.Register(&observer);
+        ASSERT_EQ(server.Open(waitTime), ::Thunder::Core::ERROR_NONE);
+
+        ::Thunder::Core::ProxyType<::Thunder::RPC::InvokeServerType<1, 0, 1, 1, 1>> engine =
+            ::Thunder::Core::ProxyType<::Thunder::RPC::InvokeServerType<1, 0, 1, 1, 1>>::Create();
+        ::Thunder::Core::ProxyType<DisconnectAwareClient> client =
+            ::Thunder::Core::ProxyType<DisconnectAwareClient>::Create(
+                node, ::Thunder::Core::ProxyType<::Thunder::Core::IIPCServer>(engine));
+        ASSERT_EQ(client->Open(waitTime), ::Thunder::Core::ERROR_NONE);
+
+        // Only the side that accepted the connection knows the process on the other side.
+        EXPECT_EQ(observer.RemoteId(), static_cast<uint32_t>(::Thunder::Core::ProcessInfo().Id()));
+        EXPECT_EQ(client->RemoteProcessId(), 0u);
+
+        Exchange::ISlow* slow = ::Thunder::Core::Service<Slow>::Create<Exchange::ISlow>();
+        ASSERT_EQ(client->Offer<Exchange::ISlow>(slow, static_cast<uint32_t>(~0), waitTime), ::Thunder::Core::ERROR_NONE);
+        ASSERT_EQ(server.WaitForOffer(waitTime), ::Thunder::Core::ERROR_NONE);
+
+        Exchange::ISlow* remote = server.Remote();
+        ASSERT_NE(remote, nullptr);
+
+        EXPECT_EQ(remote->Wait(0), ::Thunder::Core::ERROR_NONE);
+        EXPECT_EQ(observer.WaitForDeactivation(0), ::Thunder::Core::ERROR_TIMEDOUT);
+
+        EXPECT_EQ(remote->Wait(SlowProxyTimeOut * 3), (::Thunder::Core::ERROR_TIMEDOUT | COM_ERROR));
+
+        // The server must have dropped the channel, so a late response can not be taken for the response of a next call.
+        EXPECT_EQ(observer.WaitForDeactivation(waitTime), ::Thunder::Core::ERROR_NONE);
+
+        // The client is still executing the slow call. Make sure it completed (the engine has a single thread)
+        // before tearing down, otherwise the job of that call might end up dropping the last reference to the client.
+        ::Thunder::Core::ProxyType<Drained> drained = ::Thunder::Core::ProxyType<Drained>::Create();
+        engine->Submit(::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>(drained));
+        EXPECT_EQ(drained->Wait(SlowProxyTimeOut * 3 + waitTime), ::Thunder::Core::ERROR_NONE);
+
+        remote->Release();
+        slow->Release();
+
+        client->Close(waitTime);
+        server.Unregister(&observer);
+        EXPECT_EQ(server.Close(waitTime), ::Thunder::Core::ERROR_NONE);
+
+        // Nothing may keep the offered object alive once the channel is gone.
+        EXPECT_EQ(Slow::Instances(), 0u);
+#endif
     }
 
 } // namespace COMRPC

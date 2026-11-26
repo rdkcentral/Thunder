@@ -55,7 +55,11 @@ namespace Thunder {
                 virtual void Terminated(IRemoteConnection*) { };
             };
 
+            // Identifier of this connection, unique within the Thunder instance that accepted it. This is the id
+            // under which the connection is administered, and the id a spawned process gets passed (-x) so it can
+            // identify itself when it connects. Not a process id!
             virtual uint32_t Id() const = 0;
+            // Process id of the process on the other side of this connection, 0 if unknown.
             virtual uint32_t RemoteId() const = 0;
             virtual void* /* @interface:interfaceId */ Acquire(const uint32_t waitTime, const string& className, const uint32_t interfaceId, const uint32_t version) = 0;
             virtual void Terminate() = 0;

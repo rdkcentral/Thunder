@@ -274,7 +274,20 @@ namespace RPC {
 
     ProcessShutdown* ProcessShutdownAccessor::_destructor = nullptr;
 
-    /* static */ std::atomic<uint32_t> Communicator::RemoteConnection::_sequenceId(1);
+    /* static */ std::atomic<uint32_t> Communicator::RemoteConnection::_nextConnectionId(1);
+
+    void Communicator::ChannelLink::Disconnect()
+    {
+#ifdef COMRPC_ABORT_ON_TIMEOUT
+        SYSLOG(Logging::Fatal, (_T("Aborting instead of disconnecting the COM-RPC channel to process [%u], connection [%u] (COMRPC_ABORT_ON_TIMEOUT)"), RemoteProcessId(), _connectionId));
+        std::abort();
+#else
+        SYSLOG(Logging::Error, (_T("Disconnecting the COM-RPC channel to process [%u], connection [%u], to avoid side-effects of a late response"), RemoteProcessId(), _connectionId));
+
+        // Do not wait for the close to complete, the caller might be on the thread that has to process it.
+        _channel.Close(0);
+#endif
+    }
 
     static void LoadProxyStubs(const string& pathName)
     {
@@ -319,7 +332,7 @@ namespace RPC {
 
     /* virtual */ uint32_t Communicator::RemoteConnection::Id() const
     {
-        return (_id);
+        return (_connectionId);
     }
 
     /* virtual */ void* Communicator::RemoteConnection::Acquire(const uint32_t waitTime, const string& className, const uint32_t interfaceId, const uint32_t version)
@@ -331,7 +344,7 @@ namespace RPC {
 
             TRACE_L1("Aquiring object through RPC: %s, 0x%04X [%d]", className.c_str(), interfaceId, RemoteId());
 
-            message->Parameters().Set(_id, className, interfaceId, version);
+            message->Parameters().Set(Core::ProcessInfo().Id(), className, interfaceId, version);
 
             uint32_t feedback = _channel->Invoke(message, waitTime);
 
@@ -355,7 +368,7 @@ namespace RPC {
 
     /* virtual */ uint32_t Communicator::RemoteConnection::RemoteId() const
     {
-        return (_remoteId);
+        return (_reportedProcessId);
     }
 
     /* virtual */ void Communicator::LocalProcess::Terminate()
@@ -369,13 +382,13 @@ namespace RPC {
 
     uint32_t Communicator::LocalProcess::RemoteId() const
     {
-        return (_id);
+        return (_process.Id());
     }
 
     void Communicator::LocalProcess::PostMortem() /* override */
     {
-        if (_id != 0) {
-            Core::ProcessInfo process(_id);
+        if (_process.Id() != 0) {
+            Core::ProcessInfo process(_process.Id());
             process.Dump();
         }
     }
@@ -544,14 +557,14 @@ namespace RPC {
         return (result);
     }
 
-    uint32_t CommunicatorClient::Open(const uint32_t waitTime, const uint32_t interfaceId, void* implementation, const uint32_t exchangeId)
+    uint32_t CommunicatorClient::Open(const uint32_t waitTime, const uint32_t interfaceId, void* implementation, const uint32_t connectionId)
     {
         ASSERT(BaseClass::IsOpen() == false);
         _announceEvent.ResetEvent();
 
         Core::instance_id impl = instance_cast<void*>(implementation);
 
-        _announceMessage.Parameters().Set(Core::ProcessInfo().Id(), interfaceId, impl, exchangeId);
+        _announceMessage.Parameters().Set(Core::ProcessInfo().Id(), interfaceId, impl, connectionId);
 
         uint32_t result = BaseClass::Open(waitTime);
 
@@ -614,7 +627,7 @@ namespace RPC {
                 WarningReporting::WarningReportingUnit::Instance().Defaults(jsonDefaultWarningCategories);
             }
 #endif
-            _connectionId = announceMessage->Response().SequenceNumber();
+            _connectionId = announceMessage->Response().ConnectionId();
 
             string proxyStubPath(announceMessage->Response().ProxyStubPath());
             if (proxyStubPath.empty() == false) {

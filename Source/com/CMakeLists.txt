@@ -18,6 +18,7 @@
 set(TARGET ${NAMESPACE}COM)
 
 set(COMRPC_TIMEOUT 3000 CACHE STRING "COMRPC communication timeout in milliseconds")
+option(COMRPC_ABORT_ON_TIMEOUT "Abort, instead of disconnecting the channel, when a COM-RPC call to a process connected to this process times out (debugging aid)" OFF)
 
 ProxyStubGenerator(NAMESPACE "Thunder::RPC" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/ICOM.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
 
@@ -93,6 +94,12 @@ if(PROCESSCONTAINERS)
         PUBLIC
             PROCESSCONTAINERS_ENABLED=1)
 endif(PROCESSCONTAINERS)
+
+if(COMRPC_ABORT_ON_TIMEOUT)
+    target_compile_definitions(${TARGET}
+        PRIVATE
+            COMRPC_ABORT_ON_TIMEOUT)
+endif()
 
 set_target_properties(${TARGET} PROPERTIES
         CXX_STANDARD ${CXX_STD}
