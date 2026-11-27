@@ -183,7 +183,7 @@ namespace Core {
                             }
                         }
 
-                        while ((_offset < 8) && (result < maxLength)) {
+                        while ((_offset < 8) && (_length != 0) && (result < maxLength)) {
                             _label |= ((stream[result] & (_offset == 7 ? 0xFF : 0x7F)) << (7 * (_offset - 4)));
                             _length--;
 
@@ -196,6 +196,9 @@ namespace Core {
 
                         if (_offset == 8) {
                             _current = Element(_label);
+                            _label = 0;
+                        } else if ((_offset >= 4) && (_length == 0)) {
+                            _offset = 0;
                             _label = 0;
                         }
                     }
