@@ -781,7 +781,10 @@ namespace Core {
         }
         ~PendingDatagram() override = default;
 
-        uint16_t SendData(uint8_t*, const uint16_t) override { return 0; }
+        uint16_t SendData(uint8_t*, const uint16_t) override
+        {
+            return 0;
+        }
 
         uint16_t ReceiveData(uint8_t*, const uint16_t size) override
         {
