@@ -33,16 +33,17 @@ namespace Thunder {
 namespace Core {
 
     struct AccessControl {
-        static uint32_t OwnerShip(const string& node, const string& userName, const string& groupName)
+    private:
+#ifdef __POSIX__
+        static uint32_t ResolveOwnership(const string& userName, const string& groupName, uid_t& uid, gid_t& gid)
         {
             uint32_t result(Core::ERROR_NONE);
 
-#ifdef __POSIX__
-            int uid(-1);
-            int gid(-1);
+            uid = static_cast<uid_t>(-1);
+            gid = static_cast<gid_t>(-1);
 
             if (userName.empty() == false) {
-                struct passwd* pwd = ::getpwnam(userName.c_str());
+                const struct passwd* pwd = ::getpwnam(userName.c_str());
 
                 if (pwd != nullptr) {
                     uid = pwd->pw_uid;
@@ -52,7 +53,7 @@ namespace Core {
             }
 
             if (groupName.empty() == false) {
-                struct group* grp = ::getgrnam(groupName.c_str());
+                const struct group* grp = ::getgrnam(groupName.c_str());
 
                 if (grp != nullptr) {
                     gid = grp->gr_gid;
@@ -61,6 +62,20 @@ namespace Core {
                 }
             }
 
+            return result;
+        }
+#endif
+
+    public:
+        static uint32_t OwnerShip(const string& node, const string& userName, const string& groupName)
+        {
+            uint32_t result(Core::ERROR_NONE);
+
+#ifdef __POSIX__
+            uid_t uid;
+            gid_t gid;
+
+            result = ResolveOwnership(userName, groupName, uid, gid);
             if (::chown(node.c_str(), uid, gid) != 0) {
                 result = Core::ERROR_GENERAL;
             }
@@ -69,6 +84,22 @@ namespace Core {
 #endif
             return result;
         }
+
+#ifdef __POSIX__
+        static uint32_t OwnerShip(const int descriptor, const string& userName, const string& groupName)
+        {
+            uint32_t result(Core::ERROR_NONE);
+
+            uid_t uid;
+            gid_t gid;
+
+            result = ResolveOwnership(userName, groupName, uid, gid);
+            if ((result == Core::ERROR_NONE) && (::fchown(descriptor, uid, gid) != 0)) {
+                result = Core::ERROR_GENERAL;
+            }
+            return result;
+        }
+#endif
     
         static uint32_t Permission(const string& node, const uint16_t modeFlags){
             uint32_t result(Core::ERROR_NONE);
