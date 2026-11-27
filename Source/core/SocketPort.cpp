@@ -504,11 +504,11 @@ namespace Thunder {
         {
             uint32_t nStatus = Core::ERROR_GENERAL;
 
-            m_ReadBytes = 0;
-            m_SendBytes = 0;
-            m_SendOffset = 0;
-
             if ((m_State.load(Core::memory_order::memory_order_relaxed) & (SocketPort::LINK | SocketPort::OPEN | SocketPort::MONITOR)) == (SocketPort::LINK | SocketPort::OPEN)) {
+
+                m_ReadBytes = 0;
+                m_SendBytes = 0;
+                m_SendOffset = 0;
 
                 if (Initialize() != Core::ERROR_NONE) {
                     nStatus = Core::ERROR_ABORTED;
@@ -526,6 +526,10 @@ namespace Thunder {
             }
             else {
                 ASSERT((m_Socket == INVALID_SOCKET) && (m_State.load(Core::memory_order::memory_order_relaxed) == 0));
+
+                m_ReadBytes = 0;
+                m_SendBytes = 0;
+                m_SendOffset = 0;
 
                 if ((m_SocketType == SocketPort::STREAM) || (m_SocketType == SocketPort::SEQUENCED) || (m_SocketType == SocketPort::RAW)) {
                     if (m_LocalNode.IsValid() == false) {
