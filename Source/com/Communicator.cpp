@@ -599,7 +599,7 @@ namespace RPC {
         // Message delivered and responded on....
         RPC::AnnounceMessage* announceMessage = static_cast<RPC::AnnounceMessage*>(&element);
 
-        ASSERT(dynamic_cast<RPC::AnnounceMessage*>(&element) != nullptr);
+        ASSERT(element.Label() == RPC::AnnounceMessage::Id());
 
         if (announceMessage->Response().IsSet() == true) {
             string jsonMessagingCategories(announceMessage->Response().MessagingCategories());
