@@ -274,7 +274,7 @@ namespace ProxyStub {
                             if (result == Core::ERROR_TIMEDOUT) {
                                 Shutdown();
                             }
-                            SYSLOG(Logging::Error, (_T("Could not remote release the Proxy for Interface [0x%X]"), message->Parameters().InterfaceId()));
+                            SYSLOG(Logging::Error, (_T("Could not remote release the Proxy for Interface [0x%X] result: %d"), message->Parameters().InterfaceId(), result));
                         }
                         else {
                             // Pass the remote release return value through

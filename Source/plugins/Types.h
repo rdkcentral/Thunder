@@ -112,6 +112,32 @@ namespace PluginHost {
                     _adminLock.Unlock();
                 }
             }
+            // The COMRPC channel carrying the remote interface is gone, so no Deactivated notification can arrive anymore.
+            void Dropped()
+            {
+                Core::IUnknown* designated = nullptr;
+                bool notify = false;
+
+                _adminLock.Lock();
+                if (_designated != nullptr) {
+                    designated = _designated;
+                    _designated = nullptr;
+
+                    if (_state != state::RUNNING) {
+                        _state = state::REGISTRING;
+                    } else {
+                        notify = true;
+                    }
+                }
+                _adminLock.Unlock();
+
+                if (designated != nullptr) {
+                    designated->Release();
+                }
+                if (notify == true) {
+                    _parent.Deactivated();
+                }
+            }
             INTERFACE* Interface()
             {
                 INTERFACE* result = nullptr;
@@ -234,6 +260,10 @@ namespace PluginHost {
         {
             _sink.Unregister(shell);
         }
+        void Dropped()
+        {
+            _sink.Dropped();
+        }
         INTERFACE* Interface()
         {
             return (_sink.Interface());
@@ -276,6 +306,34 @@ namespace RPC {
     private:
         using Monitor = PluginHost::PluginMonitorType<INTERFACE, SmartInterfaceType<INTERFACE, ENGINE>&>;
 
+        class Link : public ConnectorType<ENGINE> {
+        public:
+            Link() = delete;
+            Link(Link&&) = delete;
+            Link(const Link&) = delete;
+            Link& operator=(Link&&) = delete;
+            Link& operator=(const Link&) = delete;
+
+            Link(SmartInterfaceType<INTERFACE, ENGINE>& parent, const uint32_t channelWaitTime)
+                : ConnectorType<ENGINE>(channelWaitTime)
+                , _parent(parent)
+            {
+            }
+            ~Link() override = default;
+
+        public:
+            // Called from the I/O (ResourceMonitor) thread on a state change of the COMRPC channel.
+            void Operational(const bool upAndRunning) override
+            {
+                if (upAndRunning == false) {
+                    _parent.Dropped();
+                }
+            }
+
+        private:
+            SmartInterfaceType<INTERFACE, ENGINE>& _parent;
+        };
+
     public:
         SmartInterfaceType(const SmartInterfaceType<INTERFACE, ENGINE>&) = delete;
         SmartInterfaceType<INTERFACE, ENGINE>& operator=(const SmartInterfaceType<INTERFACE, ENGINE>&) = delete;
@@ -285,8 +343,8 @@ namespace RPC {
         PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
         explicit SmartInterfaceType(const uint32_t channelWaitTime = Core::infinite)
             : _controller(nullptr)
-            , _administrator(channelWaitTime)
             , _monitor(*this)
+            , _administrator(*this, channelWaitTime)
         {
         }
 POP_WARNING()
@@ -356,6 +414,9 @@ POP_WARNING()
         }
 
         // Allow a derived class to take action on a new interface, or almost dissapeared interface..
+        // Note: on loss of the COMRPC channel (e.g. IPC timeout or Thunder going down) this is called with
+        // false from the I/O (ResourceMonitor) thread. Do not block, nor call Close()/Open(), from within this
+        // callback; reconnect (Close() followed by Open()) from another thread.
         virtual void Operational(const bool /* upAndRunning */)
         {
         }
@@ -386,11 +447,16 @@ POP_WARNING()
         {
             Operational(false);
         }
+        void Dropped()
+        {
+            _monitor.Dropped();
+        }
 
     private:
         PluginHost::IShell* _controller;
-        ConnectorType<ENGINE> _administrator;
+        // _administrator must be destroyed before _monitor, as its channels may still report state changes to us.
         Monitor _monitor;
+        Link _administrator;
     };
 
 /*
