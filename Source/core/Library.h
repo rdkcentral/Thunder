@@ -27,6 +27,8 @@
 
 #ifdef __WINDOWS__
 #include <psapi.h>
+#elif defined(__APPLE__)
+#include <mach-o/dyld.h>
 #elif !defined(__APPLE__)
 #include <link.h>
 #endif
@@ -37,7 +39,7 @@ namespace Core {
     private:
         typedef struct {
             uint32_t _referenceCount;
-#ifdef __LINUX__
+#if defined(__LINUX__) || defined(__APPLE__)
             void* _handle;
 #endif
 #ifdef __WINDOWS__
@@ -107,7 +109,37 @@ namespace Core {
         private:
             uint32_t _current;
             string _filename;
-#elif !defined(__APPLE__)
+#elif defined(__APPLE__)
+            Iterator() : _current(static_cast<uint32_t>(~0)) {
+            }
+
+        public:
+            void Reset() {
+                _current = static_cast<uint32_t>(~0);
+            }
+            bool IsValid() const {
+                return ((_current != static_cast<uint32_t>(~0)) && (_current < ::_dyld_image_count()));
+            }
+            bool Next() {
+                if (_current == static_cast<uint32_t>(~0)) {
+                    _current = 0;
+                } else {
+                    _current++;
+                }
+                if (_current < ::_dyld_image_count()) {
+                    return (true);
+                }
+                _current = static_cast<uint32_t>(~0);
+                return (false);
+            }
+            Library Current() {
+                ASSERT(IsValid() == true);
+                return (Library(static_cast<const TCHAR*>(::_dyld_get_image_name(_current))));
+            }
+
+        private:
+            uint32_t _current;
+#else
             Iterator() : _current(nullptr) {
             }
 

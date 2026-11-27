@@ -1670,7 +1670,7 @@ namespace Core {
         for (uint8_t i = 0; i < threadCount; ++i) {
             ::Thunder::Core::thread_id tid = workerPool.Pool().Id(i + 2);
             EXPECT_NE(tid, static_cast<::Thunder::Core::thread_id>(0));
-            EXPECT_NE(tid, static_cast<::Thunder::Core::thread_id>(~0));
+            EXPECT_NE(tid, (::Thunder::Core::thread_id)(~0));
         }
 
         workerPool.Stop();
@@ -1685,7 +1685,7 @@ namespace Core {
 
         // Index beyond threadCount+2 is invalid -> returns ~0
         ::Thunder::Core::thread_id invalidId = workerPool.Pool().Id(threadCount + 2);
-        EXPECT_EQ(invalidId, static_cast<::Thunder::Core::thread_id>(~0));
+        EXPECT_EQ(invalidId, (::Thunder::Core::thread_id)(~0));
 
         workerPool.Stop();
         ::Thunder::Core::WorkerPool::Assign(nullptr);
